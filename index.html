@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="nl" class="h-full bg-slate-50 text-slate-900">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Polyglot Studio — Centraal Leersysteem</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Polyglot">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .safe-top { padding-top: max(env(safe-area-inset-top), 16px); }
+    .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 24px); }
+    pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  </style>
+</head>
+<body class="h-full flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Header -->
+  <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 safe-top">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-md">
+          <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-slate-900 leading-tight">Polyglot Studio</h1>
+          <p class="text-xs text-slate-500 font-medium">Thibaud's Centraal Leersysteem</p>
+        </div>
+      </div>
+
+      <!-- Track Switcher -->
+      <div class="flex bg-slate-100 p-1 rounded-xl text-xs sm:text-sm font-semibold border border-slate-200">
+        <button id="track-greek" onclick="selectTrack('greek')" class="px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 bg-white text-indigo-600 shadow-sm">
+          <span>🇬🇷</span>
+          <span class="hidden sm:inline">Grieks</span>
+        </button>
+        <button id="track-french" onclick="selectTrack('french')" class="px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-slate-600 hover:text-slate-900">
+          <span>🇫🇷</span>
+          <span class="hidden sm:inline">Frans</span>
+        </button>
+        <button id="track-solidity" onclick="selectTrack('solidity')" class="px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-slate-600 hover:text-slate-900">
+          <span>⛓️</span>
+          <span class="hidden sm:inline">Solidity</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 overflow-y-auto px-4 py-6 safe-bottom">
+    <div class="max-w-4xl mx-auto space-y-6">
+
+      <!-- Lesson Navigation / Inhalen Stepper -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-layer-group text-indigo-500 text-sm"></i>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-600">Lessenoverzicht & Inhalen:</span>
+        </div>
+        <div id="lesson-pills-container" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <!-- Active Lesson Main Card -->
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm relative overflow-hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-5">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span id="lesson-level-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200"></span>
+              <span class="text-xs text-slate-400 font-medium flex items-center gap-1">
+                <i class="fa-regular fa-clock"></i> 20-30 min
+              </span>
+            </div>
+            <h2 id="lesson-title" class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">Laden...</h2>
+            <p id="lesson-subtitle" class="text-xs sm:text-sm text-slate-500 font-medium italic mt-0.5"></p>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button onclick="toggleGrammarModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center space-x-2 transition border border-slate-200">
+              <i class="fa-solid fa-book-bookmark text-indigo-500"></i>
+              <span>Grammatica & Uitleg</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Concept Body -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Concept van de Les:</h3>
+          <p id="lesson-focus" class="text-sm sm:text-base text-slate-700 leading-relaxed"></p>
+        </div>
+
+        <!-- Key Vocabulary / Code Snippet Container -->
+        <div id="dynamic-content-box" class="pt-2"></div>
+      </div>
+
+      <!-- Spreek- / Praktijkmodule -->
+      <div id="practice-module-card" class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-6 text-white shadow-lg shadow-indigo-100 space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2.5">
+            <span class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm" id="practice-icon"><i class="fa-solid fa-microphone"></i></span>
+            <h3 class="font-bold text-base" id="practice-card-title">Spreek- en Uitspraaktraining</h3>
+          </div>
+          <span class="text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium" id="practice-badge">Interactief</span>
+        </div>
+        
+        <p id="practice-description" class="text-indigo-100 text-xs sm:text-sm leading-relaxed"></p>
+
+        <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/15 space-y-3">
+          <div class="flex items-center justify-between">
+            <span id="practice-target" class="text-lg sm:text-xl font-bold tracking-wide">...</span>
+            <button id="practice-sound-btn" onclick="speakTargetPhrase()" class="w-10 h-10 rounded-full bg-white text-indigo-600 flex items-center justify-center hover:scale-105 active:scale-95 transition shadow">
+              <i class="fa-solid fa-volume-high"></i>
+            </button>
+          </div>
+          <p id="practice-translation" class="text-xs text-indigo-200 italic">...</p>
+
+          <div id="mic-section" class="pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
+            <button id="mic-btn" onclick="toggleSpeechRecognition()" class="px-4 py-2 bg-white text-indigo-600 hover:bg-indigo-50 font-bold text-xs rounded-xl flex items-center space-x-2 transition shadow">
+              <i class="fa-solid fa-microphone"></i>
+              <span id="mic-label">Inspreken om te testen</span>
+            </button>
+            <div id="speech-feedback" class="text-xs font-semibold text-white"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Duolingo-stijl Interactieve Kennischeck -->
+      <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2.5">
+            <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-bold">✓</span>
+            <h3 class="font-bold text-base text-slate-900">Actieve Kennischeck (Directe Feedback)</h3>
+          </div>
+          <span class="text-xs text-slate-400 font-semibold" id="quiz-counter">Vraag 1 van 3</span>
+        </div>
+
+        <div class="space-y-4">
+          <p id="quiz-question-text" class="text-base font-semibold text-slate-800">Vraag laden...</p>
+          <div id="quiz-options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+          <div id="quiz-feedback-box" class="hidden rounded-2xl p-4 text-sm font-medium transition-all"></div>
+        </div>
+      </div>
+
+      <!-- OneDrive & iPad Worksheet Quick Link -->
+      <div class="bg-slate-100/80 rounded-3xl p-5 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-sky-500 text-white flex items-center justify-center text-lg">
+            <i class="fa-solid fa-file-pdf"></i>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-slate-900">iPad Schrijf- & Praktijkwerkblad (PDF)</h4>
+            <p class="text-xs text-slate-500">De printklare PDF met schrijfruimte staat klaar in jouw OneDrive.</p>
+          </div>
+        </div>
+        <div class="text-xs text-slate-600 font-mono bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm" id="onedrive-path-badge">
+          OneDrive/Persoonlijk/Grieks/
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modal: Grammatica / Code Diepgang -->
+  <div id="grammar-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-lightbulb text-amber-500"></i>
+          <h3 class="font-bold text-slate-900 text-base" id="modal-grammar-title">Regels & Diepgang</h3>
+        </div>
+        <button onclick="toggleGrammarModal()" class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-300">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="modal-grammar-content" class="p-6 overflow-y-auto space-y-4 text-sm text-slate-700 leading-relaxed"></div>
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <button onclick="toggleGrammarModal()" class="px-5 py-2 bg-indigo-600 text-white font-semibold text-xs rounded-xl hover:bg-indigo-700 transition">
+          Begrepen!
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Complete Dataset for Offline Standalone Access
+    const DATA = {
+      greek: {
+        title: "Nieuwgrieks",
+        badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
+        lessons: [
+          {
+            id: 1,
+            title: "Les 01: Het Griekse Alfabet (Το αλφάβητο)",
+            subtitle: "24 letters: 7 klinkers en 17 medeklinkers",
+            focus: "Herken alle 24 letters. De 'ie'-club (η, ι, υ), de twee o's (ο, ω) en de twee vormen van de sigma (σ begin/midden, ς einde).",
+            folder: "OneDrive/Persoonlijk/Grieks/Les_01_Het_Griekse_Alfabet.pdf",
+            vocab: [
+              { term: "αγάπη", translit: "agápi", meaning: "liefde" },
+              { term: "νερό", translit: "neró", meaning: "water" },
+              { term: "σπίτι", translit: "spíti", meaning: "huis" },
+              { term: "καφές", translit: "kafés", meaning: "koffie" }
+            ],
+            speech: { target: "Καλημέρα", sub: "kali-ME-ra — Goedemorgen" },
+            quiz: {
+              q: "Welke Griekse letters klinken in modern Grieks allemaal als 'ie' (in fiets)?",
+              options: ["α, ε, ο", "η, ι, υ", "ο, ω", "μ, ν, π"],
+              correct: 1,
+              rule: "Η (ita), Ι (iota) en Υ (ypsilon) klinken in modern Grieks exact hetzelfde: als de Nederlandse 'ie'."
+            },
+            grammarTitle: "De Klemtoon (Tónos) & De Sigma",
+            grammarHtml: `<p>1. De klemtoon (τόνος) staat op elke beklemtoonde klinker: <code>νερό</code> (water) vs <code>πότε</code> (wanneer).<br>2. De letter Sigma schrijf je als <strong>σ</strong> aan het begin of midden van een woord (<em>σπίτι</em>), maar als <strong>ς</strong> aan het einde (<em>Νίκος</em>).</p>`
+          },
+          {
+            id: 2,
+            title: "Les 02: Diftongen & Klankcombinaties",
+            subtitle: "De magie van μπ, ντ, γκ en αυ/ευ",
+            focus: "Grieks heeft geen enkele letter 'B' of 'D'. μπ maakt de b-klank, νt de d-klank, en γκ de g-klank.",
+            folder: "OneDrive/Persoonlijk/Grieks/Les_02_Diftongen_en_Klankcombinaties.pdf",
+            vocab: [
+              { term: "μπύρα", translit: "bíra", meaning: "bier (μπ = b)" },
+              { term: "ντομάτα", translit: "domáta", meaning: "tomaat (ντ = d)" },
+              { term: "ευχαριστώ", translit: "efcharistó", meaning: "dankjewel (ευ = ef)" }
+            ],
+            speech: { target: "Ευχαριστώ πολύ", sub: "ef-cha-ree-STO po-LI — Hartelijk dank" },
+            quiz: {
+              q: "Hoe spreek je het Griekse woord 'μπύρα' uit?",
+              options: ["m-pie-ra", "BIE-ra", "vie-ra", "pie-ra"],
+              correct: 1,
+              rule: "De combinatie μπ (mi-pi) wordt uitgesproken als een Nederlandse 'b' (zoals in bal)."
+            },
+            grammarTitle: "Medeklinker- en Klinkercombinaties",
+            grammarHtml: `<p>μπ = b • ντ = d • γκ/γγ = g/ng • ου = oe • αι = e • ει/οι = ie • αυ/ευ = af/ef (voor stemloze klank) of av/ev (voor klinkers/stemhebbend).</p>`
+          },
+          {
+            id: 3,
+            title: "Les 03: Begroetingen & Kennismaken",
+            subtitle: "Jezelf voorstellen en beleefd reageren",
+            focus: "Begroet mensen op elk moment van de dag en stel jezelf voor met 'Με λένε...' (Ik heet...).",
+            folder: "OneDrive/Persoonlijk/Grieks/Les_03_Kennismaken_en_Begroetingen.pdf",
+            vocab: [
+              { term: "Γεια σας", translit: "Ja sas", meaning: "Hallo / Dag (beleefd/meervoud)" },
+              { term: "Με λένε Thibaud", translit: "Me léne Thibaud", meaning: "Ik heet Thibaud" },
+              { term: "Χαίρω πολύ", translit: "Chéro polí", meaning: "Aangenaam kennis te maken" }
+            ],
+            speech: { target: "Γεια σας, με λένε Thibaud.", sub: "Ja sas, me lene Thibaud — Hallo, ik heet Thibaud." },
+            quiz: {
+              q: "Wat zeg je als je 's ochtends iemand formeel begroet?",
+              options: ["Καλησπέρα", "Καληνύχτα", "Καλημέρα σας", "Αντίο"],
+              correct: 2,
+              rule: "'Καλημέρα σας' (Goedemorgen u) is de beleefde ochtendgroet tot ongeveer 12:00-13:00 uur."
+            },
+            grammarTitle: "De Vormen van Begroeting",
+            grammarHtml: `<p>Γεια σου (informeel, tegen 1 persoon) vs Γεια σας (formeel/meervoud). Με λένε... betekent letterlijk 'ze noemen mij...'.</p>`
+          },
+          {
+            id: 4,
+            title: "Les 04: De Drie Geslachten & Lidwoorden (ο, η, το)",
+            subtitle: "Herkenning van uitgangen (-ος, -α/-η, -ο/-ι/-μα) en werkwoorden είμαι / έχω",
+            focus: "Elk zelfstandig naamwoord heeft een geslacht. Vrijwel alle mannelijke woorden eindigen op -ς in de nominatief! Leer zinnen bouwen met είμαι (zijn) en έχω (hebben).",
+            folder: "OneDrive/Persoonlijk/Grieks/Les_04_De_Drie_Geslachten_&_Lidwoorden_ο_η_το.pdf",
+            vocab: [
+              { term: "ο καφές", translit: "o kafés", meaning: "de koffie (mannelijk)" },
+              { term: "η ημέρα", translit: "i iméra", meaning: "de dag (vrouwelijk)" },
+              { term: "το νερό", translit: "to neró", meaning: "het water (onzijdig)" },
+              { term: "είμαι", translit: "íme", meaning: "ik ben" },
+              { term: "έχω", translit: "écho", meaning: "ik heb" }
+            ],
+            speech: { target: "Ο καφές είναι κρύος.", sub: "O kafés íne kríos — De koffie is koud." },
+            quiz: {
+              q: "Welk lidwoord hoort bij 'θάλασσα' (zee)?",
+              options: ["ο θάλασσα", "η θάλασσα", "το θάλασσα", "τον θάλασσα"],
+              correct: 1,
+              rule: "Woorden die eindigen op -α of -η zijn vrouwelijk en krijgen het lidwoord 'η'."
+            },
+            grammarTitle: "Geslachten en de werkwoorden είμαι / έχω",
+            grammarHtml: `<p><strong>Mannelijk (ο):</strong> -ος, -ας, -ης • <strong>Vrouwelijk (η):</strong> -α, -η • <strong>Onzijdig (το):</strong> -ο, -ι, -μα.<br><br><strong>είμαι:</strong> είμαι, είσαι, είναι, είμαστε, είστε, είναι.<br><strong>έχω:</strong> έχω, έχεις, έχει, έχουμε, έχετε, έχουν.</p>`
+          }
+        ]
+      },
+      french: {
+        title: "Français C1",
+        badgeColor: "bg-rose-50 text-rose-700 border-rose-200",
+        lessons: [
+          {
+            id: 1,
+            title: "Les 01: Stijlregisters & Tournures Idiomatiques Soutenues",
+            subtitle: "Perfectionnement C1/C2 : Du familier à l'élégance diplomatique",
+            focus: "Transformeer alledaagse zinnen naar hoogstaand niveau, beheers 5 essentiële uitdrukkingen en leer wanneer de subjonctif in relatieve bijzinnen een hypothetisch ideaalbeeld oproept.",
+            folder: "OneDrive/Persoonlijk/Frans/Les_01_Stijlregisters_&_Tournures_Idiomatiques_Majeures.pdf",
+            vocab: [
+              { term: "Avoir voix au chapitre", meaning: "Recht van spreken / legitimiteit hebben" },
+              { term: "Chercher midi à 14h", meaning: "Onnodig ingewikkeld maken" },
+              { term: "Faire long feu", meaning: "Mislukken / effect missen" },
+              { term: "Au demeurant", meaning: "Overigens / alles in aanmerking genomen" }
+            ],
+            speech: { target: "Il convient de ne point chercher midi à quatorze heures.", sub: "Het past om de situatie niet onnodig te compliceren." },
+            quiz: {
+              q: "Wat betekent de uitdrukking « Ce projet a fait long feu »?",
+              options: ["Het was een groot succes.", "Het project is mislukt / heeft geen doel getroffen.", "Het project heeft lang geduurd.", "Het project is uitgesteld."],
+              correct: 1,
+              rule: "Let op! 'Faire long feu' betekent historisch dat het kruit vlam vatte zonder kogelafvuur. Het betekent dus MISLUKKEN. ('Ne pas faire long feu' = heel kort duren)."
+            },
+            grammarTitle: "Subjonctif dans les relatives",
+            grammarHtml: `<p>• <em>« Je cherche un juriste qui <strong>connaît</strong> ce dossier »</em> (hij bestaat en is bekend ➔ indicatif).<br>• <em>« Je cherche un juriste qui <strong>connaisse</strong> ce dossier »</em> (hypothetische zoektocht naar een ideaal profiel ➔ subjonctif).</p>`
+          },
+          {
+            id: 2,
+            title: "Les 02: L'accord du Participe Passé des Verbes Pronominaux",
+            subtitle: "Règles rigoureuses pour une orthographe irréprochable",
+            focus: "Het lijdend voorwerp (COD) bepaalt het akkoord. Waarom schrijf je 'Elles se sont lavé les mains' zonder s, maar 'Elles se sont lavées' met s?",
+            folder: "OneDrive/Persoonlijk/Frans/00_LEERPLAN_EN_BRONNEN.pdf",
+            vocab: [
+              { term: "S'en falloir de peu", meaning: "Er weinig aan schelen" },
+              { term: "Battre en brèche", meaning: "Ondermijnen / aanvechten" },
+              { term: "Invariablement", meaning: "Zonder uitzondering" }
+            ],
+            speech: { target: "Elles se sont rendu compte de leur erreur.", sub: "Ze hebben zich hun vergissing gerealiseerd (rendu compte = onveranderlijk!)." },
+            quiz: {
+              q: "Kies de juiste spelling: « Les courriels qu'ils se sont _____ . »",
+              options: ["envoyé", "envoyés", "envoyée", "envoyer"],
+              correct: 1,
+              rule: "'Les courriels' is het lijdend voorwerp (COD) en staat VÓÓR het werkwoord ➔ accord au masculin pluriel : 'envoyés'."
+            },
+            grammarTitle: "De Gouden Regel van Pronominale Deelwoorden",
+            grammarHtml: `<p>Pas de regel van AVOIR toe: accordeer alleen als het lijdend voorwerp vóór het werkwoord staat. Verbes à COI (se parler, se plaire, se téléphoner, se succéder) accorderen NOOIT!</p>`
+          }
+        ]
+      },
+      solidity: {
+        title: "Solidity & Web3",
+        badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        lessons: [
+          {
+            id: 1,
+            title: "Les 01: Blockchain Fundamenten, EVM & Je Eerste Smart Contract",
+            subtitle: "20-25 min • Van State Machine naar SimpleStorage.sol",
+            focus: "De Ethereum Virtual Machine als wereldwijde computer, immutability, waarom state variables permanent in storage leven, en het verschil tussen gratis view functies en betaalde schrijfoperaties.",
+            folder: "OneDrive/Persoonlijk/Solidity/Les_01_Blockchain_Fundamenten_EVM_en_Eerste_Contract.pdf",
+            code: `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+contract SimpleStorage {
+    uint256 public myFavoriteNumber;
+
+    function setNumber(uint256 _newNumber) public {
+        myFavoriteNumber = _newNumber; // Kost GAS
+    }
+
+    function getNumber() public view returns (uint256) {
+        return myFavoriteNumber; // GRATIS (view)
+    }
+}`,
+            speech: { target: "pragma solidity ^0.8.20; contract SimpleStorage { }", sub: "Solidity syntax structuur" },
+            quiz: {
+              q: "Waarom kost de functie 'getNumber() public view' GEEN gas wanneer je die vanuit je wallet aanroept?",
+              options: [
+                "Omdat Solidity 0.8 alle transacties gratis maakt.",
+                "Omdat een 'view' functie alleen data leest van een lokale node en geen state wijzigt op de blockchain.",
+                "Omdat alleen de eigenaar van het contract kan lezen.",
+                "Omdat het contract nog niet op mainnet staat."
+              ],
+              correct: 1,
+              rule: "Functies met de 'view' of 'pure' modifier wijzigen de toestand van de blockchain niet. Een lokale node kan dit direct beantwoorden zonder consensus of minen."
+            },
+            grammarTitle: "EVM Architectuur & Gas Logica",
+            grammarHtml: `<p>1. <strong>Storage:</strong> Permanente data op de chain (duurste gas).<br>2. <strong>Memory:</strong> Tijdelijke data tijdens executie (goedkoop).<br>3. <strong>Calldata:</strong> Read-only functie-argumenten (goedkoopst).<br>4. <strong>Immutable:</strong> Zodra gedeployed op mainnet, is code onveranderlijk.</p>`
+          },
+          {
+            id: 2,
+            title: "Les 02: Datatypes, Mappings, Structs & Array Operations",
+            subtitle: "Gestructureerde data opslaan op de blockchain",
+            focus: "Hoe bouw je een adresboek of saldo-systeem met mapping(address => uint256) en custom Structs.",
+            folder: "OneDrive/Persoonlijk/Solidity/00_LEERPLAN_EN_BRONNEN.pdf",
+            code: `struct User {
+    string name;
+    uint256 balance;
+}
+mapping(address => User) public users;`,
+            speech: { target: "mapping(address => uint256) public balances;", sub: "Saldolijst mapping syntax" },
+            quiz: {
+              q: "Wat is de standaardwaarde van een niet-bestaande key in een mapping(address => uint256)?",
+              options: ["null", "undefined", "0", "revert error"],
+              correct: 2,
+              rule: "In Solidity bestaan null/undefined niet. Elk type heeft een default waarde: uint256 wordt 0, bool wordt false, address wordt 0x0."
+            },
+            grammarTitle: "Mappings vs Arrays in Solidity",
+            grammarHtml: `<p>Mappings hebben een $O(1)$ lookup tijd en kosten minder gas dan itereren door een array, maar je kunt niet itereren over keys tenzij je zelf een index-array bijhoudt.</p>`
+          }
+        ]
+      }
+    };
+
+    let currentTrack = 'greek';
+    let currentLessonIdx = 3; // Defaults to Les 04 for Greek
+
+    function selectTrack(track) {
+      currentTrack = track;
+      currentLessonIdx = 0;
+      if (track === 'greek') currentLessonIdx = 3; // Start at latest lesson 4
+
+      // Update Header Tab UI
+      ['greek', 'french', 'solidity'].forEach(t => {
+        const btn = document.getElementById(`track-${t}`);
+        if (t === track) {
+          btn.className = "px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 bg-white text-indigo-600 shadow-sm";
+        } else {
+          btn.className = "px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-slate-600 hover:text-slate-900";
+        }
+      });
+
+      renderLessonPills();
+      renderActiveLesson();
+    }
+
+    function renderLessonPills() {
+      const container = document.getElementById('lesson-pills-container');
+      container.innerHTML = '';
+      const lessons = DATA[currentTrack].lessons;
+
+      lessons.forEach((l, idx) => {
+        const btn = document.createElement('button');
+        const isActive = idx === currentLessonIdx;
+        btn.className = isActive 
+          ? "px-3 py-1 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm"
+          : "px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium border border-slate-200";
+        btn.textContent = `Les ${l.id}`;
+        btn.onclick = () => {
+          currentLessonIdx = idx;
+          renderLessonPills();
+          renderActiveLesson();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function renderActiveLesson() {
+      const trackData = DATA[currentTrack];
+      const lesson = trackData.lessons[currentLessonIdx];
+
+      // Badge & Header
+      const badge = document.getElementById('lesson-level-badge');
+      badge.textContent = `${trackData.title} • Les ${lesson.id}`;
+      badge.className = `px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${trackData.badgeColor}`;
+
+      document.getElementById('lesson-title').textContent = lesson.title;
+      document.getElementById('lesson-subtitle').textContent = lesson.subtitle;
+      document.getElementById('lesson-focus').textContent = lesson.focus;
+      document.getElementById('onedrive-path-badge').textContent = lesson.folder;
+
+      // Dynamic Content Box (Vocab or Code)
+      const box = document.getElementById('dynamic-content-box');
+      box.innerHTML = '';
+
+      if (lesson.vocab) {
+        const title = document.createElement('h4');
+        title.className = "text-xs font-bold uppercase tracking-wider text-slate-400 mb-2";
+        title.textContent = "Kernvocabulaire (Klik om uitspraak te horen):";
+        box.appendChild(title);
+
+        const vDiv = document.createElement('div');
+        vDiv.className = "flex flex-wrap gap-2";
+        lesson.vocab.forEach(v => {
+          const btn = document.createElement('button');
+          btn.className = "px-3 py-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 rounded-xl text-xs font-semibold flex items-center space-x-2 transition border border-slate-200";
+          btn.onclick = () => speak(v.term, currentTrack === 'greek' ? 'el-GR' : 'fr-FR');
+          btn.innerHTML = `
+            <i class="fa-solid fa-volume-low opacity-60"></i>
+            <span class="font-bold">${v.term}</span>
+            <span class="text-slate-400 font-normal">(${v.meaning})</span>
+          `;
+          vDiv.appendChild(btn);
+        });
+        box.appendChild(vDiv);
+      } else if (lesson.code) {
+        const title = document.createElement('h4');
+        title.className = "text-xs font-bold uppercase tracking-wider text-slate-400 mb-2";
+        title.textContent = "Smart Contract Code:";
+        box.appendChild(title);
+
+        const pre = document.createElement('pre');
+        pre.className = "bg-slate-900 text-emerald-400 p-4 rounded-2xl text-xs overflow-x-auto border border-slate-800 shadow-inner";
+        pre.textContent = lesson.code;
+        box.appendChild(pre);
+      }
+
+      // Practice card
+      if (currentTrack === 'solidity') {
+        document.getElementById('practice-card-title').textContent = "Solidity Syntax & Terminal Drill";
+        document.getElementById('practice-badge').textContent = "Remix / Terminal";
+        document.getElementById('practice-description').textContent = "Typ of lees deze essentiële contractdefinitie hardop:";
+        document.getElementById('mic-section').style.display = 'none';
+        document.getElementById('practice-sound-btn').style.display = 'none';
+      } else {
+        document.getElementById('practice-card-title').textContent = "Spreek- en Uitspraaktraining";
+        document.getElementById('practice-badge').textContent = "Spraakherkenning";
+        document.getElementById('practice-description').textContent = "Druk op het luidsprekertje om de zin te horen en spreek hem in via de microfoon:";
+        document.getElementById('mic-section').style.display = 'flex';
+        document.getElementById('practice-sound-btn').style.display = 'flex';
+      }
+
+      document.getElementById('practice-target').textContent = lesson.speech.target;
+      document.getElementById('practice-translation').textContent = lesson.speech.sub;
+      document.getElementById('speech-feedback').textContent = '';
+
+      // Grammar modal
+      document.getElementById('modal-grammar-title').textContent = lesson.grammarTitle;
+      document.getElementById('modal-grammar-content').innerHTML = lesson.grammarHtml;
+
+      // Quiz
+      renderQuiz(lesson.quiz);
+    }
+
+    function renderQuiz(quiz) {
+      document.getElementById('quiz-counter').textContent = `Actieve Toetsing`;
+      document.getElementById('quiz-question-text').textContent = quiz.q;
+
+      const feedbackBox = document.getElementById('quiz-feedback-box');
+      feedbackBox.className = "hidden rounded-2xl p-4 text-sm font-medium transition-all";
+      feedbackBox.innerHTML = '';
+
+      const container = document.getElementById('quiz-options-container');
+      container.innerHTML = '';
+
+      quiz.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3.5 rounded-2xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 text-slate-800 text-sm font-semibold transition flex items-center justify-between";
+        btn.innerHTML = `<span>${opt}</span> <i class="fa-regular fa-circle text-slate-300"></i>`;
+        btn.onclick = () => {
+          const all = container.querySelectorAll('button');
+          all.forEach(b => b.disabled = true);
+
+          if (idx === quiz.correct) {
+            btn.className = "w-full text-left p-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-emerald-900 text-sm font-bold flex items-center justify-between";
+            btn.querySelector('i').className = "fa-solid fa-circle-check text-emerald-600";
+            feedbackBox.className = "rounded-2xl p-4 text-sm bg-emerald-50 text-emerald-900 border border-emerald-200 block space-y-2";
+            feedbackBox.innerHTML = `
+              <div class="flex items-center space-x-2 font-bold text-emerald-800">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>Helemaal juist!</span>
+              </div>
+              <p class="text-xs text-emerald-800 leading-relaxed">${quiz.rule}</p>
+            `;
+          } else {
+            btn.className = "w-full text-left p-3.5 rounded-2xl border-2 border-rose-400 bg-rose-50 text-rose-900 text-sm font-semibold flex items-center justify-between";
+            btn.querySelector('i').className = "fa-solid fa-circle-xmark text-rose-600";
+            const correctBtn = all[quiz.correct];
+            correctBtn.className = "w-full text-left p-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-emerald-900 text-sm font-semibold flex items-center justify-between";
+
+            feedbackBox.className = "rounded-2xl p-4 text-sm bg-amber-50 text-amber-900 border border-amber-200 block space-y-2";
+            feedbackBox.innerHTML = `
+              <div class="flex items-center space-x-2 font-bold text-amber-800">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>Leerzaam moment:</span>
+              </div>
+              <p class="text-xs text-amber-800 leading-relaxed">${quiz.rule}</p>
+            `;
+          }
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function speak(text, lang) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function speakTargetPhrase() {
+      const lesson = DATA[currentTrack].lessons[currentLessonIdx];
+      const lang = currentTrack === 'greek' ? 'el-GR' : 'fr-FR';
+      speak(lesson.speech.target, lang);
+    }
+
+    let isRecording = false;
+    let recognition = null;
+
+    function toggleSpeechRecognition() {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) {
+        alert("Spraakherkenning vereist Safari of Chrome.");
+        return;
+      }
+      const micBtn = document.getElementById('mic-btn');
+      const micLabel = document.getElementById('mic-label');
+      const feedback = document.getElementById('speech-feedback');
+
+      if (isRecording) {
+        recognition.stop();
+        return;
+      }
+
+      recognition = new SpeechRec();
+      recognition.lang = currentTrack === 'greek' ? 'el-GR' : 'fr-FR';
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        isRecording = true;
+        micBtn.className = "px-4 py-2 bg-rose-500 text-white font-bold text-xs rounded-xl flex items-center space-x-2 transition shadow animate-pulse";
+        micLabel.textContent = "Luistert... spreek nu!";
+        feedback.textContent = "Aan het luisteren...";
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        const target = DATA[currentTrack].lessons[currentLessonIdx].speech.target;
+        feedback.innerHTML = `Gehoord: <em>"${transcript}"</em>`;
+      };
+
+      recognition.onerror = () => {
+        feedback.textContent = "Geen spraak waargenomen of permissie geweigerd.";
+      };
+
+      recognition.onend = () => {
+        isRecording = false;
+        micBtn.className = "px-4 py-2 bg-white text-indigo-600 hover:bg-indigo-50 font-bold text-xs rounded-xl flex items-center space-x-2 transition shadow";
+        micLabel.textContent = "Opnieuw inspreken";
+      };
+
+      recognition.start();
+    }
+
+    function toggleGrammarModal() {
+      document.getElementById('grammar-modal').classList.toggle('hidden');
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      selectTrack('greek');
+    });
+  </script>
+</body>
+</html>
