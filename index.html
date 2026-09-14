@@ -30,7 +30,12 @@
         </div>
         <div>
           <h1 class="text-lg font-bold tracking-tight text-slate-900 leading-tight">Polyglot Studio</h1>
-          <p class="text-xs text-slate-500 font-medium">Thibaud's Centraal Leersysteem</p>
+          <p class="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+            <span>Thibaud's Taalacademie</span>
+            <span class="inline-flex items-center gap-1 text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.2 rounded-full font-bold border border-emerald-200">
+              <i class="fa-solid fa-sparkles text-emerald-500"></i> Studio Neural TTS
+            </span>
+          </p>
         </div>
       </div>
 
@@ -98,13 +103,13 @@
       </div>
 
       <!-- Spreek- / Praktijkmodule -->
-      <div id="practice-module-card" class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-6 text-white shadow-lg shadow-indigo-100 space-y-4">
+      <div id="practice-module-card" class="bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 rounded-3xl p-6 text-white shadow-lg shadow-indigo-100 space-y-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-2.5">
             <span class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm" id="practice-icon"><i class="fa-solid fa-microphone"></i></span>
             <h3 class="font-bold text-base" id="practice-card-title">Spreek- en Uitspraaktraining</h3>
           </div>
-          <span class="text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium" id="practice-badge">Interactief</span>
+          <span class="text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium" id="practice-badge">Studio Audio</span>
         </div>
         
         <p id="practice-description" class="text-indigo-100 text-xs sm:text-sm leading-relaxed"></p>
@@ -112,8 +117,8 @@
         <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/15 space-y-3">
           <div class="flex items-center justify-between">
             <span id="practice-target" class="text-lg sm:text-xl font-bold tracking-wide">...</span>
-            <button id="practice-sound-btn" onclick="speakTargetPhrase()" class="w-10 h-10 rounded-full bg-white text-indigo-600 flex items-center justify-center hover:scale-105 active:scale-95 transition shadow">
-              <i class="fa-solid fa-volume-high"></i>
+            <button id="practice-sound-btn" onclick="speakTargetPhrase()" class="w-11 h-11 rounded-full bg-white text-indigo-600 flex items-center justify-center hover:scale-105 active:scale-95 transition shadow-md">
+              <i class="fa-solid fa-volume-high text-lg"></i>
             </button>
           </div>
           <p id="practice-translation" class="text-xs text-indigo-200 italic">...</p>
@@ -135,7 +140,7 @@
             <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-bold">✓</span>
             <h3 class="font-bold text-base text-slate-900">Actieve Kennischeck (Directe Feedback)</h3>
           </div>
-          <span class="text-xs text-slate-400 font-semibold" id="quiz-counter">Vraag 1 van 3</span>
+          <span class="text-xs text-slate-400 font-semibold" id="quiz-counter">Actieve Toetsing</span>
         </div>
 
         <div class="space-y-4">
@@ -145,7 +150,7 @@
         </div>
       </div>
 
-      <!-- OneDrive & iPad Worksheet Quick Link -->
+      <!-- Direct PDF Quick Link -->
       <div class="bg-slate-100/80 rounded-3xl p-5 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 rounded-xl bg-sky-500 text-white flex items-center justify-center text-lg">
@@ -153,12 +158,13 @@
           </div>
           <div>
             <h4 class="text-sm font-bold text-slate-900">iPad Schrijf- & Praktijkwerkblad (PDF)</h4>
-            <p class="text-xs text-slate-500">De printklare PDF met schrijfruimte staat klaar in jouw OneDrive.</p>
+            <p class="text-xs text-slate-500">Open direct de printklare PDF met schrijfruimte voor Apple Pencil.</p>
           </div>
         </div>
-        <div class="text-xs text-slate-600 font-mono bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm" id="onedrive-path-badge">
-          OneDrive/Persoonlijk/Grieks/
-        </div>
+        <a id="onedrive-pdf-link" href="#" target="_blank" class="px-4 py-2 bg-white text-indigo-600 hover:text-indigo-700 font-bold text-xs rounded-xl border border-slate-200 shadow-sm flex items-center space-x-2">
+          <span>Open PDF</span>
+          <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+        </a>
       </div>
 
     </div>
@@ -186,7 +192,8 @@
   </div>
 
   <script>
-    // Complete Dataset for Offline Standalone Access
+    const AUDIO_BASE_URL = "https://thibaudverschueren.github.io/polyglot-studio/audio/";
+
     const DATA = {
       greek: {
         title: "Nieuwgrieks",
@@ -197,14 +204,14 @@
             title: "Les 01: Het Griekse Alfabet (Το αλφάβητο)",
             subtitle: "24 letters: 7 klinkers en 17 medeklinkers",
             focus: "Herken alle 24 letters. De 'ie'-club (η, ι, υ), de twee o's (ο, ω) en de twee vormen van de sigma (σ begin/midden, ς einde).",
-            folder: "OneDrive/Persoonlijk/Grieks/Les_01_Het_Griekse_Alfabet.pdf",
+            pdfUrl: "https://thibaudverschueren.github.io/polyglot-studio/pdfs/Les_01_Het_Griekse_Alfabet.pdf",
             vocab: [
-              { term: "αγάπη", translit: "agápi", meaning: "liefde" },
-              { term: "νερό", translit: "neró", meaning: "water" },
-              { term: "σπίτι", translit: "spíti", meaning: "huis" },
-              { term: "καφές", translit: "kafés", meaning: "koffie" }
+              { term: "αγάπη", translit: "agápi", meaning: "liefde", audio: "greek_vocab_agapi.mp3" },
+              { term: "νερό", translit: "neró", meaning: "water", audio: "greek_vocab_nero.mp3" },
+              { term: "σπίτι", translit: "spíti", meaning: "huis", audio: "greek_vocab_spiti.mp3" },
+              { term: "καφές", translit: "kafés", meaning: "koffie", audio: "greek_vocab_kafes.mp3" }
             ],
-            speech: { target: "Καλημέρα", sub: "kali-ME-ra — Goedemorgen" },
+            speech: { target: "Καλημέρα", sub: "kali-ME-ra — Goedemorgen", audio: "greek_speech_01.mp3" },
             quiz: {
               q: "Welke Griekse letters klinken in modern Grieks allemaal als 'ie' (in fiets)?",
               options: ["α, ε, ο", "η, ι, υ", "ο, ω", "μ, ν, π"],
@@ -219,13 +226,13 @@
             title: "Les 02: Diftongen & Klankcombinaties",
             subtitle: "De magie van μπ, ντ, γκ en αυ/ευ",
             focus: "Grieks heeft geen enkele letter 'B' of 'D'. μπ maakt de b-klank, νt de d-klank, en γκ de g-klank.",
-            folder: "OneDrive/Persoonlijk/Grieks/Les_02_Diftongen_en_Klankcombinaties.pdf",
+            pdfUrl: "https://thibaudverschueren.github.io/polyglot-studio/pdfs/Les_02_Diftongen_en_Klankcombinaties.pdf",
             vocab: [
-              { term: "μπύρα", translit: "bíra", meaning: "bier (μπ = b)" },
-              { term: "ντομάτα", translit: "domáta", meaning: "tomaat (ντ = d)" },
-              { term: "ευχαριστώ", translit: "efcharistó", meaning: "dankjewel (ευ = ef)" }
+              { term: "μπύρα", translit: "bíra", meaning: "bier (μπ = b)", audio: "greek_vocab_bira.mp3" },
+              { term: "ντομάτα", translit: "domáta", meaning: "tomaat (ντ = d)", audio: "greek_vocab_domata.mp3" },
+              { term: "ευχαριστώ", translit: "efcharistó", meaning: "dankjewel (ευ = ef)", audio: "greek_vocab_efcharisto.mp3" }
             ],
-            speech: { target: "Ευχαριστώ πολύ", sub: "ef-cha-ree-STO po-LI — Hartelijk dank" },
+            speech: { target: "Ευχαριστώ πολύ", sub: "ef-cha-ree-STO po-LI — Hartelijk dank", audio: "greek_speech_02.mp3" },
             quiz: {
               q: "Hoe spreek je het Griekse woord 'μπύρα' uit?",
               options: ["m-pie-ra", "BIE-ra", "vie-ra", "pie-ra"],
@@ -240,13 +247,13 @@
             title: "Les 03: Begroetingen & Kennismaken",
             subtitle: "Jezelf voorstellen en beleefd reageren",
             focus: "Begroet mensen op elk moment van de dag en stel jezelf voor met 'Με λένε...' (Ik heet...).",
-            folder: "OneDrive/Persoonlijk/Grieks/Les_03_Kennismaken_en_Begroetingen.pdf",
+            pdfUrl: "https://thibaudverschueren.github.io/polyglot-studio/pdfs/Les_03_Kennismaken_en_Begroetingen.pdf",
             vocab: [
-              { term: "Γεια σας", translit: "Ja sas", meaning: "Hallo / Dag (beleefd/meervoud)" },
-              { term: "Με λένε Thibaud", translit: "Me léne Thibaud", meaning: "Ik heet Thibaud" },
-              { term: "Χαίρω πολύ", translit: "Chéro polí", meaning: "Aangenaam kennis te maken" }
+              { term: "Γεια σας", translit: "Ja sas", meaning: "Hallo / Dag (beleefd/meervoud)", audio: "greek_vocab_geia_sas.mp3" },
+              { term: "Με λένε Thibaud", translit: "Me léne Thibaud", meaning: "Ik heet Thibaud", audio: "greek_vocab_me_lene.mp3" },
+              { term: "Χαίρω πολύ", translit: "Chéro polí", meaning: "Aangenaam kennis te maken", audio: "greek_vocab_chairo_poly.mp3" }
             ],
-            speech: { target: "Γεια σας, με λένε Thibaud.", sub: "Ja sas, me lene Thibaud — Hallo, ik heet Thibaud." },
+            speech: { target: "Γεια σας, με λένε Thibaud.", sub: "Ja sas, me lene Thibaud — Hallo, ik heet Thibaud.", audio: "greek_speech_03.mp3" },
             quiz: {
               q: "Wat zeg je als je 's ochtends iemand formeel begroet?",
               options: ["Καλησπέρα", "Καληνύχτα", "Καλημέρα σας", "Αντίο"],
@@ -261,15 +268,15 @@
             title: "Les 04: De Drie Geslachten & Lidwoorden (ο, η, το)",
             subtitle: "Herkenning van uitgangen (-ος, -α/-η, -ο/-ι/-μα) en werkwoorden είμαι / έχω",
             focus: "Elk zelfstandig naamwoord heeft een geslacht. Vrijwel alle mannelijke woorden eindigen op -ς in de nominatief! Leer zinnen bouwen met είμαι (zijn) en έχω (hebben).",
-            folder: "OneDrive/Persoonlijk/Grieks/Les_04_De_Drie_Geslachten_&_Lidwoorden_ο_η_το.pdf",
+            pdfUrl: "https://thibaudverschueren.github.io/polyglot-studio/pdfs/grieks_les_04.pdf",
             vocab: [
-              { term: "ο καφές", translit: "o kafés", meaning: "de koffie (mannelijk)" },
-              { term: "η ημέρα", translit: "i iméra", meaning: "de dag (vrouwelijk)" },
-              { term: "το νερό", translit: "to neró", meaning: "het water (onzijdig)" },
-              { term: "είμαι", translit: "íme", meaning: "ik ben" },
-              { term: "έχω", translit: "écho", meaning: "ik heb" }
+              { term: "ο καφές", translit: "o kafés", meaning: "de koffie (mannelijk)", audio: "greek_vocab_o_kafes.mp3" },
+              { term: "η ημέρα", translit: "i iméra", meaning: "de dag (vrouwelijk)", audio: "greek_vocab_i_imera.mp3" },
+              { term: "το νερό", translit: "to neró", meaning: "het water (onzijdig)", audio: "greek_vocab_to_nero.mp3" },
+              { term: "είμαι", translit: "íme", meaning: "ik ben", audio: "greek_vocab_eimai.mp3" },
+              { term: "έχω", translit: "écho", meaning: "ik heb", audio: "greek_vocab_echo.mp3" }
             ],
-            speech: { target: "Ο καφές είναι κρύος.", sub: "O kafés íne kríos — De koffie is koud." },
+            speech: { target: "Ο καφές είναι κρύος.", sub: "O kafés íne kríos — De koffie is koud.", audio: "greek_speech_04.mp3" },
             quiz: {
               q: "Welk lidwoord hoort bij 'θάλασσα' (zee)?",
               options: ["ο θάλασσα", "η θάλασσα", "το θάλασσα", "τον θάλασσα"],
@@ -290,14 +297,15 @@
             title: "Les 01: Stijlregisters & Tournures Idiomatiques Soutenues",
             subtitle: "Perfectionnement C1/C2 : Du familier à l'élégance diplomatique",
             focus: "Transformeer alledaagse zinnen naar hoogstaand niveau, beheers 5 essentiële uitdrukkingen en leer wanneer de subjonctif in relatieve bijzinnen een hypothetisch ideaalbeeld oproept.",
-            folder: "OneDrive/Persoonlijk/Frans/Les_01_Stijlregisters_&_Tournures_Idiomatiques_Majeures.pdf",
+            pdfUrl: "https://thibaudverschueren.github.io/polyglot-studio/pdfs/frans_les_01.pdf",
             vocab: [
-              { term: "Avoir voix au chapitre", meaning: "Recht van spreken / legitimiteit hebben" },
-              { term: "Chercher midi à 14h", meaning: "Onnodig ingewikkeld maken" },
-              { term: "Faire long feu", meaning: "Mislukken / effect missen" },
-              { term: "Au demeurant", meaning: "Overigens / alles in aanmerking genomen" }
+              { term: "Avoir voix au chapitre", meaning: "Recht van spreken / legitimiteit", audio: "french_vocab_voix_au_chapitre.mp3" },
+              { term: "Chercher midi à 14h", meaning: "Onnodig ingewikkeld maken", audio: "french_vocab_midi_14h.mp3" },
+              { term: "Faire long feu", meaning: "Mislukken / effect missen", audio: "french_vocab_faire_long_feu.mp3" },
+              { term: "Au demeurant", meaning: "Overigens / alles in aanmerking genomen", audio: "french_vocab_au_demeurant.mp3" },
+              { term: "Péremptoire", meaning: "Beslissend / categorisch", audio: "french_vocab_peremptoire.mp3" }
             ],
-            speech: { target: "Il convient de ne point chercher midi à quatorze heures.", sub: "Het past om de situatie niet onnodig te compliceren." },
+            speech: { target: "Il convient de ne point chercher midi à quatorze heures.", sub: "Het past om de situatie niet onnodig te compliceren.", audio: "french_speech_01.mp3" },
             quiz: {
               q: "Wat betekent de uitdrukking « Ce projet a fait long feu »?",
               options: ["Het was een groot succes.", "Het project is mislukt / heeft geen doel getroffen.", "Het project heeft lang geduurd.", "Het project is uitgesteld."],
@@ -312,13 +320,13 @@
             title: "Les 02: L'accord du Participe Passé des Verbes Pronominaux",
             subtitle: "Règles rigoureuses pour une orthographe irréprochable",
             focus: "Het lijdend voorwerp (COD) bepaalt het akkoord. Waarom schrijf je 'Elles se sont lavé les mains' zonder s, maar 'Elles se sont lavées' met s?",
-            folder: "OneDrive/Persoonlijk/Frans/00_LEERPLAN_EN_BRONNEN.pdf",
+            pdfUrl: "https://thibaudverschueren.github.io/polyglot-studio/pdfs/00_LEERPLAN_EN_BRONNEN.pdf",
             vocab: [
-              { term: "S'en falloir de peu", meaning: "Er weinig aan schelen" },
-              { term: "Battre en brèche", meaning: "Ondermijnen / aanvechten" },
-              { term: "Invariablement", meaning: "Zonder uitzondering" }
+              { term: "S'en falloir de peu", meaning: "Er weinig aan schelen", audio: "french_vocab_falloir_de_peu.mp3" },
+              { term: "Battre en brèche", meaning: "Ondermijnen / aanvechten", audio: "french_vocab_battre_en_breche.mp3" },
+              { term: "Invariablement", meaning: "Zonder uitzondering", audio: "french_vocab_invariablement.mp3" }
             ],
-            speech: { target: "Elles se sont rendu compte de leur erreur.", sub: "Ze hebben zich hun vergissing gerealiseerd (rendu compte = onveranderlijk!)." },
+            speech: { target: "Elles se sont rendu compte de leur erreur.", sub: "Ze hebben zich hun vergissing gerealiseerd (rendu compte = onveranderlijk!).", audio: "french_speech_02.mp3" },
             quiz: {
               q: "Kies de juiste spelling: « Les courriels qu'ils se sont _____ . »",
               options: ["envoyé", "envoyés", "envoyée", "envoyer"],
@@ -339,7 +347,7 @@
             title: "Les 01: Blockchain Fundamenten, EVM & Je Eerste Smart Contract",
             subtitle: "20-25 min • Van State Machine naar SimpleStorage.sol",
             focus: "De Ethereum Virtual Machine als wereldwijde computer, immutability, waarom state variables permanent in storage leven, en het verschil tussen gratis view functies en betaalde schrijfoperaties.",
-            folder: "OneDrive/Persoonlijk/Solidity/Les_01_Blockchain_Fundamenten_EVM_en_Eerste_Contract.pdf",
+            pdfUrl: "https://thibaudverschueren.github.io/polyglot-studio/pdfs/solidity_les_01.pdf",
             code: `// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
@@ -368,27 +376,6 @@ contract SimpleStorage {
             },
             grammarTitle: "EVM Architectuur & Gas Logica",
             grammarHtml: `<p>1. <strong>Storage:</strong> Permanente data op de chain (duurste gas).<br>2. <strong>Memory:</strong> Tijdelijke data tijdens executie (goedkoop).<br>3. <strong>Calldata:</strong> Read-only functie-argumenten (goedkoopst).<br>4. <strong>Immutable:</strong> Zodra gedeployed op mainnet, is code onveranderlijk.</p>`
-          },
-          {
-            id: 2,
-            title: "Les 02: Datatypes, Mappings, Structs & Array Operations",
-            subtitle: "Gestructureerde data opslaan op de blockchain",
-            focus: "Hoe bouw je een adresboek of saldo-systeem met mapping(address => uint256) en custom Structs.",
-            folder: "OneDrive/Persoonlijk/Solidity/00_LEERPLAN_EN_BRONNEN.pdf",
-            code: `struct User {
-    string name;
-    uint256 balance;
-}
-mapping(address => User) public users;`,
-            speech: { target: "mapping(address => uint256) public balances;", sub: "Saldolijst mapping syntax" },
-            quiz: {
-              q: "Wat is de standaardwaarde van een niet-bestaande key in een mapping(address => uint256)?",
-              options: ["null", "undefined", "0", "revert error"],
-              correct: 2,
-              rule: "In Solidity bestaan null/undefined niet. Elk type heeft een default waarde: uint256 wordt 0, bool wordt false, address wordt 0x0."
-            },
-            grammarTitle: "Mappings vs Arrays in Solidity",
-            grammarHtml: `<p>Mappings hebben een $O(1)$ lookup tijd en kosten minder gas dan itereren door een array, maar je kunt niet itereren over keys tenzij je zelf een index-array bijhoudt.</p>`
           }
         ]
       }
@@ -396,13 +383,49 @@ mapping(address => User) public users;`,
 
     let currentTrack = 'greek';
     let currentLessonIdx = 3; // Defaults to Les 04 for Greek
+    let currentAudio = null;
+
+    function playAudioOrTTS(audioFile, fallbackText, lang) {
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      }
+
+      if (audioFile) {
+        currentAudio = new Audio(AUDIO_BASE_URL + audioFile);
+        currentAudio.play().catch(err => {
+          console.warn("Audio file playback fallback to neural TTS:", err);
+          speakNeuralFallback(fallbackText, lang);
+        });
+      } else {
+        speakNeuralFallback(fallbackText, lang);
+      }
+    }
+
+    function speakNeuralFallback(text, lang) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.rate = 0.92;
+
+        // Try to pick Siri / Enhanced / Premium natural voices
+        const voices = window.speechSynthesis.getVoices();
+        const bestVoice = voices.find(v => v.lang.startsWith(lang.split('-')[0]) && 
+          (v.name.includes("Siri") || v.name.includes("Enhanced") || v.name.includes("Premium") || v.name.includes("Natural")));
+        if (bestVoice) {
+          utterance.voice = bestVoice;
+        }
+
+        window.speechSynthesis.speak(utterance);
+      }
+    }
 
     function selectTrack(track) {
       currentTrack = track;
       currentLessonIdx = 0;
-      if (track === 'greek') currentLessonIdx = 3; // Start at latest lesson 4
+      if (track === 'greek') currentLessonIdx = 3;
 
-      // Update Header Tab UI
       ['greek', 'french', 'solidity'].forEach(t => {
         const btn = document.getElementById(`track-${t}`);
         if (t === track) {
@@ -441,7 +464,6 @@ mapping(address => User) public users;`,
       const trackData = DATA[currentTrack];
       const lesson = trackData.lessons[currentLessonIdx];
 
-      // Badge & Header
       const badge = document.getElementById('lesson-level-badge');
       badge.textContent = `${trackData.title} • Les ${lesson.id}`;
       badge.className = `px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${trackData.badgeColor}`;
@@ -449,26 +471,25 @@ mapping(address => User) public users;`,
       document.getElementById('lesson-title').textContent = lesson.title;
       document.getElementById('lesson-subtitle').textContent = lesson.subtitle;
       document.getElementById('lesson-focus').textContent = lesson.focus;
-      document.getElementById('onedrive-path-badge').textContent = lesson.folder;
+      document.getElementById('onedrive-pdf-link').href = lesson.pdfUrl;
 
-      // Dynamic Content Box (Vocab or Code)
       const box = document.getElementById('dynamic-content-box');
       box.innerHTML = '';
 
       if (lesson.vocab) {
         const title = document.createElement('h4');
-        title.className = "text-xs font-bold uppercase tracking-wider text-slate-400 mb-2";
-        title.textContent = "Kernvocabulaire (Klik om uitspraak te horen):";
+        title.className = "text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5";
+        title.innerHTML = `<span>Kernvocabulaire (Tik om studiogeluid te horen):</span> <span class="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-bold">Studio Audio</span>`;
         box.appendChild(title);
 
         const vDiv = document.createElement('div');
         vDiv.className = "flex flex-wrap gap-2";
         lesson.vocab.forEach(v => {
           const btn = document.createElement('button');
-          btn.className = "px-3 py-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 rounded-xl text-xs font-semibold flex items-center space-x-2 transition border border-slate-200";
-          btn.onclick = () => speak(v.term, currentTrack === 'greek' ? 'el-GR' : 'fr-FR');
+          btn.className = "px-3 py-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 rounded-xl text-xs font-semibold flex items-center space-x-2 transition border border-slate-200 active:scale-95";
+          btn.onclick = () => playAudioOrTTS(v.audio, v.term, currentTrack === 'greek' ? 'el-GR' : 'fr-FR');
           btn.innerHTML = `
-            <i class="fa-solid fa-volume-low opacity-60"></i>
+            <i class="fa-solid fa-volume-high text-indigo-500 opacity-70"></i>
             <span class="font-bold">${v.term}</span>
             <span class="text-slate-400 font-normal">(${v.meaning})</span>
           `;
@@ -487,7 +508,6 @@ mapping(address => User) public users;`,
         box.appendChild(pre);
       }
 
-      // Practice card
       if (currentTrack === 'solidity') {
         document.getElementById('practice-card-title').textContent = "Solidity Syntax & Terminal Drill";
         document.getElementById('practice-badge').textContent = "Remix / Terminal";
@@ -496,8 +516,8 @@ mapping(address => User) public users;`,
         document.getElementById('practice-sound-btn').style.display = 'none';
       } else {
         document.getElementById('practice-card-title').textContent = "Spreek- en Uitspraaktraining";
-        document.getElementById('practice-badge').textContent = "Spraakherkenning";
-        document.getElementById('practice-description').textContent = "Druk op het luidsprekertje om de zin te horen en spreek hem in via de microfoon:";
+        document.getElementById('practice-badge').textContent = "Studio Audio";
+        document.getElementById('practice-description').textContent = "Tik op de luidspreker om de natuurlijke uitspraak te horen en spreek in via de microfoon:";
         document.getElementById('mic-section').style.display = 'flex';
         document.getElementById('practice-sound-btn').style.display = 'flex';
       }
@@ -506,11 +526,9 @@ mapping(address => User) public users;`,
       document.getElementById('practice-translation').textContent = lesson.speech.sub;
       document.getElementById('speech-feedback').textContent = '';
 
-      // Grammar modal
       document.getElementById('modal-grammar-title').textContent = lesson.grammarTitle;
       document.getElementById('modal-grammar-content').innerHTML = lesson.grammarHtml;
 
-      // Quiz
       renderQuiz(lesson.quiz);
     }
 
@@ -564,20 +582,10 @@ mapping(address => User) public users;`,
       });
     }
 
-    function speak(text, lang) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = lang;
-        utterance.rate = 0.9;
-        window.speechSynthesis.speak(utterance);
-      }
-    }
-
     function speakTargetPhrase() {
       const lesson = DATA[currentTrack].lessons[currentLessonIdx];
       const lang = currentTrack === 'greek' ? 'el-GR' : 'fr-FR';
-      speak(lesson.speech.target, lang);
+      playAudioOrTTS(lesson.speech.audio, lesson.speech.target, lang);
     }
 
     let isRecording = false;
@@ -611,7 +619,6 @@ mapping(address => User) public users;`,
 
       recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
-        const target = DATA[currentTrack].lessons[currentLessonIdx].speech.target;
         feedback.innerHTML = `Gehoord: <em>"${transcript}"</em>`;
       };
 
@@ -632,7 +639,6 @@ mapping(address => User) public users;`,
       document.getElementById('grammar-modal').classList.toggle('hidden');
     }
 
-    // Initialize
     document.addEventListener('DOMContentLoaded', () => {
       selectTrack('greek');
     });
