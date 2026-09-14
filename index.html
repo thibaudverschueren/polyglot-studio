@@ -1,390 +1,1630 @@
 <!DOCTYPE html>
-<html lang="nl" class="h-full bg-slate-50 text-slate-900">
+<html lang="nl" class="h-full bg-slate-100 text-slate-900">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Polyglot Studio — Centraal Leersysteem</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Polyglot">
+  <meta name="apple-mobile-web-app-title" content="Polyglot Studio">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <style>
     body {
       -webkit-tap-highlight-color: transparent;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
-    .safe-top { padding-top: max(env(safe-area-inset-top), 16px); }
+    .safe-top { padding-top: max(env(safe-area-inset-top), 14px); }
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 24px); }
-    pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    
+    /* Handwriting Canvas Styles */
+    .pencil-canvas {
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: crosshair;
+    }
+    
+    /* Custom Scrollbar for Lessons */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="h-full flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+<body class="min-h-full flex flex-col antialiased selection:bg-indigo-500 selection:text-white pb-12">
 
   <!-- Header -->
-  <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 safe-top">
-    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+  <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 safe-top shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-md">
           <i class="fa-solid fa-graduation-cap"></i>
         </div>
         <div>
-          <h1 class="text-lg font-bold tracking-tight text-slate-900 leading-tight">Polyglot Studio</h1>
-          <p class="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-            <span>Thibaud's Taalacademie</span>
-            <span class="inline-flex items-center gap-1 text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.2 rounded-full font-bold border border-emerald-200">
-              <i class="fa-solid fa-sparkles text-emerald-500"></i> Studio Neural TTS
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 leading-tight">Polyglot Studio</h1>
+            <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-emerald-200">
+              <i class="fa-solid fa-microphone-lines text-emerald-600"></i> Studio AI
             </span>
-          </p>
+          </div>
+          <p class="text-xs text-slate-500 font-medium">Thibaud's Taal- & Techacademie</p>
         </div>
       </div>
 
-      <!-- Track Switcher -->
-      <div class="flex bg-slate-100 p-1 rounded-xl text-xs sm:text-sm font-semibold border border-slate-200">
-        <button id="track-greek" onclick="selectTrack('greek')" class="px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 bg-white text-indigo-600 shadow-sm">
+      <!-- Controls & Free Mode -->
+      <div class="flex items-center space-x-2">
+        <button id="btn-mode-toggle" onclick="toggleFreeMode()" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center space-x-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-300" title="Vrij leren of toetsvergrendeling">
+          <i id="mode-icon" class="fa-solid fa-lock text-indigo-600"></i>
+          <span id="mode-text" class="hidden sm:inline">Toets-vergrendeling</span>
+        </button>
+
+        <button onclick="resetAllProgress()" class="p-2 text-slate-400 hover:text-rose-600 transition text-sm rounded-lg hover:bg-rose-50" title="Voortgang resetten">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Track Selector Tabs -->
+    <div class="max-w-4xl mx-auto px-4 pt-1 pb-2 flex items-center justify-between gap-2">
+      <div class="grid grid-cols-3 gap-1.5 w-full bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs sm:text-sm font-semibold">
+        <button id="track-greek" onclick="selectTrack('greek')" class="py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5">
           <span>🇬🇷</span>
-          <span class="hidden sm:inline">Grieks</span>
+          <span>Grieks</span>
         </button>
-        <button id="track-french" onclick="selectTrack('french')" class="px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-slate-600 hover:text-slate-900">
+        <button id="track-french" onclick="selectTrack('french')" class="py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5">
           <span>🇫🇷</span>
-          <span class="hidden sm:inline">Frans</span>
+          <span>Frans</span>
         </button>
-        <button id="track-solidity" onclick="selectTrack('solidity')" class="px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-slate-600 hover:text-slate-900">
+        <button id="track-solidity" onclick="selectTrack('solidity')" class="py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5">
           <span>⛓️</span>
-          <span class="hidden sm:inline">Solidity</span>
+          <span>Solidity</span>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Main Content -->
-  <main class="flex-1 overflow-y-auto px-4 py-6 safe-bottom">
-    <div class="max-w-4xl mx-auto space-y-6">
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform -translate-y-12 opacity-0 pointer-events-none max-w-md w-[90%] p-3.5 rounded-2xl shadow-xl border text-xs sm:text-sm font-medium flex items-center space-x-2.5">
+    <i id="toast-icon" class="fa-solid fa-circle-info text-base"></i>
+    <span id="toast-msg">Melding</span>
+  </div>
 
-      <!-- Lesson Navigation / Inhalen Stepper -->
-      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="flex items-center space-x-2">
-          <i class="fa-solid fa-layer-group text-indigo-500 text-sm"></i>
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-600">Lessenoverzicht & Inhalen:</span>
-        </div>
-        <div id="lesson-pills-container" class="flex flex-wrap gap-2"></div>
+  <!-- Lesson Navigation Carousel -->
+  <section class="bg-white border-b border-slate-200 py-3 shadow-xs">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+          <i class="fa-solid fa-list-check text-indigo-500"></i> Lessenoverzicht & Voortgang
+        </span>
+        <span id="track-progress-pill" class="text-[11px] font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full border border-slate-200">
+          0 / 0 Voltooid
+        </span>
       </div>
-
-      <!-- Active Lesson Main Card -->
-      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm relative overflow-hidden space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-5">
-          <div>
-            <div class="flex items-center space-x-2">
-              <span id="lesson-level-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200"></span>
-              <span class="text-xs text-slate-400 font-medium flex items-center gap-1">
-                <i class="fa-regular fa-clock"></i> 20-30 min
-              </span>
-            </div>
-            <h2 id="lesson-title" class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">Laden...</h2>
-            <p id="lesson-subtitle" class="text-xs sm:text-sm text-slate-500 font-medium italic mt-0.5"></p>
-          </div>
-
-          <div class="flex items-center space-x-2">
-            <button onclick="toggleGrammarModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center space-x-2 transition border border-slate-200">
-              <i class="fa-solid fa-book-bookmark text-indigo-500"></i>
-              <span>Grammatica & Uitleg</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Concept Body -->
-        <div class="space-y-3">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Concept van de Les:</h3>
-          <p id="lesson-focus" class="text-sm sm:text-base text-slate-700 leading-relaxed"></p>
-        </div>
-
-        <!-- Key Vocabulary / Code Snippet Container -->
-        <div id="dynamic-content-box" class="pt-2"></div>
+      <div id="lesson-carousel" class="flex space-x-2.5 overflow-x-auto no-scrollbar pb-1 pt-0.5">
+        <!-- Injected via JavaScript -->
       </div>
+    </div>
+  </section>
 
-      <!-- Spreek- / Praktijkmodule -->
-      <div id="practice-module-card" class="bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 rounded-3xl p-6 text-white shadow-lg shadow-indigo-100 space-y-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-2.5">
-            <span class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm" id="practice-icon"><i class="fa-solid fa-microphone"></i></span>
-            <h3 class="font-bold text-base" id="practice-card-title">Spreek- en Uitspraaktraining</h3>
-          </div>
-          <span class="text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium" id="practice-badge">Studio Audio</span>
+  <!-- Main Lesson Container -->
+  <main class="max-w-4xl mx-auto px-4 py-6 w-full flex-1 space-y-6">
+
+    <!-- Hero Card -->
+    <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm relative overflow-hidden">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div class="flex items-center gap-2">
+          <span id="hero-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+            Les
+          </span>
+          <span id="hero-duration" class="text-xs font-semibold text-slate-400 flex items-center gap-1">
+            <i class="fa-regular fa-clock"></i> 20-25 min
+          </span>
         </div>
-        
-        <p id="practice-description" class="text-indigo-100 text-xs sm:text-sm leading-relaxed"></p>
-
-        <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/15 space-y-3">
-          <div class="flex items-center justify-between">
-            <span id="practice-target" class="text-lg sm:text-xl font-bold tracking-wide">...</span>
-            <button id="practice-sound-btn" onclick="speakTargetPhrase()" class="w-11 h-11 rounded-full bg-white text-indigo-600 flex items-center justify-center hover:scale-105 active:scale-95 transition shadow-md">
-              <i class="fa-solid fa-volume-high text-lg"></i>
-            </button>
-          </div>
-          <p id="practice-translation" class="text-xs text-indigo-200 italic">...</p>
-
-          <div id="mic-section" class="pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
-            <button id="mic-btn" onclick="toggleSpeechRecognition()" class="px-4 py-2 bg-white text-indigo-600 hover:bg-indigo-50 font-bold text-xs rounded-xl flex items-center space-x-2 transition shadow">
-              <i class="fa-solid fa-microphone"></i>
-              <span id="mic-label">Inspreken om te testen</span>
-            </button>
-            <div id="speech-feedback" class="text-xs font-semibold text-white"></div>
-          </div>
+        <div id="hero-status-pill">
+          <!-- Status pill -->
         </div>
       </div>
 
-      <!-- Duolingo-stijl Interactieve Kennischeck -->
-      <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-5">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-2.5">
-            <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-bold">✓</span>
-            <h3 class="font-bold text-base text-slate-900">Actieve Kennischeck (Directe Feedback)</h3>
-          </div>
-          <span class="text-xs text-slate-400 font-semibold" id="quiz-counter">Actieve Toetsing</span>
-        </div>
+      <h2 id="hero-title" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug">
+        Lestitel
+      </h2>
+      <p id="hero-subtitle" class="text-xs sm:text-sm font-semibold text-slate-500 mt-1 mb-4">
+        Ondertitel
+      </p>
 
-        <div class="space-y-4">
-          <p id="quiz-question-text" class="text-base font-semibold text-slate-800">Vraag laden...</p>
-          <div id="quiz-options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
-          <div id="quiz-feedback-box" class="hidden rounded-2xl p-4 text-sm font-medium transition-all"></div>
-        </div>
+      <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs sm:text-sm text-slate-700">
+        <strong class="text-slate-900 font-bold block mb-1">🎯 Leerdoel van deze sessie:</strong>
+        <span id="hero-focus">Focus omschrijving</span>
       </div>
 
-      <!-- Direct PDF Quick Link -->
-      <div class="bg-slate-100/80 rounded-3xl p-5 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-sky-500 text-white flex items-center justify-center text-lg">
-            <i class="fa-solid fa-file-pdf"></i>
-          </div>
-          <div>
-            <h4 class="text-sm font-bold text-slate-900">iPad Schrijf- & Praktijkwerkblad (PDF)</h4>
-            <p class="text-xs text-slate-500">Open direct de printklare PDF met schrijfruimte voor Apple Pencil.</p>
-          </div>
-        </div>
-        <a id="onedrive-pdf-link" href="#" target="_blank" class="px-4 py-2 bg-white text-indigo-600 hover:text-indigo-700 font-bold text-xs rounded-xl border border-slate-200 shadow-sm flex items-center space-x-2">
-          <span>Open PDF</span>
-          <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+      <!-- Quick Navigation Anchors -->
+      <div class="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-100 text-xs font-semibold text-slate-600">
+        <a href="#section-theory" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition flex items-center gap-1.5">
+          <i class="fa-solid fa-book-open text-indigo-500"></i> 1. Theorie
+        </a>
+        <a id="nav-audio-btn" href="#section-audio" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition flex items-center gap-1.5">
+          <i class="fa-solid fa-volume-high text-pink-500"></i> 2. Audio & Spraak
+        </a>
+        <a href="#section-exercises" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition flex items-center gap-1.5">
+          <i class="fa-solid fa-pen-fancy text-emerald-500"></i> 3. Oefeningen (iPad/iPhone)
+        </a>
+        <a href="#section-exam" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl transition flex items-center gap-1.5 font-bold">
+          <i class="fa-solid fa-graduation-cap text-indigo-600"></i> 4. Eindtoets 🔒
         </a>
       </div>
-
     </div>
-  </main>
 
-  <!-- Modal: Grammatica / Code Diepgang -->
-  <div id="grammar-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
-    <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-        <div class="flex items-center space-x-2">
-          <i class="fa-solid fa-lightbulb text-amber-500"></i>
-          <h3 class="font-bold text-slate-900 text-base" id="modal-grammar-title">Regels & Diepgang</h3>
+    <!-- Section 1: Theory -->
+    <section id="section-theory" class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-4">
+      <div class="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
+        <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
+          <i class="fa-solid fa-book-open"></i>
         </div>
-        <button onclick="toggleGrammarModal()" class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-300">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+        <div>
+          <h3 class="font-bold text-slate-900 text-base sm:text-lg">1. Diepgaande Theorie & Regels</h3>
+          <p class="text-xs text-slate-500">Lees en begrijp de principes aandachtig vóór de oefeningen.</p>
+        </div>
       </div>
-      <div id="modal-grammar-content" class="p-6 overflow-y-auto space-y-4 text-sm text-slate-700 leading-relaxed"></div>
-      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
-        <button onclick="toggleGrammarModal()" class="px-5 py-2 bg-indigo-600 text-white font-semibold text-xs rounded-xl hover:bg-indigo-700 transition">
-          Begrepen!
-        </button>
+      <div id="theory-content">
+        <!-- Injected Theory HTML -->
       </div>
-    </div>
-  </div>
+    </section>
+
+    <!-- Section 2: Audio Studio (Vocab + Speech Drill) -->
+    <section id="section-audio" class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-5">
+      <div class="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
+        <div class="w-8 h-8 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center font-bold text-sm">
+          <i class="fa-solid fa-waveform-lines"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-slate-900 text-base sm:text-lg">2. Studio Audio & Spreekvaardigheid</h3>
+          <p class="text-xs text-slate-500">Levensechte Microsoft Neural AI-stemmen voor perfecte uitspraak & gehoor.</p>
+        </div>
+      </div>
+
+      <!-- Vocab Chips -->
+      <div id="vocab-container" class="space-y-2">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Kernvocabulaire (Tik om studiogeluid te horen):</h4>
+        <div id="vocab-chips" class="flex flex-wrap gap-2">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- Speech Drill Card -->
+      <div id="speech-drill-card" class="p-5 bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-2xl shadow-lg space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-microphone text-pink-400"></i> Uitspraak- & Luisterdrill
+          </span>
+          <span class="text-[10px] bg-white/10 text-white px-2 py-0.5 rounded-full font-bold">Studio Audio</span>
+        </div>
+
+        <div>
+          <h4 id="speech-target-phrase" class="text-lg sm:text-xl font-black tracking-tight text-white">
+            Doelzin
+          </h4>
+          <p id="speech-target-sub" class="text-xs sm:text-sm text-slate-300 mt-1">
+            Vertaling en fonetiek
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 pt-2">
+          <button id="btn-play-speech" onclick="playCurrentSpeechTarget()" class="px-4 py-2.5 bg-white text-slate-900 hover:bg-slate-100 rounded-xl font-bold text-xs flex items-center gap-2 transition active:scale-95 shadow">
+            <i class="fa-solid fa-volume-high text-indigo-600"></i> Beluister Studio Stem
+          </button>
+
+          <button id="btn-mic-drill" onclick="toggleSpeechRecording()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs flex items-center gap-2 transition active:scale-95 shadow">
+            <i class="fa-solid fa-microphone"></i> <span id="mic-btn-text">Spreek in (Microfoon)</span>
+          </button>
+        </div>
+
+        <div id="speech-feedback" class="text-xs text-indigo-200 italic min-h-[1.25rem]"></div>
+      </div>
+    </section>
+
+    <!-- Section 3: Interactive Exercises (iPad Pencil & iPhone Typing) -->
+    <section id="section-exercises" class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-6">
+      <div class="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
+        <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
+          <i class="fa-solid fa-pen-fancy"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-slate-900 text-base sm:text-lg">3. Actieve Oefeningen & Schrijfopdrachten</h3>
+          <p class="text-xs text-slate-500">Schrijf direct op je iPad met de Apple Pencil of typ op je iPhone.</p>
+        </div>
+      </div>
+
+      <div id="exercises-list" class="space-y-8">
+        <!-- Injected via JavaScript -->
+      </div>
+    </section>
+
+    <!-- Section 4: Mastery Exam & Gating -->
+    <section id="section-exam" class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-sm">
+            <i class="fa-solid fa-graduation-cap"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base sm:text-lg">4. De Officiële Eindtoets</h3>
+            <p class="text-xs text-slate-500">Score &ge; 80% vereist om de volgende les te ontgrendelen.</p>
+          </div>
+        </div>
+        <span id="exam-status-badge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+          Niet afgelegd
+        </span>
+      </div>
+
+      <div id="exam-questions-container" class="space-y-6">
+        <!-- Injected Quiz Questions -->
+      </div>
+
+      <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <button id="btn-submit-exam" onclick="submitExam()" class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-sm rounded-2xl shadow-md transition active:scale-95 flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-check-double"></i>
+          <span>Dien Toets In & Beoordeel Resultaat</span>
+        </button>
+        <span id="exam-score-display" class="text-sm font-bold text-slate-700 text-center"></span>
+      </div>
+
+      <!-- Exam Result Banner (Hidden initially) -->
+      <div id="exam-result-banner" class="hidden p-5 rounded-2xl border transition-all duration-300">
+        <!-- Injected Result -->
+      </div>
+    </section>
+
+  </main>
 
   <script>
     const AUDIO_BASE_URL = "https://thibaudverschueren.github.io/polyglot-studio/audio/";
-
-    const DATA = {
-      greek: {
-        title: "Nieuwgrieks",
-        badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
-        lessons: [
+    const CURRICULUM = {
+  "greek": {
+    "title": "Nieuwgrieks",
+    "subtitle": "Van beginner tot zelfverzekerd B1",
+    "flag": "🇬🇷",
+    "color": "indigo",
+    "accent": "text-indigo-600",
+    "badgeBg": "bg-indigo-50 text-indigo-700 border-indigo-200",
+    "lessons": [
+      {
+        "id": 1,
+        "title": "Het Griekse Alfabet (Το αλφάβητο)",
+        "subtitle": "24 letters, klinkers, tónos & de twee vormen van de sigma",
+        "duration": "20-25 min",
+        "focus": "Herken alle 24 letters van het alfabet, begrijp de 'ie'-club (η, ι, υ), het gebruik van de klemtoon (τόνος) en het verschil tussen σ en ς.",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-lightbulb text-indigo-600\"></i> Language Transfer Vuistregel:\n    </h3>\n    <p>Het Griekse alfabet telt <strong>24 letters</strong> (7 klinkers en 17 medeklinkers). Het schrift ziet er in het begin exotisch uit, maar het is de directe voorloper van ons Latijnse alfabet. Veel letters ken je al uit de wiskunde, fysica of het Engels (<em>alpha, beta, gamma, delta, pi, sigma</em>).</p>\n  </div>\n\n  <div class=\"overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white\">\n    <table class=\"min-w-full divide-y divide-slate-200 text-xs sm:text-sm\">\n      <thead class=\"bg-slate-50 font-bold text-slate-800\">\n        <tr>\n          <th class=\"px-3 py-2 text-left\">Groot</th>\n          <th class=\"px-3 py-2 text-left\">Klein</th>\n          <th class=\"px-3 py-2 text-left\">Naam</th>\n          <th class=\"px-3 py-2 text-left\">Klank</th>\n          <th class=\"px-3 py-2 text-left\">Voorbeeld</th>\n        </tr>\n      </thead>\n      <tbody class=\"divide-y divide-slate-100 font-medium\">\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Α</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">α</td><td>Alfa</td><td>a (bad / vader)</td><td><strong>αγάπη</strong> (liefde)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Β</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">β</td><td>Vita</td><td>v (vaas - géén b!)</td><td><strong>βιβλίο</strong> (boek)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Γ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">γ</td><td>Gamma</td><td>zachte g / j</td><td><strong>γάλα</strong> (melk)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Δ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">δ</td><td>Delta</td><td>stemhebbende Engelse th (this)</td><td><strong>δρόμος</strong> (straat)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Ε</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">ε</td><td>Epsilon</td><td>korte e (bed)</td><td><strong>ένα</strong> (één)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Ζ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">ζ</td><td>Zita</td><td>z (zon)</td><td><strong>ζωή</strong> (leven)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Η</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">η</td><td>Ita</td><td>ie (fiets)</td><td><strong>ημέρα</strong> (dag)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Θ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">θ</td><td>Thita</td><td>stemloze Engelse th (think)</td><td><strong>θάλασσα</strong> (zee)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Ι</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">ι</td><td>Iota</td><td>ie (fiets)</td><td><strong>ιδέα</strong> (idee)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Κ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">κ</td><td>Kappa</td><td>k (kat)</td><td><strong>καφές</strong> (koffie)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Λ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">λ</td><td>Lamda</td><td>l (lamp)</td><td><strong>λεμόνι</strong> (citroen)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Μ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">μ</td><td>Mi</td><td>m (man)</td><td><strong>μητέρα</strong> (moeder)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Ν</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">ν</td><td>Ni</td><td>n (noot)</td><td><strong>νερό</strong> (water)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Ξ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">ξ</td><td>Ksi</td><td>ks (taxi)</td><td><strong>ξένος</strong> (vreemdeling)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Ο</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">ο</td><td>Omikron</td><td>korte o (pot)</td><td><strong>όνομα</strong> (naam)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Π</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">π</td><td>Pi</td><td>p (pen)</td><td><strong>πόλη</strong> (stad)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Ρ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">ρ</td><td>Ro</td><td>rollende r</td><td><strong>ρόδι</strong> (granaatappel)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Σ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">σ / ς</td><td>Sigma</td><td>s (soep) — ς alleen op 't eind!</td><td><strong>σπίτι / Νίκος</strong></td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Τ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">τ</td><td>Taf</td><td>t (thee)</td><td><strong>τραπέζι</strong> (tafel)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Υ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">υ</td><td>Ypsilon</td><td>ie (fiets)</td><td><strong>ύπνος</strong> (slaap)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Φ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">φ</td><td>Fi</td><td>f (fiets)</td><td><strong>φίλος</strong> (vriend)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Χ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">χ</td><td>Chi</td><td>ch (lachen) of zacht (h)</td><td><strong>χέρι</strong> (hand)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Ψ</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">ψ</td><td>Psi</td><td>ps (chips)</td><td><strong>ψάρι</strong> (vis)</td></tr>\n        <tr><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">Ω</td><td class=\"px-3 py-1.5 font-bold text-base text-indigo-600\">ω</td><td>Omega</td><td>korte o (klinkt identiek aan ο!)</td><td><strong>ώρα</strong> (uur / tijd)</td></tr>\n      </tbody>\n    </table>\n  </div>\n\n  <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n    <div class=\"bg-amber-50/80 border border-amber-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-amber-900 text-sm mb-1\">1. De Beroemde \"ie\"-Club (Iotacisme)</h4>\n      <p class=\"text-xs sm:text-sm text-amber-800\">In modern Grieks klinken <strong>Η, Ι, Υ</strong> (en combinaties <strong>ΕΙ, ΟΙ</strong>) exact hetzelfde: als de Nederlandse <strong>\"ie\"</strong> (zoals in <em>fiets</em>). Er is auditief géén verschil meer!</p>\n    </div>\n    <div class=\"bg-blue-50/80 border border-blue-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-blue-900 text-sm mb-1\">2. De Twee Vormen van Sigma (Σ)</h4>\n      <p class=\"text-xs sm:text-sm text-blue-800\">Aan het begin of in het midden schrijf je <strong>σ</strong> (bv. <em>σπίτι</em>). Als een woord eindigt op een sigma, schrijf je <strong>ς</strong> (bv. <em>καφές, Νίκος</em>).</p>\n    </div>\n  </div>\n\n  <div class=\"bg-slate-50 border border-slate-200 p-4 rounded-2xl\">\n    <h4 class=\"font-bold text-slate-800 text-sm mb-1\">3. De Klemtoon (Τόνος)</h4>\n    <p class=\"text-xs sm:text-sm text-slate-600\">Elk Grieks woord met twee of meer lettergrepen heeft een klemteken (<strong>΄</strong>) op de klinker van de beklemtoonde lettergreep (bv. <em>νερό, καλημέρα, πρόβλημα</em>). Het is verplicht om dit accent te schrijven!</p>\n  </div>\n</div>\n",
+        "vocab": [
           {
-            id: 1,
-            title: "Les 01: Het Griekse Alfabet (Το αλφάβητο)",
-            subtitle: "24 letters: 7 klinkers en 17 medeklinkers",
-            focus: "Herken alle 24 letters. De 'ie'-club (η, ι, υ), de twee o's (ο, ω) en de twee vormen van de sigma (σ begin/midden, ς einde).",
-            pdfUrl: "https://thibaudverschueren.github.io/polyglot-studio/pdfs/Les_01_Het_Griekse_Alfabet.pdf",
-            vocab: [
-              { term: "αγάπη", translit: "agápi", meaning: "liefde", audio: "greek_vocab_agapi.mp3" },
-              { term: "νερό", translit: "neró", meaning: "water", audio: "greek_vocab_nero.mp3" },
-              { term: "σπίτι", translit: "spíti", meaning: "huis", audio: "greek_vocab_spiti.mp3" },
-              { term: "καφές", translit: "kafés", meaning: "koffie", audio: "greek_vocab_kafes.mp3" }
-            ],
-            speech: { target: "Καλημέρα", sub: "kali-ME-ra — Goedemorgen", audio: "greek_speech_01.mp3" },
-            quiz: {
-              q: "Welke Griekse letters klinken in modern Grieks allemaal als 'ie' (in fiets)?",
-              options: ["α, ε, ο", "η, ι, υ", "ο, ω", "μ, ν, π"],
-              correct: 1,
-              rule: "Η (ita), Ι (iota) en Υ (ypsilon) klinken in modern Grieks exact hetzelfde: als de Nederlandse 'ie'."
-            },
-            grammarTitle: "De Klemtoon (Tónos) & De Sigma",
-            grammarHtml: `<p>1. De klemtoon (τόνος) staat op elke beklemtoonde klinker: <code>νερό</code> (water) vs <code>πότε</code> (wanneer).<br>2. De letter Sigma schrijf je als <strong>σ</strong> aan het begin of midden van een woord (<em>σπίτι</em>), maar als <strong>ς</strong> aan het einde (<em>Νίκος</em>).</p>`
+            "term": "αγάπη",
+            "translit": "agápi",
+            "meaning": "liefde",
+            "audio": "greek_vocab_agapi.mp3"
           },
           {
-            id: 2,
-            title: "Les 02: Diftongen & Klankcombinaties",
-            subtitle: "De magie van μπ, ντ, γκ en αυ/ευ",
-            focus: "Grieks heeft geen enkele letter 'B' of 'D'. μπ maakt de b-klank, νt de d-klank, en γκ de g-klank.",
-            pdfUrl: "https://thibaudverschueren.github.io/polyglot-studio/pdfs/Les_02_Diftongen_en_Klankcombinaties.pdf",
-            vocab: [
-              { term: "μπύρα", translit: "bíra", meaning: "bier (μπ = b)", audio: "greek_vocab_bira.mp3" },
-              { term: "ντομάτα", translit: "domáta", meaning: "tomaat (ντ = d)", audio: "greek_vocab_domata.mp3" },
-              { term: "ευχαριστώ", translit: "efcharistó", meaning: "dankjewel (ευ = ef)", audio: "greek_vocab_efcharisto.mp3" }
-            ],
-            speech: { target: "Ευχαριστώ πολύ", sub: "ef-cha-ree-STO po-LI — Hartelijk dank", audio: "greek_speech_02.mp3" },
-            quiz: {
-              q: "Hoe spreek je het Griekse woord 'μπύρα' uit?",
-              options: ["m-pie-ra", "BIE-ra", "vie-ra", "pie-ra"],
-              correct: 1,
-              rule: "De combinatie μπ (mi-pi) wordt uitgesproken als een Nederlandse 'b' (zoals in bal)."
-            },
-            grammarTitle: "Medeklinker- en Klinkercombinaties",
-            grammarHtml: `<p>μπ = b • ντ = d • γκ/γγ = g/ng • ου = oe • αι = e • ει/οι = ie • αυ/ευ = af/ef (voor stemloze klank) of av/ev (voor klinkers/stemhebbend).</p>`
+            "term": "νερό",
+            "translit": "neró",
+            "meaning": "water",
+            "audio": "greek_vocab_nero.mp3"
           },
           {
-            id: 3,
-            title: "Les 03: Begroetingen & Kennismaken",
-            subtitle: "Jezelf voorstellen en beleefd reageren",
-            focus: "Begroet mensen op elk moment van de dag en stel jezelf voor met 'Με λένε...' (Ik heet...).",
-            pdfUrl: "https://thibaudverschueren.github.io/polyglot-studio/pdfs/Les_03_Kennismaken_en_Begroetingen.pdf",
-            vocab: [
-              { term: "Γεια σας", translit: "Ja sas", meaning: "Hallo / Dag (beleefd/meervoud)", audio: "greek_vocab_geia_sas.mp3" },
-              { term: "Με λένε Thibaud", translit: "Me léne Thibaud", meaning: "Ik heet Thibaud", audio: "greek_vocab_me_lene.mp3" },
-              { term: "Χαίρω πολύ", translit: "Chéro polí", meaning: "Aangenaam kennis te maken", audio: "greek_vocab_chairo_poly.mp3" }
-            ],
-            speech: { target: "Γεια σας, με λένε Thibaud.", sub: "Ja sas, me lene Thibaud — Hallo, ik heet Thibaud.", audio: "greek_speech_03.mp3" },
-            quiz: {
-              q: "Wat zeg je als je 's ochtends iemand formeel begroet?",
-              options: ["Καλησπέρα", "Καληνύχτα", "Καλημέρα σας", "Αντίο"],
-              correct: 2,
-              rule: "'Καλημέρα σας' (Goedemorgen u) is de beleefde ochtendgroet tot ongeveer 12:00-13:00 uur."
-            },
-            grammarTitle: "De Vormen van Begroeting",
-            grammarHtml: `<p>Γεια σου (informeel, tegen 1 persoon) vs Γεια σας (formeel/meervoud). Με λένε... betekent letterlijk 'ze noemen mij...'.</p>`
+            "term": "σπίτι",
+            "translit": "spíti",
+            "meaning": "huis",
+            "audio": "greek_vocab_spiti.mp3"
           },
           {
-            id: 4,
-            title: "Les 04: De Drie Geslachten & Lidwoorden (ο, η, το)",
-            subtitle: "Herkenning van uitgangen (-ος, -α/-η, -ο/-ι/-μα) en werkwoorden είμαι / έχω",
-            focus: "Elk zelfstandig naamwoord heeft een geslacht. Vrijwel alle mannelijke woorden eindigen op -ς in de nominatief! Leer zinnen bouwen met είμαι (zijn) en έχω (hebben).",
-            pdfUrl: "https://thibaudverschueren.github.io/polyglot-studio/pdfs/grieks_les_04.pdf",
-            vocab: [
-              { term: "ο καφές", translit: "o kafés", meaning: "de koffie (mannelijk)", audio: "greek_vocab_o_kafes.mp3" },
-              { term: "η ημέρα", translit: "i iméra", meaning: "de dag (vrouwelijk)", audio: "greek_vocab_i_imera.mp3" },
-              { term: "το νερό", translit: "to neró", meaning: "het water (onzijdig)", audio: "greek_vocab_to_nero.mp3" },
-              { term: "είμαι", translit: "íme", meaning: "ik ben", audio: "greek_vocab_eimai.mp3" },
-              { term: "έχω", translit: "écho", meaning: "ik heb", audio: "greek_vocab_echo.mp3" }
+            "term": "καφές",
+            "translit": "kafés",
+            "meaning": "koffie",
+            "audio": "greek_vocab_kafes.mp3"
+          }
+        ],
+        "speechTarget": {
+          "phrase": "Καλημέρα",
+          "sub": "kali-ME-ra — Goedemorgen",
+          "audio": "greek_speech_01.mp3"
+        },
+        "exercises": [
+          {
+            "id": "g1_ex1",
+            "title": "Oefening A: De Griekse Klinkers Oefenen",
+            "instruction": "Schrijf de 7 Griekse klinkers in kleine letters op je iPad met de Apple Pencil (of typ ze op de iPhone): α, ε, η, ι, ο, υ, ω.",
+            "modelAnswer": "α, ε, η, ι, ο, υ, ω",
+            "explanation": "Let op het verschil in vorm tussen de ronde omikron (ο) en de open omega (ω), en merk op dat η, ι en υ qua klank allemaal 'ie' zijn!"
+          },
+          {
+            "id": "g1_ex2",
+            "title": "Oefening B: Woorden Schrijven met Accent (Tónos)",
+            "instruction": "Schrijf de woorden voor 'water' (νερό) en 'huis' (σπίτι) in het Grieks met het juiste accent.",
+            "modelAnswer": "νερό • σπίτι",
+            "explanation": "Bij 'νερό' staat de klemtoon op de 'ό', bij 'σπίτι' staat de klemtoon op de eerste 'ί'. Vergeet het accentteken nooit!"
+          },
+          {
+            "id": "g1_ex3",
+            "title": "Oefening C: De Twee Vormen van Sigma",
+            "instruction": "Schrijf het Griekse woord voor 'aardbeving': σεισμός. Let goed op waar je de 'σ' en waar je de 'ς' gebruikt!",
+            "modelAnswer": "σεισμός",
+            "explanation": "Aan het begin staat de begin-sigma (σ), in het midden staat de gewone sigma (σ), en aan het einde de sluit-sigma (ς)!"
+          }
+        ],
+        "quiz": [
+          {
+            "q": "Welke Griekse letters klinken in modern Grieks allemaal als 'ie' (in fiets)?",
+            "options": [
+              "α, ε, ο",
+              "η, ι, υ",
+              "ο, ω",
+              "μ, ν, π"
             ],
-            speech: { target: "Ο καφές είναι κρύος.", sub: "O kafés íne kríos — De koffie is koud.", audio: "greek_speech_04.mp3" },
-            quiz: {
-              q: "Welk lidwoord hoort bij 'θάλασσα' (zee)?",
-              options: ["ο θάλασσα", "η θάλασσα", "το θάλασσα", "τον θάλασσα"],
-              correct: 1,
-              rule: "Woorden die eindigen op -α of -η zijn vrouwelijk en krijgen het lidwoord 'η'."
-            },
-            grammarTitle: "Geslachten en de werkwoorden είμαι / έχω",
-            grammarHtml: `<p><strong>Mannelijk (ο):</strong> -ος, -ας, -ης • <strong>Vrouwelijk (η):</strong> -α, -η • <strong>Onzijdig (το):</strong> -ο, -ι, -μα.<br><br><strong>είμαι:</strong> είμαι, είσαι, είναι, είμαστε, είστε, είναι.<br><strong>έχω:</strong> έχω, έχεις, έχει, έχουμε, έχετε, έχουν.</p>`
+            "correct": 1,
+            "rule": "Η (ita), Ι (iota) en Υ (ypsilon) klinken in modern Grieks exact hetzelfde: als de Nederlandse 'ie'."
+          },
+          {
+            "q": "Wanneer schrijf je de vorm 'ς' voor de letter sigma?",
+            "options": [
+              "Alleen aan het begin van een woord",
+              "Midden in een woord",
+              "Uitsluitend aan het absolute einde van een woord",
+              "Na een klinker"
+            ],
+            "correct": 2,
+            "rule": "De eind-sigma (ς) wordt uitsluitend gebruikt aan het einde van een woord (zoals in Νίκος of καφές). Binnenin schrijf je altijd 'σ'."
+          },
+          {
+            "q": "Hoeveel letters heeft het Griekse alfabet?",
+            "options": [
+              "20 letters",
+              "24 letters",
+              "26 letters",
+              "28 letters"
+            ],
+            "correct": 1,
+            "rule": "Het Griekse alfabet telt exact 24 letters: 7 klinkers en 17 medeklinkers."
+          },
+          {
+            "q": "Wat is het doel van het klemteken (tónos, bv. in νερό)?",
+            "options": [
+              "Het geeft aan dat de lettergreep beklemtoond wordt uitgesproken",
+              "Het maakt de letter stom",
+              "Het verandert de klinker in een medeklinker",
+              "Het is puur decoratief"
+            ],
+            "correct": 0,
+            "rule": "De tónos geeft de dynamische klemtoon aan. 'νερό' spreek je uit als ne-RO, niet als NE-ro."
           }
         ]
       },
-      french: {
-        title: "Français C1",
-        badgeColor: "bg-rose-50 text-rose-700 border-rose-200",
-        lessons: [
+      {
+        "id": 2,
+        "title": "Diftongen & Klankcombinaties",
+        "subtitle": "De magie van μπ, ντ, γκ en αυ/ευ",
+        "duration": "20-25 min",
+        "focus": "Beheers de klanken die geen eigen letter hebben: B (μπ), D (ντ) en G (γκ/γγ), plus de klinkercombinaties zoals ου, αι en αυ/ευ.",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-lightbulb text-indigo-600\"></i> Waarom heeft Grieks geen 'B' of 'D'?\n    </h3>\n    <p>In het Oudgrieks klonk de Beta (Β) als een 'B' en de Delta (Δ) als een 'D'. In de loop van 2000 jaar evolueerden deze klanken naar zachte wrijfklanken: <strong>β klinkt nu als 'v'</strong> en <strong>δ als de Engelse 'th'</strong> (in <em>this</em>). Om toch een 'B' en 'D' te kunnen schrijven, bedachten de Grieken ingenieuze combinaties!</p>\n  </div>\n\n  <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n    <div class=\"p-4 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-2\">\n      <h4 class=\"font-bold text-slate-900 text-sm border-b pb-1.5 flex items-center gap-1.5\">\n        <span class=\"text-indigo-600 font-extrabold text-base\">μπ, ντ, γκ</span> — De 'Nieuwe' Medeklinkers\n      </h4>\n      <ul class=\"space-y-1.5 text-xs sm:text-sm\">\n        <li><strong>μπ:</strong> Klinkt als <strong>B</strong> (in <em>bal</em>). Bv. <em>μπύρα</em> (bier), <em>μπαμπάς</em> (papa).</li>\n        <li><strong>ντ:</strong> Klinkt als <strong>D</strong> (in <em>deur</em>). Bv. <em>ντομάτα</em> (tomaat).</li>\n        <li><strong>γκ / γγ:</strong> Klinkt als <strong>G</strong> (zoals in het Engelse <em>go</em>). Bv. <em>γκολ</em> (goal), <em>φεγγάρι</em> (maan).</li>\n        <li><strong>τσ:</strong> Klinkt als <strong>ts</strong> (in <em>tsaar</em>). Bv. <em>τσάι</em> (thee).</li>\n        <li><strong>τζ:</strong> Klinkt als <strong>dz / j</strong> (in <em>jazz</em>). Bv. <em>τζατζίκι</em> (tzatziki).</li>\n      </ul>\n    </div>\n\n    <div class=\"p-4 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-2\">\n      <h4 class=\"font-bold text-slate-900 text-sm border-b pb-1.5 flex items-center gap-1.5\">\n        <span class=\"text-indigo-600 font-extrabold text-base\">ου, αι, αυ, ευ</span> — Klinkerparen\n      </h4>\n      <ul class=\"space-y-1.5 text-xs sm:text-sm\">\n        <li><strong>ου:</strong> Klinkt altijd als <strong>oe</strong> (in <em>boek</em>). Bv. <em>μουσική</em> (moesikí = muziek).</li>\n        <li><strong>αι:</strong> Klinkt als <strong>e</strong> (in <em>bed</em>). Bv. <em>και</em> (ke = en).</li>\n        <li><strong>ει / οι / υι:</strong> Klinken allemaal als <strong>ie</strong>! Bv. <em>είμαι</em> (íme = ik ben).</li>\n        <li><strong>αυ / ευ:</strong> Klinken als <strong>av / ev</strong> vóór klinkers en zachte medeklinkers, maar als <strong>af / ef</strong> vóór harde medeklinkers (zoals θ, κ, π, τ, χ). Bv. <em>ευχαριστώ</em> (ef-cha-ri-stó = bedankt).</li>\n      </ul>\n    </div>\n  </div>\n</div>\n",
+        "vocab": [
           {
-            id: 1,
-            title: "Les 01: Stijlregisters & Tournures Idiomatiques Soutenues",
-            subtitle: "Perfectionnement C1/C2 : Du familier à l'élégance diplomatique",
-            focus: "Transformeer alledaagse zinnen naar hoogstaand niveau, beheers 5 essentiële uitdrukkingen en leer wanneer de subjonctif in relatieve bijzinnen een hypothetisch ideaalbeeld oproept.",
-            pdfUrl: "https://thibaudverschueren.github.io/polyglot-studio/pdfs/frans_les_01.pdf",
-            vocab: [
-              { term: "Avoir voix au chapitre", meaning: "Recht van spreken / legitimiteit", audio: "french_vocab_voix_au_chapitre.mp3" },
-              { term: "Chercher midi à 14h", meaning: "Onnodig ingewikkeld maken", audio: "french_vocab_midi_14h.mp3" },
-              { term: "Faire long feu", meaning: "Mislukken / effect missen", audio: "french_vocab_faire_long_feu.mp3" },
-              { term: "Au demeurant", meaning: "Overigens / alles in aanmerking genomen", audio: "french_vocab_au_demeurant.mp3" },
-              { term: "Péremptoire", meaning: "Beslissend / categorisch", audio: "french_vocab_peremptoire.mp3" }
-            ],
-            speech: { target: "Il convient de ne point chercher midi à quatorze heures.", sub: "Het past om de situatie niet onnodig te compliceren.", audio: "french_speech_01.mp3" },
-            quiz: {
-              q: "Wat betekent de uitdrukking « Ce projet a fait long feu »?",
-              options: ["Het was een groot succes.", "Het project is mislukt / heeft geen doel getroffen.", "Het project heeft lang geduurd.", "Het project is uitgesteld."],
-              correct: 1,
-              rule: "Let op! 'Faire long feu' betekent historisch dat het kruit vlam vatte zonder kogelafvuur. Het betekent dus MISLUKKEN. ('Ne pas faire long feu' = heel kort duren)."
-            },
-            grammarTitle: "Subjonctif dans les relatives",
-            grammarHtml: `<p>• <em>« Je cherche un juriste qui <strong>connaît</strong> ce dossier »</em> (hij bestaat en is bekend ➔ indicatif).<br>• <em>« Je cherche un juriste qui <strong>connaisse</strong> ce dossier »</em> (hypothetische zoektocht naar een ideaal profiel ➔ subjonctif).</p>`
+            "term": "μπύρα",
+            "translit": "bíra",
+            "meaning": "bier (μπ = b)",
+            "audio": "greek_vocab_bira.mp3"
           },
           {
-            id: 2,
-            title: "Les 02: L'accord du Participe Passé des Verbes Pronominaux",
-            subtitle: "Règles rigoureuses pour une orthographe irréprochable",
-            focus: "Het lijdend voorwerp (COD) bepaalt het akkoord. Waarom schrijf je 'Elles se sont lavé les mains' zonder s, maar 'Elles se sont lavées' met s?",
-            pdfUrl: "https://thibaudverschueren.github.io/polyglot-studio/pdfs/00_LEERPLAN_EN_BRONNEN.pdf",
-            vocab: [
-              { term: "S'en falloir de peu", meaning: "Er weinig aan schelen", audio: "french_vocab_falloir_de_peu.mp3" },
-              { term: "Battre en brèche", meaning: "Ondermijnen / aanvechten", audio: "french_vocab_battre_en_breche.mp3" },
-              { term: "Invariablement", meaning: "Zonder uitzondering", audio: "french_vocab_invariablement.mp3" }
+            "term": "ντομάτα",
+            "translit": "domáta",
+            "meaning": "tomaat (ντ = d)",
+            "audio": "greek_vocab_domata.mp3"
+          },
+          {
+            "term": "ευχαριστώ",
+            "translit": "efcharistó",
+            "meaning": "dankjewel (ευ = ef)",
+            "audio": "greek_vocab_efcharisto.mp3"
+          }
+        ],
+        "speechTarget": {
+          "phrase": "Ευχαριστώ πολύ",
+          "sub": "ef-cha-ree-STO po-LI — Hartelijk dank",
+          "audio": "greek_speech_02.mp3"
+        },
+        "exercises": [
+          {
+            "id": "g2_ex1",
+            "title": "Oefening A: Schrijf de B- en D-woorden",
+            "instruction": "Schrijf de Griekse woorden voor 'bier' (μπύρα) en 'tomaat' (ντομάτα).",
+            "modelAnswer": "μπύρα • ντομάτα",
+            "explanation": "Onthoud: μπ maakt de B-klank en ντ maakt de D-klank!"
+          },
+          {
+            "id": "g2_ex2",
+            "title": "Oefening B: Hartelijk Dank Uitschrijven",
+            "instruction": "Schrijf de meest gebruikte beleefde uitdrukking in Griekenland: 'Ευχαριστώ πολύ'.",
+            "modelAnswer": "Ευχαριστώ πολύ",
+            "explanation": "Let op: ευ klinkt als 'ef' omdat er een stemloze 'χ' op volgt. En πολύ eindigt op ypsilon (υ) met klemtoon!"
+          }
+        ],
+        "quiz": [
+          {
+            "q": "Hoe schrijf je de Nederlandse 'B'-klank in het Nieuwgrieks?",
+            "options": [
+              "Met de letter β",
+              "Met de lettercombinatie μπ",
+              "Met de letter π",
+              "Met de letter δ"
             ],
-            speech: { target: "Elles se sont rendu compte de leur erreur.", sub: "Ze hebben zich hun vergissing gerealiseerd (rendu compte = onveranderlijk!).", audio: "french_speech_02.mp3" },
-            quiz: {
-              q: "Kies de juiste spelling: « Les courriels qu'ils se sont _____ . »",
-              options: ["envoyé", "envoyés", "envoyée", "envoyer"],
-              correct: 1,
-              rule: "'Les courriels' is het lijdend voorwerp (COD) en staat VÓÓR het werkwoord ➔ accord au masculin pluriel : 'envoyés'."
-            },
-            grammarTitle: "De Gouden Regel van Pronominale Deelwoorden",
-            grammarHtml: `<p>Pas de regel van AVOIR toe: accordeer alleen als het lijdend voorwerp vóór het werkwoord staat. Verbes à COI (se parler, se plaire, se téléphoner, se succéder) accorderen NOOIT!</p>`
+            "correct": 1,
+            "rule": "De combinatie μπ (mi-pi) produceert de 'B'-klank. De letter β klinkt namelijk als een 'v'."
+          },
+          {
+            "q": "Hoe spreek je 'ευχαριστώ' (dankjewel) uit?",
+            "options": [
+              "ew-cha-ris-to",
+              "ef-cha-ris-TO",
+              "oew-cha-ris-to",
+              "ev-cha-ris-to"
+            ],
+            "correct": 1,
+            "rule": "Voor de stemloze letter 'χ' wordt 'ευ' uitgesproken als 'ef'. De klemtoon ligt op de laatste lettergreep: ef-cha-ris-TÓ."
+          },
+          {
+            "q": "Welke klank maakt de combinatie 'ου' (zoals in μουσική)?",
+            "options": [
+              "oe (zoals in boek)",
+              "ow (zoals in kou)",
+              "uu (zoals in vuur)",
+              "o (zoals in pot)"
+            ],
+            "correct": 0,
+            "rule": "'ου' is de enige manier om in het Grieks de 'oe'-klank te schrijven."
+          },
+          {
+            "q": "Hoe spreek je het woord 'ντομάτα' uit?",
+            "options": [
+              "en-to-ma-ta",
+              "do-MA-ta",
+              "vo-ma-ta",
+              "to-ma-ta"
+            ],
+            "correct": 1,
+            "rule": "'ντ' klinkt als de letter 'd'. De klemtoon ligt op de tweede lettergreep: do-MÁ-ta."
           }
         ]
       },
-      solidity: {
-        title: "Solidity & Web3",
-        badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        lessons: [
+      {
+        "id": 3,
+        "title": "Begroetingen & Kennismaken",
+        "subtitle": "Jezelf voorstellen en beleefd communiceren",
+        "duration": "20-25 min",
+        "focus": "Begroet mensen op elk moment van de dag, ken het verschil tussen Γεια σου en Γεια σας, en stel jezelf voor met 'Με λένε...'.",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-handshake text-indigo-600\"></i> De Kunst van de Griekse Begroeting\n    </h3>\n    <p>In Griekenland is begroeten warm, sociaal en heel direct. De twee meest fundamentele groeten zijn afgeleid van het woord <strong>υγεία</strong> (ygeía = gezondheid):</p>\n    <ul class=\"list-disc list-inside mt-2 space-y-1 font-medium\">\n      <li><strong>Γεια σου</strong> (Ja sou) = Informeel: 'Hallo / Dag' tegen 1 vriend, kind of bekende (letterlijk: <em>gezondheid voor jou</em>).</li>\n      <li><strong>Γεια σας</strong> (Ja sas) = Beleefdheidsvorm: 'Hallo / Goedendag' tegen een onbekende, oudere of meerdere mensen tegelijk.</li>\n    </ul>\n  </div>\n\n  <div class=\"overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm\">\n    <h4 class=\"font-bold text-slate-900 mb-3 text-sm\">Begroetingen doorheen de dag:</h4>\n    <div class=\"grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs sm:text-sm\">\n      <div class=\"p-3 bg-amber-50 rounded-xl border border-amber-200\">\n        <span class=\"font-bold text-amber-900 block text-base\">Καλημέρα!</span>\n        <span class=\"text-amber-800 text-xs\">kali-MÉ-ra • Tot ~13:00 uur</span>\n        <p class=\"text-slate-600 mt-1\">Goedemorgen! Zeer positief en vriendelijk.</p>\n      </div>\n      <div class=\"p-3 bg-orange-50 rounded-xl border border-orange-200\">\n        <span class=\"font-bold text-orange-900 block text-base\">Καλησπέρα!</span>\n        <span class=\"text-orange-800 text-xs\">kali-SPÉ-ra • Vanaf namiddag</span>\n        <p class=\"text-slate-600 mt-1\">Goedenamiddag / Goedenavond bij aankomst.</p>\n      </div>\n      <div class=\"p-3 bg-indigo-50 rounded-xl border border-indigo-200\">\n        <span class=\"font-bold text-indigo-900 block text-base\">Καληνύχτα!</span>\n        <span class=\"text-indigo-800 text-xs\">kali-NÍCH-ta • Bij vertrek</span>\n        <p class=\"text-slate-600 mt-1\">Goedenacht (alleen bij vertrek of slapengaan).</p>\n      </div>\n    </div>\n  </div>\n\n  <div class=\"bg-white border border-slate-200 rounded-2xl p-4 shadow-sm\">\n    <h4 class=\"font-bold text-slate-900 mb-2 text-sm\">Jezelf voorstellen:</h4>\n    <div class=\"space-y-2 text-xs sm:text-sm\">\n      <p>• <strong>Με λένε Thibaud.</strong> = Ik heet Thibaud. (Letterlijk: <em>Ze noemen mij Thibaud</em>).</p>\n      <p>• <strong>Είμαι ο Thibaud.</strong> = Ik ben Thibaud. (Let op: Grieken zetten een lidwoord voor eigennamen: <em>ο</em> voor mannen, <em>η</em> voor vrouwen!).</p>\n      <p>• <strong>Χαίρω πολύ!</strong> = Aangenaam kennis te maken! (chéro po-LÍ).</p>\n    </div>\n  </div>\n</div>\n",
+        "vocab": [
           {
-            id: 1,
-            title: "Les 01: Blockchain Fundamenten, EVM & Je Eerste Smart Contract",
-            subtitle: "20-25 min • Van State Machine naar SimpleStorage.sol",
-            focus: "De Ethereum Virtual Machine als wereldwijde computer, immutability, waarom state variables permanent in storage leven, en het verschil tussen gratis view functies en betaalde schrijfoperaties.",
-            pdfUrl: "https://thibaudverschueren.github.io/polyglot-studio/pdfs/solidity_les_01.pdf",
-            code: `// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
-
-contract SimpleStorage {
-    uint256 public myFavoriteNumber;
-
-    function setNumber(uint256 _newNumber) public {
-        myFavoriteNumber = _newNumber; // Kost GAS
-    }
-
-    function getNumber() public view returns (uint256) {
-        return myFavoriteNumber; // GRATIS (view)
-    }
-}`,
-            speech: { target: "pragma solidity ^0.8.20; contract SimpleStorage { }", sub: "Solidity syntax structuur" },
-            quiz: {
-              q: "Waarom kost de functie 'getNumber() public view' GEEN gas wanneer je die vanuit je wallet aanroept?",
-              options: [
-                "Omdat Solidity 0.8 alle transacties gratis maakt.",
-                "Omdat een 'view' functie alleen data leest van een lokale node en geen state wijzigt op de blockchain.",
-                "Omdat alleen de eigenaar van het contract kan lezen.",
-                "Omdat het contract nog niet op mainnet staat."
-              ],
-              correct: 1,
-              rule: "Functies met de 'view' of 'pure' modifier wijzigen de toestand van de blockchain niet. Een lokale node kan dit direct beantwoorden zonder consensus of minen."
-            },
-            grammarTitle: "EVM Architectuur & Gas Logica",
-            grammarHtml: `<p>1. <strong>Storage:</strong> Permanente data op de chain (duurste gas).<br>2. <strong>Memory:</strong> Tijdelijke data tijdens executie (goedkoop).<br>3. <strong>Calldata:</strong> Read-only functie-argumenten (goedkoopst).<br>4. <strong>Immutable:</strong> Zodra gedeployed op mainnet, is code onveranderlijk.</p>`
+            "term": "Γεια σας",
+            "translit": "Ja sas",
+            "meaning": "Hallo (beleefd/meervoud)",
+            "audio": "greek_vocab_geia_sas.mp3"
+          },
+          {
+            "term": "Με λένε Thibaud",
+            "translit": "Me léne Thibaud",
+            "meaning": "Ik heet Thibaud",
+            "audio": "greek_vocab_me_lene.mp3"
+          },
+          {
+            "term": "Χαίρω πολύ",
+            "translit": "Chéro polí",
+            "meaning": "Aangenaam kennis te maken",
+            "audio": "greek_vocab_chairo_poly.mp3"
+          }
+        ],
+        "speechTarget": {
+          "phrase": "Γεια σας, με λένε Thibaud.",
+          "sub": "Ja sas, me lene Thibaud — Hallo, ik heet Thibaud.",
+          "audio": "greek_speech_03.mp3"
+        },
+        "exercises": [
+          {
+            "id": "g3_ex1",
+            "title": "Oefening A: Formele Ochtendgroet Schrijven",
+            "instruction": "Schrijf de beleefde ochtendgroet: 'Καλημέρα σας'.",
+            "modelAnswer": "Καλημέρα σας",
+            "explanation": "'Καλημέρα σας' combineert goedemorgen met het beleefdheidsvoornaamwoord 'σας'."
+          },
+          {
+            "id": "g3_ex2",
+            "title": "Oefening B: Een Volledige Kennismaking",
+            "instruction": "Schrijf in het Grieks: 'Hallo (beleefd), ik heet Thibaud. Aangenaam!'",
+            "modelAnswer": "Γεια σας, με λένε Thibaud. Χαίρω πολύ!",
+            "explanation": "Met deze ene zin kun je in Griekenland overal op een correcte en sympathieke manier binnenstappen!"
+          }
+        ],
+        "quiz": [
+          {
+            "q": "Wat is het verschil tussen 'Γεια σου' en 'Γεια σας'?",
+            "options": [
+              "Γεια σου is voor 's ochtends, Γεια σας voor 's avonds",
+              "Γεια σου is informeel (tegen 1 vriend), Γεια σας is beleefd of voor een groep",
+              "Er is geen verschil",
+              "Γεια σας betekent uitsluitend tot ziens"
+            ],
+            "correct": 1,
+            "rule": "'σου' is 2e persoon enkelvoud (jou), 'σας' is 2e persoon meervoud/beleefdheidsvorm (u/jullie)."
+          },
+          {
+            "q": "Wanneer wens je iemand 'Καλησπέρα'?",
+            "options": [
+              "Om 08:00 's ochtends",
+              "Vanaf de namiddag en avond bij ontmoeting",
+              "Als je gaat slapen",
+              "Alleen op feestdagen"
+            ],
+            "correct": 1,
+            "rule": "Καλησπέρα gebruik je zodra de middag vordert bij aankomst/begroeting. Bij vertrek om te gaan slapen zeg je Καληνύχτα."
+          },
+          {
+            "q": "Wat betekent de constructie 'Με λένε...' letterlijk?",
+            "options": [
+              "Mijn naam is...",
+              "Ze noemen mij...",
+              "Ik ben geboren als...",
+              "Ik noem mezelf..."
+            ],
+            "correct": 1,
+            "rule": "'Με λένε' is letterlijk 'ze noemen mij' (van het werkwoord λέω = zeggen/noemen)."
+          },
+          {
+            "q": "Hoe antwoord je beleefd als iemand zich aan je voorstelt?",
+            "options": [
+              "Αντίο",
+              "Ευχαριστώ",
+              "Χαίρω πολύ",
+              "Παρακαλώ"
+            ],
+            "correct": 2,
+            "rule": "'Χαίρω πολύ' betekent letterlijk 'ik verheug me zeer' en is het standaard equivalent van 'aangenaam kennis te maken'."
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "De Drie Geslachten & Lidwoorden (ο, η, το)",
+        "subtitle": "Uitgangen (-ος, -α/-η, -ο/-ι/-μα) en werkwoorden είμαι / έχω",
+        "duration": "20-25 min",
+        "focus": "Herken direct het geslacht van zelfstandige naamwoorden aan hun uitgang, en leer zinnen bouwen met de sleutelwerkwoorden είμαι (zijn) en έχω (hebben).",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-shield-halved text-indigo-600\"></i> Het Griekse Gendersysteem is Extreem Voorspelbaar!\n    </h3>\n    <p>In tegenstelling tot het Nederlands (waar <em>de</em> en <em>het</em> vaak willekeurig lijken), heeft het Grieks een **volstrekt logisch systeem**. Aan de laatste letters van een woord zie je in 95% van de gevallen direct welk geslacht het is:</p>\n  </div>\n\n  <div class=\"overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm\">\n    <table class=\"min-w-full divide-y divide-slate-200 text-xs sm:text-sm\">\n      <thead class=\"bg-slate-50 font-bold text-slate-800\">\n        <tr>\n          <th class=\"px-3 py-2 text-left\">Geslacht</th>\n          <th class=\"px-3 py-2 text-left\">Lidwoord</th>\n          <th class=\"px-3 py-2 text-left\">Typische Uitgang</th>\n          <th class=\"px-3 py-2 text-left\">Voorbeelden</th>\n          <th class=\"px-3 py-2 text-left\">Betekenis</th>\n        </tr>\n      </thead>\n      <tbody class=\"divide-y divide-slate-100\">\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-blue-700\">Mannelijk</td>\n          <td class=\"px-3 py-2 font-extrabold text-blue-700 text-base\">ο</td>\n          <td><code>-ος, -ας, -ης</code> (eindigt op -ς!)</td>\n          <td><strong>ο φίλος, ο άντρας, ο καφές</strong></td>\n          <td>de vriend, de man, de koffie</td>\n        </tr>\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-rose-700\">Vrouwelijk</td>\n          <td class=\"px-3 py-2 font-extrabold text-rose-700 text-base\">η</td>\n          <td><code>-α, -η</code> (eindigt op klinker!)</td>\n          <td><strong>η θάλασσα, η ημέρα, η μουσική</strong></td>\n          <td>de zee, de dag, de muziek</td>\n        </tr>\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-amber-700\">Onzijdig</td>\n          <td class=\"px-3 py-2 font-extrabold text-amber-700 text-base\">το</td>\n          <td><code>-ο, -ι, -μα</code> (zonder s!)</td>\n          <td><strong>το νερό, το σπίτι, το πρόβλημα</strong></td>\n          <td>het water, het huis, het probleem</td>\n        </tr>\n      </tbody>\n    </table>\n  </div>\n\n  <div class=\"grid grid-cols-1 sm:grid-cols-2 gap-4\">\n    <div class=\"p-4 bg-white border border-slate-200 rounded-2xl shadow-sm\">\n      <h4 class=\"font-bold text-indigo-900 border-b pb-1 mb-2 text-sm\">Vervoeging van είμαι (zijn)</h4>\n      <ul class=\"text-xs sm:text-sm space-y-1\">\n        <li><strong>(εγώ) είμαι</strong> = ik ben</li>\n        <li><strong>(εσύ) είσαι</strong> = jij bent</li>\n        <li><strong>(αυτός/αυτή/αυτό) είναι</strong> = hij / zij / het is</li>\n        <li><strong>(εμείς) είμαστε</strong> = wij zijn</li>\n        <li><strong>(εσείς) είστε / είσαστε</strong> = jullie zijn / u bent</li>\n        <li><strong>(αυτοί/αυτές/αυτά) είναι</strong> = zij zijn</li>\n      </ul>\n    </div>\n    <div class=\"p-4 bg-white border border-slate-200 rounded-2xl shadow-sm\">\n      <h4 class=\"font-bold text-indigo-900 border-b pb-1 mb-2 text-sm\">Vervoeging van έχω (hebben)</h4>\n      <ul class=\"text-xs sm:text-sm space-y-1\">\n        <li><strong>(εγώ) έχω</strong> = ik heb</li>\n        <li><strong>(εσύ) έχεις</strong> = jij hebt</li>\n        <li><strong>(αυτός/αυτή/αυτό) έχει</strong> = hij / zij / het heeft</li>\n        <li><strong>(εμείς) έχουμε</strong> = wij hebben</li>\n        <li><strong>(εσείς) έχετε</strong> = jullie hebben / u heeft</li>\n        <li><strong>(αυτοί/αυτές/αυτά) έχουν(ε)</strong> = zij hebben</li>\n      </ul>\n    </div>\n  </div>\n\n  <div class=\"p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs sm:text-sm text-emerald-800 font-medium\">\n    💡 <strong>Pro-Tip (Language Transfer):</strong> Omdat de werkwoordsuitgang (bv. <em>-μαι, -με, -τε</em>) al precies vertelt wie het onderwerp is, laten Grieken de voornaamwoorden (<em>εγώ, εσύ</em>) vrijwel altijd weg! Zeg gewoon: <em>«Έχουμε ένα πρόβλημα»</em> in plaats van <em>«Εμείς έχουμε...»</em>.\n  </div>\n</div>\n",
+        "vocab": [
+          {
+            "term": "ο καφές",
+            "translit": "o kafés",
+            "meaning": "de koffie (mannelijk)",
+            "audio": "greek_vocab_o_kafes.mp3"
+          },
+          {
+            "term": "η ημέρα",
+            "translit": "i iméra",
+            "meaning": "de dag (vrouwelijk)",
+            "audio": "greek_vocab_i_imera.mp3"
+          },
+          {
+            "term": "το νερό",
+            "translit": "to neró",
+            "meaning": "het water (onzijdig)",
+            "audio": "greek_vocab_to_nero.mp3"
+          },
+          {
+            "term": "είμαι",
+            "translit": "íme",
+            "meaning": "ik ben",
+            "audio": "greek_vocab_eimai.mp3"
+          },
+          {
+            "term": "έχω",
+            "translit": "écho",
+            "meaning": "ik heb",
+            "audio": "greek_vocab_echo.mp3"
+          }
+        ],
+        "speechTarget": {
+          "phrase": "Ο καφές είναι κρύος.",
+          "sub": "O kafés íne kríos — De koffie is koud.",
+          "audio": "greek_speech_04.mp3"
+        },
+        "exercises": [
+          {
+            "id": "g4_ex1",
+            "title": "Oefening A: Bepaal het Bepaald Lidwoord (ο, η, of το)",
+            "instruction": "Vul het juiste lidwoord in voor: καφές, μητέρα, νερό, ταβέρνα, δρόμος, μάθημα.",
+            "modelAnswer": "ο καφές • η μητέρα • το νερό • η ταβέρνα • ο δρόμος • το μάθημα",
+            "explanation": "Uitgangen op -ς (καφές, δρόμος) zijn mannelijk (ο); op -α (μητέρα, ταβέρνα) zijn vrouwelijk (η); op -ο of -μα (νερό, μάθημα) zijn onzijdig (το)!"
+          },
+          {
+            "id": "g4_ex2",
+            "title": "Oefening B: Werkwoord Vervoegen (είμαι / έχω)",
+            "instruction": "Vervoeg het werkwoord tussen haakjes: 1. Εγώ ____ από το Βέλγιο (είμαι). 2. Εμείς ____ ένα σπίτι (έχω).",
+            "modelAnswer": "1. είμαι • 2. έχουμε",
+            "explanation": "Ik ben = είμαι. Wij hebben = έχουμε."
+          },
+          {
+            "id": "g4_ex3",
+            "title": "Oefening C: Vertaal en Schrijf de Doelzin",
+            "instruction": "Vertaal en schrijf op je iPad: 'De koffie is koud.' (koud = κρύος).",
+            "modelAnswer": "Ο καφές είναι κρύος.",
+            "explanation": "Merk op hoe het bijvoeglijk naamwoord (κρύος) het mannelijke geslacht van de koffie (ο καφές) volgt!"
+          }
+        ],
+        "quiz": [
+          {
+            "q": "Welk lidwoord hoort bij 'θάλασσα' (zee)?",
+            "options": [
+              "ο θάλασσα",
+              "η θάλασσα",
+              "το θάλασσα",
+              "τον θάλασσα"
+            ],
+            "correct": 1,
+            "rule": "Woorden die eindigen op een -α of -η zijn in de nominatief vrouwelijk en krijgen het lidwoord 'η'."
+          },
+          {
+            "q": "Waaraan herken je een mannelijk zelfstandig naamwoord vrijwel altijd in de nominatief?",
+            "options": [
+              "Het eindigt op een klinker zonder s",
+              "Het eindigt op een sigma (-ς, zoals -ος, -ας, -ης)",
+              "Het begint met een klinker",
+              "Het eindigt op -μα"
+            ],
+            "correct": 1,
+            "rule": "Mannelijke woorden eindigen in het Nieuwgrieks in de nominatief bijna zonder uitzondering op een -ς (-ος, -ας, -ης)."
+          },
+          {
+            "q": "Hoe zeg je 'Wij hebben een probleem' in het Grieks?",
+            "options": [
+              "Έχουμε ένα πρόβλημα.",
+              "Είμαστε ένα πρόβλημα.",
+              "Έχετε ένα πρόβλημα.",
+              "Έχω το πρόβλημα."
+            ],
+            "correct": 0,
+            "rule": "'Έχουμε' is de wij-vorm van 'έχω' (hebben). 'πρόβλημα' is onzijdig (το πρόβλημα), vandaar het onbepaald lidwoord 'ένα'."
+          },
+          {
+            "q": "Wat is de 3e persoon enkelvoud van 'είμαι' (hij/zij/het is)?",
+            "options": [
+              "είμαι",
+              "είσαι",
+              "είναι",
+              "είμαστε"
+            ],
+            "correct": 2,
+            "rule": "'είναι' betekent zowel 'hij/zij/het is' als 'zij zijn'."
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "De Accusatief Enkelvoud & Bestellen in de Taverna",
+        "subtitle": "De 4e naamval (lijdend voorwerp) en soepel bestellen",
+        "duration": "20-25 min",
+        "focus": "Begrijp waarom de mannelijke eind-sigma wegvalt in het lijdend voorwerp (ο καφές ➔ τον καφέ), en bestel zelfverzekerd eten en drinken.",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-utensils text-indigo-600\"></i> De Accusatief: Wat gebeurt er als je een woord gebruikt als lijdend voorwerp?\n    </h3>\n    <p>Zodra een zelfstandig naamwoord het **lijdend voorwerp** van een zin is (wat je drinkt, hebt, bestelt of ziet), verandert de vorm in het Grieks:</p>\n  </div>\n\n  <div class=\"overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm\">\n    <table class=\"min-w-full divide-y divide-slate-200 text-xs sm:text-sm\">\n      <thead class=\"bg-slate-50 font-bold text-slate-800\">\n        <tr>\n          <th class=\"px-3 py-2 text-left\">Geslacht</th>\n          <th class=\"px-3 py-2 text-left\">Nominatief (Onderwerp)</th>\n          <th class=\"px-3 py-2 text-left\">Accusatief (Lijdend Voorwerp)</th>\n          <th class=\"px-3 py-2 text-left\">Gouden Regel</th>\n        </tr>\n      </thead>\n      <tbody class=\"divide-y divide-slate-100\">\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-blue-700\">Mannelijk</td>\n          <td><strong>ο καφές</strong> (de koffie)</td>\n          <td class=\"font-bold text-blue-700\"><strong>τον καφέ</strong></td>\n          <td>Het lidwoord krijgt een <strong>ν</strong> en de <strong>-ς</strong> van het woord valt weg!</td>\n        </tr>\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-rose-700\">Vrouwelijk</td>\n          <td><strong>η σαλάτα</strong> (de salade)</td>\n          <td class=\"font-bold text-rose-700\"><strong>τη(ν) σαλάτα</strong></td>\n          <td>Lidwoord wordt <strong>τη(ν)</strong>, het woord zelf blijft gelijk.</td>\n        </tr>\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-amber-700\">Onzijdig</td>\n          <td><strong>το νερό</strong> (het water)</td>\n          <td class=\"font-bold text-amber-700\"><strong>το νερό</strong></td>\n          <td><strong>Onzijdig verandert NOOIT!</strong> Blijft 100% identiek.</td>\n        </tr>\n      </tbody>\n    </table>\n  </div>\n\n  <div class=\"bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2\">\n    <h4 class=\"font-bold text-slate-900 text-sm\">Essentiële zinnen in de Taverna:</h4>\n    <ul class=\"text-xs sm:text-sm space-y-1.5\">\n      <li>• <strong>Θα ήθελα έναν καφέ παρακαλώ.</strong> = Ik zou graag een koffie willen alstublieft. (<em>έναν</em> = onbepaald lidwoord accusatief mannelijk).</li>\n      <li>• <strong>Το λογαριασμό, παρακαλώ!</strong> = De rekening, alstublieft! (<em>ο λογαριασμός ➔ το λογαριασμό</em>).</li>\n      <li>• <strong>Έχετε τραπέζι για δύο;</strong> = Heeft u een tafel voor twee personen?</li>\n    </ul>\n  </div>\n</div>\n",
+        "vocab": [
+          {
+            "term": "τον καφέ",
+            "translit": "ton kafé",
+            "meaning": "de koffie (accusatief)",
+            "audio": "greek_vocab_o_kafes.mp3"
+          },
+          {
+            "term": "το λογαριασμό",
+            "translit": "to logariasmó",
+            "meaning": "de rekening",
+            "audio": "greek_speech_02.mp3"
+          },
+          {
+            "term": "θα ήθελα",
+            "translit": "tha íthela",
+            "meaning": "ik zou graag willen",
+            "audio": "greek_speech_01.mp3"
+          }
+        ],
+        "speechTarget": {
+          "phrase": "Θα ήθελα έναν καφέ παρακαλώ.",
+          "sub": "Tha íthela énan kafé parakaló — Ik wil graag een koffie alstublieft.",
+          "audio": "greek_speech_01.mp3"
+        },
+        "exercises": [
+          {
+            "id": "g5_ex1",
+            "title": "Oefening A: Zet om naar de Accusatief",
+            "instruction": "Zet om van nominatief naar accusatief: 1. ο φίλος ➔ ____. 2. η σαλάτα ➔ ____. 3. το κρασί ➔ ____.",
+            "modelAnswer": "1. τον φίλο • 2. τη σαλάτα • 3. το κρασί",
+            "explanation": "Mannelijk verliest de -ς (τον φίλο), vrouwelijk wordt τη(ν), en onzijdig verandert nooit!"
+          },
+          {
+            "id": "g5_ex2",
+            "title": "Oefening B: De Rekening Vragen",
+            "instruction": "Schrijf de typische vraag in een Griekse taverna: 'De rekening alstublieft!'",
+            "modelAnswer": "Το λογαριασμό, παρακαλώ!",
+            "explanation": "'ο λογαριασμός' wordt in de accusatief 'το(ν) λογαριασμό'!"
+          }
+        ],
+        "quiz": [
+          {
+            "q": "Wat gebeurt er met mannelijke woorden op -ος of -ης in de accusatief enkelvoud?",
+            "options": [
+              "Er komt een -ν bij aan het einde",
+              "De eind-sigma (-ς) valt weg",
+              "Het woord verandert in een vrouwelijk woord",
+              "Er verandert niets"
+            ],
+            "correct": 1,
+            "rule": "In de accusatief mannelijk enkelvoud verliest het zelfstandig naamwoord zijn eind-sigma (ο φίλος ➔ τον φίλο)."
+          },
+          {
+            "q": "Wat gebeurt er met onzijdige woorden (zoals το νερό) in de accusatief?",
+            "options": [
+              "Ze krijgen de uitgang -α",
+              "Ze blijven exact hetzelfde als in de nominatief",
+              "Het lidwoord wordt 'τον'",
+              "De klemtoon verschuift altijd"
+            ],
+            "correct": 1,
+            "rule": "Onzijdige zelfstandige naamwoorden hebben in het Grieks ALTIJD exact dezelfde vorm in nominatief en accusatief."
+          },
+          {
+            "q": "Hoe zeg je beleefd 'Ik zou graag een koffie willen'?",
+            "options": [
+              "Θέλω καφές",
+              "Θα ήθελα έναν καφέ παρακαλώ",
+              "Έχω ο καφές",
+              "Είμαι ο καφές"
+            ],
+            "correct": 1,
+            "rule": "'Θα ήθελα' is de elegante voorwaardelijke wijs (ik zou graag willen), en 'έναν καφέ' staat correct in de accusatief."
+          },
+          {
+            "q": "Hoe vraag je naar de rekening?",
+            "options": [
+              "Ο λογαριασμός είναι εδώ",
+              "Το λογαριασμό, παρακαλώ!",
+              "Έχουμε λογαριασμοί",
+              "Γεια σας λογαριασμός"
+            ],
+            "correct": 1,
+            "rule": "'Το(ν) λογαριασμό, παρακαλώ!' is de correcte accusatiefvorm om de rekening te vragen."
           }
         ]
       }
+    ]
+  },
+  "french": {
+    "title": "Français C1/C2",
+    "subtitle": "Stijlregisters, finesses & syntaxis",
+    "flag": "🇫🇷",
+    "color": "rose",
+    "accent": "text-rose-600",
+    "badgeBg": "bg-rose-50 text-rose-700 border-rose-200",
+    "lessons": [
+      {
+        "id": 1,
+        "title": "Stijlregisters & Tournures Idiomatiques Soutenues",
+        "subtitle": "Du courant à l'élégance diplomatique & le subjonctif dans les relatives",
+        "duration": "20-25 min",
+        "focus": "Transformeer alledaagse zinnen naar het registre soutenu, beheers 5 cruciale uitdrukkingen en leer wanneer de subjonctif in relatieve bijzinnen een hypothetisch ideaalbeeld oproept.",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-rose-50/70 border border-rose-100 rounded-2xl\">\n    <h3 class=\"font-bold text-rose-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-feather-pointed text-rose-600\"></i> Perfectionnement C1/C2 : L'élévation stylistique\n    </h3>\n    <p>Op niveau C1/C2 volstaat correcte grammatica niet langer; het draait om **stijlregisters, lexicale precisie en retorische verfijning**. In professionele, academische en diplomatieke contexten maakt de keuze van de wending het verschil tussen een bekwame spreker en een overtuigende autoriteit.</p>\n  </div>\n\n  <div class=\"overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm\">\n    <table class=\"min-w-full divide-y divide-slate-200 text-xs sm:text-sm\">\n      <thead class=\"bg-slate-50 font-bold text-slate-800\">\n        <tr>\n          <th class=\"px-3 py-2 text-left\">Expression</th>\n          <th class=\"px-3 py-2 text-left\">Signification exacte</th>\n          <th class=\"px-3 py-2 text-left\">Nuance & Contexte</th>\n          <th class=\"px-3 py-2 text-left\">Exemple d'élite</th>\n        </tr>\n      </thead>\n      <tbody class=\"divide-y divide-slate-100\">\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-rose-700\">Avoir voix au chapitre</td>\n          <td>Avoir la légitimité ou le pouvoir d'intervenir dans une décision.</td>\n          <td>Professionnel / Décisionnel</td>\n          <td><em>« Les experts techniques doivent impérativement avoir voix au chapitre. »</em></td>\n        </tr>\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-rose-700\">Chercher midi à 14h</td>\n          <td>Compliquer inutilement une situation limpide et simple.</td>\n          <td>Stylistique / Ironique</td>\n          <td><em>« La solution s'impose d'elle-même, cessons de chercher midi à quatorze heures. »</em></td>\n        </tr>\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-rose-700\">Faire long feu</td>\n          <td><strong>Échouer, manquer son but</strong> (origine: arme à feu dont la poudre brûle sans propulser la balle).</td>\n          <td>⚠️ Attention: contresens très fréquent!</td>\n          <td><em>« Ses promesses électorales ont fait long feu face à la réalité budgétaire. »</em></td>\n        </tr>\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-rose-700\">Au demeurant</td>\n          <td>D'ailleurs, tout bien considéré, au reste.</td>\n          <td>Connecteur soutenu / Académique</td>\n          <td><em>« L'argumentaire comporte quelques failles, au demeurant vénielles. »</em></td>\n        </tr>\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-rose-700\">Péremptoire</td>\n          <td>Catégorique, tranchant, qui ne tolère aucune réplique.</td>\n          <td>Nuance de fermeté absolue</td>\n          <td><em>« Il s'est heurté à un refus péremptoire de la direction. »</em></td>\n        </tr>\n      </tbody>\n    </table>\n  </div>\n\n  <div class=\"bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3\">\n    <h4 class=\"font-bold text-slate-900 text-sm flex items-center gap-2\">\n      <i class=\"fa-solid fa-scale-balanced text-rose-500\"></i> Graduation des Registres de Langue :\n    </h4>\n    <div class=\"space-y-2 text-xs sm:text-sm\">\n      <div class=\"p-2.5 bg-slate-50 rounded-xl border border-slate-200\">\n        <span class=\"text-slate-400 block font-semibold text-[11px] uppercase\">Courant:</span>\n        <span class=\"text-slate-700 font-medium\">« Nous allons abandonner ce projet car c'est trop cher. »</span>\n      </div>\n      <div class=\"p-2.5 bg-rose-50 rounded-xl border border-rose-200\">\n        <span class=\"text-rose-600 block font-bold text-[11px] uppercase\">Soutenu C1/C2:</span>\n        <span class=\"text-rose-950 font-semibold\">« Il nous incombe de surseoir à cette initiative, dont le coût s'avère exorbitant. »</span>\n      </div>\n    </div>\n  </div>\n\n  <div class=\"p-4 bg-amber-50/70 border border-amber-200 rounded-2xl\">\n    <h4 class=\"font-bold text-amber-900 text-sm mb-1\">Subjonctif dans les relatives : La nuance d'irréalité</h4>\n    <p class=\"text-xs sm:text-sm text-amber-800\">\n      • <em>« Je cherche un collaborateur qui <strong>connaît</strong> ce marché. »</em> ➔ Indicatif : Je sais qu'il existe ou je pense à une personne précise.<br>\n      • <em>« Je cherche un collaborateur qui <strong>connaisse</strong> ce marché. »</em> ➔ Subjonctif : Recherche d'un profil idéal, hypothétique, dont l'existence n'est pas garantie !<br>\n      • Après un superlatif ou une restriction (<em>le seul, l'unique</em>) : <em>« C'est le seul écueil qui <strong>soit</strong> dirimant. »</em>\n    </p>\n  </div>\n</div>\n",
+        "vocab": [
+          {
+            "term": "Avoir voix au chapitre",
+            "meaning": "Recht van spreken / legitimiteit",
+            "audio": "french_vocab_voix_au_chapitre.mp3"
+          },
+          {
+            "term": "Chercher midi à 14h",
+            "meaning": "Onnodig ingewikkeld maken",
+            "audio": "french_vocab_midi_14h.mp3"
+          },
+          {
+            "term": "Faire long feu",
+            "meaning": "Mislukken / doel missen",
+            "audio": "french_vocab_faire_long_feu.mp3"
+          },
+          {
+            "term": "Au demeurant",
+            "meaning": "Overigens / alles welbeschouwd",
+            "audio": "french_vocab_au_demeurant.mp3"
+          },
+          {
+            "term": "Péremptoire",
+            "meaning": "Beslissend / categorisch",
+            "audio": "french_vocab_peremptoire.mp3"
+          }
+        ],
+        "speechTarget": {
+          "phrase": "Il convient de ne point chercher midi à quatorze heures.",
+          "sub": "Het past om de situatie niet onnodig te compliceren.",
+          "audio": "french_speech_01.mp3"
+        },
+        "exercises": [
+          {
+            "id": "f1_ex1",
+            "title": "Oefening A: Stijltransformatie naar Registre Soutenu",
+            "instruction": "Herschrijf in soutenu/diplomatieke stijl: « Je pense pas qu'il veuille faire ça, c'est trop risqué. »",
+            "modelAnswer": "Il est fort douteux qu'il consente à une telle entreprise, compte tenu des risques prohibitifs qu'elle comporte.",
+            "explanation": "Vervang 'pense pas' door 'il est douteux que + subjonctif' en 'faire ça' door 'consentir à une telle entreprise'."
+          },
+          {
+            "id": "f1_ex2",
+            "title": "Oefening B: Analyse van de Idiomatische Wending",
+            "instruction": "Waarom is de uitspraak « Cette réforme a fait long feu, elle a duré plus de dix ans » een ernstige betekenisfout?",
+            "modelAnswer": "'Faire long feu' betekent historisch dat het buskruit vlam vatte zonder het projectiel af te vuren, en betekent dus 'mislukken / zijn doel missen'. De spreker verwart het met 'ne pas faire long feu' (zeer kort duren).",
+            "explanation": "Dit is een van de meest gemaakte fouten door zelfs moedertaalsprekers in Frankrijk!"
+          },
+          {
+            "id": "f1_ex3",
+            "title": "Oefening C: Subjonctif in Relatieve Bijzin",
+            "instruction": "Vertaal met behulp van een elegante relatieve bijzin met de subjonctif: 'Dit is het enige bezwaar dat ik kan bedenken.'",
+            "modelAnswer": "C'est la seule objection que je puisse concevoir.",
+            "explanation": "Na 'la seule' (superlatief / exclusieve restrictie) eist de verzorgde Franse stijl de subjonctif ('puisse') in plaats van de indicatif ('peux')."
+          }
+        ],
+        "quiz": [
+          {
+            "q": "Wat betekent de uitdrukking « Ce projet a fait long feu »?",
+            "options": [
+              "Het project was een daverend succes",
+              "Het project is mislukt en heeft geen doel getroffen",
+              "Het project heeft uitzonderlijk lang geduurd",
+              "Het project is tijdelijk opgeschort"
+            ],
+            "correct": 1,
+            "rule": "Let op! 'Faire long feu' betekent mislukken / geen effect sorteren. ('Ne pas faire long feu' betekent daarentegen snel voorbij zijn)."
+          },
+          {
+            "q": "Waarom staat 'soit' in de subjonctif in: « C'est la seule issue qui soit envisageable »?",
+            "options": [
+              "Omdat 'qui' altijd de subjonctif vereist",
+              "Door de aanwezigheid van de restrictie 'la seule' drukt de relatieve bijzin een subjectief oordeel uit",
+              "Omdat het werkwoord in de verleden tijd staat",
+              "Het is een grammaticale fout; het moet 'est' zijn"
+            ],
+            "correct": 1,
+            "rule": "Na restrictieve antecedenten zoals 'le seul', 'l'unique' of een superlatief verlangt het verzorgde Frans de subjonctif."
+          },
+          {
+            "q": "Welke formulering getuigt van het hoogste stijlregister (soutenu)?",
+            "options": [
+              "Il faut vite trouver une solution au problème.",
+              "On doit régler cette histoire dare-dare.",
+              "Il nous incombe d'apporter une solution péremptoire à cet écueil.",
+              "Il paraît qu'on va laisser tomber."
+            ],
+            "correct": 2,
+            "rule": "« Il nous incombe... » en het gebruik van « péremptoire » en « écueil » vormen de kern van de C2-ambtelijke en diplomatieke stijl."
+          },
+          {
+            "q": "Wat betekent het voegwoordelijke adjectief / bijwoord « Au demeurant »?",
+            "options": [
+              "Tot overmaat van ramp",
+              "Alles welbeschouwd / overigens",
+              "In afwachting van",
+              "Tegen alle verwachtingen in"
+            ],
+            "correct": 1,
+            "rule": "« Au demeurant » introduceert een nuancerende conclusie ('d'ailleurs, tout bien considéré')."
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "L'accord du Participe Passé des Verbes Pronominaux",
+        "subtitle": "Règles rigoureuses pour une orthographe irréprochable",
+        "duration": "20-25 min",
+        "focus": "Beheers de subtiele regels rond het voltooid deelwoord bij wederkerende werkwoorden: waarom schrijf je 'Elles se sont lavé les mains' zonder s, maar 'Elles se sont lavées' met s?",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-rose-50/70 border border-rose-100 rounded-2xl\">\n    <h3 class=\"font-bold text-rose-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-bolt text-rose-600\"></i> De Gouden Paradox van Wederkerende Werkwoorden\n    </h3>\n    <p>Hoewel alle <em>verbes pronominaux</em> worden vervoegd met het hulpwerkwoord <strong>être</strong>, volgen zij qua accord NIET de regel van être, maar de **rigoureuze regel van AVOIR**! Je accordeert het deelwoord uitsluitend als er een lijdend voorwerp (COD) is en dit COD <strong>vóór</strong> het werkwoord staat.</p>\n  </div>\n\n  <div class=\"overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm\">\n    <table class=\"min-w-full divide-y divide-slate-200 text-xs sm:text-sm\">\n      <thead class=\"bg-slate-50 font-bold text-slate-800\">\n        <tr>\n          <th class=\"px-3 py-2 text-left\">Constructie</th>\n          <th class=\"px-3 py-2 text-left\">Voorbeeld</th>\n          <th class=\"px-3 py-2 text-left\">Accord?</th>\n          <th class=\"px-3 py-2 text-left\">Analyse</th>\n        </tr>\n      </thead>\n      <tbody class=\"divide-y divide-slate-100\">\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-slate-900\">COD vóór het werkwoord</td>\n          <td><em>« Elles se sont <strong>lavées</strong>. »</em></td>\n          <td class=\"text-emerald-700 font-bold\">OUI (-ées)</td>\n          <td>Qui est lavé? « se » (mis pour elles) = COD placé AVANT.</td>\n        </tr>\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-slate-900\">COD na het werkwoord</td>\n          <td><em>« Elles se sont <strong>lavé</strong> les mains. »</em></td>\n          <td class=\"text-rose-700 font-bold\">NON (lavé)</td>\n          <td>Qu'ont-elles lavé? « les mains » = COD placé APRÈS. Pas d'accord !</td>\n        </tr>\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-slate-900\">Verbes à COI exclusif</td>\n          <td><em>« Ils se sont <strong>parlé</strong> / <strong>téléphoné</strong>. »</em></td>\n          <td class=\"text-rose-700 font-bold\">JAMAIS</td>\n          <td>On parle À quelqu'un, on téléphone À quelqu'un = COI, jamais de COD !</td>\n        </tr>\n        <tr>\n          <td class=\"px-3 py-2 font-bold text-slate-900\">Essentiellement pronominaux</td>\n          <td><em>« Elles se sont <strong>enfuies</strong>. »</em></td>\n          <td class=\"text-emerald-700 font-bold\">TOUJOURS</td>\n          <td>Verbes qui n'existent qu'à la forme pronominale (s'enfuir, s'absenter) s'accordent toujours avec le sujet.</td>\n        </tr>\n      </tbody>\n    </table>\n  </div>\n\n  <div class=\"p-4 bg-amber-50/70 border border-amber-200 rounded-2xl\">\n    <h4 class=\"font-bold text-amber-900 text-sm mb-1\">De Vaste Vorm: « Se rendre compte »</h4>\n    <p class=\"text-xs sm:text-sm text-amber-800\">In de uitdrukking <em>se rendre compte</em> is <strong>compte</strong> het lijdend voorwerp (on rend quoi? compte). Aangezien 'compte' áchter het werkwoord staat, is het voltooid deelwoord <strong>altijd onveranderlijk</strong>:<br>\n    ✅ <em>« Elles se sont <strong>rendu</strong> compte de leur bévue. »</em> (NOOIT 'rendues'!).</p>\n  </div>\n</div>\n",
+        "vocab": [
+          {
+            "term": "S'en falloir de peu",
+            "meaning": "Er weinig aan schelen / bijna misgaan",
+            "audio": "french_vocab_falloir_de_peu.mp3"
+          },
+          {
+            "term": "Battre en brèche",
+            "meaning": "Ondermijnen / aanvechten",
+            "audio": "french_vocab_battre_en_breche.mp3"
+          },
+          {
+            "term": "Invariablement",
+            "meaning": "Zonder uitzondering / steevast",
+            "audio": "french_vocab_invariablement.mp3"
+          }
+        ],
+        "speechTarget": {
+          "phrase": "Elles se sont rendu compte de leur erreur.",
+          "sub": "Ze hebben zich hun vergissing gerealiseerd (rendu compte = onveranderlijk!).",
+          "audio": "french_speech_02.mp3"
+        },
+        "exercises": [
+          {
+            "id": "f2_ex1",
+            "title": "Oefening A: Kies het Juiste Voltooid Deelwoord",
+            "instruction": "Spel het deelwoord tussen haakjes: 1. Elles se sont (laver) les mains. 2. Elles se sont (laver).",
+            "modelAnswer": "1. lavé • 2. lavées",
+            "explanation": "In 1 staat het lijdend voorwerp (les mains) erachter, dus geen accord. In 2 is 'se' het lijdend voorwerp vóór het werkwoord, dus accord met 'elles'!"
+          },
+          {
+            "id": "f2_ex2",
+            "title": "Oefening B: De COI-Valkuil",
+            "instruction": "Waarom krijgt 'succédé' geen meervouds-s in: « Les rois qui se sont succédé »?",
+            "modelAnswer": "Omdat men zegt 'succéder À quelqu'un' (indirect object / COI). Omdat er geen lijdend voorwerp (COD) is, kan het voltooid deelwoord nooit accorderen.",
+            "explanation": "Hetzelfde geldt voor: se parler, se plaire, se complaire, se téléphoner, se nuire, se sourire."
+          },
+          {
+            "id": "f2_ex3",
+            "title": "Oefening C: De Vaste Uitdrukking Schrijven",
+            "instruction": "Schrijf de volledige zin: 'Zij (vrouwelijk) hebben zich hun vergissing gerealiseerd.'",
+            "modelAnswer": "Elles se sont rendu compte de leur erreur.",
+            "explanation": "'rendu' blijft onveranderlijk omdat 'compte' het lijdend voorwerp is dat NA het werkwoord staat!"
+          }
+        ],
+        "quiz": [
+          {
+            "q": "Waarom blijft 'lavé' onveranderlijk in « Elles se sont lavé les mains »?",
+            "options": [
+              "Omdat 'mains' vrouwelijk meervoud is",
+              "Omdat het lijdend voorwerp (les mains) ACHTER het werkwoord staat",
+              "Omdat 'se' een indirect object is",
+              "Omdat verbes pronominaux nooit accorderen"
+            ],
+            "correct": 1,
+            "rule": "Het voltooid deelwoord accordeert alleen met het COD als dit COD zich VÓÓR het werkwoord bevindt. Hier staat 'les mains' erachter."
+          },
+          {
+            "q": "Welke zin is grammaticaal volkomen correct gespeld?",
+            "options": [
+              "Ils se sont parlés pendant des heures.",
+              "Elles se sont rendues compte de l'injustice.",
+              "Les messages qu'ils se sont envoyés sont compromettants.",
+              "Elle s'est lavée les cheveux hier soir."
+            ],
+            "correct": 2,
+            "rule": "'Les messages' is COD mannelijk meervoud en staat VÓÓR 'ont envoyés' ➔ envoyés. (parlé = COI; rendu compte = invariable; lavé les cheveux = COD après)."
+          },
+          {
+            "q": "Wat gebeurt er bij verbes à COI exclusif zoals 'se téléphoner' of 'se succéder'?",
+            "options": [
+              "Ze accorderen altijd met het onderwerp",
+              "Ze accorderen in het meervoud maar niet in het vrouwelijk",
+              "Ze accorderen NOOIT",
+              "Ze volgen de regel van avoir"
+            ],
+            "correct": 2,
+            "rule": "Bij werkwoorden met een vast voorzetsel 'à' (téléphoner à, succéder à) is het voornaamwoord een COI. Zonder COD is accord uitgesloten."
+          },
+          {
+            "q": "Hoe schrijf je: « Elles se sont (absenter) toute la matinée »?",
+            "options": [
+              "absenté",
+              "absentée",
+              "absentées",
+              "absenter"
+            ],
+            "correct": 2,
+            "rule": "'S'absenter' is een 'verbe essentiellement pronominal' (bestaat niet zonder se). Deze accorderen altijd met het onderwerp ('elles' ➔ absentées)."
+          }
+        ]
+      }
+    ]
+  },
+  "solidity": {
+    "title": "Solidity & Web3",
+    "subtitle": "EVM architectuur, smart contracts & protocollen",
+    "flag": "⛓️",
+    "color": "emerald",
+    "accent": "text-emerald-600",
+    "badgeBg": "bg-emerald-50 text-emerald-700 border-emerald-200",
+    "lessons": [
+      {
+        "id": 1,
+        "title": "Blockchain Fundamenten, EVM & Je Eerste Smart Contract",
+        "subtitle": "Van State Machine naar SimpleStorage.sol",
+        "duration": "20-25 min",
+        "focus": "Begrijp de Ethereum Virtual Machine als deterministische state machine, het cruciale verschil tussen storage, memory en calldata, waarom view calls gratis zijn en schrijfoperaties gas kosten.",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-emerald-50/70 border border-emerald-100 rounded-2xl\">\n    <h3 class=\"font-bold text-emerald-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-brands fa-ethereum text-emerald-600\"></i> Het Mentale Model van de EVM\n    </h3>\n    <p>Ethereum is in essentie een <strong>wereldwijde, gedistribueerde en deterministische State Machine</strong>. Iedere node op het netwerk draait dezelfde code en valideert dezelfde overgangen. Zodra een smart contract gedeployed is op het mainnet, is de bytecode <strong>immutable (onveranderlijk)</strong>.</p>\n  </div>\n\n  <div class=\"grid grid-cols-1 sm:grid-cols-3 gap-3\">\n    <div class=\"p-3.5 bg-white border border-slate-200 rounded-2xl shadow-sm\">\n      <h4 class=\"font-bold text-rose-700 text-sm mb-1\">1. Storage (Duurste Gas)</h4>\n      <p class=\"text-xs text-slate-600\">Permanente data die bewaard blijft in de state tree van de blockchain (20.000 gas voor een nieuw 32-byte slot). State variables leven hier.</p>\n    </div>\n    <div class=\"p-3.5 bg-white border border-slate-200 rounded-2xl shadow-sm\">\n      <h4 class=\"font-bold text-blue-700 text-sm mb-1\">2. Memory (Goedkoop)</h4>\n      <p class=\"text-xs text-slate-600\">Tijdelijk werkgeheugen tijdens de uitvoering van een transactie. Wordt gewist zodra de functie-aanroep eindigt.</p>\n    </div>\n    <div class=\"p-3.5 bg-white border border-slate-200 rounded-2xl shadow-sm\">\n      <h4 class=\"font-bold text-emerald-700 text-sm mb-1\">3. Calldata (Goedkoopst)</h4>\n      <p class=\"text-xs text-slate-600\">Niet-wijzigbaar (read-only) geheugen waarin de argumenten van een externe functie-aanroep binnenkomen.</p>\n    </div>\n  </div>\n\n  <div class=\"bg-slate-900 text-slate-100 rounded-2xl p-4 shadow-xl overflow-x-auto text-xs sm:text-sm font-mono border border-slate-800\">\n    <div class=\"flex items-center justify-between pb-2 mb-3 border-b border-slate-800 text-slate-400 text-xs\">\n      <span>SimpleStorage.sol</span>\n      <span class=\"text-emerald-400\">Solidity ^0.8.20</span>\n    </div>\n    <pre class=\"leading-relaxed\"><code><span class=\"text-slate-500\">// SPDX-License-Identifier: MIT</span>\n<span class=\"text-purple-400\">pragma solidity</span> <span class=\"text-emerald-300\">^0.8.20</span>;\n\n<span class=\"text-purple-400\">contract</span> <span class=\"text-yellow-300\">SimpleStorage</span> {\n    <span class=\"text-slate-500\">// State variable: leeft permanent in STORAGE</span>\n    <span class=\"text-sky-300\">uint256</span> <span class=\"text-purple-400\">public</span> myFavoriteNumber;\n\n    <span class=\"text-slate-500\">// Schrijffunctie: wijzigt state ➔ KOST GAS!</span>\n    <span class=\"text-purple-400\">function</span> <span class=\"text-blue-400\">setNumber</span>(<span class=\"text-sky-300\">uint256</span> _newNumber) <span class=\"text-purple-400\">public</span> {\n        myFavoriteNumber = _newNumber;\n    }\n\n    <span class=\"text-slate-500\">// Leesfunctie (view): leest alleen ➔ GRATIS voor externe callers</span>\n    <span class=\"text-purple-400\">function</span> <span class=\"text-blue-400\">getNumber</span>() <span class=\"text-purple-400\">public view returns</span> (<span class=\"text-sky-300\">uint256</span>) {\n        <span class=\"text-purple-400\">return</span> myFavoriteNumber;\n    }\n}</code></pre>\n  </div>\n\n  <div class=\"p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl\">\n    <h4 class=\"font-bold text-emerald-950 text-sm mb-1\">Waarom zijn 'view' functies gratis?</h4>\n    <p class=\"text-xs sm:text-sm text-emerald-900\">Wanneer je een <code>view</code> of <code>pure</code> functie aanroept vanuit je wallet (bv. MetaMask of een frontend dApp), stuurt je browser een read-only RPC call (<code>eth_call</code>) naar een lokale Ethereum-node. De node leest de status direct uit zijn lokale database zonder dat miners consensus moeten bereiken of een transactie in een block hoeven op te nemen.</p>\n  </div>\n</div>\n",
+        "codeSnippet": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SimpleStorage {\n    uint256 public myFavoriteNumber;\n\n    function setNumber(uint256 _newNumber) public {\n        myFavoriteNumber = _newNumber;\n    }\n\n    function getNumber() public view returns (uint256) {\n        return myFavoriteNumber;\n    }\n}",
+        "exercises": [
+          {
+            "id": "s1_ex1",
+            "title": "Oefening A: Reset Functie Implementeren",
+            "instruction": "Schrijf een Solidity functie genaamd 'resetNumber()' die 'myFavoriteNumber' weer instelt op 0.",
+            "modelAnswer": "function resetNumber() public { myFavoriteNumber = 0; }",
+            "explanation": "Omdat deze functie een state variable in storage overschrijft, is het een state-changing functie die een transactie en gas vereist."
+          },
+          {
+            "id": "s1_ex2",
+            "title": "Oefening B: Data Locatie Verklaren",
+            "instruction": "Waarom moet je bij parameters van het type 'string' of 'bytes' expliciet 'memory' of 'calldata' specificeren in Solidity?",
+            "modelAnswer": "Omdat strings en bytes dynamische referentietypes zijn (variabele lengte) en de compiler expliciet moet weten of de data uit de tijdelijke call (calldata) moet worden gelezen of gekopieerd naar het werkgeheugen (memory).",
+            "explanation": "Waardetypes zoals uint256 passen in een enkel 32-byte slot op de EVM-stack, waardoor geen datalocatie vereist is."
+          }
+        ],
+        "quiz": [
+          {
+            "q": "Welke data location slaat gegevens permanent op in de blockchain state tree?",
+            "options": [
+              "memory",
+              "calldata",
+              "storage",
+              "stack"
+            ],
+            "correct": 2,
+            "rule": "'storage' is de permanente, dure opslag op de blockchain die overleeft tussen transacties door."
+          },
+          {
+            "q": "Waarom kost 'getNumber() public view' GEEN gas wanneer je die vanuit je wallet aanroept?",
+            "options": [
+              "Omdat Solidity 0.8 alle transacties gratis maakt",
+              "Omdat een lokale node de query direct beantwoordt via eth_call zonder consensus of mining",
+              "Omdat alleen de owner van het contract de functie kan zien",
+              "Omdat het contract nog niet op mainnet staat"
+            ],
+            "correct": 1,
+            "rule": "'view' functies wijzigen de state niet. Externe callers kunnen via eth_call data direct lokaal opvragen."
+          },
+          {
+            "q": "Wat is de standaardwaarde van een niet-geïnitialiseerde 'uint256' in Solidity?",
+            "options": [
+              "null",
+              "undefined",
+              "0",
+              "0x0000"
+            ],
+            "correct": 2,
+            "rule": "In Solidity bestaan null en undefined niet. Elk type heeft een veilige defaultwaarde: uint256 is 0, bool is false, address is address(0)."
+          },
+          {
+            "q": "Wat betekent het sleutelwoord 'immutable' voor een state variable?",
+            "options": [
+              "De variabele kan op elk gewenst moment gewijzigd worden",
+              "De variabele kan alleen in de constructor worden ingesteld en daarna nooit meer gewijzigd worden",
+              "De variabele is geheim",
+              "De variabele bevindt zich in memory"
+            ],
+            "correct": 1,
+            "rule": "'immutable' variabelen worden direct in de bytecode van het contract ingebakken tijdens deployment en kunnen daarna nooit meer veranderen."
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Mappings, Structs & Data Organisatie",
+        "subtitle": "Hash-tabellen, O(1) lookups & gas-efficiënte state",
+        "duration": "20-25 min",
+        "focus": "Begrijp hoe mappings werken in Solidity, waarom je er niet overheen kunt itereren, en hoe je structs combineert met mappings voor schaalbare protocollen.",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-emerald-50/70 border border-emerald-100 rounded-2xl\">\n    <h3 class=\"font-bold text-emerald-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-database text-emerald-600\"></i> Mappings: De Ruggegraat van Smart Contracts\n    </h3>\n    <p>Een <code>mapping(KeyType => ValueType)</code> functioneert in de EVM als een virtuele hash-tabel. De positie van een waarde in storage wordt berekend met <strong>keccak256(key . slot)</strong>. Hierdoor heeft een mapping altijd een <strong>O(1) zoektijd</strong>, ongeacht hoeveel miljoenen gebruikers er zijn!</p>\n  </div>\n\n  <div class=\"grid grid-cols-1 sm:grid-cols-2 gap-4\">\n    <div class=\"p-4 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-2\">\n      <h4 class=\"font-bold text-slate-900 text-sm border-b pb-1\">Unieke Eigenschappen van Mappings:</h4>\n      <ul class=\"text-xs sm:text-sm space-y-1.5 text-slate-600\">\n        <li>❌ <strong>Geen iteratie:</strong> Je kunt niet met een for-loop door een mapping lopen.</li>\n        <li>❌ <strong>Geen lengte:</strong> Een mapping heeft géén <code>.length</code> eigenschap.</li>\n        <li>✅ <strong>Zero default:</strong> Vraag je een niet-bestaande key op, dan krijg je direct 0 / false / 0x0 terug (geen error/revert!).</li>\n      </ul>\n    </div>\n    <div class=\"p-4 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-2\">\n      <h4 class=\"font-bold text-slate-900 text-sm border-b pb-1\">Structs voor Complexe Data:</h4>\n      <p class=\"text-xs sm:text-sm text-slate-600\">Met <code>struct</code> definieer je eigen aangepaste datatypes waarin je meerdere velden groepeert (zoals een User profiel met naam, saldo en VIP-status).</p>\n    </div>\n  </div>\n\n  <div class=\"bg-slate-900 text-slate-100 rounded-2xl p-4 shadow-xl overflow-x-auto text-xs sm:text-sm font-mono border border-slate-800\">\n    <pre class=\"leading-relaxed\"><code><span class=\"text-slate-500\">// Voorbeeld: UserRegistry.sol</span>\n<span class=\"text-purple-400\">struct</span> <span class=\"text-yellow-300\">User</span> {\n    <span class=\"text-sky-300\">string</span> name;\n    <span class=\"text-sky-300\">uint256</span> balance;\n    <span class=\"text-sky-300\">bool</span> isVip;\n}\n\n<span class=\"text-purple-400\">mapping</span>(<span class=\"text-sky-300\">address</span> => <span class=\"text-yellow-300\">User</span>) <span class=\"text-purple-400\">public</span> users;\n\n<span class=\"text-purple-400\">function</span> <span class=\"text-blue-400\">registerUser</span>(<span class=\"text-sky-300\">string memory</span> _name) <span class=\"text-purple-400\">public</span> {\n    users[<span class=\"text-sky-300\">msg.sender</span>] = <span class=\"text-yellow-300\">User</span>({\n        name: _name,\n        balance: <span class=\"text-emerald-300\">0</span>,\n        isVip: <span class=\"text-purple-400\">false</span>\n    });\n}</code></pre>\n  </div>\n</div>\n",
+        "exercises": [
+          {
+            "id": "s2_ex1",
+            "title": "Oefening A: Saldo Mapping Creëren",
+            "instruction": "Schrijf de regel code om een publieke mapping te definiëren die een 'address' koppelt aan een 'uint256' met de naam 'balances'.",
+            "modelAnswer": "mapping(address => uint256) public balances;",
+            "explanation": "Door 'public' toe te voegen genereert de Solidity compiler automatisch een gratis getter functie."
+          },
+          {
+            "id": "s2_ex2",
+            "title": "Oefening B: Mappings vs Arrays Gas Analyse",
+            "instruction": "Waarom kiest een DeFi protocol vrijwel altijd voor een mapping in plaats van een array om gebruikerssaldi bij te houden?",
+            "modelAnswer": "Omdat een mapping een constante O(1) gas kost heeft voor lookups en updates. Een array zou vereisen dat je lineair O(n) zoekt, wat bij duizenden gebruikers onbetaalbaar wordt en kan leiden tot 'out-of-gas' denial-of-service fouten.",
+            "explanation": "In smart contract security is het vermijden van onbegrensde loops een van de belangrijkste vuistregels!"
+          }
+        ],
+        "quiz": [
+          {
+            "q": "Wat is de tijdcomplexiteit van het opzoeken van een waarde in een Solidity mapping?",
+            "options": [
+              "O(n)",
+              "O(log n)",
+              "O(1)",
+              "O(n^2)"
+            ],
+            "correct": 2,
+            "rule": "Mappings berekenen de storage slot direct via keccak256 hash, wat resulteert in een constante O(1) executietijd."
+          },
+          {
+            "q": "Wat retourneert balances[0x123] als dit adres nog nooit data heeft opgeslagen in mapping(address => uint256)?",
+            "options": [
+              "null",
+              "revert foutmelding",
+              "0",
+              "undefined"
+            ],
+            "correct": 2,
+            "rule": "Niet-bestaande keys in een mapping geven altijd de default waarde van het ValueType (in dit geval 0 voor uint256)."
+          },
+          {
+            "q": "Kan je in Solidity rechtstreeks de lengte of het aantal opgeslagen keys van een mapping opvragen?",
+            "options": [
+              "Ja, via myMapping.length",
+              "Ja, via myMapping.count()",
+              "Nee, mappings slaan geen lijst van keys of lengte op",
+              "Alleen als de mapping public is"
+            ],
+            "correct": 2,
+            "rule": "Mappings slaan geen sleutels op en hebben geen lengte. Wil je itereren, dan moet je zelf een parallelle array bijhouden."
+          },
+          {
+            "q": "Welke variabele bevat in Solidity het adres van degene die de functie aanroept?",
+            "options": [
+              "tx.origin",
+              "msg.sender",
+              "block.coinbase",
+              "this.address"
+            ],
+            "correct": 1,
+            "rule": "'msg.sender' is het directe adres dat de huidige call heeft uitgevoerd en is de gouden standaard voor authenticatie."
+          }
+        ]
+      }
+    ]
+  }
+};
+
+    // LocalStorage Keys
+    const STORAGE_KEY = "polyglot_user_progress_v2";
+
+    // Application State
+    let state = {
+      track: "greek",
+      lessonId: 4,
+      freeMode: false,
+      progress: {
+        greek: { completed: [1, 2, 3], scores: { 1: 100, 2: 100, 3: 100 }, unlocked: [1, 2, 3, 4] },
+        french: { completed: [], scores: {}, unlocked: [1] },
+        solidity: { completed: [], scores: {}, unlocked: [1] }
+      }
     };
 
-    let currentTrack = 'greek';
-    let currentLessonIdx = 3; // Defaults to Les 04 for Greek
+    // Store HandwritingPad instances
+    const pads = {};
     let currentAudio = null;
+    let recognition = null;
+    let isRecording = false;
 
+    // --- HandwritingPad Class for Apple Pencil & iPad ---
+    class HandwritingPad {
+      constructor(canvasEl, id) {
+        this.canvas = canvasEl;
+        this.id = id;
+        this.ctx = this.canvas.getContext('2d');
+        this.strokes = [];
+        this.currentStroke = null;
+        this.mode = 'pen'; // 'pen' | 'eraser'
+        this.penColor = '#1e293b'; // slate-800
+        this.penWidth = 2.5;
+        this.eraserWidth = 24;
+
+        this.initCanvas();
+        this.bindEvents();
+      }
+
+      initCanvas() {
+        const rect = this.canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        this.ctx.scale(dpr, dpr);
+        this.redraw();
+      }
+
+      drawLinedBackground() {
+        const width = this.canvas.width / (window.devicePixelRatio || 1);
+        const height = this.canvas.height / (window.devicePixelRatio || 1);
+
+        // White paper background
+        this.ctx.fillStyle = "#ffffff";
+        this.ctx.fillRect(0, 0, width, height);
+
+        // Subtle horizontal blue/slate writing lines
+        this.ctx.strokeStyle = "#e2e8f0";
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        for (let y = 28; y < height; y += 28) {
+          this.ctx.moveTo(0, y);
+          this.ctx.lineTo(width, y);
+        }
+        this.ctx.stroke();
+
+        // Subtle soft red margin line (notebook look)
+        this.ctx.strokeStyle = "#fecdd3"; // rose-200
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(34, 0);
+        this.ctx.lineTo(34, height);
+        this.ctx.stroke();
+      }
+
+      bindEvents() {
+        const getPt = (e) => {
+          const rect = this.canvas.getBoundingClientRect();
+          return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+          };
+        };
+
+        this.canvas.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          this.canvas.setPointerCapture(e.pointerId);
+          const pt = getPt(e);
+          const pressureWidth = (e.pointerType === 'pen' && e.pressure > 0) ? Math.max(1.8, e.pressure * 4.5) : this.penWidth;
+          
+          this.currentStroke = {
+            mode: this.mode,
+            color: this.penColor,
+            width: this.mode === 'eraser' ? this.eraserWidth : pressureWidth,
+            points: [pt]
+          };
+          this.strokes.push(this.currentStroke);
+        });
+
+        this.canvas.addEventListener('pointermove', (e) => {
+          if (!this.currentStroke) return;
+          e.preventDefault();
+          const pt = getPt(e);
+          this.currentStroke.points.push(pt);
+          this.renderLastSegment();
+        });
+
+        const endStroke = (e) => {
+          if (!this.currentStroke) return;
+          e.preventDefault();
+          this.currentStroke = null;
+        };
+
+        this.canvas.addEventListener('pointerup', endStroke);
+        this.canvas.addEventListener('pointercancel', endStroke);
+
+        window.addEventListener('resize', () => {
+          // preserve on resize
+          const rect = this.canvas.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          this.canvas.width = rect.width * dpr;
+          this.canvas.height = rect.height * dpr;
+          this.ctx.scale(dpr, dpr);
+          this.redraw();
+        });
+      }
+
+      renderLastSegment() {
+        if (!this.currentStroke || this.currentStroke.points.length < 2) return;
+        const pts = this.currentStroke.points;
+        const p1 = pts[pts.length - 2];
+        const p2 = pts[pts.length - 1];
+
+        this.ctx.beginPath();
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        if (this.currentStroke.mode === 'eraser') {
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = this.eraserWidth;
+        } else {
+          this.ctx.strokeStyle = this.currentStroke.color;
+          this.ctx.lineWidth = this.currentStroke.width;
+        }
+        this.ctx.moveTo(p1.x, p1.y);
+        this.ctx.lineTo(p2.x, p2.y);
+        this.ctx.stroke();
+      }
+
+      redraw() {
+        this.drawLinedBackground();
+        this.strokes.forEach(stroke => {
+          if (stroke.points.length < 2) return;
+          this.ctx.beginPath();
+          this.ctx.lineCap = 'round';
+          this.ctx.lineJoin = 'round';
+          if (stroke.mode === 'eraser') {
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = stroke.width || this.eraserWidth;
+          } else {
+            this.ctx.strokeStyle = stroke.color;
+            this.ctx.lineWidth = stroke.width;
+          }
+          this.ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+          for (let i = 1; i < stroke.points.length; i++) {
+            this.ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+          }
+          this.ctx.stroke();
+        });
+      }
+
+      setMode(mode) {
+        this.mode = mode;
+      }
+
+      undo() {
+        if (this.strokes.length > 0) {
+          this.strokes.pop();
+          this.redraw();
+        }
+      }
+
+      clear() {
+        this.strokes = [];
+        this.redraw();
+      }
+    }
+
+    // --- State & Storage Helpers ---
+    function loadState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          state.progress = { ...state.progress, ...parsed.progress };
+          state.freeMode = !!parsed.freeMode;
+        } catch (e) {
+          console.warn("Could not parse saved progress:", e);
+        }
+      }
+
+      // Read URL parameters if provided
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTrack = urlParams.get('track');
+      const urlLesson = parseInt(urlParams.get('lesson'), 10);
+      if (urlTrack && CURRICULUM[urlTrack]) {
+        state.track = urlTrack;
+      }
+      if (urlLesson) {
+        state.lessonId = urlLesson;
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        progress: state.progress,
+        freeMode: state.freeMode
+      }));
+    }
+
+    function isLessonUnlocked(track, lessonId) {
+      if (state.freeMode) return true;
+      const trackProg = state.progress[track] || { unlocked: [1] };
+      return trackProg.unlocked.includes(lessonId) || trackProg.completed.includes(lessonId);
+    }
+
+    function isLessonCompleted(track, lessonId) {
+      const trackProg = state.progress[track] || { completed: [] };
+      return trackProg.completed.includes(lessonId);
+    }
+
+    function getLessonScore(track, lessonId) {
+      const trackProg = state.progress[track] || { scores: {} };
+      return trackProg.scores[lessonId] !== undefined ? trackProg.scores[lessonId] : null;
+    }
+
+    // --- UI Notifications ---
+    function showToast(msg, type = 'info') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastMsg.textContent = msg;
+      toast.className = `fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 max-w-md w-[90%] p-3.5 rounded-2xl shadow-xl border text-xs sm:text-sm font-medium flex items-center space-x-2.5 ${
+        type === 'error' ? 'bg-rose-900 text-white border-rose-700' :
+        type === 'success' ? 'bg-emerald-900 text-white border-emerald-700' :
+        'bg-slate-900 text-white border-slate-700'
+      }`;
+      toastIcon.className = `fa-solid ${
+        type === 'error' ? 'fa-circle-xmark text-rose-400' :
+        type === 'success' ? 'fa-circle-check text-emerald-400' :
+        'fa-circle-info text-sky-400'
+      } text-base`;
+
+      toast.classList.remove('-translate-y-12', 'opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('-translate-y-12', 'opacity-0', 'pointer-events-none');
+      }, 3500);
+    }
+
+    // --- Free Mode & Reset ---
+    function toggleFreeMode() {
+      state.freeMode = !state.freeMode;
+      saveState();
+      updateModeButton();
+      renderCarousel();
+      showToast(state.freeMode ? "🔓 Vrij Leren geactiveerd: alle lessen ontgrendeld!" : "🔒 Toets-beveiliging actief.", state.freeMode ? 'success' : 'info');
+    }
+
+    function updateModeButton() {
+      const btn = document.getElementById('btn-mode-toggle');
+      const icon = document.getElementById('mode-icon');
+      const text = document.getElementById('mode-text');
+
+      if (state.freeMode) {
+        btn.className = "px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center space-x-1.5 bg-amber-50 text-amber-800 border-amber-300";
+        icon.className = "fa-solid fa-lock-open text-amber-600";
+        text.textContent = "Vrij Leren Actief";
+      } else {
+        btn.className = "px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center space-x-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-300";
+        icon.className = "fa-solid fa-lock text-indigo-600";
+        text.textContent = "Toets-vergrendeling";
+      }
+    }
+
+    function resetAllProgress() {
+      if (confirm("Weet je zeker dat je alle toetsresultaten en voortgang wilt wissen?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        state.progress = {
+          greek: { completed: [1, 2, 3], scores: { 1: 100, 2: 100, 3: 100 }, unlocked: [1, 2, 3, 4] },
+          french: { completed: [], scores: {}, unlocked: [1] },
+          solidity: { completed: [], scores: {}, unlocked: [1] }
+        };
+        state.freeMode = false;
+        state.lessonId = 1;
+        if (state.track === 'greek') state.lessonId = 4;
+        saveState();
+        updateModeButton();
+        renderCarousel();
+        loadCurrentLesson();
+        showToast("Voortgang succesvol gereset.", "info");
+      }
+    }
+
+    // --- Track & Lesson Selection ---
+    function selectTrack(track) {
+      state.track = track;
+      const lessons = CURRICULUM[track].lessons;
+      
+      // Default to latest unlocked lesson
+      const unlocked = state.progress[track]?.unlocked || [1];
+      state.lessonId = unlocked[unlocked.length - 1] || lessons[0].id;
+
+      // Update Track Tabs UI
+      ['greek', 'french', 'solidity'].forEach(t => {
+        const btn = document.getElementById(`track-${t}`);
+        if (t === track) {
+          btn.className = "py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5 bg-white text-indigo-600 shadow-sm font-bold";
+        } else {
+          btn.className = "py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5 text-slate-600 hover:text-slate-900";
+        }
+      });
+
+      renderCarousel();
+      loadCurrentLesson();
+    }
+
+    function selectLesson(id) {
+      if (!isLessonUnlocked(state.track, id)) {
+        showToast(`🔒 Les ${id} is vergrendeld. Haal eerst de eindtoets van de vorige les!`, "error");
+        return;
+      }
+      state.lessonId = id;
+      renderCarousel();
+      loadCurrentLesson();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderCarousel() {
+      const trackData = CURRICULUM[state.track];
+      const lessons = trackData.lessons;
+      const carousel = document.getElementById('lesson-carousel');
+      carousel.innerHTML = '';
+
+      let completedCount = 0;
+
+      lessons.forEach(l => {
+        const unlocked = isLessonUnlocked(state.track, l.id);
+        const completed = isLessonCompleted(state.track, l.id);
+        const score = getLessonScore(state.track, l.id);
+        const isCurrent = l.id === state.lessonId;
+
+        if (completed) completedCount++;
+
+        const card = document.createElement('button');
+        card.onclick = () => selectLesson(l.id);
+
+        let borderStyle = "border-slate-200 bg-white text-slate-700";
+        let badgeHtml = "";
+
+        if (isCurrent) {
+          borderStyle = "border-indigo-600 ring-2 ring-indigo-500/20 bg-indigo-50/50 text-indigo-950 font-bold";
+        }
+
+        if (completed) {
+          badgeHtml = `<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-bold flex items-center gap-0.5"><i class="fa-solid fa-check"></i> ${score}%</span>`;
+        } else if (!unlocked) {
+          borderStyle = "border-slate-200 bg-slate-100 text-slate-400 opacity-75";
+          badgeHtml = `<span class="text-[10px] text-slate-400 font-bold flex items-center gap-1"><i class="fa-solid fa-lock"></i> Slot</span>`;
+        } else {
+          badgeHtml = `<span class="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded font-bold">Actief</span>`;
+        }
+
+        card.className = `flex-shrink-0 px-3 py-2 rounded-2xl border text-left transition flex flex-col justify-between w-36 sm:w-44 ${borderStyle} active:scale-95`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between w-full mb-1">
+            <span class="text-[11px] font-bold uppercase tracking-wider ${isCurrent ? 'text-indigo-600' : 'text-slate-400'}">Les ${l.id}</span>
+            ${badgeHtml}
+          </div>
+          <span class="text-xs font-bold line-clamp-1 leading-tight">${l.title}</span>
+        `;
+        carousel.appendChild(card);
+      });
+
+      document.getElementById('track-progress-pill').textContent = `${completedCount} / ${lessons.length} Beheerst`;
+    }
+
+    // --- Lesson Content Loader ---
+    function loadCurrentLesson() {
+      const trackData = CURRICULUM[state.track];
+      const lesson = trackData.lessons.find(l => l.id === state.lessonId) || trackData.lessons[0];
+
+      // Update Hero
+      const badge = document.getElementById('hero-badge');
+      badge.textContent = `${trackData.title} • Les ${lesson.id}`;
+      badge.className = `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${trackData.badgeBg}`;
+
+      document.getElementById('hero-duration').innerHTML = `<i class="fa-regular fa-clock"></i> ${lesson.duration || '20-25 min'}`;
+      document.getElementById('hero-title').textContent = lesson.title;
+      document.getElementById('hero-subtitle').textContent = lesson.subtitle;
+      document.getElementById('hero-focus').textContent = lesson.focus;
+
+      // Completed pill
+      const heroStatus = document.getElementById('hero-status-pill');
+      if (isLessonCompleted(state.track, lesson.id)) {
+        heroStatus.innerHTML = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-full border border-emerald-200 flex items-center gap-1"><i class="fa-solid fa-medal text-emerald-600"></i> Beheerst (${getLessonScore(state.track, lesson.id)}%)</span>`;
+      } else {
+        heroStatus.innerHTML = `<span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200 flex items-center gap-1"><i class="fa-solid fa-hourglass-start text-indigo-500"></i> In Opleiding</span>`;
+      }
+
+      // Section 1: Theory
+      document.getElementById('theory-content').innerHTML = lesson.theoryHtml;
+
+      // Section 2: Audio & Speech
+      const audioSec = document.getElementById('section-audio');
+      if (lesson.vocab || lesson.speechTarget) {
+        audioSec.style.display = 'block';
+        document.getElementById('nav-audio-btn').style.display = 'flex';
+
+        // Vocab Chips
+        const chipsContainer = document.getElementById('vocab-chips');
+        chipsContainer.innerHTML = '';
+        if (lesson.vocab) {
+          lesson.vocab.forEach(v => {
+            const btn = document.createElement('button');
+            btn.className = "px-3 py-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 rounded-xl text-xs font-semibold flex items-center space-x-2 transition border border-slate-200 active:scale-95";
+            btn.onclick = () => playAudioOrTTS(v.audio, v.term, state.track === 'greek' ? 'el-GR' : 'fr-FR');
+            btn.innerHTML = `
+              <i class="fa-solid fa-volume-high text-pink-500 opacity-70"></i>
+              <span class="font-bold">${v.term}</span>
+              ${v.translit ? `<span class="text-slate-400 font-normal">(${v.translit})</span>` : ''}
+              <span class="text-slate-500 font-normal">― ${v.meaning}</span>
+            `;
+            chipsContainer.appendChild(btn);
+          });
+        }
+
+        // Speech Drill Target
+        if (lesson.speechTarget) {
+          document.getElementById('speech-drill-card').style.display = 'block';
+          document.getElementById('speech-target-phrase').textContent = lesson.speechTarget.phrase;
+          document.getElementById('speech-target-sub').textContent = lesson.speechTarget.sub;
+          document.getElementById('speech-feedback').textContent = '';
+        } else {
+          document.getElementById('speech-drill-card').style.display = 'none';
+        }
+      } else {
+        audioSec.style.display = 'none';
+        document.getElementById('nav-audio-btn').style.display = 'none';
+      }
+
+      // Section 3: Exercises
+      renderExercises(lesson.exercises || []);
+
+      // Section 4: Exam
+      renderExam(lesson.quiz || []);
+    }
+
+    // --- Audio Engine ---
     function playAudioOrTTS(audioFile, fallbackText, lang) {
       if (currentAudio) {
         currentAudio.pause();
@@ -394,7 +1634,7 @@ contract SimpleStorage {
       if (audioFile) {
         currentAudio = new Audio(AUDIO_BASE_URL + audioFile);
         currentAudio.play().catch(err => {
-          console.warn("Audio file playback fallback to neural TTS:", err);
+          console.warn("Studio Audio playback fallback to Neural TTS:", err);
           speakNeuralFallback(fallbackText, lang);
         });
       } else {
@@ -409,238 +1649,363 @@ contract SimpleStorage {
         utterance.lang = lang;
         utterance.rate = 0.92;
 
-        // Try to pick Siri / Enhanced / Premium natural voices
         const voices = window.speechSynthesis.getVoices();
-        const bestVoice = voices.find(v => v.lang.startsWith(lang.split('-')[0]) && 
+        const bestVoice = voices.find(v => v.lang.startsWith(lang.split('-')[0]) &&
           (v.name.includes("Siri") || v.name.includes("Enhanced") || v.name.includes("Premium") || v.name.includes("Natural")));
-        if (bestVoice) {
-          utterance.voice = bestVoice;
-        }
+        if (bestVoice) utterance.voice = bestVoice;
 
         window.speechSynthesis.speak(utterance);
       }
     }
 
-    function selectTrack(track) {
-      currentTrack = track;
-      currentLessonIdx = 0;
-      if (track === 'greek') currentLessonIdx = 3;
-
-      ['greek', 'french', 'solidity'].forEach(t => {
-        const btn = document.getElementById(`track-${t}`);
-        if (t === track) {
-          btn.className = "px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 bg-white text-indigo-600 shadow-sm";
-        } else {
-          btn.className = "px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-slate-600 hover:text-slate-900";
-        }
-      });
-
-      renderLessonPills();
-      renderActiveLesson();
-    }
-
-    function renderLessonPills() {
-      const container = document.getElementById('lesson-pills-container');
-      container.innerHTML = '';
-      const lessons = DATA[currentTrack].lessons;
-
-      lessons.forEach((l, idx) => {
-        const btn = document.createElement('button');
-        const isActive = idx === currentLessonIdx;
-        btn.className = isActive 
-          ? "px-3 py-1 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm"
-          : "px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium border border-slate-200";
-        btn.textContent = `Les ${l.id}`;
-        btn.onclick = () => {
-          currentLessonIdx = idx;
-          renderLessonPills();
-          renderActiveLesson();
-        };
-        container.appendChild(btn);
-      });
-    }
-
-    function renderActiveLesson() {
-      const trackData = DATA[currentTrack];
-      const lesson = trackData.lessons[currentLessonIdx];
-
-      const badge = document.getElementById('lesson-level-badge');
-      badge.textContent = `${trackData.title} • Les ${lesson.id}`;
-      badge.className = `px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${trackData.badgeColor}`;
-
-      document.getElementById('lesson-title').textContent = lesson.title;
-      document.getElementById('lesson-subtitle').textContent = lesson.subtitle;
-      document.getElementById('lesson-focus').textContent = lesson.focus;
-      document.getElementById('onedrive-pdf-link').href = lesson.pdfUrl;
-
-      const box = document.getElementById('dynamic-content-box');
-      box.innerHTML = '';
-
-      if (lesson.vocab) {
-        const title = document.createElement('h4');
-        title.className = "text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5";
-        title.innerHTML = `<span>Kernvocabulaire (Tik om studiogeluid te horen):</span> <span class="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-bold">Studio Audio</span>`;
-        box.appendChild(title);
-
-        const vDiv = document.createElement('div');
-        vDiv.className = "flex flex-wrap gap-2";
-        lesson.vocab.forEach(v => {
-          const btn = document.createElement('button');
-          btn.className = "px-3 py-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 rounded-xl text-xs font-semibold flex items-center space-x-2 transition border border-slate-200 active:scale-95";
-          btn.onclick = () => playAudioOrTTS(v.audio, v.term, currentTrack === 'greek' ? 'el-GR' : 'fr-FR');
-          btn.innerHTML = `
-            <i class="fa-solid fa-volume-high text-indigo-500 opacity-70"></i>
-            <span class="font-bold">${v.term}</span>
-            <span class="text-slate-400 font-normal">(${v.meaning})</span>
-          `;
-          vDiv.appendChild(btn);
-        });
-        box.appendChild(vDiv);
-      } else if (lesson.code) {
-        const title = document.createElement('h4');
-        title.className = "text-xs font-bold uppercase tracking-wider text-slate-400 mb-2";
-        title.textContent = "Smart Contract Code:";
-        box.appendChild(title);
-
-        const pre = document.createElement('pre');
-        pre.className = "bg-slate-900 text-emerald-400 p-4 rounded-2xl text-xs overflow-x-auto border border-slate-800 shadow-inner";
-        pre.textContent = lesson.code;
-        box.appendChild(pre);
+    function playCurrentSpeechTarget() {
+      const trackData = CURRICULUM[state.track];
+      const lesson = trackData.lessons.find(l => l.id === state.lessonId);
+      if (lesson && lesson.speechTarget) {
+        const lang = state.track === 'greek' ? 'el-GR' : 'fr-FR';
+        playAudioOrTTS(lesson.speechTarget.audio, lesson.speechTarget.phrase, lang);
       }
-
-      if (currentTrack === 'solidity') {
-        document.getElementById('practice-card-title').textContent = "Solidity Syntax & Terminal Drill";
-        document.getElementById('practice-badge').textContent = "Remix / Terminal";
-        document.getElementById('practice-description').textContent = "Typ of lees deze essentiële contractdefinitie hardop:";
-        document.getElementById('mic-section').style.display = 'none';
-        document.getElementById('practice-sound-btn').style.display = 'none';
-      } else {
-        document.getElementById('practice-card-title').textContent = "Spreek- en Uitspraaktraining";
-        document.getElementById('practice-badge').textContent = "Studio Audio";
-        document.getElementById('practice-description').textContent = "Tik op de luidspreker om de natuurlijke uitspraak te horen en spreek in via de microfoon:";
-        document.getElementById('mic-section').style.display = 'flex';
-        document.getElementById('practice-sound-btn').style.display = 'flex';
-      }
-
-      document.getElementById('practice-target').textContent = lesson.speech.target;
-      document.getElementById('practice-translation').textContent = lesson.speech.sub;
-      document.getElementById('speech-feedback').textContent = '';
-
-      document.getElementById('modal-grammar-title').textContent = lesson.grammarTitle;
-      document.getElementById('modal-grammar-content').innerHTML = lesson.grammarHtml;
-
-      renderQuiz(lesson.quiz);
     }
 
-    function renderQuiz(quiz) {
-      document.getElementById('quiz-counter').textContent = `Actieve Toetsing`;
-      document.getElementById('quiz-question-text').textContent = quiz.q;
+    function toggleSpeechRecording() {
+      const feedback = document.getElementById('speech-feedback');
+      const btnText = document.getElementById('mic-btn-text');
 
-      const feedbackBox = document.getElementById('quiz-feedback-box');
-      feedbackBox.className = "hidden rounded-2xl p-4 text-sm font-medium transition-all";
-      feedbackBox.innerHTML = '';
-
-      const container = document.getElementById('quiz-options-container');
-      container.innerHTML = '';
-
-      quiz.options.forEach((opt, idx) => {
-        const btn = document.createElement('button');
-        btn.className = "w-full text-left p-3.5 rounded-2xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 text-slate-800 text-sm font-semibold transition flex items-center justify-between";
-        btn.innerHTML = `<span>${opt}</span> <i class="fa-regular fa-circle text-slate-300"></i>`;
-        btn.onclick = () => {
-          const all = container.querySelectorAll('button');
-          all.forEach(b => b.disabled = true);
-
-          if (idx === quiz.correct) {
-            btn.className = "w-full text-left p-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-emerald-900 text-sm font-bold flex items-center justify-between";
-            btn.querySelector('i').className = "fa-solid fa-circle-check text-emerald-600";
-            feedbackBox.className = "rounded-2xl p-4 text-sm bg-emerald-50 text-emerald-900 border border-emerald-200 block space-y-2";
-            feedbackBox.innerHTML = `
-              <div class="flex items-center space-x-2 font-bold text-emerald-800">
-                <i class="fa-solid fa-circle-check"></i>
-                <span>Helemaal juist!</span>
-              </div>
-              <p class="text-xs text-emerald-800 leading-relaxed">${quiz.rule}</p>
-            `;
-          } else {
-            btn.className = "w-full text-left p-3.5 rounded-2xl border-2 border-rose-400 bg-rose-50 text-rose-900 text-sm font-semibold flex items-center justify-between";
-            btn.querySelector('i').className = "fa-solid fa-circle-xmark text-rose-600";
-            const correctBtn = all[quiz.correct];
-            correctBtn.className = "w-full text-left p-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-emerald-900 text-sm font-semibold flex items-center justify-between";
-
-            feedbackBox.className = "rounded-2xl p-4 text-sm bg-amber-50 text-amber-900 border border-amber-200 block space-y-2";
-            feedbackBox.innerHTML = `
-              <div class="flex items-center space-x-2 font-bold text-amber-800">
-                <i class="fa-solid fa-circle-info"></i>
-                <span>Leerzaam moment:</span>
-              </div>
-              <p class="text-xs text-amber-800 leading-relaxed">${quiz.rule}</p>
-            `;
-          }
-        };
-        container.appendChild(btn);
-      });
-    }
-
-    function speakTargetPhrase() {
-      const lesson = DATA[currentTrack].lessons[currentLessonIdx];
-      const lang = currentTrack === 'greek' ? 'el-GR' : 'fr-FR';
-      playAudioOrTTS(lesson.speech.audio, lesson.speech.target, lang);
-    }
-
-    let isRecording = false;
-    let recognition = null;
-
-    function toggleSpeechRecognition() {
-      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRec) {
-        alert("Spraakherkenning vereist Safari of Chrome.");
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        feedback.textContent = "Spraakherkenning vereist Safari op iOS of Chrome.";
         return;
       }
-      const micBtn = document.getElementById('mic-btn');
-      const micLabel = document.getElementById('mic-label');
-      const feedback = document.getElementById('speech-feedback');
 
       if (isRecording) {
-        recognition.stop();
+        if (recognition) recognition.stop();
+        isRecording = false;
+        btnText.textContent = "Spreek in (Microfoon)";
         return;
       }
 
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SpeechRec();
-      recognition.lang = currentTrack === 'greek' ? 'el-GR' : 'fr-FR';
+      recognition.lang = state.track === 'greek' ? 'el-GR' : 'fr-FR';
+      recognition.continuous = false;
       recognition.interimResults = false;
 
       recognition.onstart = () => {
         isRecording = true;
-        micBtn.className = "px-4 py-2 bg-rose-500 text-white font-bold text-xs rounded-xl flex items-center space-x-2 transition shadow animate-pulse";
-        micLabel.textContent = "Luistert... spreek nu!";
-        feedback.textContent = "Aan het luisteren...";
+        btnText.textContent = "Luisteren...";
+        feedback.innerHTML = `<span class="animate-pulse text-pink-300">🎙️ Spreek nu duidelijk de doelzin in...</span>`;
       };
 
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        feedback.innerHTML = `Gehoord: <em>"${transcript}"</em>`;
+      recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        feedback.innerHTML = `✅ Gehoord: <strong>"${transcript}"</strong>`;
       };
 
-      recognition.onerror = () => {
-        feedback.textContent = "Geen spraak waargenomen of permissie geweigerd.";
+      recognition.onerror = (e) => {
+        feedback.textContent = `Microfoonfout: ${e.error}`;
       };
 
       recognition.onend = () => {
         isRecording = false;
-        micBtn.className = "px-4 py-2 bg-white text-indigo-600 hover:bg-indigo-50 font-bold text-xs rounded-xl flex items-center space-x-2 transition shadow";
-        micLabel.textContent = "Opnieuw inspreken";
+        btnText.textContent = "Spreek in (Microfoon)";
       };
 
       recognition.start();
     }
 
-    function toggleGrammarModal() {
-      document.getElementById('grammar-modal').classList.toggle('hidden');
+    // --- Exercises Renderer (Handwriting & Typing) ---
+    function renderExercises(exercises) {
+      const container = document.getElementById('exercises-list');
+      container.innerHTML = '';
+
+      if (exercises.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500 italic">Geen specifieke oefeningen voor deze les.</p>';
+        return;
+      }
+
+      exercises.forEach((ex, idx) => {
+        const card = document.createElement('div');
+        card.className = "p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 shadow-2xs";
+
+        card.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h4 class="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 text-xs flex items-center justify-center font-extrabold">${idx + 1}</span>
+              <span>${ex.title}</span>
+            </h4>
+
+            <!-- Mode Switcher: iPad Pencil vs iPhone Keyboard -->
+            <div class="flex bg-slate-200/80 p-0.5 rounded-xl text-xs font-bold border border-slate-300">
+              <button id="btn-draw-${ex.id}" onclick="switchInputMode('${ex.id}', 'draw')" class="px-2.5 py-1 rounded-lg transition bg-white text-indigo-600 shadow-xs flex items-center gap-1">
+                <i class="fa-solid fa-pen-nib"></i> <span>Schrijven (iPad)</span>
+              </button>
+              <button id="btn-type-${ex.id}" onclick="switchInputMode('${ex.id}', 'type')" class="px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1">
+                <i class="fa-solid fa-keyboard"></i> <span>Typen (iPhone)</span>
+              </button>
+            </div>
+          </div>
+
+          <p class="text-xs sm:text-sm text-slate-700 font-medium">${ex.instruction}</p>
+
+          <!-- Writing Canvas (iPad) -->
+          <div id="container-draw-${ex.id}" class="space-y-2">
+            <div class="relative border border-slate-300 rounded-2xl overflow-hidden bg-white shadow-inner">
+              <canvas id="canvas-${ex.id}" class="pencil-canvas w-full h-44 sm:h-52 block"></canvas>
+            </div>
+            <div class="flex items-center justify-between pt-1 text-xs">
+              <div class="flex items-center space-x-1.5">
+                <button onclick="setPadTool('${ex.id}', 'pen')" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-bold flex items-center gap-1">
+                  <i class="fa-solid fa-pen"></i> Pen
+                </button>
+                <button onclick="setPadTool('${ex.id}', 'eraser')" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-bold flex items-center gap-1">
+                  <i class="fa-solid fa-eraser"></i> Gom
+                </button>
+                <button onclick="undoPad('${ex.id}')" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-bold" title="Stap terug">
+                  <i class="fa-solid fa-arrow-rotate-left"></i>
+                </button>
+              </div>
+              <button onclick="clearPad('${ex.id}')" class="px-2.5 py-1 text-rose-600 hover:bg-rose-50 rounded-lg font-bold">
+                <i class="fa-solid fa-trash-can"></i> Wissen
+              </button>
+            </div>
+          </div>
+
+          <!-- Typing Box (iPhone) -->
+          <div id="container-type-${ex.id}" class="hidden space-y-2">
+            <textarea id="textarea-${ex.id}" rows="3" placeholder="Typ hier jouw antwoord..." class="w-full p-3.5 bg-white border border-slate-300 rounded-2xl text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"></textarea>
+          </div>
+
+          <!-- Model Answer Accordion -->
+          <div class="pt-1">
+            <button onclick="toggleModelAnswer('${ex.id}')" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 transition">
+              <i id="icon-ans-${ex.id}" class="fa-solid fa-chevron-right text-[10px]"></i>
+              <span>Toon Modelantwoord & Analyse</span>
+            </button>
+            <div id="ans-box-${ex.id}" class="hidden mt-2 p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs sm:text-sm space-y-1.5">
+              <div class="font-bold text-indigo-950">
+                <span class="text-indigo-600">Modelantwoord:</span> ${ex.modelAnswer}
+              </div>
+              <p class="text-slate-600 text-xs leading-relaxed">${ex.explanation}</p>
+            </div>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      // Initialize handwriting canvases after DOM insertion
+      setTimeout(() => {
+        exercises.forEach(ex => {
+          const canvasEl = document.getElementById(`canvas-${ex.id}`);
+          if (canvasEl) {
+            pads[ex.id] = new HandwritingPad(canvasEl, ex.id);
+          }
+        });
+      }, 50);
     }
 
+    function switchInputMode(exId, mode) {
+      const drawCont = document.getElementById(`container-draw-${exId}`);
+      const typeCont = document.getElementById(`container-type-${exId}`);
+      const btnDraw = document.getElementById(`btn-draw-${exId}`);
+      const btnType = document.getElementById(`btn-type-${exId}`);
+
+      if (mode === 'draw') {
+        drawCont.classList.remove('hidden');
+        typeCont.classList.add('hidden');
+        btnDraw.className = "px-2.5 py-1 rounded-lg transition bg-white text-indigo-600 shadow-xs flex items-center gap-1";
+        btnType.className = "px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1";
+        if (pads[exId]) pads[exId].redraw();
+      } else {
+        drawCont.classList.add('hidden');
+        typeCont.classList.remove('hidden');
+        btnType.className = "px-2.5 py-1 rounded-lg transition bg-white text-indigo-600 shadow-xs flex items-center gap-1";
+        btnDraw.className = "px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1";
+      }
+    }
+
+    function setPadTool(exId, tool) {
+      if (pads[exId]) pads[exId].setMode(tool);
+    }
+
+    function undoPad(exId) {
+      if (pads[exId]) pads[exId].undo();
+    }
+
+    function clearPad(exId) {
+      if (pads[exId]) pads[exId].clear();
+    }
+
+    function toggleModelAnswer(exId) {
+      const box = document.getElementById(`ans-box-${exId}`);
+      const icon = document.getElementById(`icon-ans-${exId}`);
+      box.classList.toggle('hidden');
+      icon.classList.toggle('fa-chevron-down');
+      icon.classList.toggle('fa-chevron-right');
+    }
+
+    // --- Section 4: Mastery Exam & Gating Logic ---
+    function renderExam(quizQuestions) {
+      const container = document.getElementById('exam-questions-container');
+      const badge = document.getElementById('exam-status-badge');
+      const banner = document.getElementById('exam-result-banner');
+      banner.classList.add('hidden');
+      document.getElementById('exam-score-display').textContent = '';
+
+      container.innerHTML = '';
+
+      const isDone = isLessonCompleted(state.track, state.lessonId);
+      const score = getLessonScore(state.track, state.lessonId);
+
+      if (isDone) {
+        badge.textContent = `Behaald (${score}%)`;
+        badge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200";
+      } else {
+        badge.textContent = "Niet afgelegd";
+        badge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200";
+      }
+
+      if (quizQuestions.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500 italic">Geen toetsvragen voor deze les.</p>';
+        return;
+      }
+
+      quizQuestions.forEach((qItem, qIdx) => {
+        const qCard = document.createElement('div');
+        qCard.className = "p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3";
+        qCard.id = `exam-q-${qIdx}`;
+
+        let optionsHtml = qItem.options.map((opt, oIdx) => `
+          <label class="flex items-start space-x-3 p-3 bg-white hover:bg-indigo-50/50 rounded-xl border border-slate-200 cursor-pointer transition select-none text-xs sm:text-sm font-medium text-slate-700">
+            <input type="radio" name="exam_q_${qIdx}" value="${oIdx}" class="mt-0.5 text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+            <span class="flex-1">${opt}</span>
+          </label>
+        `).join('');
+
+        qCard.innerHTML = `
+          <h4 class="font-bold text-slate-900 text-sm sm:text-base flex items-start gap-2">
+            <span class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-800 text-xs flex items-center justify-center font-extrabold flex-shrink-0 mt-0.5">${qIdx + 1}</span>
+            <span>${qItem.q}</span>
+          </h4>
+          <div class="space-y-2 pt-1" id="exam-opts-${qIdx}">
+            ${optionsHtml}
+          </div>
+          <div id="exam-feedback-${qIdx}" class="hidden p-3 rounded-xl text-xs mt-2"></div>
+        `;
+
+        container.appendChild(qCard);
+      });
+    }
+
+    function submitExam() {
+      const trackData = CURRICULUM[state.track];
+      const lesson = trackData.lessons.find(l => l.id === state.lessonId);
+      if (!lesson || !lesson.quiz) return;
+
+      const questions = lesson.quiz;
+      let correctCount = 0;
+      let allAnswered = true;
+
+      questions.forEach((q, idx) => {
+        const selected = document.querySelector(`input[name="exam_q_${idx}"]:checked`);
+        const feedbackEl = document.getElementById(`exam-feedback-${idx}`);
+
+        if (!selected) {
+          allAnswered = false;
+        } else {
+          const val = parseInt(selected.value, 10);
+          feedbackEl.classList.remove('hidden');
+
+          if (val === q.correct) {
+            correctCount++;
+            feedbackEl.className = "p-3 rounded-xl text-xs mt-2 bg-emerald-50 text-emerald-900 border border-emerald-200 font-medium";
+            feedbackEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> <strong>Juist!</strong> ${q.rule}`;
+          } else {
+            feedbackEl.className = "p-3 rounded-xl text-xs mt-2 bg-rose-50 text-rose-900 border border-rose-200 font-medium";
+            feedbackEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600 mr-1"></i> <strong>Onjuist.</strong> Juiste antwoord: <em>${q.options[q.correct]}</em>. ${q.rule}`;
+          }
+        }
+      });
+
+      if (!allAnswered) {
+        showToast("Beantwoord eerst alle toetsvragen voordat je indient!", "error");
+        return;
+      }
+
+      const percentage = Math.round((correctCount / questions.length) * 100);
+      const passed = percentage >= 80;
+
+      const banner = document.getElementById('exam-result-banner');
+      banner.classList.remove('hidden');
+
+      const nextLesson = trackData.lessons.find(l => l.id === state.lessonId + 1);
+
+      if (passed) {
+        // Confetti explosion
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+
+        // Save progress & Unlock next lesson
+        if (!state.progress[state.track].completed.includes(state.lessonId)) {
+          state.progress[state.track].completed.push(state.lessonId);
+        }
+        state.progress[state.track].scores[state.lessonId] = percentage;
+
+        if (nextLesson && !state.progress[state.track].unlocked.includes(nextLesson.id)) {
+          state.progress[state.track].unlocked.push(nextLesson.id);
+        }
+
+        saveState();
+        renderCarousel();
+
+        banner.className = "p-5 rounded-2xl border bg-emerald-50 border-emerald-200 text-emerald-950 space-y-3";
+        banner.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-lg shadow-sm">
+              <i class="fa-solid fa-award"></i>
+            </div>
+            <div>
+              <h4 class="font-extrabold text-base">🎉 GEFELICITEERD! JE BEHEERST DEZE LES!</h4>
+              <p class="text-xs text-emerald-800">Je score: <strong>${correctCount} van de ${questions.length} juist (${percentage}%)</strong></p>
+            </div>
+          </div>
+          ${nextLesson ? `
+            <div class="pt-2">
+              <button onclick="selectLesson(${nextLesson.id})" class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow transition active:scale-95 flex items-center gap-2">
+                <span>Ga direct naar Les ${nextLesson.id}: ${nextLesson.title}</span>
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          ` : `
+            <p class="text-xs font-bold text-emerald-700 pt-1">🏆 Je hebt alle beschikbare lessen in dit leertraject succesvol afgerond!</p>
+          `}
+        `;
+
+        showToast(`Gefeliciteerd! Les ${state.lessonId} voltooid met ${percentage}%.`, "success");
+      } else {
+        banner.className = "p-5 rounded-2xl border bg-rose-50 border-rose-200 text-rose-950 space-y-3";
+        banner.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center text-lg shadow-sm">
+              <i class="fa-solid fa-rotate-left"></i>
+            </div>
+            <div>
+              <h4 class="font-extrabold text-base">Nog niet voldoende beheerst (${percentage}%)</h4>
+              <p class="text-xs text-rose-800">Je hebt minimaal <strong>80% nodig</strong> om de volgende les te ontgrendelen. Bekijk de uitleg bij de foute antwoorden hierboven en probeer het opnieuw!</p>
+            </div>
+          </div>
+        `;
+        showToast(`Score: ${percentage}%. Bekijk de toelichting en probeer opnieuw!`, "error");
+      }
+    }
+
+    // --- App Bootstrap ---
     document.addEventListener('DOMContentLoaded', () => {
-      selectTrack('greek');
+      loadState();
+      updateModeButton();
+      selectTrack(state.track);
     });
   </script>
 </body>
