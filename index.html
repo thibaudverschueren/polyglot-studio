@@ -48,48 +48,52 @@
       cursor: crosshair;
     }
 
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    /* Custom scrollbar for dark terminal & code editor */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
   </style>
 </head>
-<body class="min-h-full flex flex-col antialiased selection:bg-indigo-500 selection:text-white pb-12">
+<body class="h-full flex flex-col bg-slate-100 text-slate-900 select-none">
 
-  <!-- Header -->
-  <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 safe-top shadow-sm">
-    <div class="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between">
+  <!-- Fixed Top Header -->
+  <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 safe-top shadow-xs">
+    <div class="max-w-5xl mx-auto px-4 py-2.5 flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-md">
-          <i class="fa-solid fa-graduation-cap"></i>
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+          <i class="fa-solid fa-graduation-cap text-base"></i>
         </div>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 leading-tight">Polyglot Studio</h1>
-            <span class="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-indigo-200">
-              <i class="fa-solid fa-pen-nib text-indigo-600"></i> Pro Inkt 120Hz
-            </span>
-          </div>
-          <p class="text-xs text-slate-500 font-medium">Thibaud's Taal- & Techacademie</p>
+          <h1 class="font-extrabold text-slate-900 text-base leading-tight tracking-tight">Polyglot Studio</h1>
+          <p class="text-[10px] text-slate-500 font-medium">Interactief Leersysteem met Handschrift, Audio & EVM Studio</p>
         </div>
       </div>
 
-      <!-- Controls & Free Mode -->
-      <div class="flex items-center space-x-2">
-        <button id="btn-mode-toggle" onclick="toggleFreeMode()" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center space-x-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-300" title="Vrij leren of toetsvergrendeling">
-          <i id="mode-icon" class="fa-solid fa-lock text-indigo-600"></i>
-          <span id="mode-text" class="hidden sm:inline">Toets-vergrendeling</span>
-        </button>
-
-        <button onclick="resetAllProgress()" class="p-2 text-slate-400 hover:text-rose-600 transition text-sm rounded-lg hover:bg-rose-50" title="Voortgang resetten">
-          <i class="fa-solid fa-rotate-left"></i>
+      <!-- Free Learning Toggle -->
+      <div class="flex items-center space-x-2 bg-slate-100 p-1 rounded-2xl border border-slate-200">
+        <button id="toggle-mode-btn" onclick="toggleFreeMode()" class="px-2.5 py-1 text-xs font-bold rounded-xl transition flex items-center space-x-1 text-slate-600 hover:text-slate-900">
+          <i class="fa-solid fa-lock text-[10px]"></i>
+          <span id="mode-text">Geleid Leren</span>
         </button>
       </div>
     </div>
 
     <!-- Track Selector Tabs -->
-    <div class="max-w-4xl mx-auto px-4 pt-1 pb-2 flex items-center justify-between gap-2">
-      <div class="grid grid-cols-3 gap-1.5 w-full bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs sm:text-sm font-semibold">
+    <div class="max-w-5xl mx-auto px-4 pt-1 pb-2">
+      <div class="grid grid-cols-3 gap-2 p-1 bg-slate-200/70 rounded-2xl text-xs font-bold text-slate-600">
         <button id="track-greek" onclick="selectTrack('greek')" class="py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5">
-          <span>🇬🇷</span>
+          <span>🏛️</span>
           <span>Grieks</span>
         </button>
         <button id="track-french" onclick="selectTrack('french')" class="py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5">
@@ -104,201 +108,200 @@
     </div>
   </header>
 
-  <!-- Notification Toast -->
-  <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform -translate-y-12 opacity-0 pointer-events-none max-w-md w-[90%] p-3.5 rounded-2xl shadow-xl border text-xs sm:text-sm font-medium flex items-center space-x-2.5">
-    <i id="toast-icon" class="fa-solid fa-circle-info text-base"></i>
-    <span id="toast-msg">Melding</span>
-  </div>
+  <!-- Main Container -->
+  <main class="flex-1 overflow-y-auto pb-24">
+    <div class="max-w-5xl mx-auto px-4 py-5 space-y-6">
 
-  <!-- Lesson Navigation Carousel -->
-  <section class="bg-white border-b border-slate-200 py-3 shadow-xs">
-    <div class="max-w-4xl mx-auto px-4">
-      <div class="flex items-center justify-between mb-2">
-        <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-          <i class="fa-solid fa-list-check text-indigo-500"></i> Lessenoverzicht & Voortgang
-        </span>
-        <span id="track-progress-pill" class="text-[11px] font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full border border-slate-200">
-          0 / 0 Voltooid
-        </span>
-      </div>
-      <div id="lesson-carousel" class="flex space-x-2.5 overflow-x-auto no-scrollbar pb-1 pt-0.5">
-        <!-- Injected via JavaScript -->
-      </div>
-    </div>
-  </section>
+      <!-- Course Info Card -->
+      <div id="course-header" class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
+        <div class="relative z-10 flex flex-wrap items-center justify-between gap-4">
+          <div class="space-y-1">
+            <span id="track-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-white/10 text-white border border-white/20">Vak</span>
+            <h2 id="track-title" class="text-xl sm:text-2xl font-black tracking-tight">Vak Titel</h2>
+            <p id="track-subtitle" class="text-xs sm:text-sm text-slate-300">Ondertitel van het vak</p>
+          </div>
 
-  <!-- Main Lesson Container -->
-  <main class="max-w-4xl mx-auto px-4 py-6 w-full flex-1 space-y-6">
-
-    <!-- Hero Card -->
-    <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm relative overflow-hidden">
-      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <div class="flex items-center gap-2">
-          <span id="hero-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-            Les
-          </span>
-          <span id="hero-duration" class="text-xs font-semibold text-slate-400 flex items-center gap-1">
-            <i class="fa-regular fa-clock"></i> 20-25 min
-          </span>
-        </div>
-        <div id="hero-status-pill">
-          <!-- Status pill -->
+          <!-- Overall Progress -->
+          <div class="flex items-center space-x-3 bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/15">
+            <div class="text-right">
+              <div class="text-[10px] uppercase font-bold text-slate-300">Beheersing</div>
+              <div id="track-progress-text" class="text-lg font-black leading-none">0%</div>
+            </div>
+            <div class="w-10 h-10 rounded-full border-2 border-emerald-400 flex items-center justify-center text-xs font-bold text-emerald-300">
+              <i class="fa-solid fa-check"></i>
+            </div>
+          </div>
         </div>
       </div>
 
-      <h2 id="hero-title" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug">
-        Lestitel
-      </h2>
-      <p id="hero-subtitle" class="text-xs sm:text-sm font-semibold text-slate-500 mt-1 mb-4">
-        Ondertitel
-      </p>
-
-      <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs sm:text-sm text-slate-700">
-        <strong class="text-slate-900 font-bold block mb-1">🎯 Leerdoel van deze sessie:</strong>
-        <span id="hero-focus">Focus omschrijving</span>
-      </div>
-
-      <!-- Quick Navigation Anchors -->
-      <div class="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-100 text-xs font-semibold text-slate-600">
-        <a href="#section-theory" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition flex items-center gap-1.5">
-          <i class="fa-solid fa-book-open text-indigo-500"></i> 1. Theorie
-        </a>
-        <a id="nav-audio-btn" href="#section-audio" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition flex items-center gap-1.5">
-          <i class="fa-solid fa-volume-high text-pink-500"></i> 2. Audio & Spraak
-        </a>
-        <a href="#section-exercises" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition flex items-center gap-1.5">
-          <i class="fa-solid fa-pen-fancy text-emerald-500"></i> 3. Oefeningen (iPad/iPhone)
-        </a>
-        <a href="#section-exam" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl transition flex items-center gap-1.5 font-bold">
-          <i class="fa-solid fa-graduation-cap text-indigo-600"></i> 4. Eindtoets 🔒
-        </a>
-      </div>
-    </div>
-
-    <!-- Section 1: Theory -->
-    <section id="section-theory" class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-4">
-      <div class="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
-        <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
-          <i class="fa-solid fa-book-open"></i>
+      <!-- Lesson Navigation Horizontal Pills -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
+          <span>LESSEN OVERZICHT</span>
+          <span id="unlocked-counter" class="text-indigo-600">1 / 5 Ontgrendeld</span>
         </div>
-        <div>
-          <h3 class="font-bold text-slate-900 text-base sm:text-lg">1. Diepgaande Theorie & Regels</h3>
-          <p class="text-xs text-slate-500">Lees en begrijp de principes aandachtig vóór de oefeningen.</p>
-        </div>
-      </div>
-      <div id="theory-content">
-        <!-- Injected Theory HTML -->
-      </div>
-    </section>
-
-    <!-- Section 2: Audio Studio (Vocab + Speech Drill) -->
-    <section id="section-audio" class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-5">
-      <div class="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
-        <div class="w-8 h-8 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center font-bold text-sm">
-          <i class="fa-solid fa-waveform-lines"></i>
-        </div>
-        <div>
-          <h3 class="font-bold text-slate-900 text-base sm:text-lg">2. Studio Audio & Spreekvaardigheid</h3>
-          <p class="text-xs text-slate-500">Levensechte Microsoft Neural AI-stemmen voor perfecte uitspraak & gehoor.</p>
+        <div id="lesson-pills" class="flex gap-2.5 overflow-x-auto pb-2 pt-1 no-scrollbar">
+          <!-- Dynamically populated -->
         </div>
       </div>
 
-      <!-- Vocab Chips -->
-      <div id="vocab-container" class="space-y-2">
-        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Kernvocabulaire (Tik om studiogeluid te horen):</h4>
-        <div id="vocab-chips" class="flex flex-wrap gap-2">
-          <!-- Injected via JS -->
-        </div>
-      </div>
+      <!-- Active Lesson Content Container -->
+      <div id="lesson-content-view" class="space-y-6">
 
-      <!-- Speech Drill Card -->
-      <div id="speech-drill-card" class="p-5 bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-2xl shadow-lg space-y-4">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
-            <i class="fa-solid fa-microphone text-pink-400"></i> Uitspraak- & Luisterdrill
-          </span>
-          <span class="text-[10px] bg-white/10 text-white px-2 py-0.5 rounded-full font-bold">Studio Audio</span>
-        </div>
-
-        <div>
-          <h4 id="speech-target-phrase" class="text-lg sm:text-xl font-black tracking-tight text-white">
-            Doelzin
-          </h4>
-          <p id="speech-target-sub" class="text-xs sm:text-sm text-slate-300 mt-1">
-            Vertaling en fonetiek
-          </p>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-3 pt-2">
-          <button id="btn-play-speech" onclick="playCurrentSpeechTarget()" class="px-4 py-2.5 bg-white text-slate-900 hover:bg-slate-100 rounded-xl font-bold text-xs flex items-center gap-2 transition active:scale-95 shadow">
-            <i class="fa-solid fa-volume-high text-indigo-600"></i> Beluister Studio Stem
-          </button>
-
-          <button id="btn-mic-drill" onclick="toggleSpeechRecording()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs flex items-center gap-2 transition active:scale-95 shadow">
-            <i class="fa-solid fa-microphone"></i> <span id="mic-btn-text">Spreek in (Microfoon)</span>
-          </button>
-        </div>
-
-        <div id="speech-feedback" class="text-xs text-indigo-200 italic min-h-[1.25rem]"></div>
-      </div>
-    </section>
-
-    <!-- Section 3: Interactive Exercises (iPad Pencil & iPhone Typing) -->
-    <section id="section-exercises" class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-6">
-      <div class="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
-        <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
-          <i class="fa-solid fa-pen-fancy"></i>
-        </div>
-        <div>
-          <h3 class="font-bold text-slate-900 text-base sm:text-lg">3. Actieve Oefeningen & Schrijfopdrachten</h3>
-          <p class="text-xs text-slate-500">Schrijf direct op je iPad met de Apple Pencil (met gom & schrijfanimaties) of typ op de iPhone.</p>
-        </div>
-      </div>
-
-      <div id="exercises-list" class="space-y-8">
-        <!-- Injected via JavaScript -->
-      </div>
-    </section>
-
-    <!-- Section 4: Mastery Exam & Gating -->
-    <section id="section-exam" class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-6">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <div class="flex items-center space-x-2.5">
-          <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-sm">
-            <i class="fa-solid fa-graduation-cap"></i>
+        <!-- Lesson Meta Header -->
+        <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span id="active-lesson-badge" class="px-3 py-1 rounded-full text-xs font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200">Les 1</span>
+            <div class="flex items-center space-x-2 text-xs text-slate-500 font-semibold">
+              <i class="fa-regular fa-clock"></i>
+              <span id="active-lesson-duration">20 min</span>
+            </div>
           </div>
           <div>
-            <h3 class="font-bold text-slate-900 text-base sm:text-lg">4. De Officiële Eindtoets</h3>
-            <p class="text-xs text-slate-500">Score &ge; 80% vereist om de volgende les te ontgrendelen.</p>
+            <h3 id="active-lesson-title" class="text-lg sm:text-xl font-black text-slate-900">Les Onderwerp</h3>
+            <p id="active-lesson-subtitle" class="text-xs sm:text-sm text-slate-500 font-medium">Doelstelling van deze les</p>
+          </div>
+          <div id="active-lesson-focus" class="text-xs sm:text-sm text-slate-700 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 leading-relaxed font-normal">
+            Focus omschrijving
           </div>
         </div>
-        <span id="exam-status-badge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
-          Niet afgelegd
-        </span>
-      </div>
 
-      <div id="exam-questions-container" class="space-y-6">
-        <!-- Injected Quiz Questions -->
-      </div>
+        <!-- Section 1: Theory & Grammatica -->
+        <section class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
+            <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+              <i class="fa-solid fa-book-open"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-900 text-base sm:text-lg">1. Theorie & Uitleg</h3>
+              <p class="text-xs text-slate-500">Kernregels, mentale modellen en praktische voorbeelden.</p>
+            </div>
+          </div>
+          <div id="lesson-theory-container" class="space-y-4 text-slate-700">
+            <!-- Injected via JavaScript -->
+          </div>
+        </section>
 
-      <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <button id="btn-submit-exam" onclick="submitExam()" class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-sm rounded-2xl shadow-md transition active:scale-95 flex items-center justify-center space-x-2">
-          <i class="fa-solid fa-check-double"></i>
-          <span>Dien Toets In & Beoordeel Resultaat</span>
-        </button>
-        <span id="exam-score-display" class="text-sm font-bold text-slate-700 text-center"></span>
-      </div>
+        <!-- Section 2: Studio Audio & Uitspraak Drills (Alleen Grieks & Frans) -->
+        <section id="section-audio" class="bg-gradient-to-tr from-indigo-900 via-indigo-800 to-purple-900 rounded-3xl p-5 sm:p-7 text-white shadow-lg space-y-5">
+          <div class="flex items-center justify-between border-b border-indigo-700/60 pb-3">
+            <div class="flex items-center space-x-2.5">
+              <div class="w-8 h-8 rounded-xl bg-white/10 text-white flex items-center justify-center font-bold text-sm">
+                <i class="fa-solid fa-waveform-lines text-pink-400"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-base sm:text-lg">2. Studio AI Audio & Uitspraak</h3>
+                <p class="text-xs text-indigo-200">Kristalheldere stemmen voor een natuurlijk accent.</p>
+              </div>
+            </div>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30">Studio Audio</span>
+          </div>
 
-      <!-- Exam Result Banner (Hidden initially) -->
-      <div id="exam-result-banner" class="hidden p-5 rounded-2xl border transition-all duration-300">
-        <!-- Injected Result -->
-      </div>
-    </section>
+          <!-- Target Phrase Audio Player -->
+          <div id="speech-drill-card" class="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 space-y-3">
+            <div class="text-xs text-indigo-200 font-semibold uppercase tracking-wider">Luister naar de authentieke moedertaalspreker:</div>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div id="speech-target-phrase" class="text-lg sm:text-xl font-black text-white">phrase</div>
+                <div id="speech-target-sub" class="text-xs text-indigo-200">transliteratie & betekenis</div>
+              </div>
+              <button id="btn-play-speech" onclick="playCurrentSpeechTarget()" class="px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-xl font-bold text-xs shadow-md shadow-pink-900/30 flex items-center gap-1.5 transition active:scale-95">
+                <i class="fa-solid fa-play"></i> <span>Speel Audio</span>
+              </button>
+            </div>
 
+            <!-- Speech Recognition Microphone -->
+            <div class="pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
+              <div class="text-xs text-slate-300">Spreekvaardigheidstest:</div>
+              <button id="btn-record-speech" onclick="toggleSpeechRecording()" class="px-3 py-1.5 bg-white/15 hover:bg-white/20 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-microphone"></i> <span id="mic-btn-text">Spreek in (Microfoon)</span>
+              </button>
+            </div>
+
+            <div id="speech-feedback" class="text-xs text-indigo-200 italic min-h-[1.25rem]"></div>
+          </div>
+        </section>
+
+        <!-- Section 3: Interactive Exercises (Dynamic: Canvas for Greek/French vs Code Studio for Solidity) -->
+        <section id="section-exercises" class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-6">
+          <div class="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
+            <div id="exercises-header-icon" class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
+              <i class="fa-solid fa-pen-fancy"></i>
+            </div>
+            <div>
+              <h3 id="exercises-header-title" class="font-bold text-slate-900 text-base sm:text-lg">3. Actieve Oefeningen & Schrijfopdrachten</h3>
+              <p id="exercises-header-desc" class="text-xs text-slate-500">Schrijf direct op je iPad met de Apple Pencil (met gom & schrijfanimaties) of typ op de iPhone.</p>
+            </div>
+          </div>
+
+          <div id="exercises-list" class="space-y-8">
+            <!-- Injected via JavaScript -->
+          </div>
+        </section>
+
+        <!-- Section 4: Mastery Exam & Gating -->
+        <section id="section-exam" class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center space-x-2.5">
+              <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-sm">
+                <i class="fa-solid fa-graduation-cap"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-900 text-base sm:text-lg">4. De Officiële Eindtoets</h3>
+                <p class="text-xs text-slate-500">Score &ge; 80% vereist om de volgende les te ontgrendelen.</p>
+              </div>
+            </div>
+            <span id="exam-status-badge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+              Nog Niet Afgelegd
+            </span>
+          </div>
+
+          <!-- Exam Questions Container -->
+          <div id="exam-questions-container" class="space-y-5">
+            <!-- Injected via JavaScript -->
+          </div>
+
+          <!-- Submit Exam Button -->
+          <div class="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+            <div id="exam-score-display" class="text-sm font-bold text-slate-700"></div>
+            <button id="btn-submit-exam" onclick="submitExam()" class="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-2xl font-black text-sm shadow-md shadow-indigo-200 transition active:scale-95">
+              Toets Indienen & Controleren
+            </button>
+          </div>
+
+          <!-- Success/Failure Result Banner -->
+          <div id="exam-result-banner" class="hidden p-4 rounded-2xl border text-sm font-semibold"></div>
+        </section>
+
+      </div>
+    </div>
   </main>
 
+  <!-- Sticky Bottom Quick Navigation -->
+  <nav class="fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur-md border-t border-slate-200 py-2.5 px-4 safe-bottom z-40">
+    <div class="max-w-md mx-auto flex items-center justify-around text-xs font-bold text-slate-600">
+      <button onclick="scrollToSection('course-header')" class="flex flex-col items-center space-y-1 hover:text-indigo-600">
+        <i class="fa-solid fa-list-check text-base"></i>
+        <span>Lessen</span>
+      </button>
+      <button onclick="scrollToSection('section-audio')" id="nav-audio-btn" class="flex flex-col items-center space-y-1 hover:text-indigo-600">
+        <i class="fa-solid fa-volume-high text-base text-pink-500"></i>
+        <span>Audio</span>
+      </button>
+      <button onclick="scrollToSection('section-exercises')" class="flex flex-col items-center space-y-1 hover:text-indigo-600">
+        <i class="fa-solid fa-pen text-base text-emerald-600"></i>
+        <span>Oefenen</span>
+      </button>
+      <button onclick="scrollToSection('section-exam')" class="flex flex-col items-center space-y-1 hover:text-indigo-600">
+        <i class="fa-solid fa-award text-base text-purple-600"></i>
+        <span>Toets</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- JavaScript Engine -->
   <script>
-    const AUDIO_BASE_URL = "https://thibaudverschueren.github.io/polyglot-studio/audio/";
+    // --- Data Injected from Python ---
     const CURRICULUM = {
   "greek": {
     "title": "Nieuwgrieks",
@@ -1055,16 +1058,24 @@
           {
             "id": "s1_ex1",
             "title": "Oefening A: Reset Functie Implementeren",
-            "instruction": "Schrijf een Solidity functie genaamd 'resetNumber()' die 'myFavoriteNumber' weer instelt op 0.",
-            "modelAnswer": "function resetNumber() public { myFavoriteNumber = 0; }",
-            "explanation": "Omdat deze functie een state variable in storage overschrijft, is het een state-changing functie die een transactie en gas vereist."
+            "instruction": "Breid het 'SimpleStorage' contract uit met een publieke functie 'resetNumber()' die de state variable 'myFavoriteNumber' weer op 0 zet.",
+            "modelAnswer": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SimpleStorage {\n    uint256 public myFavoriteNumber;\n\n    function setNumber(uint256 _newNumber) public {\n        myFavoriteNumber = _newNumber;\n    }\n\n    function getNumber() public view returns (uint256) {\n        return myFavoriteNumber;\n    }\n\n    function resetNumber() public {\n        myFavoriteNumber = 0;\n    }\n}",
+            "explanation": "Omdat deze functie een state variable in storage overschrijft, is het een state-changing transactie die gas vereist.",
+            "contractName": "SimpleStorage",
+            "fileName": "SimpleStorage.sol",
+            "starterCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SimpleStorage {\n    uint256 public myFavoriteNumber;\n\n    function setNumber(uint256 _newNumber) public {\n        myFavoriteNumber = _newNumber;\n    }\n\n    function getNumber() public view returns (uint256) {\n        return myFavoriteNumber;\n    }\n\n    // TODO: Schrijf hieronder de functie resetNumber() die myFavoriteNumber weer instelt op 0\n    \n}",
+            "modelCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SimpleStorage {\n    uint256 public myFavoriteNumber;\n\n    function setNumber(uint256 _newNumber) public {\n        myFavoriteNumber = _newNumber;\n    }\n\n    function getNumber() public view returns (uint256) {\n        return myFavoriteNumber;\n    }\n\n    function resetNumber() public {\n        myFavoriteNumber = 0;\n    }\n}"
           },
           {
             "id": "s1_ex2",
             "title": "Oefening B: Data Locatie Verklaren",
-            "instruction": "Waarom moet je bij parameters van het type 'string' of 'bytes' expliciet 'memory' of 'calldata' specificeren in Solidity?",
-            "modelAnswer": "Omdat strings en bytes dynamische referentietypes zijn (variabele lengte) en de compiler expliciet moet weten of de data uit de tijdelijke call (calldata) moet worden gelezen of gekopieerd naar het werkgeheugen (memory).",
-            "explanation": "Waardetypes zoals uint256 passen in een enkel 32-byte slot op de EVM-stack, waardoor geen datalocatie vereist is."
+            "instruction": "Voeg een publieke state variable 'string public message;' toe en een functie 'setMessage(string memory _msg) public' die de variabele bijwerkt.",
+            "modelAnswer": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SimpleStorage {\n    uint256 public myFavoriteNumber;\n    string public message;\n\n    function setNumber(uint256 _newNumber) public {\n        myFavoriteNumber = _newNumber;\n    }\n\n    function getNumber() public view returns (uint256) {\n        return myFavoriteNumber;\n    }\n\n    function setMessage(string memory _msg) public {\n        message = _msg;\n    }\n}",
+            "explanation": "Strings en bytes zijn dynamische referentietypes in de EVM. Daarom moet je bij parameters expliciet de datalocatie specificeren ('memory' of 'calldata').",
+            "contractName": "SimpleStorage",
+            "fileName": "SimpleStorage.sol",
+            "starterCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SimpleStorage {\n    uint256 public myFavoriteNumber;\n    \n    // TODO 1: Voeg hier een publieke state variable van het type string toe:\n    // string public message;\n\n    function setNumber(uint256 _newNumber) public {\n        myFavoriteNumber = _newNumber;\n    }\n\n    function getNumber() public view returns (uint256) {\n        return myFavoriteNumber;\n    }\n\n    // TODO 2: Schrijf de functie setMessage(string memory _msg) public\n    \n}",
+            "modelCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SimpleStorage {\n    uint256 public myFavoriteNumber;\n    string public message;\n\n    function setNumber(uint256 _newNumber) public {\n        myFavoriteNumber = _newNumber;\n    }\n\n    function getNumber() public view returns (uint256) {\n        return myFavoriteNumber;\n    }\n\n    function setMessage(string memory _msg) public {\n        message = _msg;\n    }\n}"
           }
         ],
         "quiz": [
@@ -1125,16 +1136,24 @@
           {
             "id": "s2_ex1",
             "title": "Oefening A: Saldo Mapping Creëren",
-            "instruction": "Schrijf de regel code om een publieke mapping te definiëren die een 'address' koppelt aan een 'uint256' met de naam 'balances'.",
-            "modelAnswer": "mapping(address => uint256) public balances;",
-            "explanation": "Door 'public' toe te voegen genereert de Solidity compiler automatisch een gratis getter functie."
+            "instruction": "Definieer in 'BankVault' een mapping 'balances' (address => uint256), en maak functies 'deposit(uint256 amount)' en 'getMyBalance()'.",
+            "modelAnswer": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract BankVault {\n    mapping(address => uint256) public balances;\n\n    function deposit(uint256 amount) public {\n        balances[msg.sender] += amount;\n    }\n\n    function getMyBalance() public view returns (uint256) {\n        return balances[msg.sender];\n    }\n}",
+            "explanation": "Mappings berekenen de storage slot via keccak256(key, slot). Hierdoor is de lookup en update altijd O(1) in gasverbruik.",
+            "contractName": "BankVault",
+            "fileName": "BankVault.sol",
+            "starterCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract BankVault {\n    // TODO 1: Definieer een publieke mapping van address naar uint256 genaamd balances:\n    // mapping(address => uint256) public balances;\n\n    // TODO 2: Schrijf de functie deposit(uint256 amount) public\n    // die het saldo van msg.sender ophoogt: balances[msg.sender] += amount;\n    \n\n    // TODO 3: Schrijf de getter getMyBalance() public view returns (uint256)\n    // die balances[msg.sender] retourneert\n    \n}",
+            "modelCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract BankVault {\n    mapping(address => uint256) public balances;\n\n    function deposit(uint256 amount) public {\n        balances[msg.sender] += amount;\n    }\n\n    function getMyBalance() public view returns (uint256) {\n        return balances[msg.sender];\n    }\n}"
           },
           {
             "id": "s2_ex2",
             "title": "Oefening B: Mappings vs Arrays Gas Analyse",
-            "instruction": "Waarom kiest een DeFi protocol vrijwel altijd voor een mapping in plaats van een array om gebruikerssaldi bij te houden?",
-            "modelAnswer": "Omdat een mapping een constante O(1) gas kost heeft voor lookups en updates. Een array zou vereisen dat je lineair O(n) zoekt, wat bij duizenden gebruikers onbetaalbaar wordt en kan leiden tot 'out-of-gas' denial-of-service fouten.",
-            "explanation": "In smart contract security is het vermijden van onbegrensde loops een van de belangrijkste vuistregels!"
+            "instruction": "Definieer een struct 'User' (name, isRegistered), een mapping 'users' (address => User) en schrijf 'register(string memory _name)'.",
+            "modelAnswer": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract UserRegistry {\n    struct User {\n        string name;\n        bool isRegistered;\n    }\n\n    mapping(address => User) public users;\n\n    function register(string memory _name) public {\n        users[msg.sender] = User({\n            name: _name,\n            isRegistered: true\n        });\n    }\n}",
+            "explanation": "Door structs te combineren met mappings creëer je gestructureerde, schaalbare profielen voor elk Ethereum-adres.",
+            "contractName": "UserRegistry",
+            "fileName": "UserRegistry.sol",
+            "starterCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract UserRegistry {\n    // TODO 1: Definieer struct User met string name en bool isRegistered\n    struct User {\n        string name;\n        bool isRegistered;\n    }\n\n    // TODO 2: Koppel address aan User via mapping(address => User) public users;\n    mapping(address => User) public users;\n\n    // TODO 3: Schrijf function register(string memory _name) public\n    // die een nieuwe User toekent aan msg.sender\n    \n}",
+            "modelCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract UserRegistry {\n    struct User {\n        string name;\n        bool isRegistered;\n    }\n\n    mapping(address => User) public users;\n\n    function register(string memory _name) public {\n        users[msg.sender] = User({\n            name: _name,\n            isRegistered: true\n        });\n    }\n}"
           }
         ],
         "quiz": [
@@ -1187,81 +1206,72 @@
     ]
   }
 };
+    const AUDIO_BASE_URL = "https://raw.githubusercontent.com/thibaudverschueren/polyglot-studio/main/audio/";
 
-    // LocalStorage Keys
-    const STORAGE_KEY = "polyglot_user_progress_v2";
-
-    // Application State
-    let state = {
-      track: "greek",
-      lessonId: 4,
+    // State
+    const state = {
+      track: 'greek',
+      lessonId: 1,
       freeMode: false,
-      progress: {
-        greek: { completed: [1, 2, 3], scores: { 1: 100, 2: 100, 3: 100 }, unlocked: [1, 2, 3, 4, 5] },
-        french: { completed: [1], scores: { 1: 100 }, unlocked: [1, 2] },
-        solidity: { completed: [], scores: {}, unlocked: [1] }
-      }
+      greek: { completed: [], scores: {}, unlocked: [1] },
+      french: { completed: [], scores: {}, unlocked: [1] },
+      solidity: { completed: [], scores: {}, unlocked: [1] }
     };
 
-    // Store HandwritingPad & StrokeAnimator instances
-    const pads = {};
-    const animators = {};
+    const pads = {}; // Canvas handwriting pads for Greek/French
+    const animators = {}; // Animated pen stroke controllers
+    const solidityInstances = {}; // Virtual EVM Contract Instances
+
     let currentAudio = null;
     let recognition = null;
     let isRecording = false;
 
-    // --- HandwritingPad: 120Hz Coalesced Pro Apple Pencil & Non-Destructive Eraser ---
+    // --- HandwritingPad: 120Hz Coalesced Sampling, Midpoint Splines, Non-Destructive Eraser ---
     class HandwritingPad {
-      constructor(canvasEl, id) {
-        this.canvas = canvasEl;
+      constructor(canvas, id) {
+        this.canvas = canvas;
         this.id = id;
-        this.ctx = this.canvas.getContext('2d');
-        this.strokes = [];
+        this.ctx = canvas.getContext('2d');
+        this.isDrawing = false;
+        this.strokes = []; // Array of strokes: { mode: 'pen'|'eraser', points: [{x,y,pressure}] }
         this.currentStroke = null;
-        this.mode = 'pen'; // 'pen' | 'eraser'
-        this.penColor = '#1e293b'; // slate-900 rich ink
-        this.penWidth = 2.4;
-        this.eraserWidth = 26;
+        this.mode = 'pen'; // 'pen' or 'eraser'
+        this.inkColor = '#1d4ed8'; // Fountain pen royal blue
+        this.penBaseWidth = 2.4;
+        this.eraserWidth = 24;
 
-        this.initCanvas();
+        this.initCanvasSize();
         this.bindEvents();
       }
 
-      initCanvas() {
+      initCanvasSize() {
         const rect = this.canvas.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
         this.canvas.width = rect.width * dpr;
         this.canvas.height = rect.height * dpr;
         this.ctx.scale(dpr, dpr);
+        this.cssWidth = rect.width;
+        this.cssHeight = rect.height;
         this.redraw();
       }
 
       bindEvents() {
-        const getPt = (e) => {
-          const rect = this.canvas.getBoundingClientRect();
-          return {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top,
-            p: (e.pointerType === 'pen' && e.pressure > 0) ? e.pressure : 0.5
-          };
-        };
+        window.addEventListener('resize', () => this.initCanvasSize());
 
+        // Pointer Events (Apple Pencil, Touch & Mouse with Coalesced Events)
         this.canvas.addEventListener('pointerdown', (e) => {
-          e.preventDefault();
           this.canvas.setPointerCapture(e.pointerId);
-          const pt = getPt(e);
-          const strokeWidth = this.mode === 'eraser' ? this.eraserWidth : this.calculateWidth(pt.p);
-          
+          this.isDrawing = true;
+          const rect = this.canvas.getBoundingClientRect();
+          const pressure = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
+          const pt = { x: e.clientX - rect.left, y: e.clientY - rect.top, p: pressure };
+
           this.currentStroke = {
             mode: this.mode,
-            color: this.penColor,
-            width: strokeWidth,
             points: [pt]
           };
           this.strokes.push(this.currentStroke);
 
-          // Render initial tap/dot
-          this.ctx.save();
           this.ctx.beginPath();
           if (this.mode === 'eraser') {
             this.ctx.globalCompositeOperation = 'destination-out';
@@ -1269,124 +1279,121 @@
             this.ctx.fill();
           } else {
             this.ctx.globalCompositeOperation = 'source-over';
-            this.ctx.fillStyle = this.penColor;
-            this.ctx.arc(pt.x, pt.y, strokeWidth / 2, 0, Math.PI * 2);
+            this.ctx.fillStyle = this.inkColor;
+            this.ctx.arc(pt.x, pt.y, (this.penBaseWidth * (0.6 + pressure * 0.8)) / 2, 0, Math.PI * 2);
             this.ctx.fill();
           }
-          this.ctx.restore();
         });
 
         this.canvas.addEventListener('pointermove', (e) => {
-          if (!this.currentStroke) return;
-          e.preventDefault();
-          // Read 120Hz coalesced micro-events from iPad Pro / Air
+          if (!this.isDrawing || !this.currentStroke) return;
+          const rect = this.canvas.getBoundingClientRect();
+
+          // Read 120Hz Coalesced Events if available (Smooth iPad ProMotion input)
           const events = (e.getCoalescedEvents && e.getCoalescedEvents().length > 0) ? e.getCoalescedEvents() : [e];
-          for (let ev of events) {
-            const pt = getPt(ev);
+
+          for (let evt of events) {
+            const pressure = (evt.pressure && evt.pressure > 0) ? evt.pressure : 0.5;
+            const pt = { x: evt.clientX - rect.left, y: evt.clientY - rect.top, p: pressure };
             this.currentStroke.points.push(pt);
-            this.renderCurveSegment();
           }
+
+          this.renderLastSegment();
         });
 
-        const endStroke = (e) => {
-          if (!this.currentStroke) return;
-          e.preventDefault();
-          this.currentStroke = null;
+        const stopDrawing = (e) => {
+          if (this.isDrawing) {
+            this.isDrawing = false;
+            this.currentStroke = null;
+          }
         };
 
-        this.canvas.addEventListener('pointerup', endStroke);
-        this.canvas.addEventListener('pointercancel', endStroke);
-
-        window.addEventListener('resize', () => {
-          const rect = this.canvas.getBoundingClientRect();
-          const dpr = window.devicePixelRatio || 1;
-          this.canvas.width = rect.width * dpr;
-          this.canvas.height = rect.height * dpr;
-          this.ctx.scale(dpr, dpr);
-          this.redraw();
-        });
+        this.canvas.addEventListener('pointerup', stopDrawing);
+        this.canvas.addEventListener('pointercancel', stopDrawing);
+        this.canvas.addEventListener('pointerleave', stopDrawing);
       }
 
-      calculateWidth(pressure) {
-        return Math.max(1.4, Math.min(5.2, this.penWidth * (0.6 + pressure * 0.9)));
-      }
-
-      renderCurveSegment() {
+      renderLastSegment() {
+        if (!this.currentStroke || this.currentStroke.points.length < 2) return;
         const pts = this.currentStroke.points;
-        const len = pts.length;
-        if (len < 2) return;
+        const p1 = pts[pts.length - 2];
+        const p2 = pts[pts.length - 1];
 
         this.ctx.save();
-        this.ctx.beginPath();
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
-
         if (this.currentStroke.mode === 'eraser') {
           // destination-out: erases ink transparently, leaves background lines 100% intact!
           this.ctx.globalCompositeOperation = 'destination-out';
           this.ctx.lineWidth = this.eraserWidth;
+          this.ctx.lineCap = 'round';
+          this.ctx.lineJoin = 'round';
+          this.ctx.beginPath();
+          this.ctx.moveTo(p1.x, p1.y);
+          this.ctx.lineTo(p2.x, p2.y);
+          this.ctx.stroke();
         } else {
           this.ctx.globalCompositeOperation = 'source-over';
-          this.ctx.strokeStyle = this.currentStroke.color;
-          this.ctx.lineWidth = this.calculateWidth(pts[len - 1].p);
-        }
+          this.ctx.strokeStyle = this.inkColor;
+          this.ctx.lineCap = 'round';
+          this.ctx.lineJoin = 'round';
+          const avgPressure = (p1.p + p2.p) / 2;
+          this.ctx.lineWidth = this.penBaseWidth * (0.6 + avgPressure * 0.9);
 
-        if (len === 2) {
-          this.ctx.moveTo(pts[0].x, pts[0].y);
-          this.ctx.lineTo(pts[1].x, pts[1].y);
-        } else {
-          const p0 = pts[len - 3];
-          const p1 = pts[len - 2];
-          const p2 = pts[len - 1];
-          const mid1 = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 };
-          const mid2 = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-          this.ctx.moveTo(mid1.x, mid1.y);
-          this.ctx.quadraticCurveTo(p1.x, p1.y, mid2.x, mid2.y);
-        }
+          // Quadratic Bézier midpoint smoothing
+          const midX = (p1.x + p2.x) / 2;
+          const midY = (p1.y + p2.y) / 2;
 
-        this.ctx.stroke();
+          this.ctx.beginPath();
+          this.ctx.moveTo(p1.x, p1.y);
+          this.ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+          this.ctx.stroke();
+        }
         this.ctx.restore();
       }
 
       redraw() {
-        const dpr = window.devicePixelRatio || 1;
-        const width = this.canvas.width / dpr;
-        const height = this.canvas.height / dpr;
-        this.ctx.clearRect(0, 0, width, height);
+        this.ctx.clearRect(0, 0, this.cssWidth, this.cssHeight);
 
         for (let stroke of this.strokes) {
-          if (!stroke.points || stroke.points.length === 0) continue;
           const pts = stroke.points;
+          if (!pts || pts.length === 0) continue;
 
           this.ctx.save();
-          this.ctx.beginPath();
-          this.ctx.lineCap = 'round';
-          this.ctx.lineJoin = 'round';
-
           if (stroke.mode === 'eraser') {
             this.ctx.globalCompositeOperation = 'destination-out';
-            this.ctx.lineWidth = stroke.width || this.eraserWidth;
+            this.ctx.lineWidth = this.eraserWidth;
+            this.ctx.lineCap = 'round';
+            this.ctx.lineJoin = 'round';
+            this.ctx.beginPath();
+            this.ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) {
+              const midX = (pts[i-1].x + pts[i].x) / 2;
+              const midY = (pts[i-1].y + pts[i].y) / 2;
+              this.ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, midX, midY);
+            }
+            this.ctx.stroke();
           } else {
             this.ctx.globalCompositeOperation = 'source-over';
-            this.ctx.strokeStyle = stroke.color;
-            this.ctx.lineWidth = stroke.width;
-          }
+            this.ctx.strokeStyle = this.inkColor;
+            this.ctx.lineCap = 'round';
+            this.ctx.lineJoin = 'round';
 
-          if (pts.length === 1) {
-            this.ctx.arc(pts[0].x, pts[0].y, (stroke.width || this.penWidth) / 2, 0, Math.PI * 2);
-            this.ctx.fill();
-          } else if (pts.length === 2) {
-            this.ctx.moveTo(pts[0].x, pts[0].y);
-            this.ctx.lineTo(pts[1].x, pts[1].y);
-            this.ctx.stroke();
-          } else {
-            this.ctx.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < pts.length - 1; i++) {
-              const mid = { x: (pts[i].x + pts[i + 1].x) / 2, y: (pts[i].y + pts[i + 1].y) / 2 };
-              this.ctx.quadraticCurveTo(pts[i].x, pts[i].y, mid.x, mid.y);
+            if (pts.length === 1) {
+              this.ctx.fillStyle = this.inkColor;
+              this.ctx.beginPath();
+              this.ctx.arc(pts[0].x, pts[0].y, this.penBaseWidth / 2, 0, Math.PI * 2);
+              this.ctx.fill();
+            } else {
+              for (let i = 1; i < pts.length; i++) {
+                const avgP = (pts[i-1].p + pts[i].p) / 2;
+                this.ctx.lineWidth = this.penBaseWidth * (0.6 + avgP * 0.9);
+                const midX = (pts[i-1].x + pts[i].x) / 2;
+                const midY = (pts[i-1].y + pts[i].y) / 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(pts[i-1].x, pts[i-1].y);
+                this.ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, midX, midY);
+                this.ctx.stroke();
+              }
             }
-            this.ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
-            this.ctx.stroke();
           }
           this.ctx.restore();
         }
@@ -1409,497 +1416,451 @@
       }
     }
 
-    // --- StrokeAnimator: Stroke-by-Stroke Animated Handwriting Demonstration ---
+    // --- Vector Stroke Library for Greek & Latin Handwriting Demonstrations ---
+    const GLYPH_PATHS = {
+      'α': [
+        [{x: 0.8, y: 0.3}, {x: 0.5, y: 0.15}, {x: 0.2, y: 0.4}, {x: 0.2, y: 0.7}, {x: 0.5, y: 0.9}, {x: 0.8, y: 0.6}, {x: 0.8, y: 0.2}, {x: 0.85, y: 0.85}, {x: 0.95, y: 0.9}]
+      ],
+      'β': [
+        [{x: 0.3, y: 0.95}, {x: 0.3, y: 0.1}],
+        [{x: 0.3, y: 0.15}, {x: 0.65, y: 0.15}, {x: 0.75, y: 0.35}, {x: 0.55, y: 0.5}, {x: 0.3, y: 0.5}],
+        [{x: 0.4, y: 0.5}, {x: 0.75, y: 0.55}, {x: 0.8, y: 0.75}, {x: 0.6, y: 0.95}, {x: 0.3, y: 0.95}]
+      ],
+      'γ': [
+        [{x: 0.2, y: 0.3}, {x: 0.45, y: 0.6}, {x: 0.55, y: 0.95}, {x: 0.45, y: 1.25}, {x: 0.25, y: 1.2}],
+        [{x: 0.8, y: 0.3}, {x: 0.45, y: 0.6}]
+      ],
+      'δ': [
+        [{x: 0.6, y: 0.1}, {x: 0.45, y: 0.15}, {x: 0.3, y: 0.3}, {x: 0.5, y: 0.5}, {x: 0.7, y: 0.4}, {x: 0.6, y: 0.1}],
+        [{x: 0.5, y: 0.5}, {x: 0.2, y: 0.65}, {x: 0.2, y: 0.85}, {x: 0.5, y: 0.95}, {x: 0.8, y: 0.85}, {x: 0.85, y: 0.95}]
+      ],
+      'ε': [
+        [{x: 0.75, y: 0.3}, {x: 0.4, y: 0.25}, {x: 0.25, y: 0.45}, {x: 0.5, y: 0.55}],
+        [{x: 0.5, y: 0.55}, {x: 0.25, y: 0.65}, {x: 0.35, y: 0.9}, {x: 0.75, y: 0.85}]
+      ],
+      'ζ': [
+        [{x: 0.3, y: 0.25}, {x: 0.7, y: 0.25}, {x: 0.4, y: 0.6}, {x: 0.6, y: 0.7}, {x: 0.5, y: 1.1}, {x: 0.3, y: 1.15}]
+      ],
+      'η': [
+        [{x: 0.25, y: 0.3}, {x: 0.25, y: 0.9}],
+        [{x: 0.25, y: 0.55}, {x: 0.55, y: 0.35}, {x: 0.75, y: 0.55}, {x: 0.75, y: 1.2}, {x: 0.65, y: 1.25}]
+      ],
+      'θ': [
+        [{x: 0.5, y: 0.15}, {x: 0.25, y: 0.35}, {x: 0.25, y: 0.7}, {x: 0.5, y: 0.95}, {x: 0.75, y: 0.7}, {x: 0.75, y: 0.35}, {x: 0.5, y: 0.15}],
+        [{x: 0.3, y: 0.55}, {x: 0.7, y: 0.55}]
+      ],
+      'ι': [
+        [{x: 0.45, y: 0.3}, {x: 0.45, y: 0.85}, {x: 0.6, y: 0.9}]
+      ],
+      'κ': [
+        [{x: 0.3, y: 0.2}, {x: 0.3, y: 0.9}],
+        [{x: 0.7, y: 0.35}, {x: 0.32, y: 0.6}, {x: 0.7, y: 0.9}]
+      ],
+      'λ': [
+        [{x: 0.5, y: 0.15}, {x: 0.2, y: 0.9}],
+        [{x: 0.4, y: 0.45}, {x: 0.8, y: 0.9}]
+      ],
+      'μ': [
+        [{x: 0.25, y: 0.5}, {x: 0.25, y: 1.2}],
+        [{x: 0.25, y: 0.6}, {x: 0.45, y: 0.9}, {x: 0.65, y: 0.6}, {x: 0.65, y: 0.9}, {x: 0.8, y: 0.9}]
+      ],
+      'ν': [
+        [{x: 0.25, y: 0.3}, {x: 0.5, y: 0.9}, {x: 0.75, y: 0.25}]
+      ],
+      'ξ': [
+        [{x: 0.3, y: 0.25}, {x: 0.7, y: 0.25}, {x: 0.4, y: 0.45}, {x: 0.6, y: 0.5}, {x: 0.35, y: 0.75}, {x: 0.5, y: 0.9}, {x: 0.3, y: 1.15}]
+      ],
+      'ο': [
+        [{x: 0.5, y: 0.3}, {x: 0.25, y: 0.5}, {x: 0.25, y: 0.75}, {x: 0.5, y: 0.9}, {x: 0.75, y: 0.75}, {x: 0.75, y: 0.5}, {x: 0.5, y: 0.3}]
+      ],
+      'π': [
+        [{x: 0.2, y: 0.35}, {x: 0.8, y: 0.35}],
+        [{x: 0.32, y: 0.35}, {x: 0.32, y: 0.9}],
+        [{x: 0.68, y: 0.35}, {x: 0.68, y: 0.9}]
+      ],
+      'ρ': [
+        [{x: 0.3, y: 0.35}, {x: 0.3, y: 1.2}],
+        [{x: 0.3, y: 0.4}, {x: 0.65, y: 0.35}, {x: 0.75, y: 0.55}, {x: 0.55, y: 0.7}, {x: 0.3, y: 0.7}]
+      ],
+      'σ': [
+        [{x: 0.75, y: 0.35}, {x: 0.35, y: 0.35}, {x: 0.25, y: 0.55}, {x: 0.25, y: 0.75}, {x: 0.5, y: 0.9}, {x: 0.75, y: 0.75}, {x: 0.75, y: 0.55}, {x: 0.5, y: 0.35}]
+      ],
+      'ς': [
+        [{x: 0.35, y: 0.4}, {x: 0.65, y: 0.35}, {x: 0.7, y: 0.55}, {x: 0.45, y: 0.7}, {x: 0.55, y: 0.9}, {x: 0.4, y: 1.2}]
+      ],
+      'τ': [
+        [{x: 0.2, y: 0.35}, {x: 0.8, y: 0.35}],
+        [{x: 0.5, y: 0.35}, {x: 0.5, y: 0.9}]
+      ],
+      'υ': [
+        [{x: 0.25, y: 0.35}, {x: 0.3, y: 0.75}, {x: 0.5, y: 0.9}, {x: 0.7, y: 0.75}, {x: 0.75, y: 0.35}]
+      ],
+      'φ': [
+        [{x: 0.5, y: 0.15}, {x: 0.5, y: 1.2}],
+        [{x: 0.5, y: 0.4}, {x: 0.25, y: 0.5}, {x: 0.25, y: 0.75}, {x: 0.5, y: 0.85}, {x: 0.75, y: 0.75}, {x: 0.75, y: 0.5}, {x: 0.5, y: 0.4}]
+      ],
+      'χ': [
+        [{x: 0.25, y: 0.35}, {x: 0.75, y: 0.9}],
+        [{x: 0.75, y: 0.35}, {x: 0.25, y: 0.9}]
+      ],
+      'ψ': [
+        [{x: 0.5, y: 0.15}, {x: 0.5, y: 1.2}],
+        [{x: 0.25, y: 0.4}, {x: 0.3, y: 0.75}, {x: 0.5, y: 0.85}, {x: 0.7, y: 0.75}, {x: 0.75, y: 0.4}]
+      ],
+      'ω': [
+        [{x: 0.2, y: 0.4}, {x: 0.3, y: 0.85}, {x: 0.48, y: 0.85}, {x: 0.5, y: 0.6}, {x: 0.52, y: 0.85}, {x: 0.7, y: 0.85}, {x: 0.8, y: 0.4}]
+      ],
+      'ά': [
+        [{x: 0.5, y: 0.05}, {x: 0.65, y: 0.18}],
+        [{x: 0.8, y: 0.35}, {x: 0.5, y: 0.22}, {x: 0.2, y: 0.45}, {x: 0.2, y: 0.75}, {x: 0.5, y: 0.9}, {x: 0.8, y: 0.65}, {x: 0.8, y: 0.3}, {x: 0.85, y: 0.85}, {x: 0.95, y: 0.9}]
+      ],
+      'έ': [
+        [{x: 0.5, y: 0.05}, {x: 0.65, y: 0.18}],
+        [{x: 0.75, y: 0.35}, {x: 0.4, y: 0.3}, {x: 0.25, y: 0.5}, {x: 0.5, y: 0.6}],
+        [{x: 0.5, y: 0.6}, {x: 0.25, y: 0.7}, {x: 0.35, y: 0.9}, {x: 0.75, y: 0.85}]
+      ],
+      'ή': [
+        [{x: 0.4, y: 0.05}, {x: 0.55, y: 0.18}],
+        [{x: 0.25, y: 0.35}, {x: 0.25, y: 0.9}],
+        [{x: 0.25, y: 0.6}, {x: 0.55, y: 0.4}, {x: 0.75, y: 0.6}, {x: 0.75, y: 1.2}, {x: 0.65, y: 1.25}]
+      ],
+      'ί': [
+        [{x: 0.4, y: 0.05}, {x: 0.55, y: 0.18}],
+        [{x: 0.45, y: 0.35}, {x: 0.45, y: 0.85}, {x: 0.6, y: 0.9}]
+      ],
+      'ό': [
+        [{x: 0.45, y: 0.05}, {x: 0.6, y: 0.18}],
+        [{x: 0.5, y: 0.35}, {x: 0.25, y: 0.55}, {x: 0.25, y: 0.75}, {x: 0.5, y: 0.9}, {x: 0.75, y: 0.75}, {x: 0.75, y: 0.55}, {x: 0.5, y: 0.35}]
+      ],
+      'ώ': [
+        [{x: 0.45, y: 0.05}, {x: 0.6, y: 0.18}],
+        [{x: 0.2, y: 0.45}, {x: 0.3, y: 0.85}, {x: 0.48, y: 0.85}, {x: 0.5, y: 0.65}, {x: 0.52, y: 0.85}, {x: 0.7, y: 0.85}, {x: 0.8, y: 0.45}]
+      ],
+      ' ': [] // Space
+    };
+
+    // Generic fallback glyph generator for latin or unknown characters
+    function getFallbackGlyphs(ch) {
+      return [
+        [{x: 0.3, y: 0.3}, {x: 0.3, y: 0.9}],
+        [{x: 0.3, y: 0.6}, {x: 0.7, y: 0.6}],
+        [{x: 0.7, y: 0.3}, {x: 0.7, y: 0.9}]
+      ];
+    }
+
+    // --- StrokeAnimator: Demonstrates stroke-by-stroke letter formation ---
     class StrokeAnimator {
-      constructor(canvasEl, penCursorEl, btnLabelEl, exId, textToAnimate) {
-        this.canvas = canvasEl;
-        this.penCursor = penCursorEl;
-        this.btnLabel = btnLabelEl;
+      constructor(canvas, penCursorEl, btnLabelEl, exId, targetText) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.penCursorEl = penCursorEl;
+        this.btnLabelEl = btnLabelEl;
         this.exId = exId;
-        this.text = textToAnimate || "";
-        this.ctx = this.canvas.getContext('2d');
+        this.targetText = targetText || "α";
         this.isPlaying = false;
-        this.speed = 1.0; // 1.0 = normal, 0.5 = slow
+        this.speed = 1.0; // 1.0x or 0.5x
         this.animFrameId = null;
-        this.strokeData = this.buildStrokes(this.text);
+        this.strokeQueue = [];
+        this.currentStrokeIdx = 0;
+        this.currentPtIdx = 0;
+        this.t = 0;
+
+        this.prepareStrokes();
       }
 
-      buildStrokes(text) {
-        // Glyphs stroke definitions: sequence of normalized stroke polylines [x, y]
-        const GLYPHS = {
-          'α': [ [[0.78, 0.35], [0.55, 0.28], [0.32, 0.42], [0.22, 0.62], [0.34, 0.82], [0.60, 0.78], [0.78, 0.45], [0.82, 0.82], [0.94, 0.82]] ],
-          'β': [ [[0.25, 0.88], [0.25, 0.12]], [[0.25, 0.12], [0.65, 0.20], [0.65, 0.48], [0.28, 0.50]], [[0.28, 0.50], [0.72, 0.55], [0.72, 0.85], [0.25, 0.88]] ],
-          'γ': [ [[0.22, 0.40], [0.45, 0.60], [0.75, 0.35]], [[0.75, 0.35], [0.42, 1.15], [0.22, 1.05]] ],
-          'δ': [ [[0.65, 0.12], [0.38, 0.32], [0.22, 0.65], [0.40, 0.85], [0.72, 0.85], [0.80, 0.60], [0.58, 0.30], [0.65, 0.12]] ],
-          'ε': [ [[0.70, 0.30], [0.40, 0.28], [0.25, 0.42], [0.52, 0.54]], [[0.52, 0.54], [0.25, 0.68], [0.40, 0.85], [0.75, 0.82]] ],
-          'ζ': [ [[0.25, 0.30], [0.70, 0.28], [0.35, 0.58], [0.65, 0.72], [0.50, 1.15], [0.28, 1.05]] ],
-          'η': [ [[0.25, 0.32], [0.25, 0.85]], [[0.25, 0.45], [0.50, 0.35], [0.75, 0.50], [0.75, 1.15], [0.62, 1.20]] ],
-          'θ': [ [[0.50, 0.18], [0.26, 0.40], [0.26, 0.68], [0.50, 0.86], [0.74, 0.68], [0.74, 0.40], [0.50, 0.18]], [[0.30, 0.52], [0.70, 0.52]] ],
-          'ι': [ [[0.50, 0.32], [0.50, 0.80], [0.68, 0.84]] ],
-          'κ': [ [[0.30, 0.18], [0.30, 0.85]], [[0.70, 0.35], [0.32, 0.60]], [[0.32, 0.60], [0.72, 0.85]] ],
-          'λ': [ [[0.48, 0.15], [0.25, 0.85]], [[0.42, 0.40], [0.75, 0.85]] ],
-          'μ': [ [[0.20, 1.10], [0.20, 0.40], [0.45, 0.78], [0.70, 0.40], [0.70, 0.85]] ],
-          'ν': [ [[0.25, 0.32], [0.48, 0.82], [0.78, 0.28]] ],
-          'ξ': [ [[0.30, 0.28], [0.70, 0.28], [0.38, 0.48], [0.65, 0.58], [0.38, 0.78], [0.65, 0.92], [0.40, 1.15]] ],
-          'ο': [ [[0.50, 0.28], [0.26, 0.45], [0.26, 0.68], [0.50, 0.85], [0.74, 0.68], [0.74, 0.45], [0.50, 0.28]] ],
-          'π': [ [[0.20, 0.32], [0.80, 0.32]], [[0.34, 0.32], [0.34, 0.85]], [[0.66, 0.32], [0.66, 0.85]] ],
-          'ρ': [ [[0.30, 0.32], [0.30, 1.15]], [[0.30, 0.42], [0.65, 0.32], [0.75, 0.52], [0.62, 0.72], [0.30, 0.70]] ],
-          'σ': [ [[0.75, 0.35], [0.48, 0.30], [0.26, 0.48], [0.30, 0.72], [0.55, 0.84], [0.75, 0.68], [0.68, 0.38]], [[0.68, 0.38], [0.94, 0.38]] ],
-          'ς': [ [[0.35, 0.32], [0.68, 0.32], [0.68, 0.54], [0.38, 0.68], [0.52, 0.90], [0.38, 1.18], [0.20, 1.10]] ],
-          'τ': [ [[0.25, 0.32], [0.75, 0.32]], [[0.50, 0.32], [0.50, 0.85]] ],
-          'υ': [ [[0.25, 0.35], [0.30, 0.70], [0.50, 0.84], [0.70, 0.70], [0.75, 0.35]], [[0.75, 0.35], [0.75, 0.84], [0.86, 0.84]] ],
-          'φ': [ [[0.50, 0.15], [0.50, 1.10]], [[0.50, 0.32], [0.25, 0.48], [0.50, 0.70], [0.75, 0.48], [0.50, 0.32]] ],
-          'χ': [ [[0.28, 0.32], [0.72, 0.85]], [[0.72, 0.32], [0.28, 0.85]] ],
-          'ψ': [ [[0.50, 0.15], [0.50, 1.10]], [[0.26, 0.32], [0.30, 0.62], [0.50, 0.70], [0.70, 0.62], [0.74, 0.32]] ],
-          'ω': [ [[0.18, 0.35], [0.22, 0.75], [0.38, 0.82], [0.50, 0.52], [0.62, 0.82], [0.78, 0.75], [0.82, 0.35]] ],
-          'ό': [ [[0.50, 0.28], [0.26, 0.45], [0.26, 0.68], [0.50, 0.85], [0.74, 0.68], [0.74, 0.45], [0.50, 0.28]], [[0.44, 0.10], [0.62, 0.24]] ],
-          'ά': [ [[0.78, 0.35], [0.55, 0.28], [0.32, 0.42], [0.22, 0.62], [0.34, 0.82], [0.60, 0.78], [0.78, 0.45], [0.82, 0.82], [0.94, 0.82]], [[0.48, 0.10], [0.65, 0.24]] ],
-          'έ': [ [[0.70, 0.30], [0.40, 0.28], [0.25, 0.42], [0.52, 0.54]], [[0.52, 0.54], [0.25, 0.68], [0.40, 0.85], [0.75, 0.82]], [[0.44, 0.10], [0.60, 0.24]] ],
-          'ή': [ [[0.25, 0.32], [0.25, 0.85]], [[0.25, 0.45], [0.50, 0.35], [0.75, 0.50], [0.75, 1.15], [0.62, 1.20]], [[0.44, 0.10], [0.62, 0.24]] ],
-          'ί': [ [[0.50, 0.32], [0.50, 0.80], [0.68, 0.84]], [[0.42, 0.10], [0.58, 0.24]] ],
-          'ώ': [ [[0.18, 0.35], [0.22, 0.75], [0.38, 0.82], [0.50, 0.52], [0.62, 0.82], [0.78, 0.75], [0.82, 0.35]], [[0.44, 0.10], [0.60, 0.24]] ],
-          ',': [ [[0.50, 0.80], [0.42, 0.98]] ],
-          '.': [ [[0.50, 0.80], [0.50, 0.82]] ],
-          '•': [ [[0.45, 0.54], [0.55, 0.54]] ],
-          ' ': []
-        };
+      prepareStrokes() {
+        this.strokeQueue = [];
+        const rect = this.canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        this.ctx.scale(dpr, dpr);
 
-        // Layout characters on notebook lines (28px lines)
-        const strokesOut = [];
-        let curX = 45; // Start just right of red margin (35px)
-        let curY = 48; // First baseline line in 28px grid
-        const charW = 22; // Width per character
-        const charH = 34; // Height per character
-        const maxW = 560; // Max line width before soft wrap
+        const width = rect.width;
+        const height = rect.height;
 
-        for (let i = 0; i < text.length; i++) {
-          const ch = text[i];
-          if (ch === ' ') {
-            curX += 14;
-            if (curX > maxW) {
-              curX = 45;
-              curY += 56; // Move down 2 notebook lines
-            }
-            continue;
-          }
-          if (ch === '\n') {
-            curX = 45;
-            curY += 56;
-            continue;
-          }
+        // Clean target text (use first 12 chars if long sentence)
+        const textToDraw = this.targetText.length > 15 ? this.targetText.slice(0, 15) : this.targetText;
+        const charCount = Math.max(textToDraw.length, 1);
+        const glyphWidth = Math.min(38, (width - 60) / charCount);
+        const startX = 45;
+        const baselineY = height * 0.58;
 
-          const glyphStrokes = GLYPHS[ch] || [
-            // Fallback for letters not in GLYPHS: cursive curve
-            [[0.3, 0.35], [0.3, 0.8], [0.7, 0.8], [0.7, 0.35]]
-          ];
+        for (let c = 0; c < textToDraw.length; c++) {
+          const ch = textToDraw[c].toLowerCase();
+          const glyphStrokes = GLYPH_PATHS[ch] || getFallbackGlyphs(ch);
+          const xOffset = startX + (c * glyphWidth);
 
-          for (let stroke of glyphStrokes) {
-            const worldPts = stroke.map(p => ({
-              x: curX + p[0] * charW,
-              y: curY + (p[1] - 0.75) * charH
+          for (let s of glyphStrokes) {
+            if (s.length === 0) continue;
+            const screenPoints = s.map(p => ({
+              x: xOffset + (p.x * glyphWidth * 0.9),
+              y: baselineY + ((p.y - 0.7) * glyphWidth * 1.3)
             }));
-            strokesOut.push(worldPts);
-          }
-
-          curX += charW;
-          if (curX > maxW) {
-            curX = 45;
-            curY += 56;
+            this.strokeQueue.push(screenPoints);
           }
         }
-
-        return strokesOut;
       }
 
       play() {
         if (this.isPlaying) return;
-        this.isPlaying = true;
         this.canvas.classList.remove('hidden');
-        this.penCursor.classList.remove('hidden');
-        this.btnLabel.textContent = "⏸️ Pauzeer Animatie";
+        this.penCursorEl.classList.remove('hidden');
+        this.isPlaying = true;
+        this.btnLabelEl.textContent = "⏸️ Pauzeer Animatie";
 
-        const dpr = window.devicePixelRatio || 1;
-        const rect = this.canvas.getBoundingClientRect();
-        this.canvas.width = rect.width * dpr;
-        this.canvas.height = rect.height * dpr;
-        this.ctx.scale(dpr, dpr);
-        this.ctx.clearRect(0, 0, rect.width, rect.height);
-
-        let strokeIdx = 0;
-        let ptIdx = 0;
-        let subT = 0;
-
-        const animateStep = () => {
-          if (!this.isPlaying) return;
-          if (strokeIdx >= this.strokeData.length) {
-            this.stop(false);
-            return;
-          }
-
-          const stroke = this.strokeData[strokeIdx];
-          if (!stroke || stroke.length < 2) {
-            strokeIdx++;
-            ptIdx = 0;
-            subT = 0;
-            this.animFrameId = requestAnimationFrame(animateStep);
-            return;
-          }
-
-          const stepSpeed = 0.18 * this.speed;
-          subT += stepSpeed;
-
-          if (subT >= 1.0) {
-            subT = 0;
-            ptIdx++;
-            if (ptIdx >= stroke.length - 1) {
-              strokeIdx++;
-              ptIdx = 0;
-            }
-          }
-
-          // Draw accumulated progress
-          this.drawProgress(strokeIdx, ptIdx, subT);
-          this.animFrameId = requestAnimationFrame(animateStep);
-        };
-
-        this.animFrameId = requestAnimationFrame(animateStep);
-      }
-
-      drawProgress(curStrokeIdx, curPtIdx, subT) {
-        const dpr = window.devicePixelRatio || 1;
-        const width = this.canvas.width / dpr;
-        const height = this.canvas.height / dpr;
-        this.ctx.clearRect(0, 0, width, height);
-
-        this.ctx.save();
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
-        this.ctx.strokeStyle = '#1d4ed8'; // Fountain pen rich blue
-        this.ctx.lineWidth = 2.4;
-
-        let leadX = 0;
-        let leadY = 0;
-
-        // Draw finished strokes
-        for (let s = 0; s < curStrokeIdx; s++) {
-          const pts = this.strokeData[s];
-          if (!pts || pts.length < 2) continue;
-          this.ctx.beginPath();
-          this.ctx.moveTo(pts[0].x, pts[0].y);
-          for (let i = 1; i < pts.length; i++) {
-            this.ctx.lineTo(pts[i].x, pts[i].y);
-          }
-          this.ctx.stroke();
+        if (this.strokeQueue.length === 0 || this.currentStrokeIdx >= this.strokeQueue.length) {
+          this.currentStrokeIdx = 0;
+          this.currentPtIdx = 0;
+          this.t = 0;
+          const rect = this.canvas.getBoundingClientRect();
+          this.ctx.clearRect(0, 0, rect.width, rect.height);
+          this.prepareStrokes();
         }
 
-        // Draw current stroke in progress
-        if (curStrokeIdx < this.strokeData.length) {
-          const pts = this.strokeData[curStrokeIdx];
-          if (pts && pts.length >= 2) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i <= curPtIdx; i++) {
-              this.ctx.lineTo(pts[i].x, pts[i].y);
-            }
-            if (curPtIdx < pts.length - 1) {
-              const pA = pts[curPtIdx];
-              const pB = pts[curPtIdx + 1];
-              leadX = pA.x + (pB.x - pA.x) * subT;
-              leadY = pA.y + (pB.y - pA.y) * subT;
-              this.ctx.lineTo(leadX, leadY);
-            } else {
-              leadX = pts[pts.length - 1].x;
-              leadY = pts[pts.length - 1].y;
-            }
-            this.ctx.stroke();
-          }
-        }
-
-        this.ctx.restore();
-
-        // Update floating pen cursor position
-        if (leadX > 0 && leadY > 0) {
-          this.penCursor.style.left = `${leadX}px`;
-          this.penCursor.style.top = `${leadY}px`;
-        }
+        this.stepAnimation();
       }
 
       pause() {
         this.isPlaying = false;
         if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
-        this.btnLabel.textContent = "▶️ Hervat Animatie";
+        this.btnLabelEl.textContent = "▶️ Hervat Animatie";
       }
 
-      stop(resetCanvas = true) {
-        this.isPlaying = false;
-        if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
-        this.penCursor.classList.add('hidden');
-        this.btnLabel.textContent = "🔄 Herhaal Animatie";
-        if (resetCanvas) {
-          const dpr = window.devicePixelRatio || 1;
-          this.ctx.clearRect(0, 0, this.canvas.width / dpr, this.canvas.height / dpr);
-          this.canvas.classList.add('hidden');
-        }
+      stop() {
+        this.pause();
+        this.currentStrokeIdx = 0;
+        this.currentPtIdx = 0;
+        this.t = 0;
+        this.penCursorEl.classList.add('hidden');
+        this.btnLabelEl.textContent = "✍️ Schrijf Voor (Animatie)";
       }
 
-      toggle() {
-        if (this.isPlaying) {
-          this.pause();
-        } else {
-          this.play();
-        }
-      }
-
-      toggleSpeed(btnSpeedEl, speedLabelEl) {
+      toggleSpeed(btnEl, labelEl) {
         if (this.speed === 1.0) {
           this.speed = 0.5;
-          speedLabelEl.textContent = "0.5x (Traag)";
+          labelEl.textContent = "0.5x";
+          btnEl.className = "px-2.5 py-1 bg-amber-100 text-amber-800 rounded-lg font-bold border border-amber-300";
         } else {
           this.speed = 1.0;
-          speedLabelEl.textContent = "1x";
+          labelEl.textContent = "1.0x";
+          btnEl.className = "px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg font-bold border border-slate-200";
         }
+      }
+
+      stepAnimation() {
+        if (!this.isPlaying) return;
+
+        if (this.currentStrokeIdx >= this.strokeQueue.length) {
+          // Finished writing!
+          this.isPlaying = false;
+          this.penCursorEl.classList.add('hidden');
+          this.btnLabelEl.textContent = "🔄 Herhaal Animatie";
+          return;
+        }
+
+        const pts = this.strokeQueue[this.currentStrokeIdx];
+        const p1 = pts[this.currentPtIdx];
+        const p2 = pts[this.currentPtIdx + 1];
+
+        if (!p2) {
+          this.currentStrokeIdx++;
+          this.currentPtIdx = 0;
+          this.t = 0;
+          this.animFrameId = requestAnimationFrame(() => this.stepAnimation());
+          return;
+        }
+
+        // Interpolate along line segment
+        const stepSize = 0.12 * this.speed;
+        this.t += stepSize;
+
+        const curX = p1.x + (p2.x - p1.x) * Math.min(this.t, 1);
+        const curY = p1.y + (p2.y - p1.y) * Math.min(this.t, 1);
+
+        this.ctx.save();
+        this.ctx.strokeStyle = '#2563eb'; // Vibrant ink
+        this.ctx.lineWidth = 3.2;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        this.ctx.beginPath();
+        this.ctx.moveTo(p1.x, p1.y);
+        this.ctx.lineTo(curX, curY);
+        this.ctx.stroke();
+        this.ctx.restore();
+
+        // Update Pen Cursor Position
+        this.penCursorEl.style.left = `${curX}px`;
+        this.penCursorEl.style.top = `${curY}px`;
+
+        if (this.t >= 1) {
+          this.currentPtIdx++;
+          this.t = 0;
+        }
+
+        this.animFrameId = requestAnimationFrame(() => this.stepAnimation());
       }
     }
 
-    // --- State & Storage Helpers ---
+    // --- State Machine & Persistence ---
     function loadState() {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
+      try {
+        const saved = localStorage.getItem('polyglot_studio_v3_state');
+        if (saved) {
           const parsed = JSON.parse(saved);
-          state.progress = { ...state.progress, ...parsed.progress };
-          state.freeMode = !!parsed.freeMode;
-        } catch (e) {
-          console.warn("Could not parse saved progress:", e);
+          Object.assign(state, parsed);
         }
-      }
-
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlTrack = urlParams.get('track');
-      const urlLesson = parseInt(urlParams.get('lesson'), 10);
-      if (urlTrack && CURRICULUM[urlTrack]) {
-        state.track = urlTrack;
-      }
-      if (urlLesson) {
-        state.lessonId = urlLesson;
+      } catch (e) {
+        console.warn("Storage load fallback:", e);
       }
     }
 
     function saveState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        progress: state.progress,
-        freeMode: state.freeMode
-      }));
-    }
-
-    function isLessonUnlocked(track, lessonId) {
-      if (state.freeMode) return true;
-      const trackProg = state.progress[track] || { unlocked: [1] };
-      return trackProg.unlocked.includes(lessonId) || trackProg.completed.includes(lessonId);
-    }
-
-    function isLessonCompleted(track, lessonId) {
-      const trackProg = state.progress[track] || { completed: [] };
-      return trackProg.completed.includes(lessonId);
-    }
-
-    function getLessonScore(track, lessonId) {
-      const trackProg = state.progress[track] || { scores: {} };
-      return trackProg.scores[lessonId] !== undefined ? trackProg.scores[lessonId] : null;
-    }
-
-    // --- Notifications & Mode ---
-    function showToast(msg, type = 'info') {
-      const toast = document.getElementById('toast');
-      const toastMsg = document.getElementById('toast-msg');
-      const toastIcon = document.getElementById('toast-icon');
-
-      toastMsg.textContent = msg;
-      toast.className = `fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 max-w-md w-[90%] p-3.5 rounded-2xl shadow-xl border text-xs sm:text-sm font-medium flex items-center space-x-2.5 ${
-        type === 'error' ? 'bg-rose-900 text-white border-rose-700' :
-        type === 'success' ? 'bg-emerald-900 text-white border-emerald-700' :
-        'bg-slate-900 text-white border-slate-700'
-      }`;
-      toastIcon.className = `fa-solid ${
-        type === 'error' ? 'fa-circle-xmark text-rose-400' :
-        type === 'success' ? 'fa-circle-check text-emerald-400' :
-        'fa-circle-info text-sky-400'
-      } text-base`;
-
-      toast.classList.remove('-translate-y-12', 'opacity-0', 'pointer-events-none');
-      setTimeout(() => {
-        toast.classList.add('-translate-y-12', 'opacity-0', 'pointer-events-none');
-      }, 3500);
+      try {
+        localStorage.setItem('polyglot_studio_v3_state', JSON.stringify({
+          track: state.track,
+          lessonId: state.lessonId,
+          freeMode: state.freeMode,
+          greek: state.greek,
+          french: state.french,
+          solidity: state.solidity
+        }));
+      } catch (e) {
+        console.warn("Storage save fallback:", e);
+      }
     }
 
     function toggleFreeMode() {
       state.freeMode = !state.freeMode;
-      saveState();
       updateModeButton();
-      renderCarousel();
-      showToast(state.freeMode ? "🔓 Vrij Leren: alle lessen ontgrendeld!" : "🔒 Toets-beveiliging actief.", state.freeMode ? 'success' : 'info');
+      renderTrackView();
+      saveState();
+      if (state.freeMode) {
+        confetti({ particleCount: 50, spread: 50, origin: { y: 0.8 } });
+      }
     }
 
     function updateModeButton() {
-      const btn = document.getElementById('btn-mode-toggle');
-      const icon = document.getElementById('mode-icon');
+      const btn = document.getElementById('toggle-mode-btn');
       const text = document.getElementById('mode-text');
-
       if (state.freeMode) {
-        btn.className = "px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center space-x-1.5 bg-amber-50 text-amber-800 border-amber-300";
-        icon.className = "fa-solid fa-lock-open text-amber-600";
-        text.textContent = "Vrij Leren Actief";
+        btn.className = "px-2.5 py-1 text-xs font-bold rounded-xl transition flex items-center space-x-1 bg-amber-100 text-amber-800 border border-amber-300 shadow-xs";
+        btn.innerHTML = `<i class="fa-solid fa-lock-open text-[10px]"></i><span>Vrij Leren</span>`;
       } else {
-        btn.className = "px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center space-x-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-300";
-        icon.className = "fa-solid fa-lock text-indigo-600";
-        text.textContent = "Toets-vergrendeling";
+        btn.className = "px-2.5 py-1 text-xs font-bold rounded-xl transition flex items-center space-x-1 text-slate-600 hover:text-slate-900";
+        btn.innerHTML = `<i class="fa-solid fa-lock text-[10px]"></i><span>Geleid Leren</span>`;
       }
     }
 
-    function resetAllProgress() {
-      if (confirm("Weet je zeker dat je alle toetsresultaten en voortgang wilt wissen?")) {
-        localStorage.removeItem(STORAGE_KEY);
-        state.progress = {
-          greek: { completed: [1, 2, 3], scores: { 1: 100, 2: 100, 3: 100 }, unlocked: [1, 2, 3, 4] },
-          french: { completed: [], scores: {}, unlocked: [1] },
-          solidity: { completed: [], scores: {}, unlocked: [1] }
-        };
-        state.freeMode = false;
-        state.lessonId = 1;
-        if (state.track === 'greek') state.lessonId = 4;
-        saveState();
-        updateModeButton();
-        renderCarousel();
-        loadCurrentLesson();
-        showToast("Voortgang succesvol gereset.", "info");
-      }
-    }
-
-    // --- Track & Carousel ---
-    function selectTrack(track) {
-      state.track = track;
-      const lessons = CURRICULUM[track].lessons;
-      const unlocked = state.progress[track]?.unlocked || [1];
-      state.lessonId = unlocked[unlocked.length - 1] || lessons[0].id;
+    // --- Track & Lesson Selection ---
+    function selectTrack(trackKey) {
+      if (!CURRICULUM[trackKey]) return;
+      state.track = trackKey;
 
       ['greek', 'french', 'solidity'].forEach(t => {
         const btn = document.getElementById(`track-${t}`);
-        if (t === track) {
-          btn.className = "py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5 bg-white text-indigo-600 shadow-sm font-bold";
+        if (t === trackKey) {
+          btn.className = "py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5 bg-white text-indigo-700 shadow-sm";
         } else {
           btn.className = "py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5 text-slate-600 hover:text-slate-900";
         }
       });
 
-      renderCarousel();
-      loadCurrentLesson();
+      const trackData = state[trackKey];
+      const maxUnlocked = trackData.unlocked && trackData.unlocked.length > 0
+        ? Math.max(...trackData.unlocked)
+        : 1;
+      
+      state.lessonId = state.freeMode ? 1 : maxUnlocked;
+
+      renderTrackView();
+      saveState();
     }
 
-    function selectLesson(id) {
-      if (!isLessonUnlocked(state.track, id)) {
-        showToast(`🔒 Les ${id} is vergrendeld. Haal eerst de eindtoets van de vorige les!`, "error");
+    function selectLesson(lessonId) {
+      const trackData = state[state.track];
+      const isUnlocked = state.freeMode || (trackData.unlocked && trackData.unlocked.includes(lessonId));
+
+      if (!isUnlocked) {
+        alert("🔒 Deze les is nog vergrendeld. Haal eerst minstens 80% op de officiële eindtoets van de voorgaande les!");
         return;
       }
-      state.lessonId = id;
-      renderCarousel();
-      loadCurrentLesson();
+
+      state.lessonId = lessonId;
+      renderTrackView();
+      saveState();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function renderCarousel() {
-      const trackData = CURRICULUM[state.track];
-      const lessons = trackData.lessons;
-      const carousel = document.getElementById('lesson-carousel');
-      carousel.innerHTML = '';
+    function renderTrackView() {
+      const track = CURRICULUM[state.track];
+      const trackData = state[state.track];
 
-      let completedCount = 0;
+      document.getElementById('track-title').textContent = `${track.flag} ${track.title}`;
+      document.getElementById('track-subtitle').textContent = track.subtitle;
+      document.getElementById('track-badge').textContent = track.title.toUpperCase();
 
-      lessons.forEach(l => {
-        const unlocked = isLessonUnlocked(state.track, l.id);
-        const completed = isLessonCompleted(state.track, l.id);
-        const score = getLessonScore(state.track, l.id);
-        const isCurrent = l.id === state.lessonId;
+      // Overall Mastery Progress
+      const totalLessons = track.lessons.length;
+      const completedCount = trackData.completed ? trackData.completed.length : 0;
+      const pct = Math.round((completedCount / totalLessons) * 100);
+      document.getElementById('track-progress-text').textContent = `${pct}%`;
 
-        if (completed) completedCount++;
+      const unlockedCount = state.freeMode ? totalLessons : (trackData.unlocked ? trackData.unlocked.length : 1);
+      document.getElementById('unlocked-counter').textContent = `${unlockedCount} / ${totalLessons} Beschikbaar`;
 
-        const card = document.createElement('button');
-        card.onclick = () => selectLesson(l.id);
+      // Render Lesson Pills
+      const pillsContainer = document.getElementById('lesson-pills');
+      pillsContainer.innerHTML = '';
 
-        let borderStyle = "border-slate-200 bg-white text-slate-700";
-        let badgeHtml = "";
+      track.lessons.forEach(l => {
+        const isUnlocked = state.freeMode || (trackData.unlocked && trackData.unlocked.includes(l.id));
+        const isCompleted = trackData.completed && trackData.completed.includes(l.id);
+        const isActive = l.id === state.lessonId;
 
-        if (isCurrent) {
-          borderStyle = "border-indigo-600 ring-2 ring-indigo-500/20 bg-indigo-50/50 text-indigo-950 font-bold";
-        }
+        const pill = document.createElement('button');
+        pill.onclick = () => selectLesson(l.id);
 
-        if (completed) {
-          badgeHtml = `<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-bold flex items-center gap-0.5"><i class="fa-solid fa-check"></i> ${score}%</span>`;
-        } else if (!unlocked) {
-          borderStyle = "border-slate-200 bg-slate-100 text-slate-400 opacity-75";
-          badgeHtml = `<span class="text-[10px] text-slate-400 font-bold flex items-center gap-1"><i class="fa-solid fa-lock"></i> Slot</span>`;
+        let style = "shrink-0 px-3.5 py-2 rounded-2xl text-xs font-bold transition flex items-center space-x-1.5 border ";
+        if (isActive) {
+          style += "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200";
+        } else if (isCompleted) {
+          style += "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100";
+        } else if (isUnlocked) {
+          style += "bg-white text-slate-700 border-slate-200 hover:border-slate-300";
         } else {
-          badgeHtml = `<span class="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded font-bold">Actief</span>`;
+          style += "bg-slate-100 text-slate-400 border-slate-200/60 opacity-70 cursor-not-allowed";
         }
 
-        card.className = `flex-shrink-0 px-3 py-2 rounded-2xl border text-left transition flex flex-col justify-between w-36 sm:w-44 ${borderStyle} active:scale-95`;
-        card.innerHTML = `
-          <div class="flex items-center justify-between w-full mb-1">
-            <span class="text-[11px] font-bold uppercase tracking-wider ${isCurrent ? 'text-indigo-600' : 'text-slate-400'}">Les ${l.id}</span>
-            ${badgeHtml}
-          </div>
-          <span class="text-xs font-bold line-clamp-1 leading-tight">${l.title}</span>
+        pill.className = style;
+        pill.innerHTML = `
+          <span>${isCompleted ? '✓' : (isUnlocked ? l.id : '🔒')}</span>
+          <span>Les ${l.id}</span>
         `;
-        carousel.appendChild(card);
+        pillsContainer.appendChild(pill);
       });
 
-      document.getElementById('track-progress-pill').textContent = `${completedCount} / ${lessons.length} Beheerst`;
+      renderActiveLesson();
     }
 
-    // --- Load Current Lesson ---
-    function loadCurrentLesson() {
-      const trackData = CURRICULUM[state.track];
-      const lesson = trackData.lessons.find(l => l.id === state.lessonId) || trackData.lessons[0];
+    function renderActiveLesson() {
+      const track = CURRICULUM[state.track];
+      const lesson = track.lessons.find(l => l.id === state.lessonId) || track.lessons[0];
 
-      const badge = document.getElementById('hero-badge');
-      badge.textContent = `${trackData.title} • Les ${lesson.id}`;
-      badge.className = `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${trackData.badgeBg}`;
+      document.getElementById('active-lesson-badge').textContent = `Les ${lesson.id}`;
+      document.getElementById('active-lesson-duration').textContent = lesson.duration || "20 min";
+      document.getElementById('active-lesson-title').textContent = lesson.title;
+      document.getElementById('active-lesson-subtitle').textContent = lesson.subtitle || "";
+      document.getElementById('active-lesson-focus').innerHTML = `<strong>Focus:</strong> ${lesson.focus}`;
 
-      document.getElementById('hero-duration').innerHTML = `<i class="fa-regular fa-clock"></i> ${lesson.duration || '20-25 min'}`;
-      document.getElementById('hero-title').textContent = lesson.title;
-      document.getElementById('hero-subtitle').textContent = lesson.subtitle;
-      document.getElementById('hero-focus').textContent = lesson.focus;
+      // Section 1: Theory
+      document.getElementById('lesson-theory-container').innerHTML = lesson.theoryHtml;
 
-      const heroStatus = document.getElementById('hero-status-pill');
-      if (isLessonCompleted(state.track, lesson.id)) {
-        heroStatus.innerHTML = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-full border border-emerald-200 flex items-center gap-1"><i class="fa-solid fa-medal text-emerald-600"></i> Beheerst (${getLessonScore(state.track, lesson.id)}%)</span>`;
-      } else {
-        heroStatus.innerHTML = `<span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200 flex items-center gap-1"><i class="fa-solid fa-hourglass-start text-indigo-500"></i> In Opleiding</span>`;
-      }
-
-      document.getElementById('theory-content').innerHTML = lesson.theoryHtml;
-
+      // Section 2: Audio & Pronunciation Drill (Hidden for Solidity)
       const audioSec = document.getElementById('section-audio');
-      if (lesson.vocab || lesson.speechTarget) {
+      if (state.track !== 'solidity') {
         audioSec.style.display = 'block';
         document.getElementById('nav-audio-btn').style.display = 'flex';
-
-        const chipsContainer = document.getElementById('vocab-chips');
-        chipsContainer.innerHTML = '';
-        if (lesson.vocab) {
-          lesson.vocab.forEach(v => {
-            const btn = document.createElement('button');
-            btn.className = "px-3 py-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 rounded-xl text-xs font-semibold flex items-center space-x-2 transition border border-slate-200 active:scale-95";
-            btn.onclick = () => playAudioOrTTS(v.audio, v.term, state.track === 'greek' ? 'el-GR' : 'fr-FR');
-            btn.innerHTML = `
-              <i class="fa-solid fa-volume-high text-pink-500 opacity-70"></i>
-              <span class="font-bold">${v.term}</span>
-              ${v.translit ? `<span class="text-slate-400 font-normal">(${v.translit})</span>` : ''}
-              <span class="text-slate-500 font-normal">― ${v.meaning}</span>
-            `;
-            chipsContainer.appendChild(btn);
-          });
-        }
-
         if (lesson.speechTarget) {
           document.getElementById('speech-drill-card').style.display = 'block';
           document.getElementById('speech-target-phrase').textContent = lesson.speechTarget.phrase;
@@ -2005,10 +1966,27 @@
       recognition.start();
     }
 
-    // --- Exercises Renderer: Dual-Layer Canvas, Non-Destructive Eraser & Stroke Animator ---
+    // --- Dynamic Exercises Router: Code Studio (Solidity) vs Handwriting Pad (Greek/French) ---
     function renderExercises(exercises) {
       const container = document.getElementById('exercises-list');
       container.innerHTML = '';
+
+      const headerIcon = document.getElementById('exercises-header-icon');
+      const headerTitle = document.getElementById('exercises-header-title');
+      const headerDesc = document.getElementById('exercises-header-desc');
+
+      if (state.track === 'solidity') {
+        if (headerIcon) headerIcon.innerHTML = '<i class="fa-solid fa-terminal text-emerald-600"></i>';
+        if (headerTitle) headerTitle.textContent = '3. Solidity Code Studio & Virtuele EVM';
+        if (headerDesc) headerDesc.textContent = 'Schrijf smart contracts, compileer & deploy direct naar de ingebouwde EVM, en test functies interactief.';
+        renderSolidityExercises(exercises);
+        return;
+      }
+
+      // Default for Greek & French
+      if (headerIcon) headerIcon.innerHTML = '<i class="fa-solid fa-pen-fancy text-emerald-600"></i>';
+      if (headerTitle) headerTitle.textContent = '3. Actieve Oefeningen & Schrijfopdrachten';
+      if (headerDesc) headerDesc.textContent = 'Schrijf direct op je iPad met de Apple Pencil (met gom & schrijfanimaties) of typ op de iPhone.';
 
       if (exercises.length === 0) {
         container.innerHTML = '<p class="text-xs text-slate-500 italic">Geen specifieke oefeningen voor deze les.</p>';
@@ -2216,6 +2194,796 @@
       icon.classList.toggle('fa-chevron-right');
     }
 
+    // =========================================================================
+    // --- SOLIDITY CODE STUDIO & VIRTUAL EVM RUNTIME ---
+    // =========================================================================
+
+    function renderSolidityExercises(exercises) {
+      const container = document.getElementById('exercises-list');
+      container.innerHTML = '';
+
+      if (exercises.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500 italic">Geen Solidity oefeningen gevonden.</p>';
+        return;
+      }
+
+      exercises.forEach((ex, idx) => {
+        const card = document.createElement('div');
+        card.className = "p-5 bg-slate-900 border border-slate-800 rounded-3xl space-y-4 shadow-xl text-slate-100";
+
+        const starterCode = ex.starterCode || `// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SimpleStorage {\n    // Schrijf hieronder je code\n}`;
+        const contractName = ex.contractName || "SimpleStorage";
+        const fileName = ex.fileName || `${contractName}.sol`;
+
+        card.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2.5">
+              <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs flex items-center justify-center font-black">${idx + 1}</span>
+              <div>
+                <h4 class="font-bold text-white text-base">${ex.title}</h4>
+                <p class="text-xs text-slate-400">${ex.instruction}</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span id="sol-status-${ex.id}" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-slate-500"></span> Niet Gedeployed
+              </span>
+            </div>
+          </div>
+
+          <!-- Code Studio Window -->
+          <div class="rounded-2xl border border-slate-800 overflow-hidden bg-[#18181b] shadow-2xl">
+            <!-- Header Tab Bar -->
+            <div class="flex items-center justify-between bg-[#1f1f23] px-3.5 py-2 border-b border-slate-800 text-xs text-slate-400">
+              <div class="flex items-center space-x-2">
+                <span class="text-emerald-400"><i class="fa-brands fa-ethereum"></i></span>
+                <span class="font-mono text-slate-200 font-semibold">${fileName}</span>
+                <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">Solidity ^0.8.20</span>
+              </div>
+              <div class="flex items-center space-x-3 text-[11px]">
+                <span class="flex items-center gap-1 text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Virtuele EVM (Localhost:8545)</span>
+              </div>
+            </div>
+
+            <!-- iPad Friendly Symbol Toolbar -->
+            <div class="flex items-center gap-1.5 px-3 py-1.5 bg-[#141416] border-b border-slate-800 overflow-x-auto text-xs select-none">
+              <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mr-1 flex items-center gap-1 shrink-0">
+                <i class="fa-solid fa-keyboard"></i> iPad Toetsen:
+              </span>
+              <div class="flex items-center gap-1">
+                <button onclick="insertSoliditySymbol('${ex.id}', '{ }')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-emerald-300 font-mono text-xs border border-slate-700 active:scale-95">{ }</button>
+                <button onclick="insertSoliditySymbol('${ex.id}', '( )')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-emerald-300 font-mono text-xs border border-slate-700 active:scale-95">( )</button>
+                <button onclick="insertSoliditySymbol('${ex.id}', '=>')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 font-mono text-xs border border-slate-700 active:scale-95">=&gt;</button>
+                <button onclick="insertSoliditySymbol('${ex.id}', ';')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs border border-slate-700 active:scale-95">;</button>
+                <button onclick="insertSoliditySymbol('${ex.id}', 'uint256')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 font-mono text-xs border border-slate-700 active:scale-95">uint256</button>
+                <button onclick="insertSoliditySymbol('${ex.id}', 'address')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 font-mono text-xs border border-slate-700 active:scale-95">address</button>
+                <button onclick="insertSoliditySymbol('${ex.id}', 'mapping')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-purple-300 font-mono text-xs border border-slate-700 active:scale-95">mapping</button>
+                <button onclick="insertSoliditySymbol('${ex.id}', 'public')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-mono text-xs border border-slate-700 active:scale-95">public</button>
+                <button onclick="insertSoliditySymbol('${ex.id}', 'view')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-mono text-xs border border-slate-700 active:scale-95">view</button>
+                <button onclick="insertSoliditySymbol('${ex.id}', 'memory')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-rose-300 font-mono text-xs border border-slate-700 active:scale-95">memory</button>
+                <button onclick="insertSoliditySymbol('${ex.id}', 'msg.sender')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-teal-300 font-mono text-xs border border-slate-700 active:scale-95">msg.sender</button>
+              </div>
+            </div>
+
+            <!-- Code Editor with Line Gutter -->
+            <div class="relative flex">
+              <div id="gutter-${ex.id}" class="py-3 px-2 text-right bg-[#141416] text-slate-600 font-mono text-xs select-none border-r border-slate-800 w-10 shrink-0 leading-relaxed">
+                <!-- Line numbers -->
+              </div>
+              <textarea id="editor-${ex.id}" spellcheck="false" rows="13" class="w-full p-3 bg-transparent text-emerald-300 font-mono text-xs sm:text-sm leading-relaxed focus:outline-none resize-y selection:bg-emerald-900/50" placeholder="Schrijf hier je Solidity code...">${starterCode}</textarea>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-2 p-3 bg-[#1f1f23] border-t border-slate-800">
+              <div class="flex items-center space-x-2">
+                <button onclick="compileAndDeploy('${ex.id}')" class="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-950/40 transition active:scale-95">
+                  <i class="fa-solid fa-rocket"></i> <span>Compileer & Deploy</span>
+                </button>
+                <button onclick="runSolidityTests('${ex.id}')" class="px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-950/40 transition active:scale-95">
+                  <i class="fa-solid fa-vial"></i> <span>Test Mijn Code</span>
+                </button>
+              </div>
+
+              <div class="flex items-center space-x-2">
+                <button onclick="resetSolidityCode('${ex.id}')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1 border border-slate-700 transition">
+                  <i class="fa-solid fa-rotate-left"></i> <span>Reset</span>
+                </button>
+                <button onclick="toggleSoliditySolution('${ex.id}')" class="px-2.5 py-1.5 bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 rounded-xl text-xs font-semibold flex items-center gap-1 border border-indigo-800/60 transition">
+                  <i class="fa-solid fa-lightbulb"></i> <span id="sol-btn-label-${ex.id}">Oplossing</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Test Results Panel -->
+          <div id="test-results-${ex.id}" class="hidden p-4 rounded-2xl border text-xs space-y-2"></div>
+
+          <!-- Deployed Contract Dashboard (Remix IDE Style) -->
+          <div id="contract-card-${ex.id}" class="hidden p-4 rounded-2xl border border-emerald-500/30 bg-slate-950/70 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+              <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs"><i class="fa-solid fa-cube"></i></span>
+                <span class="font-bold text-white text-xs sm:text-sm" id="deployed-title-${ex.id}">${contractName}</span>
+                <span class="font-mono text-[10px] text-slate-400" id="deployed-addr-${ex.id}">0x5B38...eddC4</span>
+              </div>
+              <span class="text-[10px] text-emerald-400 font-mono bg-emerald-950/50 border border-emerald-800/50 px-2 py-0.5 rounded">Deployed op Localhost:8545</span>
+            </div>
+
+            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+              <i class="fa-solid fa-sliders"></i> Interactieve Functies & State Getters:
+            </div>
+
+            <!-- Dynamic Function Buttons -->
+            <div id="contract-functions-${ex.id}" class="space-y-2"></div>
+          </div>
+
+          <!-- Realtime EVM Execution Terminal -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
+              <span class="flex items-center gap-1 font-semibold"><i class="fa-solid fa-terminal text-emerald-500"></i> Virtuele EVM Terminal</span>
+              <button onclick="clearSolidityConsole('${ex.id}')" class="text-[10px] text-slate-500 hover:text-slate-300 flex items-center gap-1">
+                <i class="fa-solid fa-eraser"></i> Wis console
+              </button>
+            </div>
+            <div id="console-${ex.id}" class="bg-black/90 p-3 rounded-2xl border border-slate-800 font-mono text-[11px] leading-relaxed text-emerald-400 h-36 overflow-y-auto space-y-1 shadow-inner select-text">
+              <div class="text-slate-500">// Terminal gereed. Klik op 'Compileer & Deploy' om je contract op de virtuele EVM te starten.</div>
+            </div>
+          </div>
+
+          <!-- Model Solution Card (Collapsible) -->
+          <div id="solution-box-${ex.id}" class="hidden p-4 rounded-2xl bg-[#141418] border border-indigo-900/50 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-check-double"></i> Modeloplossing & EVM Verklaring
+              </span>
+              <button onclick="insertModelCode('${ex.id}')" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1">
+                <i class="fa-solid fa-paste"></i> Kopieer naar Editor
+              </button>
+            </div>
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-xs text-sky-300 overflow-x-auto whitespace-pre">${ex.modelCode || ex.modelAnswer}</div>
+            <p class="text-xs text-slate-400 leading-relaxed">${ex.explanation}</p>
+          </div>
+        `;
+
+        container.appendChild(card);
+        setupEditorEvents(ex.id);
+      });
+    }
+
+    function setupEditorEvents(exId) {
+      const editor = document.getElementById(`editor-${exId}`);
+      if (!editor) return;
+      updateGutter(exId);
+      editor.addEventListener('input', () => updateGutter(exId));
+      editor.addEventListener('scroll', () => {
+        const gutter = document.getElementById(`gutter-${exId}`);
+        if (gutter) gutter.scrollTop = editor.scrollTop;
+      });
+      editor.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const start = editor.selectionStart;
+          const end = editor.selectionEnd;
+          editor.value = editor.value.substring(0, start) + "    " + editor.value.substring(end);
+          editor.selectionStart = editor.selectionEnd = start + 4;
+          updateGutter(exId);
+        }
+      });
+    }
+
+    function updateGutter(exId) {
+      const editor = document.getElementById(`editor-${exId}`);
+      const gutter = document.getElementById(`gutter-${exId}`);
+      if (!editor || !gutter) return;
+      const lines = editor.value.split('\n').length;
+      let gutterHtml = '';
+      for (let i = 1; i <= Math.max(lines, 12); i++) {
+        gutterHtml += `<div>${i}</div>`;
+      }
+      gutter.innerHTML = gutterHtml;
+    }
+
+    function insertSoliditySymbol(exId, sym) {
+      const editor = document.getElementById(`editor-${exId}`);
+      if (!editor) return;
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const val = editor.value;
+
+      let insertText = sym;
+      let cursorOffset = sym.length;
+
+      if (sym === '{ }') {
+        insertText = '{\n    \n}';
+        cursorOffset = 6;
+      } else if (sym === '( )') {
+        insertText = '()';
+        cursorOffset = 1;
+      } else {
+        insertText = sym + ' ';
+        cursorOffset = insertText.length;
+      }
+
+      editor.value = val.substring(0, start) + insertText + val.substring(end);
+      editor.selectionStart = editor.selectionEnd = start + cursorOffset;
+      editor.focus();
+      updateGutter(exId);
+    }
+
+    // --- Solidity AST & Pattern Parser ---
+    function parseSolidityContract(code) {
+      const clean = code.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+      const contractMatch = clean.match(/contract\s+([a-zA-Z0-9_]+)\s*\{([\s\S]*)\}/);
+      if (!contractMatch) {
+        return { error: "Geen geldige contractdefinitie gevonden (syntax: contract Naam { ... })" };
+      }
+
+      const name = contractMatch[1];
+      const body = contractMatch[2];
+
+      // Parse Structs
+      const structs = [];
+      const structRegex = /struct\s+([a-zA-Z0-9_]+)\s*\{([\s\S]*?)\}/g;
+      let sm;
+      while ((sm = structRegex.exec(body)) !== null) {
+        const fields = sm[2].split(';').map(f => f.trim()).filter(f => f.length > 0).map(f => {
+          const p = f.split(/\s+/);
+          return { type: p[0], name: p[1] };
+        });
+        structs.push({ name: sm[1], fields, raw: sm[2] });
+      }
+
+      // Parse State Variables & Mappings
+      const vars = [];
+      const varRegex = /(mapping\s*\([^)]+\)|[a-zA-Z0-9_]+)\s+(public|private|internal)?\s*([a-zA-Z0-9_]+)\s*(?:=\s*([^;]+))?;/g;
+      let vm;
+      while ((vm = varRegex.exec(body)) !== null) {
+        if (['struct', 'function', 'return'].includes(vm[1])) continue;
+        vars.push({
+          type: vm[1].replace(/\s+/g, ''),
+          visibility: vm[2] || 'internal',
+          name: vm[3],
+          initial: vm[4] ? vm[4].trim() : null
+        });
+      }
+
+      // Parse Functions
+      const fns = [];
+      const fnRegex = /function\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)\s*(public|external|internal|private)?\s*(view|pure)?\s*(?:returns\s*\(([^)]*)\))?\s*\{([\s\S]*?)\}/g;
+      let fm;
+      while ((fm = fnRegex.exec(body)) !== null) {
+        const params = fm[2].trim() ? fm[2].split(',').map(p => {
+          const parts = p.trim().split(/\s+/);
+          return { type: parts.slice(0, -1).join(' '), name: parts[parts.length - 1] };
+        }) : [];
+
+        fns.push({
+          name: fm[1],
+          params: params,
+          visibility: fm[3] || 'public',
+          mutability: fm[4] || 'nonpayable',
+          returns: fm[5] ? fm[5].trim() : null,
+          body: fm[6].trim()
+        });
+      }
+
+      return { name, structs, vars, fns };
+    }
+
+    // --- Virtual Contract Instance & State Machine ---
+    class VirtualContractInstance {
+      constructor(parsed, address) {
+        this.name = parsed.name;
+        this.address = address || '0x5B38Da6a701c568545dCfcB03FcB875f56beddC4';
+        this.parsed = parsed;
+        this.state = {};
+
+        parsed.vars.forEach(v => {
+          if (v.type.startsWith('mapping')) {
+            this.state[v.name] = {};
+          } else if (v.type.startsWith('uint') || v.type.startsWith('int')) {
+            this.state[v.name] = v.initial ? Number(v.initial) : 0;
+          } else if (v.type === 'bool') {
+            this.state[v.name] = v.initial ? (v.initial === 'true') : false;
+          } else if (v.type === 'string') {
+            this.state[v.name] = v.initial ? v.initial.replace(/['"]/g, '') : '';
+          } else {
+            this.state[v.name] = null;
+          }
+        });
+      }
+
+      execute(fnName, args, caller) {
+        caller = caller || '0x5B38Da6a701c568545dCfcB03FcB875f56beddC4';
+        args = args || [];
+
+        // Public variable getter auto-call
+        const publicVar = this.parsed.vars.find(v => v.name === fnName && v.visibility === 'public');
+        if (publicVar) {
+          if (publicVar.type.startsWith('mapping')) {
+            const key = args[0] || caller;
+            const val = this.state[publicVar.name] ? this.state[publicVar.name][key] : undefined;
+            return {
+              type: 'call',
+              fnName,
+              result: val !== undefined ? val : 0,
+              gasUsed: 0,
+              status: '0x1 (Success)'
+            };
+          } else {
+            return {
+              type: 'call',
+              fnName,
+              result: this.state[publicVar.name],
+              gasUsed: 0,
+              status: '0x1 (Success)'
+            };
+          }
+        }
+
+        const fn = this.parsed.fns.find(f => f.name === fnName);
+        if (!fn) throw new Error(`Functie '${fnName}' niet gevonden in contract ${this.name}.`);
+
+        const isView = fn.mutability === 'view' || fn.mutability === 'pure';
+        let result = null;
+        let stateUpdates = [];
+
+        // Dedicated Handlers for Curricular Exercises
+        if (fnName === 'setNumber') {
+          const val = Number(args[0]);
+          this.state['myFavoriteNumber'] = val;
+          stateUpdates.push(`myFavoriteNumber = ${val}`);
+        } else if (fnName === 'resetNumber') {
+          this.state['myFavoriteNumber'] = 0;
+          stateUpdates.push(`myFavoriteNumber = 0`);
+        } else if (fnName === 'getNumber') {
+          result = this.state['myFavoriteNumber'] !== undefined ? this.state['myFavoriteNumber'] : 0;
+        } else if (fnName === 'setMessage') {
+          const msg = String(args[0] || '');
+          this.state['message'] = msg;
+          stateUpdates.push(`message = "${msg}"`);
+        } else if (fnName === 'deposit') {
+          const amount = Number(args[0] || 0);
+          if (!this.state['balances']) this.state['balances'] = {};
+          this.state['balances'][caller] = (this.state['balances'][caller] || 0) + amount;
+          stateUpdates.push(`balances[${caller.slice(0, 6)}...${caller.slice(-4)}] += ${amount} (Nieuw saldo: ${this.state['balances'][caller]})`);
+        } else if (fnName === 'getMyBalance') {
+          result = (this.state['balances'] && this.state['balances'][caller]) || 0;
+        } else if (fnName === 'register') {
+          const uName = String(args[0] || 'User');
+          if (!this.state['users']) this.state['users'] = {};
+          this.state['users'][caller] = { name: uName, isRegistered: true };
+          stateUpdates.push(`users[${caller.slice(0, 6)}...] = { name: "${uName}", isRegistered: true }`);
+        } else {
+          // General AST Fallback
+          const body = fn.body;
+          const assignRegex = /([a-zA-Z0-9_]+)(?:\[([^\]]+)\])?\s*(\+=|=)\s*([^;]+);/g;
+          let am;
+          while ((am = assignRegex.exec(body)) !== null) {
+            const vName = am[1];
+            const keyExpr = am[2];
+            const op = am[3];
+            const valExpr = am[4].trim();
+
+            let evaluatedVal = valExpr;
+            if (args.length > 0 && fn.params.length > 0) {
+              fn.params.forEach((p, i) => {
+                if (valExpr === p.name) evaluatedVal = args[i];
+              });
+            }
+            if (valExpr === '0') evaluatedVal = 0;
+            if (valExpr === 'true') evaluatedVal = true;
+            if (valExpr === 'false') evaluatedVal = false;
+
+            if (keyExpr) {
+              const k = keyExpr === 'msg.sender' ? caller : (args[0] || caller);
+              if (!this.state[vName]) this.state[vName] = {};
+              if (op === '+=') {
+                this.state[vName][k] = (this.state[vName][k] || 0) + Number(evaluatedVal);
+              } else {
+                this.state[vName][k] = evaluatedVal;
+              }
+              stateUpdates.push(`${vName}[${k.slice(0, 6)}...] ${op} ${JSON.stringify(evaluatedVal)}`);
+            } else {
+              this.state[vName] = isNaN(Number(evaluatedVal)) ? evaluatedVal : Number(evaluatedVal);
+              stateUpdates.push(`${vName} = ${this.state[vName]}`);
+            }
+          }
+
+          const returnMatch = body.match(/return\s+([^;]+);/);
+          if (returnMatch) {
+            const expr = returnMatch[1].trim();
+            if (this.state[expr] !== undefined) {
+              result = this.state[expr];
+            } else if (expr.includes('[msg.sender]') && this.state[expr.split('[')[0]]) {
+              result = this.state[expr.split('[')[0]][caller] || 0;
+            } else {
+              result = expr;
+            }
+          }
+        }
+
+        const gasUsed = isView ? 0 : (21000 + (stateUpdates.length > 0 ? 22100 : 5000) + Math.floor(Math.random() * 800));
+
+        return {
+          type: isView ? 'call' : 'tx',
+          fnName,
+          args,
+          caller,
+          result,
+          gasUsed,
+          stateUpdates,
+          status: '0x1 (Success)',
+          txHash: '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('')
+        };
+      }
+    }
+
+    // --- Compile & Deploy Action ---
+    function compileAndDeploy(exId) {
+      const editor = document.getElementById(`editor-${exId}`);
+      if (!editor) return;
+      const code = editor.value;
+
+      logToSolidityConsole(exId, `[comp] ⚙️ Compilatie gestart met Solc ^0.8.20...`);
+
+      if (!code.includes('pragma solidity')) {
+        logToSolidityConsole(exId, `[error] ❌ Compilatiefout: Ontbrekende 'pragma solidity ^0.8.20;' declaratie!`, 'rose');
+        return;
+      }
+
+      const parsed = parseSolidityContract(code);
+      if (parsed.error) {
+        logToSolidityConsole(exId, `[error] ❌ Compilatiefout: ${parsed.error}`, 'rose');
+        return;
+      }
+
+      logToSolidityConsole(exId, `[comp] ✓ Contract '${parsed.name}' succesvol gecompileerd naar EVM bytecode.`);
+
+      const addr = '0x' + Array.from({length: 40}, (_, i) => '0123456789abcdef'[(i * 7 + 3) % 16]).join('');
+      const shortAddr = addr.slice(0, 6) + '...' + addr.slice(-4);
+
+      const instance = new VirtualContractInstance(parsed, addr);
+      solidityInstances[exId] = instance;
+
+      // Update Status Pill
+      const statusPill = document.getElementById(`sol-status-${exId}`);
+      if (statusPill) {
+        statusPill.className = "px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 flex items-center gap-1.5";
+        statusPill.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Live op EVM`;
+      }
+
+      // Reveal Deployed Card
+      const card = document.getElementById(`contract-card-${exId}`);
+      const titleEl = document.getElementById(`deployed-title-${exId}`);
+      const addrEl = document.getElementById(`deployed-addr-${exId}`);
+      if (card && titleEl && addrEl) {
+        card.classList.remove('hidden');
+        titleEl.textContent = parsed.name;
+        addrEl.textContent = shortAddr;
+        renderContractFunctions(exId, instance);
+      }
+
+      const deployGas = 118420 + Math.floor(Math.random() * 4500);
+      logToSolidityConsole(exId, `[vm] 🚀 Contract ${parsed.name} gedeployed op ${shortAddr}`);
+      logToSolidityConsole(exId, `     From: 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4 | Gas: ${deployGas.toLocaleString()} gas | Status: 0x1 (Success)`, 'emerald');
+    }
+
+    function renderContractFunctions(exId, instance) {
+      const container = document.getElementById(`contract-functions-${exId}`);
+      if (!container) return;
+      container.innerHTML = '';
+
+      const parsed = instance.parsed;
+
+      // 1. Functions
+      parsed.fns.forEach(fn => {
+        const isView = fn.mutability === 'view' || fn.mutability === 'pure';
+        const row = document.createElement('div');
+        row.className = "flex flex-wrap items-center gap-2 bg-slate-900/90 p-2.5 rounded-xl border border-slate-800";
+
+        let paramsHtml = '';
+        fn.params.forEach((p, pIdx) => {
+          let defaultVal = p.type.includes('uint') ? '42' : (p.type.includes('string') ? 'Hello' : '');
+          paramsHtml += `
+            <input id="param-${exId}-${fn.name}-${pIdx}" type="text" value="${defaultVal}" placeholder="${p.name} (${p.type})" class="flex-1 min-w-[140px] bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-${isView ? 'sky' : 'amber'}-500">
+          `;
+        });
+
+        const btnColor = isView 
+          ? "bg-sky-600 hover:bg-sky-500 shadow-sky-950/50 text-white" 
+          : "bg-amber-600 hover:bg-amber-500 shadow-amber-950/50 text-white";
+        const btnIcon = isView ? "fa-eye" : "fa-bolt";
+
+        row.innerHTML = `
+          <button onclick="callContractFn('${exId}', '${fn.name}')" class="px-3 py-1.5 ${btnColor} font-bold rounded-lg text-xs shrink-0 flex items-center gap-1.5 shadow-sm transition active:scale-95">
+            <i class="fa-solid ${btnIcon}"></i> <span>${fn.name}</span>
+          </button>
+          ${paramsHtml}
+          ${isView ? `<span id="output-${exId}-${fn.name}" class="text-xs font-mono text-sky-300 font-semibold px-2 shrink-0"></span>` : ''}
+        `;
+
+        container.appendChild(row);
+      });
+
+      // 2. Public State Variables & Mappings
+      parsed.vars.filter(v => v.visibility === 'public').forEach(v => {
+        const isMapping = v.type.startsWith('mapping');
+        const row = document.createElement('div');
+        row.className = "flex flex-wrap items-center gap-2 bg-slate-900/90 p-2.5 rounded-xl border border-slate-800";
+
+        if (isMapping) {
+          row.innerHTML = `
+            <button onclick="callContractFn('${exId}', '${v.name}')" class="px-3 py-1.5 bg-sky-700 hover:bg-sky-600 text-white font-bold rounded-lg text-xs shrink-0 flex items-center gap-1.5 shadow-sm transition active:scale-95">
+              <i class="fa-solid fa-database"></i> <span>${v.name}</span>
+            </button>
+            <input id="param-${exId}-${v.name}-0" type="text" placeholder="key (address)" value="0x5B38Da6a701c568545dCfcB03FcB875f56beddC4" class="flex-1 min-w-[140px] bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-sky-500">
+            <span id="output-${exId}-${v.name}" class="text-xs font-mono text-sky-300 font-semibold px-2 shrink-0"></span>
+          `;
+        } else {
+          row.innerHTML = `
+            <button onclick="callContractFn('${exId}', '${v.name}')" class="px-3 py-1.5 bg-sky-700 hover:bg-sky-600 text-white font-bold rounded-lg text-xs shrink-0 flex items-center gap-1.5 shadow-sm transition active:scale-95">
+              <i class="fa-solid fa-database"></i> <span>${v.name}</span>
+            </button>
+            <span class="text-xs text-slate-400 italic">public getter</span>
+            <span id="output-${exId}-${v.name}" class="text-xs font-mono text-sky-300 font-semibold px-2 shrink-0 ml-auto"></span>
+          `;
+        }
+        container.appendChild(row);
+      });
+    }
+
+    function callContractFn(exId, fnName) {
+      const instance = solidityInstances[exId];
+      if (!instance) {
+        logToSolidityConsole(exId, `[error] ❌ Contract niet gedeployed. Klik eerst op 'Compileer & Deploy'.`, 'rose');
+        return;
+      }
+
+      const args = [];
+      let pIdx = 0;
+      while (true) {
+        const inputEl = document.getElementById(`param-${exId}-${fnName}-${pIdx}`);
+        if (!inputEl) break;
+        args.push(inputEl.value.trim());
+        pIdx++;
+      }
+
+      try {
+        const res = instance.execute(fnName, args);
+        if (res.type === 'call') {
+          const outputEl = document.getElementById(`output-${exId}-${fnName}`);
+          let disp = typeof res.result === 'object' ? JSON.stringify(res.result) : String(res.result);
+          if (outputEl) outputEl.textContent = `➔ ${disp}`;
+          logToSolidityConsole(exId, `[call] 🔍 eth_call: ${instance.name}.${fnName}(${args.join(', ')})`);
+          logToSolidityConsole(exId, `       Return value: ${disp} | Gas: 0 gas (local read)`, 'sky');
+        } else {
+          logToSolidityConsole(exId, `[tx] ⚡ Transact: ${instance.name}.${fnName}(${args.join(', ')})`);
+          logToSolidityConsole(exId, `     Hash: ${res.txHash.slice(0, 10)}... | Gas: ${res.gasUsed.toLocaleString()} gas | Status: ${res.status}`, 'amber');
+          if (res.stateUpdates && res.stateUpdates.length > 0) {
+            res.stateUpdates.forEach(up => {
+              logToSolidityConsole(exId, `     ↳ State gewijzigd: ${up}`, 'emerald');
+            });
+          }
+          // Auto update getters in UI
+          instance.parsed.vars.filter(v => v.visibility === 'public').forEach(v => {
+            if (!v.type.startsWith('mapping')) {
+              const getterEl = document.getElementById(`output-${exId}-${v.name}`);
+              if (getterEl && instance.state[v.name] !== undefined) {
+                getterEl.textContent = `➔ ${instance.state[v.name]}`;
+              }
+            }
+          });
+        }
+      } catch (err) {
+        logToSolidityConsole(exId, `[revert] ❌ Executiefout: ${err.message}`, 'rose');
+      }
+    }
+
+    // --- Automated Unit Test Runner ---
+    function runSolidityTests(exId) {
+      const editor = document.getElementById(`editor-${exId}`);
+      const resultsBox = document.getElementById(`test-results-${exId}`);
+      if (!editor || !resultsBox) return;
+
+      const code = editor.value;
+      resultsBox.classList.remove('hidden');
+      resultsBox.className = "p-4 rounded-2xl border text-xs space-y-2 bg-purple-950/40 border-purple-800/80";
+      resultsBox.innerHTML = `<div class="flex items-center gap-2 text-purple-400 font-mono"><i class="fa-solid fa-spinner animate-spin"></i> Tests uitvoeren op lokale virtuele EVM...</div>`;
+
+      setTimeout(() => {
+        const parsed = parseSolidityContract(code);
+        const tests = [];
+
+        const assert = (name, passed, detail) => {
+          tests.push({ name, passed, detail });
+        };
+
+        if (parsed.error) {
+          assert("Syntax Compilatie", false, parsed.error);
+        } else {
+          assert("Syntax Compilatie", true, `Contract '${parsed.name}' compileert zonder syntaxfouten.`);
+
+          if (exId === 's1_ex1') {
+            const hasReset = parsed.fns.find(f => f.name === 'resetNumber');
+            assert("Functie resetNumber() Aanwezig", !!hasReset, hasReset ? "Functie gedefinieerd." : "Functie resetNumber() ontbreekt.");
+            assert("Visibility Public/External", hasReset && (hasReset.visibility === 'public' || hasReset.visibility === 'external'), "Zichtbaarheid is public of external.");
+
+            // Execution check
+            const testVm = new VirtualContractInstance(parsed);
+            testVm.execute('setNumber', [99]);
+            const midVal = testVm.state['myFavoriteNumber'];
+            testVm.execute('resetNumber', []);
+            const finalVal = testVm.state['myFavoriteNumber'];
+            const getVal = testVm.execute('getNumber', []).result;
+
+            assert("State Reset Test (99 -> 0)", midVal === 99 && finalVal === 0, `myFavoriteNumber werd gereset naar ${finalVal}.`);
+            assert("Getter getNumber() retourneert 0", getVal === 0, `getNumber() retourneert ${getVal}.`);
+
+          } else if (exId === 's1_ex2') {
+            const hasMsgVar = parsed.vars.find(v => v.name === 'message' && v.type === 'string' && v.visibility === 'public');
+            assert("State Variable 'string public message'", !!hasMsgVar, hasMsgVar ? "Gedefinieerd in storage." : "State variabele ontbreekt of is niet public.");
+
+            const hasSetMsg = parsed.fns.find(f => f.name === 'setMessage');
+            assert("Functie setMessage() Aanwezig", !!hasSetMsg, hasSetMsg ? "Functie gedefinieerd." : "Functie setMessage() ontbreekt.");
+
+            const hasMemory = hasSetMsg && hasSetMsg.params.some(p => p.type.includes('memory') || p.type.includes('calldata'));
+            assert("Datalocatie 'memory' of 'calldata'", !!hasMemory, hasMemory ? "Expliciet gedeclareerd." : "Specificeer 'string memory _msg'.");
+
+            // Execution check
+            const testVm = new VirtualContractInstance(parsed);
+            testVm.execute('setMessage', ["Solidity Rocks"]);
+            assert("EVM Opslag Test", testVm.state['message'] === "Solidity Rocks", `message is ingesteld op "${testVm.state['message']}".`);
+
+          } else if (exId === 's2_ex1') {
+            const hasBalMapping = parsed.vars.find(v => v.name === 'balances' && v.type.includes('mapping') && v.visibility === 'public');
+            assert("Mapping 'balances' (address => uint256)", !!hasBalMapping, hasBalMapping ? "Mapping gedefinieerd." : "mapping(address => uint256) public balances ontbreekt.");
+
+            const hasDeposit = parsed.fns.find(f => f.name === 'deposit');
+            assert("Functie deposit(uint256 amount)", !!hasDeposit, hasDeposit ? "Functie gedefinieerd." : "Functie deposit ontbreekt.");
+
+            // Execution check
+            const testVm = new VirtualContractInstance(parsed);
+            const caller = '0x5B38Da6a701c568545dCfcB03FcB875f56beddC4';
+            testVm.execute('deposit', [150], caller);
+            testVm.execute('deposit', [100], caller);
+            const bal = (testVm.state['balances'] && testVm.state['balances'][caller]) || 0;
+            assert("EVM Saldo Verhoging (150 + 100 = 250)", bal === 250, `Huidig saldo is ${bal}.`);
+
+          } else if (exId === 's2_ex2') {
+            const hasUserStruct = parsed.structs && parsed.structs.some(s => s.name === 'User');
+            assert("Struct 'User' Definitie", !!hasUserStruct, hasUserStruct ? "struct User gevonden." : "struct User { string name; bool isRegistered; } ontbreekt.");
+
+            const hasUsersMapping = parsed.vars.find(v => v.name === 'users' && v.type.includes('mapping') && v.visibility === 'public');
+            assert("Mapping 'users' (address => User)", !!hasUsersMapping, hasUsersMapping ? "Mapping gevonden." : "mapping(address => User) public users ontbreekt.");
+
+            const hasRegister = parsed.fns.find(f => f.name === 'register');
+            assert("Functie register(string memory _name)", !!hasRegister, hasRegister ? "Functie register gevonden." : "register() functie ontbreekt.");
+
+            // Execution check
+            const testVm = new VirtualContractInstance(parsed);
+            const caller = '0x5B38Da6a701c568545dCfcB03FcB875f56beddC4';
+            testVm.execute('register', ["Satoshi"], caller);
+            const u = testVm.state['users'] && testVm.state['users'][caller];
+            assert("EVM Registratie van User", u && u.name === "Satoshi" && u.isRegistered === true, `User geregistreerd: ${JSON.stringify(u)}.`);
+          }
+        }
+
+        const allPassed = tests.length > 0 && tests.every(t => t.passed);
+
+        let html = `
+          <div class="flex items-center justify-between border-b ${allPassed ? 'border-emerald-800' : 'border-rose-800'} pb-2">
+            <span class="font-bold flex items-center gap-2 ${allPassed ? 'text-emerald-400' : 'text-rose-400'}">
+              <i class="fa-solid ${allPassed ? 'fa-circle-check text-emerald-400' : 'fa-circle-xmark text-rose-400'}"></i>
+              ${allPassed ? 'Alle eenheidstests geslaagd (100%)' : 'Testfouten geconstateerd'}
+            </span>
+            <span class="font-mono text-[10px] text-slate-400">${tests.filter(t => t.passed).length}/${tests.length} geslaagd</span>
+          </div>
+          <div class="space-y-1.5 pt-1 font-mono text-xs">
+        `;
+
+        tests.forEach(t => {
+          html += `
+            <div class="flex items-start gap-2">
+              <span class="${t.passed ? 'text-emerald-400' : 'text-rose-400'} shrink-0">${t.passed ? '✓' : '✗'}</span>
+              <div>
+                <span class="${t.passed ? 'text-slate-200' : 'text-rose-300 font-semibold'}">${t.name}:</span>
+                <span class="text-slate-400 ml-1 text-[11px]">${t.detail}</span>
+              </div>
+            </div>
+          `;
+        });
+
+        html += `</div>`;
+
+        if (allPassed) {
+          html += `
+            <div class="mt-2 p-2 bg-emerald-950/80 border border-emerald-800 rounded-xl text-emerald-300 text-xs flex items-center gap-2">
+              <i class="fa-solid fa-award text-base text-yellow-400"></i>
+              <span>Uitstekend werk! Je smart contract functioneert exact volgens de Web3 specificaties.</span>
+            </div>
+          `;
+          confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
+
+          // Update Status Pill
+          const statusPill = document.getElementById(`sol-status-${exId}`);
+          if (statusPill) {
+            statusPill.className = "px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-900/90 text-emerald-200 border border-emerald-500/80 flex items-center gap-1.5";
+            statusPill.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> Tests Geslaagd (100%)`;
+          }
+
+          saveState();
+        }
+
+        resultsBox.className = `p-4 rounded-2xl border text-xs space-y-2 ${allPassed ? 'bg-emerald-950/40 border-emerald-800/80' : 'bg-rose-950/40 border-rose-800/80'}`;
+        resultsBox.innerHTML = html;
+      }, 250);
+    }
+
+    function resetSolidityCode(exId) {
+      const track = CURRICULUM['solidity'];
+      for (let l of track.lessons) {
+        const ex = (l.exercises || []).find(e => e.id === exId);
+        if (ex && ex.starterCode) {
+          const editor = document.getElementById(`editor-${exId}`);
+          if (editor) {
+            editor.value = ex.starterCode;
+            updateGutter(exId);
+            logToSolidityConsole(exId, `[editor] 🔄 Starter template hersteld.`);
+          }
+          break;
+        }
+      }
+    }
+
+    function toggleSoliditySolution(exId) {
+      const box = document.getElementById(`solution-box-${exId}`);
+      const label = document.getElementById(`sol-btn-label-${exId}`);
+      if (box) {
+        box.classList.toggle('hidden');
+        if (label) {
+          label.textContent = box.classList.contains('hidden') ? 'Oplossing' : 'Sluit Oplossing';
+        }
+      }
+    }
+
+    function insertModelCode(exId) {
+      const track = CURRICULUM['solidity'];
+      for (let l of track.lessons) {
+        const ex = (l.exercises || []).find(e => e.id === exId);
+        if (ex && (ex.modelCode || ex.modelAnswer)) {
+          const editor = document.getElementById(`editor-${exId}`);
+          if (editor) {
+            editor.value = ex.modelCode || ex.modelAnswer;
+            updateGutter(exId);
+            logToSolidityConsole(exId, `[editor] 💡 Modeloplossing gekopieerd naar editor.`);
+          }
+          break;
+        }
+      }
+    }
+
+    function clearSolidityConsole(exId) {
+      const c = document.getElementById(`console-${exId}`);
+      if (c) c.innerHTML = '<div class="text-slate-500">// Console gewist.</div>';
+    }
+
+    function logToSolidityConsole(exId, msg, color) {
+      const c = document.getElementById(`console-${exId}`);
+      if (!c) return;
+      const entry = document.createElement('div');
+      if (color === 'rose') entry.className = 'text-rose-400 font-semibold';
+      else if (color === 'amber') entry.className = 'text-amber-300';
+      else if (color === 'sky') entry.className = 'text-sky-300 font-semibold';
+      else if (color === 'emerald') entry.className = 'text-emerald-300';
+      else entry.className = 'text-slate-300';
+
+      entry.textContent = msg;
+      c.appendChild(entry);
+      c.scrollTop = c.scrollHeight;
+    }
+
     // --- Section 4: Mastery Exam & Gating Logic ---
     function renderExam(quizQuestions) {
       const container = document.getElementById('exam-questions-container');
@@ -2224,152 +2992,137 @@
       banner.classList.add('hidden');
       document.getElementById('exam-score-display').textContent = '';
 
-      container.innerHTML = '';
+      const trackData = state[state.track];
+      const isCompleted = trackData.completed && trackData.completed.includes(state.lessonId);
+      const prevScore = trackData.scores ? trackData.scores[state.lessonId] : null;
 
-      const isDone = isLessonCompleted(state.track, state.lessonId);
-      const score = getLessonScore(state.track, state.lessonId);
-
-      if (isDone) {
-        badge.textContent = `Behaald (${score}%)`;
-        badge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200";
+      if (isCompleted) {
+        badge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200";
+        badge.textContent = `Behaald (${prevScore}%)`;
       } else {
-        badge.textContent = "Niet afgelegd";
-        badge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200";
+        badge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200";
+        badge.textContent = "Nog Niet Afgelegd";
       }
 
-      if (quizQuestions.length === 0) {
-        container.innerHTML = '<p class="text-xs text-slate-500 italic">Geen toetsvragen voor deze les.</p>';
+      container.innerHTML = '';
+
+      if (!quizQuestions || quizQuestions.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500 italic">Geen eindtoetsvragen voor deze les.</p>';
         return;
       }
 
-      quizQuestions.forEach((qItem, qIdx) => {
+      quizQuestions.forEach((q, qIdx) => {
         const qCard = document.createElement('div');
-        qCard.className = "p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3";
-        qCard.id = `exam-q-${qIdx}`;
+        qCard.className = "p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3";
+        qCard.id = `quiz-card-${qIdx}`;
 
-        let optionsHtml = qItem.options.map((opt, oIdx) => `
-          <label class="flex items-start space-x-3 p-3 bg-white hover:bg-indigo-50/50 rounded-xl border border-slate-200 cursor-pointer transition select-none text-xs sm:text-sm font-medium text-slate-700">
-            <input type="radio" name="exam_q_${qIdx}" value="${oIdx}" class="mt-0.5 text-indigo-600 focus:ring-indigo-500 h-4 w-4">
-            <span class="flex-1">${opt}</span>
-          </label>
-        `).join('');
+        let optsHtml = '';
+        q.options.forEach((opt, optIdx) => {
+          optsHtml += `
+            <label class="flex items-center space-x-3 p-2.5 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-indigo-300 transition text-xs sm:text-sm text-slate-800">
+              <input type="radio" name="quiz-q-${qIdx}" value="${optIdx}" class="text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+              <span>${opt}</span>
+            </label>
+          `;
+        });
 
         qCard.innerHTML = `
-          <h4 class="font-bold text-slate-900 text-sm sm:text-base flex items-start gap-2">
-            <span class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-800 text-xs flex items-center justify-center font-extrabold flex-shrink-0 mt-0.5">${qIdx + 1}</span>
-            <span>${qItem.q}</span>
-          </h4>
-          <div class="space-y-2 pt-1" id="exam-opts-${qIdx}">
-            ${optionsHtml}
+          <div class="font-bold text-slate-900 text-xs sm:text-sm flex items-start space-x-2">
+            <span class="text-indigo-600 font-extrabold shrink-0">Vraag ${qIdx + 1}:</span>
+            <span>${q.q}</span>
           </div>
-          <div id="exam-feedback-${qIdx}" class="hidden p-3 rounded-xl text-xs mt-2"></div>
+          <div class="space-y-2 pt-1">
+            ${optsHtml}
+          </div>
+          <div id="quiz-feedback-${qIdx}" class="hidden text-xs p-2.5 rounded-xl"></div>
         `;
-
         container.appendChild(qCard);
       });
     }
 
     function submitExam() {
-      const trackData = CURRICULUM[state.track];
-      const lesson = trackData.lessons.find(l => l.id === state.lessonId);
-      if (!lesson || !lesson.quiz) return;
+      const track = CURRICULUM[state.track];
+      const lesson = track.lessons.find(l => l.id === state.lessonId);
+      const questions = lesson.quiz || [];
 
-      const questions = lesson.quiz;
-      let correctCount = 0;
+      if (questions.length === 0) return;
+
+      let scoreCount = 0;
       let allAnswered = true;
 
-      questions.forEach((q, idx) => {
-        const selected = document.querySelector(`input[name="exam_q_${idx}"]:checked`);
-        const feedbackEl = document.getElementById(`exam-feedback-${idx}`);
+      questions.forEach((q, qIdx) => {
+        const selected = document.querySelector(`input[name="quiz-q-${qIdx}"]:checked`);
+        const feedbackEl = document.getElementById(`quiz-feedback-${qIdx}`);
 
         if (!selected) {
           allAnswered = false;
         } else {
           const val = parseInt(selected.value, 10);
           feedbackEl.classList.remove('hidden');
-
           if (val === q.correct) {
-            correctCount++;
-            feedbackEl.className = "p-3 rounded-xl text-xs mt-2 bg-emerald-50 text-emerald-900 border border-emerald-200 font-medium";
-            feedbackEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> <strong>Juist!</strong> ${q.rule}`;
+            scoreCount++;
+            feedbackEl.className = "text-xs p-2.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200";
+            feedbackEl.innerHTML = `<strong>Correct!</strong> ${q.rule || ''}`;
           } else {
-            feedbackEl.className = "p-3 rounded-xl text-xs mt-2 bg-rose-50 text-rose-900 border border-rose-200 font-medium";
-            feedbackEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600 mr-1"></i> <strong>Onjuist.</strong> Juiste antwoord: <em>${q.options[q.correct]}</em>. ${q.rule}`;
+            feedbackEl.className = "text-xs p-2.5 rounded-xl bg-rose-50 text-rose-800 border border-rose-200";
+            feedbackEl.innerHTML = `<strong>Onjuist.</strong> Juiste antwoord: <em>${q.options[q.correct]}</em>. ${q.rule || ''}`;
           }
         }
       });
 
       if (!allAnswered) {
-        showToast("Beantwoord eerst alle toetsvragen voordat je indient!", "error");
+        alert("Beantwoord alle toetsvragen voordat je de toets indient!");
         return;
       }
 
-      const percentage = Math.round((correctCount / questions.length) * 100);
-      const passed = percentage >= 80;
+      const pct = Math.round((scoreCount / questions.length) * 100);
+      const passed = pct >= 80;
+
+      const trackData = state[state.track];
+      trackData.scores[lesson.id] = pct;
 
       const banner = document.getElementById('exam-result-banner');
       banner.classList.remove('hidden');
 
-      const nextLesson = trackData.lessons.find(l => l.id === state.lessonId + 1);
-
       if (passed) {
-        confetti({
-          particleCount: 120,
-          spread: 80,
-          origin: { y: 0.6 }
-        });
-
-        if (!state.progress[state.track].completed.includes(state.lessonId)) {
-          state.progress[state.track].completed.push(state.lessonId);
-        }
-        state.progress[state.track].scores[state.lessonId] = percentage;
-
-        if (nextLesson && !state.progress[state.track].unlocked.includes(nextLesson.id)) {
-          state.progress[state.track].unlocked.push(nextLesson.id);
-        }
-
-        saveState();
-        renderCarousel();
-
-        banner.className = "p-5 rounded-2xl border bg-emerald-50 border-emerald-200 text-emerald-950 space-y-3";
+        banner.className = "p-4 rounded-2xl border text-sm font-semibold bg-emerald-50 border-emerald-200 text-emerald-900";
         banner.innerHTML = `
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-lg shadow-sm">
-              <i class="fa-solid fa-award"></i>
-            </div>
-            <div>
-              <h4 class="font-extrabold text-base">🎉 GEFELICITEERD! JE BEHEERST DEZE LES!</h4>
-              <p class="text-xs text-emerald-800">Je score: <strong>${correctCount} van de ${questions.length} juist (${percentage}%)</strong></p>
-            </div>
+          <div class="flex items-center space-x-2 text-base font-black text-emerald-700">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>Gefeliciteerd! Toets Behaald (${pct}%)</span>
           </div>
-          ${nextLesson ? `
-            <div class="pt-2">
-              <button onclick="selectLesson(${nextLesson.id})" class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow transition active:scale-95 flex items-center gap-2">
-                <span>Ga direct naar Les ${nextLesson.id}: ${nextLesson.title}</span>
-                <i class="fa-solid fa-arrow-right"></i>
-              </button>
-            </div>
-          ` : `
-            <p class="text-xs font-bold text-emerald-700 pt-1">🏆 Je hebt alle beschikbare lessen in dit leertraject succesvol afgerond!</p>
-          `}
+          <p class="text-xs text-emerald-800 mt-1">Je hebt de vereiste beheersingsdrempel (&ge; 80%) bereikt. De volgende les is nu ontgrendeld!</p>
         `;
 
-        showToast(`Gefeliciteerd! Les ${state.lessonId} voltooid met ${percentage}%.`, "success");
+        if (!trackData.completed.includes(lesson.id)) {
+          trackData.completed.push(lesson.id);
+        }
+
+        const nextLessonId = lesson.id + 1;
+        const nextExists = track.lessons.some(l => l.id === nextLessonId);
+        if (nextExists && !trackData.unlocked.includes(nextLessonId)) {
+          trackData.unlocked.push(nextLessonId);
+        }
+
+        confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
       } else {
-        banner.className = "p-5 rounded-2xl border bg-rose-50 border-rose-200 text-rose-950 space-y-3";
+        banner.className = "p-4 rounded-2xl border text-sm font-semibold bg-rose-50 border-rose-200 text-rose-900";
         banner.innerHTML = `
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center text-lg shadow-sm">
-              <i class="fa-solid fa-rotate-left"></i>
-            </div>
-            <div>
-              <h4 class="font-extrabold text-base">Nog niet voldoende beheerst (${percentage}%)</h4>
-              <p class="text-xs text-rose-800">Je hebt minimaal <strong>80% nodig</strong> om de volgende les te ontgrendelen. Bekijk de uitleg bij de foute antwoorden hierboven en probeer het opnieuw!</p>
-            </div>
+          <div class="flex items-center space-x-2 text-base font-black text-rose-700">
+            <i class="fa-solid fa-circle-xmark"></i>
+            <span>Helaas: Score ${pct}% (Vereist: 80%)</span>
           </div>
+          <p class="text-xs text-rose-800 mt-1">Bestudeer de theorie en de grammatica-uitleg nogmaals en probeer de toets opnieuw.</p>
         `;
-        showToast(`Score: ${percentage}%. Bekijk de toelichting en probeer opnieuw!`, "error");
       }
+
+      saveState();
+      renderTrackView();
+    }
+
+    function scrollToSection(sectionId) {
+      const el = document.getElementById(sectionId);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
 
     // --- App Bootstrap ---
