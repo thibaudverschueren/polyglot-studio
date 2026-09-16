@@ -7,9 +7,17 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Polyglot Studio">
+  
+  <!-- Tailwind & FontAwesome -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- Google Fonts for Authentic Cursive & Calligraphy -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Kalam:wght@700&display=swap" rel="stylesheet">
+
   <style>
     body {
       -webkit-tap-highlight-color: transparent;
@@ -19,15 +27,27 @@
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 24px); }
     pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
     
-    /* Handwriting Canvas Styles */
+    /* Authentic School Notebook Paper Background (Dual-Layer: Canvas sits on top transparently) */
+    .notebook-paper-bg {
+      background-color: #ffffff;
+      background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, #e2e8f0 28px),
+                        linear-gradient(to right, transparent 34px, #fecdd3 35px, transparent 36px);
+      background-attachment: local;
+    }
+
+    /* Handwriting & Cursive Styles */
+    .handwritten-font {
+      font-family: 'Caveat', 'Kalam', cursive, sans-serif;
+    }
+
+    /* Apple Pencil Canvas Styles */
     .pencil-canvas {
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
       cursor: crosshair;
     }
-    
-    /* Custom Scrollbar for Lessons */
+
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
@@ -44,8 +64,8 @@
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 leading-tight">Polyglot Studio</h1>
-            <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-emerald-200">
-              <i class="fa-solid fa-microphone-lines text-emerald-600"></i> Studio AI
+            <span class="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-indigo-200">
+              <i class="fa-solid fa-pen-nib text-indigo-600"></i> Pro Inkt 120Hz
             </span>
           </div>
           <p class="text-xs text-slate-500 font-medium">Thibaud's Taal- & Techacademie</p>
@@ -231,7 +251,7 @@
         </div>
         <div>
           <h3 class="font-bold text-slate-900 text-base sm:text-lg">3. Actieve Oefeningen & Schrijfopdrachten</h3>
-          <p class="text-xs text-slate-500">Schrijf direct op je iPad met de Apple Pencil of typ op je iPhone.</p>
+          <p class="text-xs text-slate-500">Schrijf direct op je iPad met de Apple Pencil (met gom & schrijfanimaties) of typ op de iPhone.</p>
         </div>
       </div>
 
@@ -1177,19 +1197,20 @@
       lessonId: 4,
       freeMode: false,
       progress: {
-        greek: { completed: [1, 2, 3], scores: { 1: 100, 2: 100, 3: 100 }, unlocked: [1, 2, 3, 4] },
-        french: { completed: [], scores: {}, unlocked: [1] },
+        greek: { completed: [1, 2, 3], scores: { 1: 100, 2: 100, 3: 100 }, unlocked: [1, 2, 3, 4, 5] },
+        french: { completed: [1], scores: { 1: 100 }, unlocked: [1, 2] },
         solidity: { completed: [], scores: {}, unlocked: [1] }
       }
     };
 
-    // Store HandwritingPad instances
+    // Store HandwritingPad & StrokeAnimator instances
     const pads = {};
+    const animators = {};
     let currentAudio = null;
     let recognition = null;
     let isRecording = false;
 
-    // --- HandwritingPad Class for Apple Pencil & iPad ---
+    // --- HandwritingPad: 120Hz Coalesced Pro Apple Pencil & Non-Destructive Eraser ---
     class HandwritingPad {
       constructor(canvasEl, id) {
         this.canvas = canvasEl;
@@ -1198,9 +1219,9 @@
         this.strokes = [];
         this.currentStroke = null;
         this.mode = 'pen'; // 'pen' | 'eraser'
-        this.penColor = '#1e293b'; // slate-800
-        this.penWidth = 2.5;
-        this.eraserWidth = 24;
+        this.penColor = '#1e293b'; // slate-900 rich ink
+        this.penWidth = 2.4;
+        this.eraserWidth = 26;
 
         this.initCanvas();
         this.bindEvents();
@@ -1215,39 +1236,13 @@
         this.redraw();
       }
 
-      drawLinedBackground() {
-        const width = this.canvas.width / (window.devicePixelRatio || 1);
-        const height = this.canvas.height / (window.devicePixelRatio || 1);
-
-        // White paper background
-        this.ctx.fillStyle = "#ffffff";
-        this.ctx.fillRect(0, 0, width, height);
-
-        // Subtle horizontal blue/slate writing lines
-        this.ctx.strokeStyle = "#e2e8f0";
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        for (let y = 28; y < height; y += 28) {
-          this.ctx.moveTo(0, y);
-          this.ctx.lineTo(width, y);
-        }
-        this.ctx.stroke();
-
-        // Subtle soft red margin line (notebook look)
-        this.ctx.strokeStyle = "#fecdd3"; // rose-200
-        this.ctx.lineWidth = 1.5;
-        this.ctx.beginPath();
-        this.ctx.moveTo(34, 0);
-        this.ctx.lineTo(34, height);
-        this.ctx.stroke();
-      }
-
       bindEvents() {
         const getPt = (e) => {
           const rect = this.canvas.getBoundingClientRect();
           return {
             x: e.clientX - rect.left,
-            y: e.clientY - rect.top
+            y: e.clientY - rect.top,
+            p: (e.pointerType === 'pen' && e.pressure > 0) ? e.pressure : 0.5
           };
         };
 
@@ -1255,23 +1250,42 @@
           e.preventDefault();
           this.canvas.setPointerCapture(e.pointerId);
           const pt = getPt(e);
-          const pressureWidth = (e.pointerType === 'pen' && e.pressure > 0) ? Math.max(1.8, e.pressure * 4.5) : this.penWidth;
+          const strokeWidth = this.mode === 'eraser' ? this.eraserWidth : this.calculateWidth(pt.p);
           
           this.currentStroke = {
             mode: this.mode,
             color: this.penColor,
-            width: this.mode === 'eraser' ? this.eraserWidth : pressureWidth,
+            width: strokeWidth,
             points: [pt]
           };
           this.strokes.push(this.currentStroke);
+
+          // Render initial tap/dot
+          this.ctx.save();
+          this.ctx.beginPath();
+          if (this.mode === 'eraser') {
+            this.ctx.globalCompositeOperation = 'destination-out';
+            this.ctx.arc(pt.x, pt.y, this.eraserWidth / 2, 0, Math.PI * 2);
+            this.ctx.fill();
+          } else {
+            this.ctx.globalCompositeOperation = 'source-over';
+            this.ctx.fillStyle = this.penColor;
+            this.ctx.arc(pt.x, pt.y, strokeWidth / 2, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+          this.ctx.restore();
         });
 
         this.canvas.addEventListener('pointermove', (e) => {
           if (!this.currentStroke) return;
           e.preventDefault();
-          const pt = getPt(e);
-          this.currentStroke.points.push(pt);
-          this.renderLastSegment();
+          // Read 120Hz coalesced micro-events from iPad Pro / Air
+          const events = (e.getCoalescedEvents && e.getCoalescedEvents().length > 0) ? e.getCoalescedEvents() : [e];
+          for (let ev of events) {
+            const pt = getPt(ev);
+            this.currentStroke.points.push(pt);
+            this.renderCurveSegment();
+          }
         });
 
         const endStroke = (e) => {
@@ -1284,7 +1298,6 @@
         this.canvas.addEventListener('pointercancel', endStroke);
 
         window.addEventListener('resize', () => {
-          // preserve on resize
           const rect = this.canvas.getBoundingClientRect();
           const dpr = window.devicePixelRatio || 1;
           this.canvas.width = rect.width * dpr;
@@ -1294,47 +1307,89 @@
         });
       }
 
-      renderLastSegment() {
-        if (!this.currentStroke || this.currentStroke.points.length < 2) return;
-        const pts = this.currentStroke.points;
-        const p1 = pts[pts.length - 2];
-        const p2 = pts[pts.length - 1];
+      calculateWidth(pressure) {
+        return Math.max(1.4, Math.min(5.2, this.penWidth * (0.6 + pressure * 0.9)));
+      }
 
+      renderCurveSegment() {
+        const pts = this.currentStroke.points;
+        const len = pts.length;
+        if (len < 2) return;
+
+        this.ctx.save();
         this.ctx.beginPath();
         this.ctx.lineCap = 'round';
         this.ctx.lineJoin = 'round';
+
         if (this.currentStroke.mode === 'eraser') {
-          this.ctx.strokeStyle = '#ffffff';
+          // destination-out: erases ink transparently, leaves background lines 100% intact!
+          this.ctx.globalCompositeOperation = 'destination-out';
           this.ctx.lineWidth = this.eraserWidth;
         } else {
+          this.ctx.globalCompositeOperation = 'source-over';
           this.ctx.strokeStyle = this.currentStroke.color;
-          this.ctx.lineWidth = this.currentStroke.width;
+          this.ctx.lineWidth = this.calculateWidth(pts[len - 1].p);
         }
-        this.ctx.moveTo(p1.x, p1.y);
-        this.ctx.lineTo(p2.x, p2.y);
+
+        if (len === 2) {
+          this.ctx.moveTo(pts[0].x, pts[0].y);
+          this.ctx.lineTo(pts[1].x, pts[1].y);
+        } else {
+          const p0 = pts[len - 3];
+          const p1 = pts[len - 2];
+          const p2 = pts[len - 1];
+          const mid1 = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 };
+          const mid2 = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+          this.ctx.moveTo(mid1.x, mid1.y);
+          this.ctx.quadraticCurveTo(p1.x, p1.y, mid2.x, mid2.y);
+        }
+
         this.ctx.stroke();
+        this.ctx.restore();
       }
 
       redraw() {
-        this.drawLinedBackground();
-        this.strokes.forEach(stroke => {
-          if (stroke.points.length < 2) return;
+        const dpr = window.devicePixelRatio || 1;
+        const width = this.canvas.width / dpr;
+        const height = this.canvas.height / dpr;
+        this.ctx.clearRect(0, 0, width, height);
+
+        for (let stroke of this.strokes) {
+          if (!stroke.points || stroke.points.length === 0) continue;
+          const pts = stroke.points;
+
+          this.ctx.save();
           this.ctx.beginPath();
           this.ctx.lineCap = 'round';
           this.ctx.lineJoin = 'round';
+
           if (stroke.mode === 'eraser') {
-            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.globalCompositeOperation = 'destination-out';
             this.ctx.lineWidth = stroke.width || this.eraserWidth;
           } else {
+            this.ctx.globalCompositeOperation = 'source-over';
             this.ctx.strokeStyle = stroke.color;
             this.ctx.lineWidth = stroke.width;
           }
-          this.ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-          for (let i = 1; i < stroke.points.length; i++) {
-            this.ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+
+          if (pts.length === 1) {
+            this.ctx.arc(pts[0].x, pts[0].y, (stroke.width || this.penWidth) / 2, 0, Math.PI * 2);
+            this.ctx.fill();
+          } else if (pts.length === 2) {
+            this.ctx.moveTo(pts[0].x, pts[0].y);
+            this.ctx.lineTo(pts[1].x, pts[1].y);
+            this.ctx.stroke();
+          } else {
+            this.ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length - 1; i++) {
+              const mid = { x: (pts[i].x + pts[i + 1].x) / 2, y: (pts[i].y + pts[i + 1].y) / 2 };
+              this.ctx.quadraticCurveTo(pts[i].x, pts[i].y, mid.x, mid.y);
+            }
+            this.ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+            this.ctx.stroke();
           }
-          this.ctx.stroke();
-        });
+          this.ctx.restore();
+        }
       }
 
       setMode(mode) {
@@ -1354,6 +1409,258 @@
       }
     }
 
+    // --- StrokeAnimator: Stroke-by-Stroke Animated Handwriting Demonstration ---
+    class StrokeAnimator {
+      constructor(canvasEl, penCursorEl, btnLabelEl, exId, textToAnimate) {
+        this.canvas = canvasEl;
+        this.penCursor = penCursorEl;
+        this.btnLabel = btnLabelEl;
+        this.exId = exId;
+        this.text = textToAnimate || "";
+        this.ctx = this.canvas.getContext('2d');
+        this.isPlaying = false;
+        this.speed = 1.0; // 1.0 = normal, 0.5 = slow
+        this.animFrameId = null;
+        this.strokeData = this.buildStrokes(this.text);
+      }
+
+      buildStrokes(text) {
+        // Glyphs stroke definitions: sequence of normalized stroke polylines [x, y]
+        const GLYPHS = {
+          'α': [ [[0.78, 0.35], [0.55, 0.28], [0.32, 0.42], [0.22, 0.62], [0.34, 0.82], [0.60, 0.78], [0.78, 0.45], [0.82, 0.82], [0.94, 0.82]] ],
+          'β': [ [[0.25, 0.88], [0.25, 0.12]], [[0.25, 0.12], [0.65, 0.20], [0.65, 0.48], [0.28, 0.50]], [[0.28, 0.50], [0.72, 0.55], [0.72, 0.85], [0.25, 0.88]] ],
+          'γ': [ [[0.22, 0.40], [0.45, 0.60], [0.75, 0.35]], [[0.75, 0.35], [0.42, 1.15], [0.22, 1.05]] ],
+          'δ': [ [[0.65, 0.12], [0.38, 0.32], [0.22, 0.65], [0.40, 0.85], [0.72, 0.85], [0.80, 0.60], [0.58, 0.30], [0.65, 0.12]] ],
+          'ε': [ [[0.70, 0.30], [0.40, 0.28], [0.25, 0.42], [0.52, 0.54]], [[0.52, 0.54], [0.25, 0.68], [0.40, 0.85], [0.75, 0.82]] ],
+          'ζ': [ [[0.25, 0.30], [0.70, 0.28], [0.35, 0.58], [0.65, 0.72], [0.50, 1.15], [0.28, 1.05]] ],
+          'η': [ [[0.25, 0.32], [0.25, 0.85]], [[0.25, 0.45], [0.50, 0.35], [0.75, 0.50], [0.75, 1.15], [0.62, 1.20]] ],
+          'θ': [ [[0.50, 0.18], [0.26, 0.40], [0.26, 0.68], [0.50, 0.86], [0.74, 0.68], [0.74, 0.40], [0.50, 0.18]], [[0.30, 0.52], [0.70, 0.52]] ],
+          'ι': [ [[0.50, 0.32], [0.50, 0.80], [0.68, 0.84]] ],
+          'κ': [ [[0.30, 0.18], [0.30, 0.85]], [[0.70, 0.35], [0.32, 0.60]], [[0.32, 0.60], [0.72, 0.85]] ],
+          'λ': [ [[0.48, 0.15], [0.25, 0.85]], [[0.42, 0.40], [0.75, 0.85]] ],
+          'μ': [ [[0.20, 1.10], [0.20, 0.40], [0.45, 0.78], [0.70, 0.40], [0.70, 0.85]] ],
+          'ν': [ [[0.25, 0.32], [0.48, 0.82], [0.78, 0.28]] ],
+          'ξ': [ [[0.30, 0.28], [0.70, 0.28], [0.38, 0.48], [0.65, 0.58], [0.38, 0.78], [0.65, 0.92], [0.40, 1.15]] ],
+          'ο': [ [[0.50, 0.28], [0.26, 0.45], [0.26, 0.68], [0.50, 0.85], [0.74, 0.68], [0.74, 0.45], [0.50, 0.28]] ],
+          'π': [ [[0.20, 0.32], [0.80, 0.32]], [[0.34, 0.32], [0.34, 0.85]], [[0.66, 0.32], [0.66, 0.85]] ],
+          'ρ': [ [[0.30, 0.32], [0.30, 1.15]], [[0.30, 0.42], [0.65, 0.32], [0.75, 0.52], [0.62, 0.72], [0.30, 0.70]] ],
+          'σ': [ [[0.75, 0.35], [0.48, 0.30], [0.26, 0.48], [0.30, 0.72], [0.55, 0.84], [0.75, 0.68], [0.68, 0.38]], [[0.68, 0.38], [0.94, 0.38]] ],
+          'ς': [ [[0.35, 0.32], [0.68, 0.32], [0.68, 0.54], [0.38, 0.68], [0.52, 0.90], [0.38, 1.18], [0.20, 1.10]] ],
+          'τ': [ [[0.25, 0.32], [0.75, 0.32]], [[0.50, 0.32], [0.50, 0.85]] ],
+          'υ': [ [[0.25, 0.35], [0.30, 0.70], [0.50, 0.84], [0.70, 0.70], [0.75, 0.35]], [[0.75, 0.35], [0.75, 0.84], [0.86, 0.84]] ],
+          'φ': [ [[0.50, 0.15], [0.50, 1.10]], [[0.50, 0.32], [0.25, 0.48], [0.50, 0.70], [0.75, 0.48], [0.50, 0.32]] ],
+          'χ': [ [[0.28, 0.32], [0.72, 0.85]], [[0.72, 0.32], [0.28, 0.85]] ],
+          'ψ': [ [[0.50, 0.15], [0.50, 1.10]], [[0.26, 0.32], [0.30, 0.62], [0.50, 0.70], [0.70, 0.62], [0.74, 0.32]] ],
+          'ω': [ [[0.18, 0.35], [0.22, 0.75], [0.38, 0.82], [0.50, 0.52], [0.62, 0.82], [0.78, 0.75], [0.82, 0.35]] ],
+          'ό': [ [[0.50, 0.28], [0.26, 0.45], [0.26, 0.68], [0.50, 0.85], [0.74, 0.68], [0.74, 0.45], [0.50, 0.28]], [[0.44, 0.10], [0.62, 0.24]] ],
+          'ά': [ [[0.78, 0.35], [0.55, 0.28], [0.32, 0.42], [0.22, 0.62], [0.34, 0.82], [0.60, 0.78], [0.78, 0.45], [0.82, 0.82], [0.94, 0.82]], [[0.48, 0.10], [0.65, 0.24]] ],
+          'έ': [ [[0.70, 0.30], [0.40, 0.28], [0.25, 0.42], [0.52, 0.54]], [[0.52, 0.54], [0.25, 0.68], [0.40, 0.85], [0.75, 0.82]], [[0.44, 0.10], [0.60, 0.24]] ],
+          'ή': [ [[0.25, 0.32], [0.25, 0.85]], [[0.25, 0.45], [0.50, 0.35], [0.75, 0.50], [0.75, 1.15], [0.62, 1.20]], [[0.44, 0.10], [0.62, 0.24]] ],
+          'ί': [ [[0.50, 0.32], [0.50, 0.80], [0.68, 0.84]], [[0.42, 0.10], [0.58, 0.24]] ],
+          'ώ': [ [[0.18, 0.35], [0.22, 0.75], [0.38, 0.82], [0.50, 0.52], [0.62, 0.82], [0.78, 0.75], [0.82, 0.35]], [[0.44, 0.10], [0.60, 0.24]] ],
+          ',': [ [[0.50, 0.80], [0.42, 0.98]] ],
+          '.': [ [[0.50, 0.80], [0.50, 0.82]] ],
+          '•': [ [[0.45, 0.54], [0.55, 0.54]] ],
+          ' ': []
+        };
+
+        // Layout characters on notebook lines (28px lines)
+        const strokesOut = [];
+        let curX = 45; // Start just right of red margin (35px)
+        let curY = 48; // First baseline line in 28px grid
+        const charW = 22; // Width per character
+        const charH = 34; // Height per character
+        const maxW = 560; // Max line width before soft wrap
+
+        for (let i = 0; i < text.length; i++) {
+          const ch = text[i];
+          if (ch === ' ') {
+            curX += 14;
+            if (curX > maxW) {
+              curX = 45;
+              curY += 56; // Move down 2 notebook lines
+            }
+            continue;
+          }
+          if (ch === '\n') {
+            curX = 45;
+            curY += 56;
+            continue;
+          }
+
+          const glyphStrokes = GLYPHS[ch] || [
+            // Fallback for letters not in GLYPHS: cursive curve
+            [[0.3, 0.35], [0.3, 0.8], [0.7, 0.8], [0.7, 0.35]]
+          ];
+
+          for (let stroke of glyphStrokes) {
+            const worldPts = stroke.map(p => ({
+              x: curX + p[0] * charW,
+              y: curY + (p[1] - 0.75) * charH
+            }));
+            strokesOut.push(worldPts);
+          }
+
+          curX += charW;
+          if (curX > maxW) {
+            curX = 45;
+            curY += 56;
+          }
+        }
+
+        return strokesOut;
+      }
+
+      play() {
+        if (this.isPlaying) return;
+        this.isPlaying = true;
+        this.canvas.classList.remove('hidden');
+        this.penCursor.classList.remove('hidden');
+        this.btnLabel.textContent = "⏸️ Pauzeer Animatie";
+
+        const dpr = window.devicePixelRatio || 1;
+        const rect = this.canvas.getBoundingClientRect();
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        this.ctx.scale(dpr, dpr);
+        this.ctx.clearRect(0, 0, rect.width, rect.height);
+
+        let strokeIdx = 0;
+        let ptIdx = 0;
+        let subT = 0;
+
+        const animateStep = () => {
+          if (!this.isPlaying) return;
+          if (strokeIdx >= this.strokeData.length) {
+            this.stop(false);
+            return;
+          }
+
+          const stroke = this.strokeData[strokeIdx];
+          if (!stroke || stroke.length < 2) {
+            strokeIdx++;
+            ptIdx = 0;
+            subT = 0;
+            this.animFrameId = requestAnimationFrame(animateStep);
+            return;
+          }
+
+          const stepSpeed = 0.18 * this.speed;
+          subT += stepSpeed;
+
+          if (subT >= 1.0) {
+            subT = 0;
+            ptIdx++;
+            if (ptIdx >= stroke.length - 1) {
+              strokeIdx++;
+              ptIdx = 0;
+            }
+          }
+
+          // Draw accumulated progress
+          this.drawProgress(strokeIdx, ptIdx, subT);
+          this.animFrameId = requestAnimationFrame(animateStep);
+        };
+
+        this.animFrameId = requestAnimationFrame(animateStep);
+      }
+
+      drawProgress(curStrokeIdx, curPtIdx, subT) {
+        const dpr = window.devicePixelRatio || 1;
+        const width = this.canvas.width / dpr;
+        const height = this.canvas.height / dpr;
+        this.ctx.clearRect(0, 0, width, height);
+
+        this.ctx.save();
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        this.ctx.strokeStyle = '#1d4ed8'; // Fountain pen rich blue
+        this.ctx.lineWidth = 2.4;
+
+        let leadX = 0;
+        let leadY = 0;
+
+        // Draw finished strokes
+        for (let s = 0; s < curStrokeIdx; s++) {
+          const pts = this.strokeData[s];
+          if (!pts || pts.length < 2) continue;
+          this.ctx.beginPath();
+          this.ctx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) {
+            this.ctx.lineTo(pts[i].x, pts[i].y);
+          }
+          this.ctx.stroke();
+        }
+
+        // Draw current stroke in progress
+        if (curStrokeIdx < this.strokeData.length) {
+          const pts = this.strokeData[curStrokeIdx];
+          if (pts && pts.length >= 2) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i <= curPtIdx; i++) {
+              this.ctx.lineTo(pts[i].x, pts[i].y);
+            }
+            if (curPtIdx < pts.length - 1) {
+              const pA = pts[curPtIdx];
+              const pB = pts[curPtIdx + 1];
+              leadX = pA.x + (pB.x - pA.x) * subT;
+              leadY = pA.y + (pB.y - pA.y) * subT;
+              this.ctx.lineTo(leadX, leadY);
+            } else {
+              leadX = pts[pts.length - 1].x;
+              leadY = pts[pts.length - 1].y;
+            }
+            this.ctx.stroke();
+          }
+        }
+
+        this.ctx.restore();
+
+        // Update floating pen cursor position
+        if (leadX > 0 && leadY > 0) {
+          this.penCursor.style.left = `${leadX}px`;
+          this.penCursor.style.top = `${leadY}px`;
+        }
+      }
+
+      pause() {
+        this.isPlaying = false;
+        if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+        this.btnLabel.textContent = "▶️ Hervat Animatie";
+      }
+
+      stop(resetCanvas = true) {
+        this.isPlaying = false;
+        if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+        this.penCursor.classList.add('hidden');
+        this.btnLabel.textContent = "🔄 Herhaal Animatie";
+        if (resetCanvas) {
+          const dpr = window.devicePixelRatio || 1;
+          this.ctx.clearRect(0, 0, this.canvas.width / dpr, this.canvas.height / dpr);
+          this.canvas.classList.add('hidden');
+        }
+      }
+
+      toggle() {
+        if (this.isPlaying) {
+          this.pause();
+        } else {
+          this.play();
+        }
+      }
+
+      toggleSpeed(btnSpeedEl, speedLabelEl) {
+        if (this.speed === 1.0) {
+          this.speed = 0.5;
+          speedLabelEl.textContent = "0.5x (Traag)";
+        } else {
+          this.speed = 1.0;
+          speedLabelEl.textContent = "1x";
+        }
+      }
+    }
+
     // --- State & Storage Helpers ---
     function loadState() {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -1367,7 +1674,6 @@
         }
       }
 
-      // Read URL parameters if provided
       const urlParams = new URLSearchParams(window.location.search);
       const urlTrack = urlParams.get('track');
       const urlLesson = parseInt(urlParams.get('lesson'), 10);
@@ -1402,7 +1708,7 @@
       return trackProg.scores[lessonId] !== undefined ? trackProg.scores[lessonId] : null;
     }
 
-    // --- UI Notifications ---
+    // --- Notifications & Mode ---
     function showToast(msg, type = 'info') {
       const toast = document.getElementById('toast');
       const toastMsg = document.getElementById('toast-msg');
@@ -1426,13 +1732,12 @@
       }, 3500);
     }
 
-    // --- Free Mode & Reset ---
     function toggleFreeMode() {
       state.freeMode = !state.freeMode;
       saveState();
       updateModeButton();
       renderCarousel();
-      showToast(state.freeMode ? "🔓 Vrij Leren geactiveerd: alle lessen ontgrendeld!" : "🔒 Toets-beveiliging actief.", state.freeMode ? 'success' : 'info');
+      showToast(state.freeMode ? "🔓 Vrij Leren: alle lessen ontgrendeld!" : "🔒 Toets-beveiliging actief.", state.freeMode ? 'success' : 'info');
     }
 
     function updateModeButton() {
@@ -1470,16 +1775,13 @@
       }
     }
 
-    // --- Track & Lesson Selection ---
+    // --- Track & Carousel ---
     function selectTrack(track) {
       state.track = track;
       const lessons = CURRICULUM[track].lessons;
-      
-      // Default to latest unlocked lesson
       const unlocked = state.progress[track]?.unlocked || [1];
       state.lessonId = unlocked[unlocked.length - 1] || lessons[0].id;
 
-      // Update Track Tabs UI
       ['greek', 'french', 'solidity'].forEach(t => {
         const btn = document.getElementById(`track-${t}`);
         if (t === track) {
@@ -1553,12 +1855,11 @@
       document.getElementById('track-progress-pill').textContent = `${completedCount} / ${lessons.length} Beheerst`;
     }
 
-    // --- Lesson Content Loader ---
+    // --- Load Current Lesson ---
     function loadCurrentLesson() {
       const trackData = CURRICULUM[state.track];
       const lesson = trackData.lessons.find(l => l.id === state.lessonId) || trackData.lessons[0];
 
-      // Update Hero
       const badge = document.getElementById('hero-badge');
       badge.textContent = `${trackData.title} • Les ${lesson.id}`;
       badge.className = `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${trackData.badgeBg}`;
@@ -1568,7 +1869,6 @@
       document.getElementById('hero-subtitle').textContent = lesson.subtitle;
       document.getElementById('hero-focus').textContent = lesson.focus;
 
-      // Completed pill
       const heroStatus = document.getElementById('hero-status-pill');
       if (isLessonCompleted(state.track, lesson.id)) {
         heroStatus.innerHTML = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-full border border-emerald-200 flex items-center gap-1"><i class="fa-solid fa-medal text-emerald-600"></i> Beheerst (${getLessonScore(state.track, lesson.id)}%)</span>`;
@@ -1576,16 +1876,13 @@
         heroStatus.innerHTML = `<span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200 flex items-center gap-1"><i class="fa-solid fa-hourglass-start text-indigo-500"></i> In Opleiding</span>`;
       }
 
-      // Section 1: Theory
       document.getElementById('theory-content').innerHTML = lesson.theoryHtml;
 
-      // Section 2: Audio & Speech
       const audioSec = document.getElementById('section-audio');
       if (lesson.vocab || lesson.speechTarget) {
         audioSec.style.display = 'block';
         document.getElementById('nav-audio-btn').style.display = 'flex';
 
-        // Vocab Chips
         const chipsContainer = document.getElementById('vocab-chips');
         chipsContainer.innerHTML = '';
         if (lesson.vocab) {
@@ -1603,7 +1900,6 @@
           });
         }
 
-        // Speech Drill Target
         if (lesson.speechTarget) {
           document.getElementById('speech-drill-card').style.display = 'block';
           document.getElementById('speech-target-phrase').textContent = lesson.speechTarget.phrase;
@@ -1617,10 +1913,7 @@
         document.getElementById('nav-audio-btn').style.display = 'none';
       }
 
-      // Section 3: Exercises
       renderExercises(lesson.exercises || []);
-
-      // Section 4: Exam
       renderExam(lesson.quiz || []);
     }
 
@@ -1712,7 +2005,7 @@
       recognition.start();
     }
 
-    // --- Exercises Renderer (Handwriting & Typing) ---
+    // --- Exercises Renderer: Dual-Layer Canvas, Non-Destructive Eraser & Stroke Animator ---
     function renderExercises(exercises) {
       const container = document.getElementById('exercises-list');
       container.innerHTML = '';
@@ -1746,26 +2039,51 @@
 
           <p class="text-xs sm:text-sm text-slate-700 font-medium">${ex.instruction}</p>
 
-          <!-- Writing Canvas (iPad) -->
+          <!-- Dual-Layer Notebook Container: Background Lined Paper + Transparent Ink Canvas -->
           <div id="container-draw-${ex.id}" class="space-y-2">
-            <div class="relative border border-slate-300 rounded-2xl overflow-hidden bg-white shadow-inner">
-              <canvas id="canvas-${ex.id}" class="pencil-canvas w-full h-44 sm:h-52 block"></canvas>
+            <div class="relative notebook-paper-bg border border-slate-300 rounded-2xl overflow-hidden shadow-inner select-none h-48 sm:h-56">
+              <!-- Transparent Ink Canvas (User draws here) -->
+              <canvas id="canvas-${ex.id}" class="pencil-canvas absolute inset-0 w-full h-full block z-10" style="background: transparent;"></canvas>
+              
+              <!-- Transparent Animation Canvas (Stroke animator plays here) -->
+              <canvas id="anim-canvas-${ex.id}" class="absolute inset-0 w-full h-full block pointer-events-none z-20 hidden" style="background: transparent;"></canvas>
+
+              <!-- Floating Pen Tip Cursor for Animation -->
+              <div id="anim-pen-${ex.id}" class="absolute pointer-events-none hidden z-30 transition-transform duration-75" style="transform: translate(-50%, -50%);">
+                <div class="relative">
+                  <i class="fa-solid fa-pen-nib text-indigo-600 text-lg drop-shadow-md"></i>
+                  <div class="w-2 h-2 bg-indigo-500 rounded-full animate-ping absolute -top-1 -right-1"></div>
+                </div>
+              </div>
             </div>
-            <div class="flex items-center justify-between pt-1 text-xs">
+
+            <!-- Toolbar: Inkt Tools + Geanimeerd Handschrift -->
+            <div class="flex flex-wrap items-center justify-between pt-1 gap-2 text-xs">
               <div class="flex items-center space-x-1.5">
-                <button onclick="setPadTool('${ex.id}', 'pen')" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-bold flex items-center gap-1">
+                <button id="tool-pen-${ex.id}" onclick="setPadTool('${ex.id}', 'pen')" class="px-2.5 py-1 bg-indigo-600 text-white rounded-lg font-bold flex items-center gap-1 shadow-xs transition active:scale-95">
                   <i class="fa-solid fa-pen"></i> Pen
                 </button>
-                <button onclick="setPadTool('${ex.id}', 'eraser')" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-bold flex items-center gap-1">
+                <button id="tool-eraser-${ex.id}" onclick="setPadTool('${ex.id}', 'eraser')" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-bold flex items-center gap-1 transition active:scale-95">
                   <i class="fa-solid fa-eraser"></i> Gom
                 </button>
                 <button onclick="undoPad('${ex.id}')" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-bold" title="Stap terug">
                   <i class="fa-solid fa-arrow-rotate-left"></i>
                 </button>
+                <button onclick="clearPad('${ex.id}')" class="px-2.5 py-1 text-rose-600 hover:bg-rose-50 rounded-lg font-bold" title="Wis inkt">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
               </div>
-              <button onclick="clearPad('${ex.id}')" class="px-2.5 py-1 text-rose-600 hover:bg-rose-50 rounded-lg font-bold">
-                <i class="fa-solid fa-trash-can"></i> Wissen
-              </button>
+
+              <!-- Animated Stroke Demonstration Controls -->
+              <div class="flex items-center space-x-1.5">
+                <button id="btn-anim-${ex.id}" onclick="toggleStrokeAnimation('${ex.id}')" class="px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg font-bold border border-indigo-200 flex items-center gap-1.5 transition active:scale-95">
+                  <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i>
+                  <span id="anim-btn-label-${ex.id}">✍️ Schrijf Voor (Animatie)</span>
+                </button>
+                <button id="btn-speed-${ex.id}" onclick="toggleAnimSpeed('${ex.id}')" class="hidden px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold border border-slate-200" title="Snelheid aanpassen">
+                  <span id="speed-label-${ex.id}">1x</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1774,17 +2092,33 @@
             <textarea id="textarea-${ex.id}" rows="3" placeholder="Typ hier jouw antwoord..." class="w-full p-3.5 bg-white border border-slate-300 rounded-2xl text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"></textarea>
           </div>
 
-          <!-- Model Answer Accordion -->
+          <!-- Model Answer Accordion with Handwritten Solution Card -->
           <div class="pt-1">
             <button onclick="toggleModelAnswer('${ex.id}')" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 transition">
               <i id="icon-ans-${ex.id}" class="fa-solid fa-chevron-right text-[10px]"></i>
-              <span>Toon Modelantwoord & Analyse</span>
+              <span>Toon Modelantwoord & Handgeschreven Oplossing</span>
             </button>
-            <div id="ans-box-${ex.id}" class="hidden mt-2 p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs sm:text-sm space-y-1.5">
-              <div class="font-bold text-indigo-950">
-                <span class="text-indigo-600">Modelantwoord:</span> ${ex.modelAnswer}
+            <div id="ans-box-${ex.id}" class="hidden mt-2 space-y-3">
+              <!-- Authentic Handwritten Card on Lined Notebook Paper -->
+              <div class="p-4 rounded-2xl border border-indigo-200 bg-white relative overflow-hidden shadow-xs notebook-paper-bg">
+                <div class="flex items-center justify-between mb-1 pl-8">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-500 flex items-center gap-1">
+                    <i class="fa-solid fa-feather-pointed"></i> Handgeschreven Modelantwoord:
+                  </span>
+                  <span class="text-[10px] text-slate-400 font-semibold">Vulpenstijl</span>
+                </div>
+                <div class="pl-8 text-2xl sm:text-3xl text-blue-700 select-none py-1.5 handwritten-font" style="line-height: 28px; letter-spacing: 0.5px;">
+                  ${ex.modelAnswer}
+                </div>
               </div>
-              <p class="text-slate-600 text-xs leading-relaxed">${ex.explanation}</p>
+
+              <!-- Explanation Card -->
+              <div class="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs sm:text-sm space-y-1.5">
+                <div class="font-bold text-indigo-950">
+                  <span class="text-indigo-600">Grammaticale & Didactische Analyse:</span>
+                </div>
+                <p class="text-slate-600 text-xs leading-relaxed">${ex.explanation}</p>
+              </div>
             </div>
           </div>
         `;
@@ -1792,12 +2126,18 @@
         container.appendChild(card);
       });
 
-      // Initialize handwriting canvases after DOM insertion
+      // Initialize Handwriting Pads & Stroke Animators
       setTimeout(() => {
         exercises.forEach(ex => {
           const canvasEl = document.getElementById(`canvas-${ex.id}`);
           if (canvasEl) {
             pads[ex.id] = new HandwritingPad(canvasEl, ex.id);
+          }
+          const animCanvasEl = document.getElementById(`anim-canvas-${ex.id}`);
+          const penCursorEl = document.getElementById(`anim-pen-${ex.id}`);
+          const btnLabelEl = document.getElementById(`anim-btn-label-${ex.id}`);
+          if (animCanvasEl && penCursorEl && btnLabelEl) {
+            animators[ex.id] = new StrokeAnimator(animCanvasEl, penCursorEl, btnLabelEl, ex.id, ex.modelAnswer);
           }
         });
       }, 50);
@@ -1824,7 +2164,18 @@
     }
 
     function setPadTool(exId, tool) {
-      if (pads[exId]) pads[exId].setMode(tool);
+      const btnPen = document.getElementById(`tool-pen-${exId}`);
+      const btnEraser = document.getElementById(`tool-eraser-${exId}`);
+      if (pads[exId]) {
+        pads[exId].setMode(tool);
+        if (tool === 'pen') {
+          btnPen.className = "px-2.5 py-1 bg-indigo-600 text-white rounded-lg font-bold flex items-center gap-1 shadow-xs transition active:scale-95";
+          btnEraser.className = "px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-bold flex items-center gap-1 transition active:scale-95";
+        } else {
+          btnEraser.className = "px-2.5 py-1 bg-amber-600 text-white rounded-lg font-bold flex items-center gap-1 shadow-xs transition active:scale-95";
+          btnPen.className = "px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-bold flex items-center gap-1 transition active:scale-95";
+        }
+      }
     }
 
     function undoPad(exId) {
@@ -1833,6 +2184,28 @@
 
     function clearPad(exId) {
       if (pads[exId]) pads[exId].clear();
+    }
+
+    function toggleStrokeAnimation(exId) {
+      const animator = animators[exId];
+      const speedBtn = document.getElementById(`btn-speed-${exId}`);
+      if (animator) {
+        if (!animator.isPlaying) {
+          speedBtn.classList.remove('hidden');
+          animator.play();
+        } else {
+          animator.pause();
+        }
+      }
+    }
+
+    function toggleAnimSpeed(exId) {
+      const animator = animators[exId];
+      const speedBtn = document.getElementById(`btn-speed-${exId}`);
+      const speedLabel = document.getElementById(`speed-label-${exId}`);
+      if (animator) {
+        animator.toggleSpeed(speedBtn, speedLabel);
+      }
     }
 
     function toggleModelAnswer(exId) {
@@ -1940,14 +2313,12 @@
       const nextLesson = trackData.lessons.find(l => l.id === state.lessonId + 1);
 
       if (passed) {
-        // Confetti explosion
         confetti({
           particleCount: 120,
           spread: 80,
           origin: { y: 0.6 }
         });
 
-        // Save progress & Unlock next lesson
         if (!state.progress[state.track].completed.includes(state.lessonId)) {
           state.progress[state.track].completed.push(state.lessonId);
         }
