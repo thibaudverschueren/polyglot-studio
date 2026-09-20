@@ -47,8 +47,28 @@
 
   <!-- KaTeX for Scientific & Deep Learning Formula Rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="window.__katexLoaded = true; if (typeof window.renderAllMath === 'function') window.renderAllMath();"></script>
+  <script>
+    // KaTeX CDN Fallback if primary CDN fails
+    window.addEventListener('load', function() {
+      if (typeof katex === 'undefined') {
+        console.warn("Primary KaTeX CDN unreachable, injecting cdnjs fallback...");
+        var s1 = document.createElement('script');
+        s1.src = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.js";
+        s1.onload = function() {
+          var s2 = document.createElement('script');
+          s2.src = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/contrib/auto-render.min.js";
+          s2.onload = function() {
+            window.__katexLoaded = true;
+            if (typeof window.renderAllMath === 'function') window.renderAllMath();
+          };
+          document.head.appendChild(s2);
+        };
+        document.head.appendChild(s1);
+      }
+    });
+  </script>
 <style>
     :root {
       --app-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Roboto, sans-serif;
@@ -620,9 +640,12 @@
   </style>
 <style>
   /* KaTeX Math Styling & High Contrast */
-  .katex { font-size: 1.06em; }
-  html.dark .katex { color: #f8fafc !important; }
-  html.dark .katex-display { margin: 0.75em 0; }
+  .katex { font-size: 1.08em; }
+  .katex-display { margin: 0.6em 0; overflow-x: auto; overflow-y: hidden; }
+  html.dark .katex { color: #f8fafc; }
+  .bg-slate-900 .katex { color: #6ee7b7 !important; }
+  .bg-indigo-950 .katex, [class*="bg-indigo-950"] .katex { color: #c7d2fe !important; }
+  .bg-amber-950 .katex, [class*="bg-amber-950"] .katex { color: #fde68a !important; }
   
   /* Smooth Fade Transitions */
   @keyframes fadeIn {
@@ -1151,7 +1174,7 @@
   </div>
 
   <script>
-    const CURRICULUM = {
+    window.CURRICULUM = {
   "greek": {
     "title": "Nieuwgrieks",
     "subtitle": "Van beginner tot zelfverzekerd B1",
@@ -2066,7 +2089,7 @@
         "subtitle": "Hoe tekst discrete getallen wordt en hoe RoPE relatieve posities in het complexe vlak encodeert",
         "duration": "25 min",
         "focus": "Begrijp het Byte-Pair Encoding (BPE) algoritme, subwords, embedding matrices en de wiskundige werking van Rotary Positional Embeddings (RoPE) ten opzichte van klassieke positionele encodings.",
-        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-microchip text-indigo-600\"></i> De Fundamentele Keten: Tekst naar Tensors\n    </h3>\n    <p>Large Language Models werken niet met letters of woorden, maar met <strong>tokens</strong>. Een token is een subwoord-fragment (ongeveer 0.75 Engels woord of 4 karakters). De keten verloopt altijd als volgt:<br>\n    <strong>Rauwe Tekst</strong> &rarr; <em>Tokenizer (BPE)</em> &rarr; <strong>Token IDs ($x_t \\in \\mathbb{N}$)</strong> &rarr; <em>Embedding Matrix ($W_E$)</em> &rarr; <strong>Dichte Vectoren ($e_t \\in \\mathbb{R}^d$)</strong> &rarr; <em>RoPE Rotatie</em> &rarr; <strong>Transformer Input ($h_0$)</strong>.</p>\n  </div>\n\n  <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n    <div class=\"bg-amber-50/80 border border-amber-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-amber-900 text-sm mb-1\">1. Byte-Pair Encoding (BPE)</h4>\n      <p class=\"text-xs sm:text-sm text-amber-800 leading-relaxed\">\n        BPE begint met individuele bytes (256 unieke tekens) en telt iteratief welke karakterparen het vaakst naast elkaar voorkomen. Het meest frequente paar wordt samengevoegd tot een nieuw token. Dit herhaalt zich totdat de gewenste vocabulairegrootte (bijv. <strong>32.000</strong> bij Llama of <strong>128.000</strong> bij Llama 3 / GPT-4o) is bereikt.<br>\n        <strong>Voordeel:</strong> Geen <em>Out-Of-Vocabulary (OOV)</em> problemen: onbekende woorden vallen simpelweg terug op individuele bytes.\n      </p>\n    </div>\n    <div class=\"bg-blue-50/80 border border-blue-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-blue-900 text-sm mb-1\">2. Embedding Matrix ($W_E$)</h4>\n      <p class=\"text-xs sm:text-sm text-blue-800 leading-relaxed\">\n        Zodra elk token een ID heeft, fungeert $W_E \\in \\mathbb{R}^{V \\times d_{model}}$ als een gigantische lookup-tabel. Elk token ID indexeert een $d$-dimensionale dichte vector (bijv. $d = 4096$). In deze vectorruimte coderen cosinus-hoeken semantische relaties (bv. $\\vec{v}_{\\text{koning}} - \\vec{v}_{\\text{man}} + \\vec{v}_{\\text{vrouw}} \\approx \\vec{v}_{\\text{koningin}}$).\n      </p>\n    </div>\n  </div>\n\n  <div class=\"bg-slate-50 border border-slate-200 p-4 rounded-2xl\">\n    <h4 class=\"font-bold text-slate-800 text-sm mb-1\">3. De Revolutie van Rotary Position Embeddings (RoPE)</h4>\n    <p class=\"text-xs sm:text-sm text-slate-600 leading-relaxed mb-3\">\n      Transformers zijn permutatie-invariant: zonder positionele informatie is de zin <em>\"Hond bijt man\"</em> identiek aan <em>\"Man bijt hond\"</em>. Klassieke modellen (Vaswani 2017) telden absolute sinus/cosinus-golven op bij de embedding ($x + p$). Moderne modellen (Llama, Mistral, Gemma, Qwen) gebruiken <strong>RoPE (Su et al., 2021)</strong>.\n    </p>\n    <div class=\"p-3 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm space-y-2\">\n      <p><strong>De Kernformule van RoPE:</strong> In plaats van posities op te tellen, <em>roteert</em> RoPE de Query- en Key-vectoren in 2D-vlakken over een hoek die evenredig is met positie $m$:</p>\n      <div class=\"p-2.5 bg-slate-900 text-emerald-300 font-mono text-xs rounded-lg overflow-x-auto\">\n        R_{\\Theta, m}^d = \\text{diag}\\left( R_{\\theta_1, m}, R_{\\theta_2, m}, \\dots, R_{\\theta_{d/2}, m} \\right) \\quad \\text{waarbij} \\quad \\theta_i = 10000^{-2(i-1)/d}\n      </div>\n      <p class=\"text-slate-600 text-xs\">\n        Wanneer Query $q_m$ en Key $k_n$ via het inproduct worden vermenigvuldigd, geldt:\n        $\\langle R_m q, R_n k \\rangle = q^T R_{m-n} k$. Het inproduct hangt dus <strong>uitsluitend af van de relatieve afstand $(m - n)$</strong>! Dit maakt RoPE uitermate geschikt voor context-verlenging (tot 128k tokens via RoPE scaling en YaRN).\n      </p>\n    </div>\n  </div>\n</div>\n",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-microchip text-indigo-600\"></i> De Fundamentele Keten: Tekst naar Tensors\n    </h3>\n    <p>Large Language Models werken niet met letters of woorden, maar met <strong>tokens</strong>. Een token is een subwoord-fragment (ongeveer 0.75 Engels woord of 4 karakters). De keten verloopt altijd als volgt:<br>\n    <strong>Rauwe Tekst</strong> &rarr; <em>Tokenizer (BPE)</em> &rarr; <strong>Token IDs ($x_t \\in \\mathbb{N}$)</strong> &rarr; <em>Embedding Matrix ($W_E$)</em> &rarr; <strong>Dichte Vectoren ($e_t \\in \\mathbb{R}^d$)</strong> &rarr; <em>RoPE Rotatie</em> &rarr; <strong>Transformer Input ($h_0$)</strong>.</p>\n  </div>\n\n  <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n    <div class=\"bg-amber-50/80 border border-amber-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-amber-900 text-sm mb-1\">1. Byte-Pair Encoding (BPE)</h4>\n      <p class=\"text-xs sm:text-sm text-amber-800 leading-relaxed\">\n        BPE begint met individuele bytes (256 unieke tekens) en telt iteratief welke karakterparen het vaakst naast elkaar voorkomen. Het meest frequente paar wordt samengevoegd tot een nieuw token. Dit herhaalt zich totdat de gewenste vocabulairegrootte (bijv. <strong>32.000</strong> bij Llama of <strong>128.000</strong> bij Llama 3 / GPT-4o) is bereikt.<br>\n        <strong>Voordeel:</strong> Geen <em>Out-Of-Vocabulary (OOV)</em> problemen: onbekende woorden vallen simpelweg terug op individuele bytes.\n      </p>\n    </div>\n    <div class=\"bg-blue-50/80 border border-blue-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-blue-900 text-sm mb-1\">2. Embedding Matrix ($W_E$)</h4>\n      <p class=\"text-xs sm:text-sm text-blue-800 leading-relaxed\">\n        Zodra elk token een ID heeft, fungeert $W_E \\in \\mathbb{R}^{V \\times d_{model}}$ als een gigantische lookup-tabel. Elk token ID indexeert een $d$-dimensionale dichte vector (bijv. $d = 4096$). In deze vectorruimte coderen cosinus-hoeken semantische relaties (bv. $\\vec{v}_{\\text{koning}} - \\vec{v}_{\\text{man}} + \\vec{v}_{\\text{vrouw}} \\approx \\vec{v}_{\\text{koningin}}$).\n      </p>\n    </div>\n  </div>\n\n  <div class=\"bg-slate-50 border border-slate-200 p-4 rounded-2xl\">\n    <h4 class=\"font-bold text-slate-800 text-sm mb-1\">3. De Revolutie van Rotary Position Embeddings (RoPE)</h4>\n    <p class=\"text-xs sm:text-sm text-slate-600 leading-relaxed mb-3\">\n      Transformers zijn permutatie-invariant: zonder positionele informatie is de zin <em>\"Hond bijt man\"</em> identiek aan <em>\"Man bijt hond\"</em>. Klassieke modellen (Vaswani 2017) telden absolute sinus/cosinus-golven op bij de embedding ($x + p$). Moderne modellen (Llama, Mistral, Gemma, Qwen) gebruiken <strong>RoPE (Su et al., 2021)</strong>.\n    </p>\n    <div class=\"p-3 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm space-y-2\">\n      <p><strong>De Kernformule van RoPE:</strong> In plaats van posities op te tellen, <em>roteert</em> RoPE de Query- en Key-vectoren in 2D-vlakken over een hoek die evenredig is met positie $m$:</p>\n      <div class=\"p-3 bg-slate-900 text-emerald-300 text-xs sm:text-sm rounded-xl overflow-x-auto text-center my-2 shadow-inner\">\n        $$R_{\\Theta, m}^d = \\text{diag}\\left( R_{\\theta_1, m}, R_{\\theta_2, m}, \\dots, R_{\\theta_{d/2}, m} \\right) \\quad \\text{waarbij} \\quad \\theta_i = 10000^{-2(i-1)/d}$$\n      </div>\n      <p class=\"text-slate-600 text-xs\">\n        Wanneer Query $q_m$ en Key $k_n$ via het inproduct worden vermenigvuldigd, geldt:\n        $\\langle R_m q, R_n k \\rangle = q^T R_{m-n} k$. Het inproduct hangt dus <strong>uitsluitend af van de relatieve afstand $(m - n)$</strong>! Dit maakt RoPE uitermate geschikt voor context-verlenging (tot 128k tokens via RoPE scaling en YaRN).\n      </p>\n    </div>\n  </div>\n</div>\n",
         "exercises": [
           {
             "id": "ai1_ex1",
@@ -2125,7 +2148,7 @@
         "subtitle": "Query-Key-Value wiskunde, Softmax-temperatuur, Grouped-Query Attention (GQA) en RMSNorm",
         "duration": "30 min",
         "focus": "Beheers de exacte berekening van Scaled Dot-Product Attention, causal masking, het verschil tussen MHA en GQA, en waarom RMSNorm en SwiGLU de standaard zijn geworden.",
-        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-arrows-split-up-and-left text-indigo-600\"></i> Het Scaled Dot-Product Aandachtsmechanisme\n    </h3>\n    <p>Gegeven een input tensor $X \\in \\mathbb{R}^{T \\times d}$, projecteren lineaire gewichtsmatrices $W_Q, W_K, W_V \\in \\mathbb{R}^{d \\times d}$ de representaties naar drie rollen:<br>\n    <strong>Query ($Q$)</strong>: <em>\"Wat zoek ik?\"</em> | <strong>Key ($K$)</strong>: <em>\"Wat heb ik te bieden?\"</em> | <strong>Value ($V$)</strong>: <em>\"Welke informatie draag ik over?\"</em></p>\n  </div>\n\n  <div class=\"p-4 bg-slate-900 text-slate-100 rounded-2xl font-mono text-xs sm:text-sm space-y-2 border border-slate-800 shadow-xl\">\n    <div class=\"text-emerald-400 font-bold\">// De Gouden Formule van Aandacht (Vaswani et al.)</div>\n    <div class=\"text-base text-white font-bold py-1\">\n      \\text{Attention}(Q, K, V) = \\text{softmax}\\left( \\frac{Q K^T}{\\sqrt{d_k}} + M \\right) V\n    </div>\n    <div class=\"text-slate-400 text-xs pt-1\">\n      &bull; <strong>Q K^T</strong>: matrixvermenigvuldiging van alle queries met alle keys (grootte $T \\times T$).<br>\n      &bull; <strong>1 / \\sqrt{d_k}</strong>: schaalfactor. Zonder deze deling explodeert de variantie van het inproduct naar $d_k$, waardoor de Softmax extreem kleine gradiënten krijgt (vanishing gradient probleem).<br>\n      &bull; <strong>M (Causal Mask)</strong>: een bovendriehoeksmatrix met $-\\infty$ op posities $j > i$. Omdat $\\text{softmax}(-\\infty) = 0$, kan een token nooit in de toekomst kijken.\n    </div>\n  </div>\n\n  <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n    <div class=\"bg-amber-50/80 border border-amber-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-amber-900 text-sm mb-1\">MHA vs. GQA (Grouped-Query Attention)</h4>\n      <p class=\"text-xs sm:text-sm text-amber-800 leading-relaxed\">\n        In <strong>Multi-Head Attention (MHA)</strong> heeft elke Query-head zijn eigen unieke Key- en Value-head (bv. 32 Q, 32 K, 32 V). Dit vereist een enorme KV-cache tijdens inferentie.<br>\n        In <strong>GQA (Llama 3 standaard)</strong> delen meerdere Query-heads (bv. 8 Q-heads) 1 enkele Key- en Value-head. Dit reduceert de KV-cache geheugenvoetafdruk met <strong>75% tot 87.5%</strong> met vrijwel nul verlies aan taalvaardigheid!\n      </p>\n    </div>\n    <div class=\"bg-blue-50/80 border border-blue-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-blue-900 text-sm mb-1\">RMSNorm & SwiGLU</h4>\n      <p class=\"text-xs sm:text-sm text-blue-800 leading-relaxed\">\n        <strong>RMSNorm:</strong> Vervangt traditionele LayerNorm door het gemiddelde niet meer te centreren ($\\mu = 0$), maar enkel te schalen op Root Mean Square: $\\text{RMSNorm}(x) = \\frac{x}{\\sqrt{\\frac{1}{d}\\sum x_i^2 + \\epsilon}} \\odot \\gamma$. Dit bespaart 10-15% GPU tijd.<br>\n        <strong>SwiGLU:</strong> $\\text{SwiGLU}(x) = \\text{Swish}(x W_1) \\otimes (x W_2)$, superieur aan ReLU en GELU door dynamische gating.\n      </p>\n    </div>\n  </div>\n</div>\n",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-arrows-split-up-and-left text-indigo-600\"></i> Het Scaled Dot-Product Aandachtsmechanisme\n    </h3>\n    <p>Gegeven een input tensor $X \\in \\mathbb{R}^{T \\times d}$, projecteren lineaire gewichtsmatrices $W_Q, W_K, W_V \\in \\mathbb{R}^{d \\times d}$ de representaties naar drie rollen:<br>\n    <strong>Query ($Q$)</strong>: <em>\"Wat zoek ik?\"</em> | <strong>Key ($K$)</strong>: <em>\"Wat heb ik te bieden?\"</em> | <strong>Value ($V$)</strong>: <em>\"Welke informatie draag ik over?\"</em></p>\n  </div>\n\n  <div class=\"p-4 bg-slate-900 text-slate-100 rounded-2xl text-xs sm:text-sm space-y-2 border border-slate-800 shadow-xl\">\n    <div class=\"text-emerald-400 font-bold font-mono\">// De Gouden Formule van Aandacht (Vaswani et al.)</div>\n    <div class=\"text-base text-white font-bold py-2 overflow-x-auto text-center\">\n      $$\\text{Attention}(Q, K, V) = \\text{softmax}\\left( \\frac{Q K^T}{\\sqrt{d_k}} + M \\right) V$$\n    </div>\n    <div class=\"text-slate-300 text-xs pt-1 space-y-1\">\n      <p>&bull; <strong>$Q K^T$</strong>: matrixvermenigvuldiging van alle queries met alle keys (grootte $T \\times T$).</p>\n      <p>&bull; <strong>$1 / \\sqrt{d_k}$</strong>: schaalfactor. Zonder deze deling explodeert de variantie van het inproduct naar $d_k$, waardoor de Softmax extreem kleine gradiënten krijgt (vanishing gradient probleem).</p>\n      <p>&bull; <strong>$M$ (Causal Mask)</strong>: een bovendriehoeksmatrix met $-\\infty$ op posities $j > i$. Omdat $\\text{softmax}(-\\infty) = 0$, kan een token nooit in de toekomst kijken.</p>\n    </div>\n  </div>\n\n  <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n    <div class=\"bg-amber-50/80 border border-amber-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-amber-900 text-sm mb-1\">MHA vs. GQA (Grouped-Query Attention)</h4>\n      <p class=\"text-xs sm:text-sm text-amber-800 leading-relaxed\">\n        In <strong>Multi-Head Attention (MHA)</strong> heeft elke Query-head zijn eigen unieke Key- en Value-head (bv. 32 Q, 32 K, 32 V). Dit vereist een enorme KV-cache tijdens inferentie.<br>\n        In <strong>GQA (Llama 3 standaard)</strong> delen meerdere Query-heads (bv. 8 Q-heads) 1 enkele Key- en Value-head. Dit reduceert de KV-cache geheugenvoetafdruk met <strong>75% tot 87.5%</strong> met vrijwel nul verlies aan taalvaardigheid!\n      </p>\n    </div>\n    <div class=\"bg-blue-50/80 border border-blue-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-blue-900 text-sm mb-1\">RMSNorm & SwiGLU</h4>\n      <p class=\"text-xs sm:text-sm text-blue-800 leading-relaxed\">\n        <strong>RMSNorm:</strong> Vervangt traditionele LayerNorm door het gemiddelde niet meer te centreren ($\\mu = 0$), maar enkel te schalen op Root Mean Square: $\\text{RMSNorm}(x) = \\frac{x}{\\sqrt{\\frac{1}{d}\\sum x_i^2 + \\epsilon}} \\odot \\gamma$. Dit bespaart 10-15% GPU tijd.<br>\n        <strong>SwiGLU:</strong> $\\text{SwiGLU}(x) = \\text{Swish}(x W_1) \\otimes (x W_2)$, superieur aan ReLU en GELU door dynamische gating.\n      </p>\n    </div>\n  </div>\n</div>\n",
         "exercises": [
           {
             "id": "ai2_ex1",
@@ -2173,7 +2196,7 @@
         "subtitle": "Autoregressieve Cross-Entropy, Perplexity, compute budget C ≈ 6ND en Kaplan vs. Hoffmann",
         "duration": "25 min",
         "focus": "Bereken trainings-compute budgetten, begrijp de Chinchilla-doorbraak (waarom modellen tot 2022 zwaar ondertraind waren) en beheers het verband tussen loss en perplexity.",
-        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-chart-line text-indigo-600\"></i> Het Pre-Training Doel: Next-Token Prediction\n    </h3>\n    <p>Een Large Language Model leert de structuur van taal, wiskunde en logica via een bedrieglijk eenvoudig trainingsdoel: voorspel het volgende token $w_t$ gegeven alle voorgaande tokens $w_{<t}$. De verliesfunctie is de standaard <strong>Cross-Entropy Loss</strong>:</p>\n    <div class=\"p-2.5 bg-slate-900 text-emerald-300 font-mono text-xs rounded-lg mt-2\">\n      \\mathcal{L} = -\\frac{1}{T} \\sum_{t=1}^T \\log P_\\theta(w_t \\mid w_1, w_2, \\dots, w_{t-1})\n    </div>\n    <p class=\"text-xs text-indigo-900 mt-1\">De exponentiële van dit verlies is de <strong>Perplexity ($\\text{PPL} = e^{\\mathcal{L}}$)</strong>: het meet het gemiddelde aantal plausibele keuzes waar het model tussen aarzelt bij elk volgend woord.</p>\n  </div>\n\n  <div class=\"bg-amber-50/80 border border-amber-200 p-4 rounded-2xl space-y-2\">\n    <h4 class=\"font-bold text-amber-900 text-sm\">De Compute Vuistregel: $C \\approx 6 N D$</h4>\n    <p class=\"text-xs sm:text-sm text-amber-800 leading-relaxed\">\n      Voor elke token doorgang tijdens training vereist een transformer:<br>\n      &bull; <strong>Forward pass:</strong> $\\approx 2 N$ FLOPs per token (1 vermenigvuldiging + 1 optelling per parameter).<br>\n      &bull; <strong>Backward pass:</strong> $\\approx 4 N$ FLOPs per token (berekening van gradiënten voor activaties en gewichten).<br>\n      &bull; <strong>Totaal trainingsbudget:</strong> $C \\approx 6 N D$ Floating Point Operations (FLOPs), waarbij $N$ het aantal parameters is en $D$ het aantal getrainde tokens.\n    </p>\n  </div>\n\n  <div class=\"bg-slate-50 border border-slate-200 p-4 rounded-2xl\">\n    <h4 class=\"font-bold text-slate-800 text-sm mb-1\">De Chinchilla Revolutie (Hoffmann et al., DeepMind 2022)</h4>\n    <p class=\"text-xs sm:text-sm text-slate-600 leading-relaxed mb-3\">\n      Tot 2022 volgde de AI-wereld de <em>Kaplan Scaling Laws</em> van OpenAI, die suggereerden dat het vergroten van het aantal parameters ($N$) veel belangrijker was dan het aantal tokens ($D$) (bijv. GPT-3 had 175B parameters maar werd op slechts 300B tokens getraind).\n    </p>\n    <div class=\"p-3.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm space-y-2\">\n      <div class=\"font-bold text-slate-900\">De Chinchilla Wet:</div>\n      <p class=\"text-slate-700 leading-relaxed\">\n        DeepMind bewees dat bij een optimaal rekenbudget $C$, <strong>$N$ en $D$ in exact gelijke verhouding moeten schalen</strong> ($N_{opt} \\propto C^{0.5}$ en $D_{opt} \\propto C^{0.5}$). Concreet geldt:<br>\n        <span class=\"font-mono font-bold text-indigo-600 text-sm\">D_{opt} \\approx 20 \\times N</span><br>\n        Een model van 7B parameters moet dus getraind worden op minimaal <strong>140 miljard tokens</strong> om optimaal te zijn. Moderne modellen trainen tegenwoordig op <em>15.000 miljard tokens (15T)</em> om inferentiekosten achteraf zo laag mogelijk te houden!\n      </p>\n    </div>\n  </div>\n</div>\n",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-chart-line text-indigo-600\"></i> Het Pre-Training Doel: Next-Token Prediction\n    </h3>\n    <p>Een Large Language Model leert de structuur van taal, wiskunde en logica via een bedrieglijk eenvoudig trainingsdoel: voorspel het volgende token $w_t$ gegeven alle voorgaande tokens $w_{<t}$. De verliesfunctie is de standaard <strong>Cross-Entropy Loss</strong>:</p>\n    <div class=\"p-3 bg-slate-900 text-emerald-300 text-xs sm:text-sm rounded-xl my-2 overflow-x-auto text-center shadow-inner\">\n      $$\\mathcal{L} = -\\frac{1}{T} \\sum_{t=1}^T \\log P_\\theta(w_t \\mid w_1, w_2, \\dots, w_{t-1})$$\n    </div>\n    <p class=\"text-xs text-indigo-900 mt-1\">De exponentiële van dit verlies is de <strong>Perplexity ($\\text{PPL} = e^{\\mathcal{L}}$)</strong>: het meet het gemiddelde aantal plausibele keuzes waar het model tussen aarzelt bij elk volgend woord.</p>\n  </div>\n\n  <div class=\"bg-amber-50/80 border border-amber-200 p-4 rounded-2xl space-y-2\">\n    <h4 class=\"font-bold text-amber-900 text-sm\">De Compute Vuistregel: $C \\approx 6 N D$</h4>\n    <p class=\"text-xs sm:text-sm text-amber-800 leading-relaxed\">\n      Voor elke token doorgang tijdens training vereist een transformer:<br>\n      &bull; <strong>Forward pass:</strong> $\\approx 2 N$ FLOPs per token (1 vermenigvuldiging + 1 optelling per parameter).<br>\n      &bull; <strong>Backward pass:</strong> $\\approx 4 N$ FLOPs per token (berekening van gradiënten voor activaties en gewichten).<br>\n      &bull; <strong>Totaal trainingsbudget:</strong> $C \\approx 6 N D$ Floating Point Operations (FLOPs), waarbij $N$ het aantal parameters is en $D$ het aantal getrainde tokens.\n    </p>\n  </div>\n\n  <div class=\"bg-slate-50 border border-slate-200 p-4 rounded-2xl\">\n    <h4 class=\"font-bold text-slate-800 text-sm mb-1\">De Chinchilla Revolutie (Hoffmann et al., DeepMind 2022)</h4>\n    <p class=\"text-xs sm:text-sm text-slate-600 leading-relaxed mb-3\">\n      Tot 2022 volgde de AI-wereld de <em>Kaplan Scaling Laws</em> van OpenAI, die suggereerden dat het vergroten van het aantal parameters ($N$) veel belangrijker was dan het aantal tokens ($D$) (bijv. GPT-3 had 175B parameters maar werd op slechts 300B tokens getraind).\n    </p>\n    <div class=\"p-3.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm space-y-2\">\n      <div class=\"font-bold text-slate-900\">De Chinchilla Wet:</div>\n      <p class=\"text-slate-700 leading-relaxed\">\n        DeepMind bewees dat bij een optimaal rekenbudget $C$, <strong>$N$ en $D$ in exact gelijke verhouding moeten schalen</strong> ($N_{\\text{opt}} \\propto C^{0.5}$ en $D_{\\text{opt}} \\propto C^{0.5}$). Concreet geldt:\n      </p>\n      <div class=\"p-2 bg-indigo-950/80 text-indigo-200 text-xs sm:text-sm rounded-xl my-1.5 overflow-x-auto text-center font-bold shadow-inner\">\n        $$D_{\\text{opt}} \\approx 20 \\times N$$\n      </div>\n      <p class=\"text-slate-700 leading-relaxed\">\n        Een model van 7B parameters moet dus getraind worden op minimaal <strong>140 miljard tokens</strong> om optimaal te zijn. Moderne modellen trainen tegenwoordig op <em>15.000 miljard tokens (15T)</em> om inferentiekosten achteraf zo laag mogelijk te houden!\n      </p>\n    </div>\n  </div>\n</div>\n",
         "exercises": [
           {
             "id": "ai3_ex1",
@@ -2214,7 +2237,7 @@
         "subtitle": "Instruction tuning, Reward Modeling, Direct Preference Optimization (DPO) en O1-stijl Chain of Thought",
         "duration": "30 min",
         "focus": "Begrijp waarom basismodellen hallucineren en niet luisteren, hoe SFT en RLHF werken, de gesloten formule van DPO, en hoe test-time reasoning (zoals DeepSeek-R1 en o1) redeneerkracht ontgrendelt.",
-        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-handshake text-indigo-600\"></i> Van Tekst-Voorspeller naar Behulpzame Assistent\n    </h3>\n    <p>Een puur pre-trained model is een meedogenloze document-aanvuller. Vraag je <em>\"Wat is de hoofdstad van Frankrijk?\"</em>, dan reageert het mogelijk met <em>\"Wat is de hoofdstad van Duitsland?\"</em> omdat het denkt dat het een quizpagina completeert. Om een assistent te creëren, doorloopt het model <strong>Post-Training</strong>:</p>\n    <div class=\"flex flex-wrap gap-2 text-xs pt-2\">\n      <span class=\"px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-800 font-bold\">1. SFT (Instructies)</span>\n      <span class=\"text-slate-400\">&rarr;</span>\n      <span class=\"px-2.5 py-1 rounded-lg bg-purple-100 text-purple-800 font-bold\">2. Alignment (RLHF / DPO)</span>\n      <span class=\"text-slate-400\">&rarr;</span>\n      <span class=\"px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-bold\">3. Reasoning (Test-Time RL)</span>\n    </div>\n  </div>\n\n  <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n    <div class=\"bg-amber-50/80 border border-amber-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-amber-900 text-sm mb-1\">De Klassieke RLHF Pijplijn (PPO)</h4>\n      <p class=\"text-xs sm:text-sm text-amber-800 leading-relaxed\">\n        1. <strong>SFT:</strong> Trainen op duizenden hoogwaardige vraag-antwoord dialogen.<br>\n        2. <strong>Reward Model (RM):</strong> Mensen rangschikken antwoorden ($y_w \\succ y_l$). Een apart model leert een scalar reward $r_\\theta(x, y)$ toekennen.<br>\n        3. <strong>PPO Optimalisatie:</strong> Neuraal netwerk genereert tokens, ontvangt de reward, met een <em>KL-penalty</em> om te voorkomen dat het model te ver afwijkt van het oorspronkelijke model (mode collapse).\n      </p>\n    </div>\n    <div class=\"bg-blue-50/80 border border-blue-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-blue-900 text-sm mb-1\">De DPO Doorbraak (Rafailov et al., Stanford 2023)</h4>\n      <p class=\"text-xs sm:text-sm text-blue-800 leading-relaxed\">\n        Direct Preference Optimization bewees wiskundig dat je <strong>geen apart reward model nodig hebt</strong>! De reward functie kan direct analytisch worden uitgedrukt in termen van de beleidsfunctie $\\pi_\\theta$ en een bevroren referentiemodel $\\pi_{ref}$:<br>\n        <span class=\"font-mono font-bold text-indigo-900 text-xs\">r(x,y) = \\beta \\log \\frac{\\pi_\\theta(y \\mid x)}{\\pi_{ref}(y \\mid x)}</span><br>\n        DPO maximaliseert direct de kans op het winnende antwoord $y_w$ en minimaliseert $y_l$ in één stabiele cross-entropy-achtige stap!\n      </p>\n    </div>\n  </div>\n\n  <div class=\"bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-2\">\n    <h4 class=\"font-bold text-slate-800 text-sm\">Het Nieuwe Paradigma: Test-Time Reasoning (o1 / DeepSeek-R1)</h4>\n    <p class=\"text-xs sm:text-sm text-slate-600 leading-relaxed\">\n      Traditionele LLMs besteden een vaste hoeveelheid rekenkracht per token (één forward pass). Nieuwe <strong>redeneermodellen</strong> genereren honderden verborgen denk-tokens (<em>Chain-of-Thought</em>) vóórdat ze een definitief antwoord geven. Via Reinforcement Learning met <strong>uitkomst- en procesbeloningen (PRM)</strong> leert het model zichzelf te corrigeren, alternatieve paden te verkennen en backtracking toe te passen.\n    </p>\n  </div>\n</div>\n",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-handshake text-indigo-600\"></i> Van Tekst-Voorspeller naar Behulpzame Assistent\n    </h3>\n    <p>Een puur pre-trained model is een meedogenloze document-aanvuller. Vraag je <em>\"Wat is de hoofdstad van Frankrijk?\"</em>, dan reageert het mogelijk met <em>\"Wat is de hoofdstad van Duitsland?\"</em> omdat het denkt dat het een quizpagina completeert. Om een assistent te creëren, doorloopt het model <strong>Post-Training</strong>:</p>\n    <div class=\"flex flex-wrap gap-2 text-xs pt-2\">\n      <span class=\"px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-800 font-bold\">1. SFT (Instructies)</span>\n      <span class=\"text-slate-400\">&rarr;</span>\n      <span class=\"px-2.5 py-1 rounded-lg bg-purple-100 text-purple-800 font-bold\">2. Alignment (RLHF / DPO)</span>\n      <span class=\"text-slate-400\">&rarr;</span>\n      <span class=\"px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-bold\">3. Reasoning (Test-Time RL)</span>\n    </div>\n  </div>\n\n  <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n    <div class=\"bg-amber-50/80 border border-amber-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-amber-900 text-sm mb-1\">De Klassieke RLHF Pijplijn (PPO)</h4>\n      <p class=\"text-xs sm:text-sm text-amber-800 leading-relaxed\">\n        1. <strong>SFT:</strong> Trainen op duizenden hoogwaardige vraag-antwoord dialogen.<br>\n        2. <strong>Reward Model (RM):</strong> Mensen rangschikken antwoorden ($y_w \\succ y_l$). Een apart model leert een scalar reward $r_\\theta(x, y)$ toekennen.<br>\n        3. <strong>PPO Optimalisatie:</strong> Neuraal netwerk genereert tokens, ontvangt de reward, met een <em>KL-penalty</em> om te voorkomen dat het model te ver afwijkt van het oorspronkelijke model (mode collapse).\n      </p>\n    </div>\n    <div class=\"bg-blue-50/80 border border-blue-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-blue-900 text-sm mb-1\">De DPO Doorbraak (Rafailov et al., Stanford 2023)</h4>\n      <p class=\"text-xs sm:text-sm text-blue-800 leading-relaxed\">\n        Direct Preference Optimization bewees wiskundig dat je <strong>geen apart reward model nodig hebt</strong>! De reward functie kan direct analytisch worden uitgedrukt in termen van de beleidsfunctie $\\pi_\\theta$ en een bevroren referentiemodel $\\pi_{\\text{ref}}$:\n      </p>\n      <div class=\"p-2.5 bg-indigo-950/80 text-indigo-200 text-xs sm:text-sm rounded-xl my-2 overflow-x-auto text-center shadow-inner\">\n        $$r(x,y) = \\beta \\log \\frac{\\pi_\\theta(y \\mid x)}{\\pi_{\\text{ref}}(y \\mid x)}$$\n      </div>\n      <p class=\"text-xs sm:text-sm text-blue-800 leading-relaxed\">\n        DPO maximaliseert direct de kans op het winnende antwoord $y_w$ en minimaliseert $y_l$ in één stabiele cross-entropy-achtige stap!\n      </p>\n    </div>\n  </div>\n\n  <div class=\"bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-2\">\n    <h4 class=\"font-bold text-slate-800 text-sm\">Het Nieuwe Paradigma: Test-Time Reasoning (o1 / DeepSeek-R1)</h4>\n    <p class=\"text-xs sm:text-sm text-slate-600 leading-relaxed\">\n      Traditionele LLMs besteden een vaste hoeveelheid rekenkracht per token (één forward pass). Nieuwe <strong>redeneermodellen</strong> genereren honderden verborgen denk-tokens (<em>Chain-of-Thought</em>) vóórdat ze een definitief antwoord geven. Via Reinforcement Learning met <strong>uitkomst- en procesbeloningen (PRM)</strong> leert het model zichzelf te corrigeren, alternatieve paden te verkennen en backtracking toe te passen.\n    </p>\n  </div>\n</div>\n",
         "exercises": [
           {
             "id": "ai4_ex1",
@@ -2255,7 +2278,7 @@
         "subtitle": "Prefill vs. Decode, KV-Cache memory explosion, SRAM tiling en PagedAttention",
         "duration": "30 min",
         "focus": "Begrijp waarom LLM inferentie memory-bandwidth bound is, bereken de exacte VRAM-vereisten van de KV-Cache, en begrijp de architectuur van FlashAttention en vLLM.",
-        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-gauge-high text-indigo-600\"></i> De Twee Fasen van Inferentie: Prefill vs. Decode\n    </h3>\n    <p>Bij het genereren van tekst doorloopt een LLM twee fundamenteel verschillende operationele regimes:<br>\n    1. <strong>Prefill Fase (Compute-Bound):</strong> De gehele invoerprompt wordt in één grote parallelle matrixvermenigvuldiging verwerkt. De GPU tensor cores draaien op maximale rekenkracht.<br>\n    2. <strong>Decode Fase (Memory-Bandwidth Bound):</strong> Tokens worden één voor één gegenereerd. Voor elk nieuw token moeten <em>alle miljarden modelgewichten</em> opnieuw vanuit het trage GPU geheugen (HBM) naar de rekenkernen worden gestreamd!</p>\n  </div>\n\n  <div class=\"bg-amber-50/80 border border-amber-200 p-4 rounded-2xl space-y-2\">\n    <h4 class=\"font-bold text-amber-900 text-sm\">De KV-Cache Geheugen Explosie</h4>\n    <p class=\"text-xs sm:text-sm text-amber-800 leading-relaxed\">\n      Om te voorkomen dat we bij token 1000 alle voorgaande 999 tokens opnieuw moeten berekenen, slaan we de Key- en Value-vectoren op in de <strong>KV-Cache</strong>. De exacte grootte in bytes bedraagt:<br>\n      <span class=\"font-mono font-bold text-amber-950 text-xs sm:text-sm\">\\text{KV Cache Size} = 2 \\times n_{\\text{layers}} \\times n_{\\text{kv\\_heads}} \\times d_{\\text{head}} \\times \\text{seq\\_len} \\times \\text{batch\\_size} \\times \\text{bytes\\_per\\_elem}</span><br>\n      Bij lange contexten (128k tokens) kan de KV-cache van één enkele gebruiker <strong>groter worden dan het hele model zelf</strong>!\n    </p>\n  </div>\n\n  <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n    <div class=\"bg-blue-50/80 border border-blue-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-blue-900 text-sm mb-1\">FlashAttention (Dao et al.)</h4>\n      <p class=\"text-xs sm:text-sm text-blue-800 leading-relaxed\">\n        Standaard aandacht schrijft de gigantische $N \\times N$ aandachtsmatrix naar het trage High-Bandwidth Memory (HBM). <strong>FlashAttention</strong> berekent de Softmax iteratief in kleine tegels (<em>tiles</em>) binnen het ultrasnelle <strong>SRAM-geheugen (on-chip)</strong> via online softmax re-scaling, zonder ooit de volledige matrix te materialiseren! Dit leidt tot een <strong>3x tot 5x versnelling</strong>.\n      </p>\n    </div>\n    <div class=\"bg-slate-50 border border-slate-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-slate-800 text-sm mb-1\">PagedAttention / vLLM</h4>\n      <p class=\"text-xs sm:text-sm text-slate-600 leading-relaxed\">\n        Traditioneel reserveert een server een aaneengesloten geheugenblok voor de maximale contextlengte van elke gebruiker, wat leidde tot 60-80% geheugenverspilling (interne fragmentatie). <strong>PagedAttention</strong> past het concept van <em>Virtual Memory Paging</em> uit besturingssystemen toe: de KV-cache wordt opgedeeld in kleine niet-aaneengesloten pagina's. Hierdoor stijgt de serverthroughput met <strong>2x tot 4x</strong>!\n      </p>\n    </div>\n  </div>\n</div>\n",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-gauge-high text-indigo-600\"></i> De Twee Fasen van Inferentie: Prefill vs. Decode\n    </h3>\n    <p>Bij het genereren van tekst doorloopt een LLM twee fundamenteel verschillende operationele regimes:<br>\n    1. <strong>Prefill Fase (Compute-Bound):</strong> De gehele invoerprompt wordt in één grote parallelle matrixvermenigvuldiging verwerkt. De GPU tensor cores draaien op maximale rekenkracht.<br>\n    2. <strong>Decode Fase (Memory-Bandwidth Bound):</strong> Tokens worden één voor één gegenereerd. Voor elk nieuw token moeten <em>alle miljarden modelgewichten</em> opnieuw vanuit het trage GPU geheugen (HBM) naar de rekenkernen worden gestreamd!</p>\n  </div>\n\n  <div class=\"bg-amber-50/80 border border-amber-200 p-4 rounded-2xl space-y-2\">\n    <h4 class=\"font-bold text-amber-900 text-sm\">De KV-Cache Geheugen Explosie</h4>\n    <p class=\"text-xs sm:text-sm text-amber-800 leading-relaxed\">\n      Om te voorkomen dat we bij token 1000 alle voorgaande 999 tokens opnieuw moeten berekenen, slaan we de Key- en Value-vectoren op in de <strong>KV-Cache</strong>. De exacte grootte in bytes bedraagt:\n      <div class=\"p-2.5 bg-amber-950/80 text-amber-200 text-xs sm:text-sm rounded-xl my-2 overflow-x-auto text-center shadow-inner\">\n        $$\\text{KV Cache Size} = 2 \\times n_{\\text{layers}} \\times n_{\\text{kv\\_heads}} \\times d_{\\text{head}} \\times \\text{seq\\_len} \\times \\text{batch\\_size} \\times \\text{bytes\\_per\\_elem}$$\n      </div>\n      Bij lange contexten (128k tokens) kan de KV-cache van één enkele gebruiker <strong>groter worden dan het hele model zelf</strong>!\n    </p>\n  </div>\n\n  <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n    <div class=\"bg-blue-50/80 border border-blue-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-blue-900 text-sm mb-1\">FlashAttention (Dao et al.)</h4>\n      <p class=\"text-xs sm:text-sm text-blue-800 leading-relaxed\">\n        Standaard aandacht schrijft de gigantische $N \\times N$ aandachtsmatrix naar het trage High-Bandwidth Memory (HBM). <strong>FlashAttention</strong> berekent de Softmax iteratief in kleine tegels (<em>tiles</em>) binnen het ultrasnelle <strong>SRAM-geheugen (on-chip)</strong> via online softmax re-scaling, zonder ooit de volledige matrix te materialiseren! Dit leidt tot een <strong>3x tot 5x versnelling</strong>.\n      </p>\n    </div>\n    <div class=\"bg-slate-50 border border-slate-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-slate-800 text-sm mb-1\">PagedAttention / vLLM</h4>\n      <p class=\"text-xs sm:text-sm text-slate-600 leading-relaxed\">\n        Traditioneel reserveert een server een aaneengesloten geheugenblok voor de maximale contextlengte van elke gebruiker, wat leidde tot 60-80% geheugenverspilling (interne fragmentatie). <strong>PagedAttention</strong> past het concept van <em>Virtual Memory Paging</em> uit besturingssystemen toe: de KV-cache wordt opgedeeld in kleine niet-aaneengesloten pagina's. Hierdoor stijgt de serverthroughput met <strong>2x tot 4x</strong>!\n      </p>\n    </div>\n  </div>\n</div>\n",
         "exercises": [
           {
             "id": "ai5_ex1",
@@ -2296,7 +2319,7 @@
         "subtitle": "Low-Rank Adaptation wiskunde, 4-bit NormalFloat (NF4), en Mixture of Experts routing",
         "duration": "35 min",
         "focus": "Begrijp hoe LoRA gewichtsupdates factoriseert in lage-rang matrices, hoe moderne quantisatie (AWQ/GPTQ) gewichten comprimeert zonder intelligentieverlies, en hoe Sparse MoE schaalt.",
-        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-compress text-indigo-600\"></i> Het Geheim van LoRA: Lage Intrinsieke Rang\n    </h3>\n    <p>Het volledig fine-tunen van een 70B model vereist het updaten en opslaan van alle 70 miljard gewichten (plus optimizer states en gradiënten = <strong>ruim 560 GB VRAM</strong>).<br>\n    <strong>LoRA (Hu et al., 2021)</strong> ontdekte dat gewichtsupdates $\\Delta W$ een extreem lage <em>intrinsieke dimensie (rang $r$)</em> bezitten. We bevriezen de originele gewichten $W_0 \\in \\mathbb{R}^{d \\times k}$ en ontbinden de update in twee kleine matrices:</p>\n    <div class=\"p-2.5 bg-slate-900 text-emerald-300 font-mono text-xs rounded-lg mt-2\">\n      W = W_0 + \\Delta W = W_0 + \\frac{\\alpha}{r} (B \\times A) \\quad \\text{met} \\quad B \\in \\mathbb{R}^{d \\times r}, \\ A \\in \\mathbb{R}^{r \\times k} \\quad (r \\ll d)\n    </div>\n    <p class=\"text-xs text-indigo-900 mt-1\">Met $r=8$ traint men minder dan <strong>0.1%</strong> van de parameters met 100% behoud van het gewenste fine-tuning resultaat!</p>\n  </div>\n\n  <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n    <div class=\"bg-amber-50/80 border border-amber-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-amber-900 text-sm mb-1\">Quantisatie: FP16 &rarr; INT4</h4>\n      <p class=\"text-xs sm:text-sm text-amber-800 leading-relaxed\">\n        16-bit getallen nemen 2 bytes per gewicht in. Door gewichten af te beelden op 4-bit integers ($[-8, 7]$), krimpt een 8B model van <strong>16 GB naar slechts 4.5 GB</strong> (past op een iPhone of MacBook Air!).<br>\n        &bull; <strong>AWQ (Activation-aware Weight Quantization):</strong> Niet alle gewichten zijn even belangrijk. Slechts 1% van de kanalen bevat 'outlier features' die de intelligentie dragen. AWQ beschermt deze 1% outliers en quantiseert de rest agressief.<br>\n        &bull; <strong>QLoRA:</strong> Combineert 4-bit NormalFloat (NF4) bevroren gewichten met 16-bit LoRA adapters.\n      </p>\n    </div>\n    <div class=\"bg-blue-50/80 border border-blue-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-blue-900 text-sm mb-1\">Mixture of Experts (MoE)</h4>\n      <p class=\"text-xs sm:text-sm text-blue-800 leading-relaxed\">\n        In plaats van 1 monolithische Feed-Forward laag, bevat een MoE-model meerdere onafhankelijke 'experts' (bv. 8 of 16 netwerken). Een lichtgewicht <strong>Router Netwerk (Gating)</strong> berekent per token welke top-2 experts worden geactiveerd:<br>\n        <span class=\"font-mono font-bold text-indigo-900 text-xs\">y = \\sum_{i \\in \\text{Top2}} g_i(x) \\text{Expert}_i(x)</span><br>\n        <strong>Het wonder van MoE:</strong> Mixtral 8x7B heeft 47B totale parameters in geheugen, maar gebruikt per token slechts <strong>13B actieve parameters</strong>! Rekenkracht van een klein model, kenniscapaciteit van een reus.\n      </p>\n    </div>\n  </div>\n</div>\n",
+        "theoryHtml": "\n<div class=\"space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base\">\n  <div class=\"p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl\">\n    <h3 class=\"font-bold text-indigo-950 flex items-center gap-2 mb-2 text-base\">\n      <i class=\"fa-solid fa-compress text-indigo-600\"></i> Het Geheim van LoRA: Lage Intrinsieke Rang\n    </h3>\n    <p>Het volledig fine-tunen van een 70B model vereist het updaten en opslaan van alle 70 miljard gewichten (plus optimizer states en gradiënten = <strong>ruim 560 GB VRAM</strong>).<br>\n    <strong>LoRA (Hu et al., 2021)</strong> ontdekte dat gewichtsupdates $\\Delta W$ een extreem lage <em>intrinsieke dimensie (rang $r$)</em> bezitten. We bevriezen de originele gewichten $W_0 \\in \\mathbb{R}^{d \\times k}$ en ontbinden de update in twee kleine matrices:</p>\n    <div class=\"p-3 bg-slate-900 text-emerald-300 text-xs sm:text-sm rounded-xl mt-2 overflow-x-auto text-center shadow-inner\">\n      $$W = W_0 + \\Delta W = W_0 + \\frac{\\alpha}{r} (B \\times A) \\quad \\text{met} \\quad B \\in \\mathbb{R}^{d \\times r}, \\ A \\in \\mathbb{R}^{r \\times k} \\quad (r \\ll d)$$\n    </div>\n    <p class=\"text-xs text-indigo-900 mt-1\">Met $r=8$ traint men minder dan <strong>0.1%</strong> van de parameters met 100% behoud van het gewenste fine-tuning resultaat!</p>\n  </div>\n\n  <div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n    <div class=\"bg-amber-50/80 border border-amber-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-amber-900 text-sm mb-1\">Quantisatie: FP16 &rarr; INT4</h4>\n      <p class=\"text-xs sm:text-sm text-amber-800 leading-relaxed\">\n        16-bit getallen nemen 2 bytes per gewicht in. Door gewichten af te beelden op 4-bit integers ($[-8, 7]$), krimpt een 8B model van <strong>16 GB naar slechts 4.5 GB</strong> (past op een iPhone of MacBook Air!).<br>\n        &bull; <strong>AWQ (Activation-aware Weight Quantization):</strong> Niet alle gewichten zijn even belangrijk. Slechts 1% van de kanalen bevat 'outlier features' die de intelligentie dragen. AWQ beschermt deze 1% outliers en quantiseert de rest agressief.<br>\n        &bull; <strong>QLoRA:</strong> Combineert 4-bit NormalFloat (NF4) bevroren gewichten met 16-bit LoRA adapters.\n      </p>\n    </div>\n    <div class=\"bg-blue-50/80 border border-blue-200 p-4 rounded-2xl\">\n      <h4 class=\"font-bold text-blue-900 text-sm mb-1\">Mixture of Experts (MoE)</h4>\n      <p class=\"text-xs sm:text-sm text-blue-800 leading-relaxed\">\n        In plaats van 1 monolithische Feed-Forward laag, bevat een MoE-model meerdere onafhankelijke 'experts' (bv. 8 of 16 netwerken). Een lichtgewicht <strong>Router Netwerk (Gating)</strong> berekent per token welke top-2 experts worden geactiveerd:\n      </p>\n      <div class=\"p-2 bg-indigo-950/80 text-indigo-200 text-xs sm:text-sm rounded-xl my-2 overflow-x-auto text-center shadow-inner\">\n        $$y = \\sum_{i \\in \\text{Top2}} g_i(x) \\text{Expert}_i(x)$$\n      </div>\n      <p class=\"text-xs sm:text-sm text-blue-800 leading-relaxed\">\n        <strong>Het wonder van MoE:</strong> Mixtral 8x7B heeft 47B totale parameters in geheugen, maar gebruikt per token slechts <strong>13B actieve parameters</strong>! Rekenkracht van een klein model, kenniscapaciteit van een reus.\n      </p>\n    </div>\n  </div>\n</div>\n",
         "exercises": [
           {
             "id": "ai6_ex1",
@@ -2334,6 +2357,7 @@
     ]
   }
 };
+    const CURRICULUM = window.CURRICULUM;
     const AUDIO_BASE_URL = "https://raw.githubusercontent.com/thibaudverschueren/polyglot-studio/main/audio/";
 
     // =========================================================================
@@ -2392,6 +2416,49 @@
         console.warn("Storage save fallback:", e);
       }
     }
+
+    // =========================================================================
+    // --- KATEX MATHEMATICAL RENDERING ENGINE ---
+    // =========================================================================
+    window.renderAllMath = function(targetEl) {
+      const el = targetEl || document.body;
+      if (!el) return;
+
+      const renderConfig = {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+          {left: '\\(', right: '\\)', display: false},
+          {left: '\\[', right: '\\]', display: true}
+        ],
+        ignoredTags: ["script", "noscript", "style", "textarea"],
+        throwOnError: false
+      };
+
+      if (typeof renderMathInElement === 'function') {
+        try {
+          renderMathInElement(el, renderConfig);
+        } catch (err) {
+          console.warn("KaTeX render error:", err);
+        }
+      } else {
+        // KaTeX may be loading asynchronously - retry with polling
+        let attempts = 0;
+        const timer = setInterval(() => {
+          attempts++;
+          if (typeof renderMathInElement === 'function') {
+            clearInterval(timer);
+            try {
+              renderMathInElement(el, renderConfig);
+            } catch (err) {
+              console.warn("KaTeX render retry error:", err);
+            }
+          } else if (attempts >= 30) {
+            clearInterval(timer);
+          }
+        }, 100);
+      }
+    };
 
     // --- View Routing: Hub vs Track ---
     function showHubView() {
@@ -2621,21 +2688,9 @@
       renderActiveLesson();
 
       // Trigger KaTeX rendering on entire workspace
-      setTimeout(() => {
-        if (window.renderMathInElement) {
-          try {
-            renderMathInElement(document.getElementById('lesson-content-view'), {
-              delimiters: [
-                {left: '$$', right: '$$', display: true},
-                {left: '$', right: '$', display: false}
-              ],
-              throwOnError: false
-            });
-          } catch (e) {
-            console.warn("KaTeX render error:", e);
-          }
-        }
-      }, 60);
+      if (window.renderAllMath) {
+        window.renderAllMath(document.getElementById('lesson-content-view'));
+      }
     }
 
     function renderActiveLesson() {
@@ -2649,7 +2704,11 @@
       document.getElementById('active-lesson-focus').innerHTML = `<strong>Focus:</strong> ${lesson.focus}`;
 
       // Section 1: Theory
-      document.getElementById('lesson-theory-container').innerHTML = lesson.theoryHtml;
+      const theoryContainer = document.getElementById('lesson-theory-container');
+      theoryContainer.innerHTML = lesson.theoryHtml;
+      if (window.renderAllMath) {
+        window.renderAllMath(theoryContainer);
+      }
 
       // Section 2: Audio (Greek & French only, hidden for Solidity and AI)
       const audioSec = document.getElementById('section-audio');
@@ -4124,18 +4183,8 @@ class HandwritingPad {
         });
 
         // Trigger KaTeX auto-render on newly injected math formulas
-        if (window.renderMathInElement) {
-          try {
-            renderMathInElement(container, {
-              delimiters: [
-                {left: '$$', right: '$$', display: true},
-                {left: '$', right: '$', display: false}
-              ],
-              throwOnError: false
-            });
-          } catch (e) {
-            console.warn("KaTeX render error:", e);
-          }
+        if (window.renderAllMath) {
+          window.renderAllMath(container);
         }
       }, 50);
     }
@@ -5348,6 +5397,7 @@ class HandwritingPad {
         `;
         container.appendChild(qCard);
       });
+      if (window.renderAllMath) window.renderAllMath(container);
     }
 
     function submitExam() {
@@ -5450,21 +5500,15 @@ class HandwritingPad {
       }
 
       // KaTeX auto-render on initial load
-      setTimeout(() => {
-        if (window.renderMathInElement) {
-          try {
-            renderMathInElement(document.body, {
-              delimiters: [
-                {left: '$$', right: '$$', display: true},
-                {left: '$', right: '$', display: false}
-              ],
-              throwOnError: false
-            });
-          } catch (e) {
-            console.warn("KaTeX init error:", e);
-          }
-        }
-      }, 100);
+      if (typeof window.renderAllMath === 'function') {
+        window.renderAllMath(document.body);
+      }
+    });
+
+    window.addEventListener('load', () => {
+      if (typeof window.renderAllMath === 'function') {
+        window.renderAllMath(document.body);
+      }
     });
   </script>
 </body>
