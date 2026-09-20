@@ -1,7 +1,21 @@
 <!DOCTYPE html>
-<html lang="nl" class="h-full bg-slate-900 text-slate-800 antialiased">
+<html lang="nl" class="h-full antialiased">
 <head>
   <meta charset="UTF-8">
+  <script>
+    // Prevent Flash of Unstyled Content (FOUC)
+    (function() {
+      try {
+        var saved = localStorage.getItem('polyglot_theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (saved === 'dark' || (!saved && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Polyglot Studio — Apple Glass Edition</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,6 +24,19 @@
   
   <!-- Tailwind & FontAwesome -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
@@ -23,12 +50,29 @@
       --app-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Roboto, sans-serif;
     }
 
+    /* Silk smooth theme transition */
+    html.theme-transition,
+    html.theme-transition *,
+    html.theme-transition *::before,
+    html.theme-transition *::after {
+      transition: background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                  color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
     body {
       -webkit-tap-highlight-color: transparent;
       font-family: var(--app-font);
-      background-color: #f1f5f9;
+      background-color: #f8fafc;
       color: #0f172a;
       overflow-x: hidden;
+      letter-spacing: -0.012em;
+    }
+
+    html.dark body {
+      background-color: #07080d;
+      color: #f8fafc;
     }
 
     .safe-top { padding-top: max(env(safe-area-inset-top), 16px); }
@@ -36,51 +80,88 @@
     pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
 
     /* =========================================================================
-       APPLE LIQUID GLASS / VISIONOS DESIGN TOKENS
+       APPLE LIQUID GLASS / VISIONOS DESIGN TOKENS (LIGHT & DARK)
        ========================================================================= */
 
     /* Frosted Liquid Glass Card */
     .apple-glass-card {
-      background: rgba(255, 255, 255, 0.76);
+      background: rgba(255, 255, 255, 0.78);
       backdrop-filter: blur(28px) saturate(190%);
       -webkit-backdrop-filter: blur(28px) saturate(190%);
       border: 1px solid rgba(255, 255, 255, 0.85);
-      box-shadow: 0 20px 48px -12px rgba(15, 23, 42, 0.07),
-                  0 1px 3px 0 rgba(15, 23, 42, 0.03),
+      box-shadow: 0 16px 40px -12px rgba(15, 23, 42, 0.05),
+                  0 1px 3px 0 rgba(15, 23, 42, 0.02),
                   inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
       border-radius: 1.75rem;
     }
 
+    html.dark .apple-glass-card {
+      background: rgba(16, 18, 28, 0.74);
+      backdrop-filter: blur(32px) saturate(210%);
+      -webkit-backdrop-filter: blur(32px) saturate(210%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.65),
+                  0 1px 2px 0 rgba(0, 0, 0, 0.4),
+                  inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+    }
+
     /* Ambient Glass Navigation / Header Bar */
     .apple-glass-nav {
-      background: rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.75);
       backdrop-filter: blur(32px) saturate(190%);
       -webkit-backdrop-filter: blur(32px) saturate(190%);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.7);
-      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04),
+      border-bottom: 1px solid rgba(255, 255, 255, 0.75);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03),
                   inset 0 -1px 0 0 rgba(255, 255, 255, 0.4);
+    }
+
+    html.dark .apple-glass-nav {
+      background: rgba(10, 12, 19, 0.82);
+      backdrop-filter: blur(36px) saturate(200%);
+      -webkit-backdrop-filter: blur(36px) saturate(200%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.5),
+                  inset 0 -1px 0 0 rgba(255, 255, 255, 0.08);
     }
 
     /* Apple Pro Dark Glass (For Solidity Studio & Terminal) */
     .apple-dark-glass {
-      background: rgba(18, 20, 29, 0.82);
+      background: rgba(16, 18, 26, 0.85);
       backdrop-filter: blur(32px) saturate(190%);
       -webkit-backdrop-filter: blur(32px) saturate(190%);
       border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.45),
+      box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.55),
                   inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
       border-radius: 1.5rem;
     }
 
+    html.dark .apple-dark-glass {
+      background: rgba(12, 14, 22, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.75),
+                  inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
+    }
+
     /* VisionOS Floating Dock */
     .apple-dock {
-      background: rgba(255, 255, 255, 0.78);
+      background: rgba(255, 255, 255, 0.82);
       backdrop-filter: blur(36px) saturate(200%);
       -webkit-backdrop-filter: blur(36px) saturate(200%);
-      border: 1px solid rgba(255, 255, 255, 0.85);
-      box-shadow: 0 20px 44px -8px rgba(15, 23, 42, 0.15),
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 20px 44px -8px rgba(15, 23, 42, 0.12),
                   0 2px 6px 0 rgba(15, 23, 42, 0.04),
                   inset 0 1px 0 0 rgba(255, 255, 255, 1);
+    }
+
+    html.dark .apple-dock {
+      background: rgba(18, 20, 32, 0.85);
+      backdrop-filter: blur(40px) saturate(210%);
+      -webkit-backdrop-filter: blur(40px) saturate(210%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 24px 50px -8px rgba(0, 0, 0, 0.7),
+                  0 2px 6px 0 rgba(0, 0, 0, 0.5),
+                  inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+      color: #cbd5e1;
     }
 
     /* Apple Glass Capsule Pills */
@@ -90,6 +171,15 @@
       -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.8);
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    html.dark .apple-pill {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
     }
 
     /* Primary Apple Shimmer Button */
@@ -115,12 +205,166 @@
       box-shadow: inset 0 1px 3px 0 rgba(0, 0, 0, 0.05);
     }
 
-    /* Authentic School Notebook Paper Background (Dual-Layer: Canvas sits on top transparently) */
+    html.dark .apple-segmented-bar {
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+      color: #94a3b8;
+    }
+
+    /* Segmented Track Buttons */
+    .track-tab-active {
+      background: rgba(255, 255, 255, 0.95);
+      color: #0f172a;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+      border: 1px solid rgba(255, 255, 255, 1);
+      font-weight: 800;
+    }
+    html.dark .track-tab-active {
+      background: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+    }
+    .track-tab-inactive {
+      color: #64748b;
+    }
+    html.dark .track-tab-inactive {
+      color: #94a3b8;
+    }
+    .track-tab-inactive:hover {
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.45);
+    }
+    html.dark .track-tab-inactive:hover {
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Authentic School Notebook Paper Background (Light Notebook vs Dark Leisteen) */
     .notebook-paper-bg {
       background-color: #ffffff;
       background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, #e2e8f0 28px),
                         linear-gradient(to right, transparent 34px, #fecdd3 35px, transparent 36px);
       background-attachment: local;
+      transition: background 0.3s ease;
+    }
+
+    html.dark .notebook-paper-bg {
+      background-color: #111420;
+      background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, #1e2438 28px),
+                        linear-gradient(to right, transparent 34px, #4a1d28 35px, transparent 36px);
+    }
+
+    /* In dark mode, model answer text */
+    html.dark .model-ans-text {
+      color: #38bdf8 !important;
+      text-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+    }
+
+    /* Dark Mode Theory Content & Table Overrides */
+    html.dark #lesson-theory-container,
+    html.dark .theory-content {
+      color: #cbd5e1;
+    }
+    html.dark #lesson-theory-container .text-slate-900,
+    html.dark #lesson-theory-container h1,
+    html.dark #lesson-theory-container h2,
+    html.dark #lesson-theory-container h3,
+    html.dark #lesson-theory-container h4 {
+      color: #f8fafc !important;
+    }
+    html.dark #lesson-theory-container .text-slate-700,
+    html.dark #lesson-theory-container .text-slate-800,
+    html.dark #lesson-theory-container p,
+    html.dark #lesson-theory-container li {
+      color: #cbd5e1 !important;
+    }
+    html.dark #lesson-theory-container .text-slate-500 {
+      color: #94a3b8 !important;
+    }
+    html.dark #lesson-theory-container .bg-white {
+      background-color: rgba(255, 255, 255, 0.03) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    html.dark #lesson-theory-container .bg-indigo-50,
+    html.dark #lesson-theory-container .bg-indigo-50\/70,
+    html.dark #lesson-theory-container .bg-indigo-50\/80 {
+      background-color: rgba(99, 102, 241, 0.12) !important;
+      border-color: rgba(99, 102, 241, 0.25) !important;
+    }
+    html.dark #lesson-theory-container .text-indigo-950 {
+      color: #e0e7ff !important;
+    }
+    html.dark #lesson-theory-container table {
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    html.dark #lesson-theory-container thead {
+      background-color: rgba(255, 255, 255, 0.06) !important;
+    }
+    html.dark #lesson-theory-container th {
+      color: #f8fafc !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    html.dark #lesson-theory-container td {
+      border-color: rgba(255, 255, 255, 0.06) !important;
+      color: #cbd5e1 !important;
+    }
+    html.dark #lesson-theory-container strong {
+      color: #f8fafc !important;
+    }
+
+    /* Dark Mode Global Text & Container Adaptations */
+    html.dark .text-slate-900 {
+      color: #f8fafc !important;
+    }
+    html.dark .text-slate-800 {
+      color: #f1f5f9 !important;
+    }
+    html.dark .text-slate-700 {
+      color: #cbd5e1 !important;
+    }
+    html.dark .text-slate-600 {
+      color: #94a3b8 !important;
+    }
+    html.dark .text-slate-500 {
+      color: #64748b !important;
+    }
+    html.dark .border-slate-200,
+    html.dark .border-slate-200\/60,
+    html.dark .border-slate-300 {
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    html.dark #active-lesson-focus {
+      background-color: rgba(255, 255, 255, 0.04) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      color: #cbd5e1 !important;
+    }
+    html.dark .bg-white\/70,
+    html.dark .bg-white\/60,
+    html.dark .bg-white\/90 {
+      background-color: rgba(255, 255, 255, 0.05) !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+      color: #e2e8f0 !important;
+    }
+    html.dark textarea {
+      background-color: rgba(18, 20, 30, 0.8) !important;
+      color: #f8fafc !important;
+      border-color: rgba(255, 255, 255, 0.12) !important;
+    }
+    html.dark .bg-slate-200\/50 {
+      background-color: rgba(255, 255, 255, 0.04) !important;
+      border-color: rgba(255, 255, 255, 0.06) !important;
+    }
+    html.dark .bg-indigo-50\/70,
+    html.dark .bg-indigo-50\/80 {
+      background-color: rgba(79, 70, 229, 0.12) !important;
+      border-color: rgba(99, 102, 241, 0.25) !important;
+    }
+    html.dark .text-indigo-950 {
+      color: #e0e7ff !important;
     }
 
     /* Handwriting & Cursive Styles */
@@ -184,10 +428,14 @@
         </div>
       </div>
 
-      <!-- Mode Pill (Vrij Leren / Geleid Leren) -->
+      <!-- Actions: Theme Toggle & Mode Pill -->
       <div class="flex items-center space-x-2">
-        <button id="toggle-mode-btn" onclick="toggleFreeMode()" class="px-3 py-1.5 text-xs font-bold rounded-2xl transition flex items-center space-x-1.5 apple-pill text-slate-700 hover:text-slate-900 active:scale-95">
-          <i class="fa-solid fa-lock text-[11px] text-slate-500"></i>
+        <button id="theme-toggle-btn" onclick="toggleTheme()" class="px-3 py-1.5 text-xs font-bold rounded-2xl transition flex items-center space-x-1.5 apple-pill text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white active:scale-95 cursor-pointer" title="Schakel donker / licht thema">
+          <i id="theme-toggle-icon" class="fa-solid fa-moon text-indigo-500 dark:text-amber-400 transition-transform duration-300"></i>
+          <span id="theme-toggle-text" class="hidden sm:inline">Donker</span>
+        </button>
+        <button id="toggle-mode-btn" onclick="toggleFreeMode()" class="px-3 py-1.5 text-xs font-bold rounded-2xl transition flex items-center space-x-1.5 apple-pill text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white active:scale-95 cursor-pointer">
+          <i class="fa-solid fa-lock text-[11px] text-slate-500 dark:text-slate-400"></i>
           <span id="mode-text">Geleid Leren</span>
         </button>
       </div>
@@ -398,22 +646,26 @@
        VISIONOS FLOATING GLASS DOCK (Sticky Bottom Navigation Capsule)
        ========================================================================= -->
   <div class="fixed bottom-4 inset-x-0 z-40 px-4 pointer-events-none safe-bottom">
-    <nav class="apple-dock pointer-events-auto max-w-md mx-auto rounded-full py-2 px-6 flex items-center justify-around text-xs font-bold text-slate-600">
-      <button onclick="scrollToSection('course-header')" class="flex flex-col items-center space-y-1 hover:text-indigo-600 transition active:scale-90">
-        <i class="fa-solid fa-list-check text-base"></i>
+    <nav class="apple-dock pointer-events-auto max-w-sm mx-auto rounded-full py-2 px-5 flex items-center justify-around text-xs font-bold text-slate-600 dark:text-slate-300">
+      <button onclick="scrollToSection('course-header')" class="flex flex-col items-center space-y-1 hover:text-indigo-500 transition active:scale-90 cursor-pointer">
+        <i class="fa-solid fa-list-check text-sm"></i>
         <span class="text-[10px]">Lessen</span>
       </button>
-      <button onclick="scrollToSection('section-audio')" id="nav-audio-btn" class="flex flex-col items-center space-y-1 hover:text-pink-600 transition active:scale-90">
-        <i class="fa-solid fa-volume-high text-base text-pink-500"></i>
+      <button onclick="scrollToSection('section-audio')" id="nav-audio-btn" class="flex flex-col items-center space-y-1 hover:text-pink-500 transition active:scale-90 cursor-pointer">
+        <i class="fa-solid fa-volume-high text-sm text-pink-500"></i>
         <span class="text-[10px]">Audio</span>
       </button>
-      <button onclick="scrollToSection('section-exercises')" class="flex flex-col items-center space-y-1 hover:text-emerald-600 transition active:scale-90">
-        <i class="fa-solid fa-pen text-base text-emerald-600"></i>
+      <button onclick="scrollToSection('section-exercises')" class="flex flex-col items-center space-y-1 hover:text-emerald-500 transition active:scale-90 cursor-pointer">
+        <i class="fa-solid fa-pen text-sm text-emerald-500"></i>
         <span class="text-[10px]">Oefenen</span>
       </button>
-      <button onclick="scrollToSection('section-exam')" class="flex flex-col items-center space-y-1 hover:text-purple-600 transition active:scale-90">
-        <i class="fa-solid fa-award text-base text-purple-600"></i>
+      <button onclick="scrollToSection('section-exam')" class="flex flex-col items-center space-y-1 hover:text-purple-500 transition active:scale-90 cursor-pointer">
+        <i class="fa-solid fa-award text-sm text-purple-500"></i>
         <span class="text-[10px]">Toets</span>
+      </button>
+      <button onclick="toggleTheme()" class="flex flex-col items-center space-y-1 hover:text-amber-500 transition active:scale-90 cursor-pointer" title="Thema wisselen">
+        <i id="dock-theme-icon" class="fa-solid fa-moon text-sm text-indigo-500 dark:text-amber-400"></i>
+        <span id="dock-theme-text" class="text-[10px]">Thema</span>
       </button>
     </nav>
   </div>
@@ -1355,7 +1607,8 @@
         this.strokes = [];
         this.currentStroke = null;
         this.mode = 'pen';
-        this.inkColor = '#1d4ed8'; // Fountain pen royal blue
+        const isDark = document.documentElement.classList.contains('dark');
+        this.inkColor = isDark ? '#38bdf8' : '#1d4ed8'; // Luminous cyan in dark, royal blue in light
         this.penBaseWidth = 2.4;
         this.eraserWidth = 24;
 
@@ -1386,6 +1639,7 @@
 
           this.currentStroke = {
             mode: this.mode,
+            color: this.inkColor,
             points: [pt]
           };
           this.strokes.push(this.currentStroke);
@@ -1488,7 +1742,7 @@
             this.ctx.stroke();
           } else {
             this.ctx.globalCompositeOperation = 'source-over';
-            this.ctx.strokeStyle = this.inkColor;
+            this.ctx.strokeStyle = stroke.color || this.inkColor;
             this.ctx.lineCap = 'round';
             this.ctx.lineJoin = 'round';
 
@@ -1694,7 +1948,8 @@
         const curY = p1.y + (p2.y - p1.y) * Math.min(this.t, 1);
 
         this.ctx.save();
-        this.ctx.strokeStyle = '#2563eb';
+        const isDarkAnim = document.documentElement.classList.contains('dark');
+        this.ctx.strokeStyle = isDarkAnim ? '#38bdf8' : '#2563eb';
         this.ctx.lineWidth = 3.2;
         this.ctx.lineCap = 'round';
         this.ctx.lineJoin = 'round';
@@ -1713,6 +1968,98 @@
         }
 
         this.animFrameId = requestAnimationFrame(() => this.stepAnimation());
+      }
+    }
+
+    // --- Theme & Mode Management (Apple Glass Light & Dark Mode) ---
+    function initTheme() {
+      try {
+        const saved = localStorage.getItem('polyglot_theme');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const isDark = saved ? (saved === 'dark') : prefersDark;
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        updateThemeUI(isDark);
+      } catch (e) {
+        console.warn("Theme init error:", e);
+      }
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      html.classList.add('theme-transition');
+      const isDark = html.classList.toggle('dark');
+      try {
+        localStorage.setItem('polyglot_theme', isDark ? 'dark' : 'light');
+      } catch (e) {}
+      updateThemeUI(isDark);
+
+      // Adjust ink color on active pads
+      Object.values(pads).forEach(pad => {
+        if (isDark && (pad.inkColor === '#1d4ed8' || !pad.inkColor)) {
+          pad.inkColor = '#38bdf8';
+        } else if (!isDark && pad.inkColor === '#38bdf8') {
+          pad.inkColor = '#1d4ed8';
+        }
+        // Also update existing default blue strokes to cyan in dark mode
+        pad.strokes.forEach(s => {
+          if (s.mode === 'pen') {
+            if (isDark && s.color === '#1d4ed8') s.color = '#38bdf8';
+            if (!isDark && s.color === '#38bdf8') s.color = '#1d4ed8';
+          }
+        });
+        pad.redraw();
+      });
+
+      updateAmbientLighting(state.track);
+
+      setTimeout(() => {
+        html.classList.remove('theme-transition');
+      }, 400);
+    }
+
+    function updateThemeUI(isDark) {
+      const topIcon = document.getElementById('theme-toggle-icon');
+      const topText = document.getElementById('theme-toggle-text');
+      const dockIcon = document.getElementById('dock-theme-icon');
+
+      if (topIcon) {
+        topIcon.className = isDark ? "fa-solid fa-sun text-amber-400 rotate-180 transition-transform duration-300" : "fa-solid fa-moon text-indigo-500 rotate-0 transition-transform duration-300";
+      }
+      if (topText) {
+        topText.textContent = isDark ? "Licht" : "Donker";
+      }
+      if (dockIcon) {
+        dockIcon.className = isDark ? "fa-solid fa-sun text-sm text-amber-400" : "fa-solid fa-moon text-sm text-indigo-500";
+      }
+
+      // Re-apply track button classes
+      if (state.track) {
+        ['greek', 'french', 'solidity'].forEach(t => {
+          const btn = document.getElementById(`track-${t}`);
+          if (btn) {
+            btn.className = (t === state.track)
+              ? "py-2 px-3 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 track-tab-active cursor-pointer"
+              : "py-2 px-3 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 track-tab-inactive cursor-pointer";
+          }
+        });
+      }
+    }
+
+    function setPadColor(id, color) {
+      const pad = pads[id];
+      if (pad) {
+        pad.inkColor = color;
+        pad.mode = 'pen';
+        const penBtn = document.getElementById(`tool-pen-${id}`);
+        const eraserBtn = document.getElementById(`tool-eraser-${id}`);
+        if (penBtn && eraserBtn) {
+          penBtn.className = "px-3 py-1.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-sm shadow-indigo-300 transition active:scale-95";
+          eraserBtn.className = "px-3 py-1.5 apple-pill hover:bg-slate-200 dark:hover:bg-white/10 text-slate-800 dark:text-slate-200 rounded-xl font-bold flex items-center gap-1.5 transition active:scale-95";
+        }
       }
     }
 
@@ -1772,24 +2119,28 @@
       const o3 = document.getElementById('ambient-orb-3');
       const o4 = document.getElementById('ambient-orb-4');
       const headerBg = document.getElementById('course-header-bg');
+      const isDark = document.documentElement.classList.contains('dark');
+
+      const opMult = isDark ? 1.4 : 1.0;
+      const blurSize = isDark ? "blur-[160px]" : "blur-[130px]";
 
       if (trackKey === 'greek') {
-        if (o1) o1.className = "absolute -top-32 -left-32 w-96 h-96 rounded-full bg-blue-500/20 blur-[130px] transition-all duration-1000";
-        if (o2) o2.className = "absolute top-1/4 -right-32 w-[30rem] h-[30rem] rounded-full bg-indigo-500/18 blur-[150px] transition-all duration-1000";
-        if (o3) o3.className = "absolute top-2/3 -left-20 w-80 h-80 rounded-full bg-amber-400/15 blur-[140px] transition-all duration-1000";
-        if (o4) o4.className = "absolute -bottom-32 right-10 w-96 h-96 rounded-full bg-cyan-400/15 blur-[140px] transition-all duration-1000";
+        if (o1) o1.className = `absolute -top-32 -left-32 w-96 h-96 rounded-full ${isDark ? 'bg-blue-600/30' : 'bg-blue-500/20'} ${blurSize} transition-all duration-1000`;
+        if (o2) o2.className = `absolute top-1/4 -right-32 w-[30rem] h-[30rem] rounded-full ${isDark ? 'bg-indigo-600/25' : 'bg-indigo-500/18'} ${blurSize} transition-all duration-1000`;
+        if (o3) o3.className = `absolute top-2/3 -left-20 w-80 h-80 rounded-full ${isDark ? 'bg-cyan-600/20' : 'bg-amber-400/15'} ${blurSize} transition-all duration-1000`;
+        if (o4) o4.className = `absolute -bottom-32 right-10 w-96 h-96 rounded-full ${isDark ? 'bg-sky-600/25' : 'bg-cyan-400/15'} ${blurSize} transition-all duration-1000`;
         if (headerBg) headerBg.className = "absolute inset-0 bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-950 transition-all duration-500 z-0";
       } else if (trackKey === 'french') {
-        if (o1) o1.className = "absolute -top-32 -left-32 w-96 h-96 rounded-full bg-rose-500/18 blur-[130px] transition-all duration-1000";
-        if (o2) o2.className = "absolute top-1/4 -right-32 w-[30rem] h-[30rem] rounded-full bg-blue-500/18 blur-[150px] transition-all duration-1000";
-        if (o3) o3.className = "absolute top-2/3 -left-20 w-80 h-80 rounded-full bg-purple-400/15 blur-[140px] transition-all duration-1000";
-        if (o4) o4.className = "absolute -bottom-32 right-10 w-96 h-96 rounded-full bg-pink-400/15 blur-[140px] transition-all duration-1000";
+        if (o1) o1.className = `absolute -top-32 -left-32 w-96 h-96 rounded-full ${isDark ? 'bg-rose-600/25' : 'bg-rose-500/18'} ${blurSize} transition-all duration-1000`;
+        if (o2) o2.className = `absolute top-1/4 -right-32 w-[30rem] h-[30rem] rounded-full ${isDark ? 'bg-indigo-600/25' : 'bg-blue-500/18'} ${blurSize} transition-all duration-1000`;
+        if (o3) o3.className = `absolute top-2/3 -left-20 w-80 h-80 rounded-full ${isDark ? 'bg-purple-600/20' : 'bg-purple-400/15'} ${blurSize} transition-all duration-1000`;
+        if (o4) o4.className = `absolute -bottom-32 right-10 w-96 h-96 rounded-full ${isDark ? 'bg-pink-600/25' : 'bg-pink-400/15'} ${blurSize} transition-all duration-1000`;
         if (headerBg) headerBg.className = "absolute inset-0 bg-gradient-to-r from-slate-950 via-indigo-950 to-rose-950 transition-all duration-500 z-0";
       } else if (trackKey === 'solidity') {
-        if (o1) o1.className = "absolute -top-32 -left-32 w-96 h-96 rounded-full bg-emerald-500/20 blur-[130px] transition-all duration-1000";
-        if (o2) o2.className = "absolute top-1/4 -right-32 w-[30rem] h-[30rem] rounded-full bg-teal-500/18 blur-[150px] transition-all duration-1000";
-        if (o3) o3.className = "absolute top-2/3 -left-20 w-80 h-80 rounded-full bg-cyan-400/15 blur-[140px] transition-all duration-1000";
-        if (o4) o4.className = "absolute -bottom-32 right-10 w-96 h-96 rounded-full bg-slate-400/15 blur-[140px] transition-all duration-1000";
+        if (o1) o1.className = `absolute -top-32 -left-32 w-96 h-96 rounded-full ${isDark ? 'bg-emerald-600/30' : 'bg-emerald-500/20'} ${blurSize} transition-all duration-1000`;
+        if (o2) o2.className = `absolute top-1/4 -right-32 w-[30rem] h-[30rem] rounded-full ${isDark ? 'bg-teal-600/25' : 'bg-teal-500/18'} ${blurSize} transition-all duration-1000`;
+        if (o3) o3.className = `absolute top-2/3 -left-20 w-80 h-80 rounded-full ${isDark ? 'bg-cyan-600/20' : 'bg-cyan-400/15'} ${blurSize} transition-all duration-1000`;
+        if (o4) o4.className = `absolute -bottom-32 right-10 w-96 h-96 rounded-full ${isDark ? 'bg-emerald-800/25' : 'bg-slate-400/15'} ${blurSize} transition-all duration-1000`;
         if (headerBg) headerBg.className = "absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 transition-all duration-500 z-0";
       }
     }
@@ -1801,10 +2152,10 @@
 
       ['greek', 'french', 'solidity'].forEach(t => {
         const btn = document.getElementById(`track-${t}`);
-        if (t === trackKey) {
-          btn.className = "py-2 px-3 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 bg-white/95 text-slate-950 shadow-[0_3px_12px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-white font-black";
-        } else {
-          btn.className = "py-2 px-3 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 text-slate-600 hover:text-slate-900 hover:bg-white/40";
+        if (btn) {
+          btn.className = (t === trackKey)
+            ? "py-2 px-3 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 track-tab-active cursor-pointer"
+            : "py-2 px-3 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 track-tab-inactive cursor-pointer";
         }
       });
 
@@ -2078,21 +2429,28 @@
               </div>
             </div>
 
-            <!-- Toolbar: Inkt Tools + Geanimeerd Handschrift -->
+            <!-- Toolbar: Inkt Tools + Kleuren + Geanimeerd Handschrift -->
             <div class="flex flex-wrap items-center justify-between pt-1 gap-2 text-xs">
               <div class="flex items-center space-x-1.5">
-                <button id="tool-pen-${ex.id}" onclick="setPadTool('${ex.id}', 'pen')" class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-sm shadow-indigo-300 transition active:scale-95">
+                <button id="tool-pen-${ex.id}" onclick="setPadTool('${ex.id}', 'pen')" class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-sm shadow-indigo-300 transition active:scale-95 cursor-pointer">
                   <i class="fa-solid fa-pen"></i> Pen
                 </button>
-                <button id="tool-eraser-${ex.id}" onclick="setPadTool('${ex.id}', 'eraser')" class="px-3 py-1.5 apple-pill hover:bg-slate-200 text-slate-800 rounded-xl font-bold flex items-center gap-1.5 transition active:scale-95">
+                <button id="tool-eraser-${ex.id}" onclick="setPadTool('${ex.id}', 'eraser')" class="px-3 py-1.5 apple-pill hover:bg-slate-200 dark:hover:bg-white/10 text-slate-800 dark:text-slate-200 rounded-xl font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer">
                   <i class="fa-solid fa-eraser"></i> Gom
                 </button>
-                <button onclick="undoPad('${ex.id}')" class="px-2.5 py-1.5 apple-pill hover:bg-slate-200 text-slate-700 rounded-xl font-bold" title="Stap terug">
+                <button onclick="undoPad('${ex.id}')" class="px-2.5 py-1.5 apple-pill hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-xl font-bold cursor-pointer" title="Stap terug">
                   <i class="fa-solid fa-arrow-rotate-left"></i>
                 </button>
-                <button onclick="clearPad('${ex.id}')" class="px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 rounded-xl font-bold" title="Wis inkt">
+                <button onclick="clearPad('${ex.id}')" class="px-2.5 py-1.5 text-rose-500 hover:bg-rose-500/10 rounded-xl font-bold cursor-pointer" title="Wis inkt">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
+                <!-- Quick Ink Palette -->
+                <div class="flex items-center space-x-1 pl-1.5 border-l border-slate-300/60 dark:border-white/15">
+                  <button onclick="setPadColor('${ex.id}', '#38bdf8')" class="w-5 h-5 rounded-full bg-sky-400 border border-white/70 shadow-xs hover:scale-115 active:scale-95 transition cursor-pointer" title="Lumineus Cyaan"></button>
+                  <button onclick="setPadColor('${ex.id}', '#1d4ed8')" class="w-5 h-5 rounded-full bg-blue-700 border border-white/70 shadow-xs hover:scale-115 active:scale-95 transition cursor-pointer" title="Koningsblauw"></button>
+                  <button onclick="setPadColor('${ex.id}', '#f8fafc')" class="w-5 h-5 rounded-full bg-slate-100 border border-slate-400/80 shadow-xs hover:scale-115 active:scale-95 transition cursor-pointer" title="Krijtwit"></button>
+                  <button onclick="setPadColor('${ex.id}', '#fbbf24')" class="w-5 h-5 rounded-full bg-amber-400 border border-white/70 shadow-xs hover:scale-115 active:scale-95 transition cursor-pointer" title="Goud"></button>
+                </div>
               </div>
 
               <!-- Animated Stroke Demonstration Controls -->
@@ -2128,7 +2486,7 @@
                   </span>
                   <span class="text-[10px] text-slate-400 font-semibold">Vulpenstijl</span>
                 </div>
-                <div class="pl-8 text-2xl sm:text-3xl text-blue-700 select-none py-1.5 handwritten-font" style="line-height: 28px; letter-spacing: 0.5px;">
+                <div class="pl-8 text-2xl sm:text-3xl text-blue-700 dark:text-sky-400 select-none py-1.5 handwritten-font model-ans-text" style="line-height: 28px; letter-spacing: 0.5px;">
                   ${ex.modelAnswer}
                 </div>
               </div>
@@ -3159,6 +3517,7 @@
 
     // --- App Bootstrap ---
     document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
       loadState();
       updateModeButton();
       selectTrack(state.track);
