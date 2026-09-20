@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl" class="min-h-screen antialiased bg-slate-50 dark:bg-[#07080d]">
+<html lang="nl" class="min-h-screen antialiased">
 <head>
   <meta charset="UTF-8">
   <script>
@@ -426,29 +426,31 @@
       color: #ffffff !important;
     }
 
-    /* 3. Slate / Light Gray / White Callouts (e.g. Greek Klemtoon, Grammar Boxes) */
-    html.dark .bg-slate-50,
-    html.dark .bg-slate-100,
+    /* 3. Slate / Light Gray / White Callouts (Scoped to lesson theory containers) */
+    html.dark #lesson-theory-container .bg-slate-50,
+    html.dark #lesson-theory-container .bg-slate-100,
     html.dark #lesson-theory-container .bg-white,
+    html.dark .apple-glass-card .bg-slate-50,
+    html.dark .apple-glass-card .bg-slate-100,
     html.dark .bg-white\/70,
     html.dark .bg-white\/80,
     html.dark .bg-white\/90 {
       background-color: rgba(255, 255, 255, 0.04) !important;
       border-color: rgba(255, 255, 255, 0.08) !important;
     }
-    html.dark .bg-slate-50 h4,
-    html.dark .bg-slate-50 h3,
-    html.dark .bg-slate-100 h4,
+    html.dark #lesson-theory-container .bg-slate-50 h4,
+    html.dark #lesson-theory-container .bg-slate-50 h3,
+    html.dark #lesson-theory-container .bg-slate-100 h4,
     html.dark #lesson-theory-container .bg-white h4,
     html.dark #lesson-theory-container .bg-white h3 {
       color: #f8fafc !important;
     }
-    html.dark .bg-slate-50 p,
-    html.dark .bg-slate-100 p,
+    html.dark #lesson-theory-container .bg-slate-50 p,
+    html.dark #lesson-theory-container .bg-slate-100 p,
     html.dark #lesson-theory-container .bg-white p {
       color: #cbd5e1 !important;
     }
-    html.dark .bg-slate-50 strong,
+    html.dark #lesson-theory-container .bg-slate-50 strong,
     html.dark #lesson-theory-container .bg-white strong {
       color: #ffffff !important;
     }
@@ -678,26 +680,33 @@
     cursor: pointer;
   }
 
-  /* Root & Viewport Edge-to-Edge Fill for iOS PWA */
-  html {
-    min-height: 100vh;
-    min-height: 100dvh;
-    background-color: #07080d;
-    -webkit-text-size-adjust: 100%;
-  }
-  body {
-    min-height: 100vh;
-    min-height: 100dvh;
-    background-color: #f8fafc;
-    color: #0f172a;
-    -webkit-font-smoothing: antialiased;
-  }
-  html.dark body {
-    background-color: #07080d;
-    color: #f8fafc;
+  /* Absolute Bulletproof Root & Viewport Edge-to-Edge Canvas */
+  html.dark,
+  html.dark body,
+  html.dark #ambient-container {
+    background-color: #07080d !important;
+    color: #f8fafc !important;
   }
 
-  /* Safe Area Utilities for iOS Standalone PWA */
+  html:not(.dark),
+  html:not(.dark) body,
+  html:not(.dark) #ambient-container {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+  }
+
+  /* High-Contrast Readability Guarantee */
+  html.dark .text-slate-500 {
+    color: #94a3b8 !important;
+  }
+  html.dark .text-slate-600 {
+    color: #cbd5e1 !important;
+  }
+  html.dark h1, html.dark h2, html.dark h3, html.dark h4 {
+    color: #ffffff !important;
+  }
+
+  /* Safe Area Utilities for iOS Standalone PWA & Desktop */
   .safe-header-top {
     padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
   }
@@ -715,12 +724,12 @@
   }
 </style>
 </head>
-<body class="min-h-screen min-h-[100dvh] flex flex-col antialiased selection:bg-indigo-500/30 bg-slate-50 dark:bg-[#07080d] text-slate-900 dark:text-slate-100">
+<body class="min-h-screen min-h-[100dvh] flex flex-col antialiased selection:bg-indigo-500/30 text-slate-900 dark:text-slate-100">
 
   <!-- =========================================================================
        DYNAMIC AMBIENT MESH LIGHTING (Edge-to-Edge Atmospheric Glow)
        ========================================================================= -->
-  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0 bg-slate-50 dark:bg-[#07080d]">
+  <div id="ambient-container" class="fixed inset-0 pointer-events-none overflow-hidden z-0">
     <div id="ambient-orb-1" class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-blue-500/20 blur-[130px] transition-all duration-1000"></div>
     <div id="ambient-orb-2" class="absolute top-1/4 -right-32 w-[30rem] h-[30rem] rounded-full bg-indigo-500/18 blur-[130px] transition-all duration-1000"></div>
     <div id="ambient-orb-3" class="absolute top-2/3 -left-20 w-80 h-80 rounded-full bg-amber-400/15 blur-[130px] transition-all duration-1000"></div>
@@ -789,7 +798,7 @@
   <!-- =========================================================================
        MAIN WORKSPACE CONTAINER (Native Window Scrolling)
        ========================================================================= -->
-  <main class="flex-1 relative z-10 pb-44">
+  <main class="flex-1 relative z-10 pb-32 md:pb-16">
     <div class="max-w-5xl mx-auto px-4 py-5 space-y-6">
 
       <!-- =====================================================================
@@ -834,7 +843,7 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
               <div class="p-3.5 rounded-2xl bg-white/[0.07] border border-white/10 backdrop-blur-md">
                 <div class="text-[11px] text-slate-400 font-semibold">Voltooide Lessen</div>
-                <div id="hub-completed-count" class="text-lg font-black text-white mt-0.5">0 / 22</div>
+                <div id="hub-completed-count" class="text-lg font-black text-white mt-0.5">0 / 24</div>
               </div>
               <div class="p-3.5 rounded-2xl bg-white/[0.07] border border-white/10 backdrop-blur-md">
                 <div class="text-[11px] text-slate-400 font-semibold">Actieve Domeinen</div>
@@ -877,11 +886,16 @@
 
         <!-- Domain Cards Grid (4 Disciplines) -->
         <div class="space-y-4">
-          <div class="flex items-center justify-between px-1">
-            <h3 class="text-xs font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              📚 Leerpaden & Disciplines
-            </h3>
-            <span class="text-xs text-indigo-600 dark:text-indigo-400 font-bold">4 Tracks Beschikbaar</span>
+          <div class="flex items-center justify-between px-1 pb-1">
+            <div class="flex items-center space-x-2.5">
+              <span class="w-7 h-7 rounded-xl bg-indigo-500/15 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm shadow-2xs">📚</span>
+              <h3 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-800 dark:text-white">
+                Leerpaden & Disciplines
+              </h3>
+            </div>
+            <span class="px-3 py-1 rounded-full text-[11px] sm:text-xs font-extrabold bg-indigo-500/15 dark:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 border border-indigo-400/30 backdrop-blur-md shadow-xs">
+              4 Tracks Beschikbaar
+            </span>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -892,7 +906,7 @@
                   <span class="w-12 h-12 rounded-2xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl shadow-sm">🏛️</span>
                   <div>
                     <h4 class="text-lg font-black text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Klassiek & Nieuwgrieks</h4>
-                    <p class="text-xs text-slate-500">5 Lessen • Alfabet tot Accusatief</p>
+                    <p id="hub-desc-greek" class="text-xs text-slate-500 dark:text-slate-400 font-medium">6 Lessen • Alfabet tot Accusatief</p>
                   </div>
                 </div>
                 <span id="hub-badge-greek" class="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30">0%</span>
@@ -901,9 +915,9 @@
                 Beheers het Griekse alfabet, klankleer, lidwoorden, verbuigingen en teksten met vloeiende 120Hz Apple Pencil inkt en handschrift-animaties.
               </p>
               <div class="space-y-1.5">
-                <div class="flex justify-between text-[11px] font-bold text-slate-500">
+                <div class="flex justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
                   <span>Voortgang</span>
-                  <span id="hub-progress-text-greek">0 / 5 Voltooid</span>
+                  <span id="hub-progress-text-greek" class="text-slate-700 dark:text-slate-300 font-bold">0 / 6 Voltooid</span>
                 </div>
                 <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
                   <div id="hub-bar-greek" class="h-full bg-blue-500 rounded-full transition-all duration-500" style="width: 0%"></div>
@@ -911,7 +925,7 @@
               </div>
               <div class="pt-1 flex items-center justify-between text-xs font-bold text-blue-600 dark:text-blue-400">
                 <span>Open Grieks Studio &rarr;</span>
-                <span class="text-[11px] text-slate-400 font-normal">iPad Inkt & Audio</span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">iPad Inkt & Audio</span>
               </div>
             </div>
 
@@ -922,7 +936,7 @@
                   <span class="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center text-2xl shadow-sm">🇫🇷</span>
                   <div>
                     <h4 class="text-lg font-black text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">Frans Meesterschap</h4>
-                    <p class="text-xs text-slate-500">5 Lessen • Grammatica & Uitspraak</p>
+                    <p id="hub-desc-french" class="text-xs text-slate-500 dark:text-slate-400 font-medium">5 Lessen • Grammatica & Uitspraak</p>
                   </div>
                 </div>
                 <span id="hub-badge-french" class="px-3 py-1 rounded-full text-xs font-bold bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30">0%</span>
@@ -931,9 +945,9 @@
                 Stijlregisters, werkwoordstijden, L'accord du participe passé, en gesproken uitspraakdrills met neurale AI spraakherkenning.
               </p>
               <div class="space-y-1.5">
-                <div class="flex justify-between text-[11px] font-bold text-slate-500">
+                <div class="flex justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
                   <span>Voortgang</span>
-                  <span id="hub-progress-text-french">0 / 5 Voltooid</span>
+                  <span id="hub-progress-text-french" class="text-slate-700 dark:text-slate-300 font-bold">0 / 5 Voltooid</span>
                 </div>
                 <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
                   <div id="hub-bar-french" class="h-full bg-rose-500 rounded-full transition-all duration-500" style="width: 0%"></div>
@@ -941,7 +955,7 @@
               </div>
               <div class="pt-1 flex items-center justify-between text-xs font-bold text-rose-600 dark:text-rose-400">
                 <span>Open Frans Studio &rarr;</span>
-                <span class="text-[11px] text-slate-400 font-normal">Audio & Grammatica</span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Audio & Grammatica</span>
               </div>
             </div>
 
@@ -952,7 +966,7 @@
                   <span class="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl shadow-sm">⛓️</span>
                   <div>
                     <h4 class="text-lg font-black text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Solidity & Web3</h4>
-                    <p class="text-xs text-slate-500">6 Lessen • Smart Contracts & EVM</p>
+                    <p id="hub-desc-solidity" class="text-xs text-slate-500 dark:text-slate-400 font-medium">6 Lessen • Smart Contracts & EVM</p>
                   </div>
                 </div>
                 <span id="hub-badge-solidity" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">0%</span>
@@ -961,9 +975,9 @@
                 Smart contracts, mappings, storage vs memory, DeFi logica en live in-browser compileren, deployen en testen op de virtuele EVM runtime.
               </p>
               <div class="space-y-1.5">
-                <div class="flex justify-between text-[11px] font-bold text-slate-500">
+                <div class="flex justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
                   <span>Voortgang</span>
-                  <span id="hub-progress-text-solidity">0 / 6 Voltooid</span>
+                  <span id="hub-progress-text-solidity" class="text-slate-700 dark:text-slate-300 font-bold">0 / 6 Voltooid</span>
                 </div>
                 <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
                   <div id="hub-bar-solidity" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 0%"></div>
@@ -971,7 +985,7 @@
               </div>
               <div class="pt-1 flex items-center justify-between text-xs font-bold text-emerald-600 dark:text-emerald-400">
                 <span>Open Solidity IDE &rarr;</span>
-                <span class="text-[11px] text-slate-400 font-normal">Browser EVM Runtime</span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Browser EVM Runtime</span>
               </div>
             </div>
 
@@ -986,7 +1000,7 @@
                       <h4 class="text-lg font-black text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">AI & LLM Architectuur</h4>
                       <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-600 text-white shadow-xs">Nieuw</span>
                     </div>
-                    <p class="text-xs text-slate-500">6 Lessen • Deep Learning Wiskunde</p>
+                    <p id="hub-desc-ai" class="text-xs text-slate-500 dark:text-slate-400 font-medium">7 Lessen • Deep Learning Wiskunde</p>
                   </div>
                 </div>
                 <span id="hub-badge-ai" class="px-3 py-1 rounded-full text-xs font-bold bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30">0%</span>
@@ -995,9 +1009,9 @@
                 Van BPE tokenizers & RoPE tot Scaled Dot-Product Attention, Chinchilla scaling laws, DPO gesloten formules, KV-Cache VRAM bottlenecks en LoRA PEFT.
               </p>
               <div class="space-y-1.5">
-                <div class="flex justify-between text-[11px] font-bold text-slate-500">
+                <div class="flex justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
                   <span>Voortgang</span>
-                  <span id="hub-progress-text-ai">0 / 6 Voltooid</span>
+                  <span id="hub-progress-text-ai" class="text-slate-700 dark:text-slate-300 font-bold">0 / 7 Voltooid</span>
                 </div>
                 <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
                   <div id="hub-bar-ai" class="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full transition-all duration-500" style="width: 0%"></div>
@@ -1005,7 +1019,7 @@
               </div>
               <div class="pt-1 flex items-center justify-between text-xs font-bold text-purple-600 dark:text-purple-400">
                 <span>Open AI & Tensor Studio &rarr;</span>
-                <span class="text-[11px] text-slate-400 font-normal">Interactieve Simulators</span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Interactieve Simulators</span>
               </div>
             </div>
           </div>
@@ -1197,11 +1211,41 @@
   </main>
 
   <!-- =========================================================================
-       VISIONOS FLOATING GLASS DOCK (Sticky Bottom Navigation Capsule)
+       VISIONOS FLOATING GLASS DOCK (Mobile Only - Hidden on Desktop md:hidden)
        ========================================================================= -->
-  <div class="fixed bottom-0 inset-x-0 z-40 pointer-events-none safe-dock-bottom">
+  <div id="mobile-dock-container" class="md:hidden fixed bottom-0 inset-x-0 z-40 pointer-events-none safe-dock-bottom">
     <div class="max-w-md mx-auto px-4 pb-2">
-      <nav class="apple-dock pointer-events-auto rounded-full py-2 px-3 sm:px-4 flex items-center justify-around text-xs font-bold text-slate-600 dark:text-slate-300 shadow-2xl backdrop-blur-3xl border border-white/20 dark:border-white/10">
+      
+      <!-- Dock Nav A: When viewing Central Hub (Quick Track Jumpers) -->
+      <nav id="dock-hub-nav" class="apple-dock pointer-events-auto rounded-full py-2 px-3 flex items-center justify-around text-xs font-bold text-slate-600 dark:text-slate-300 shadow-2xl backdrop-blur-3xl border border-white/20 dark:border-white/10">
+        <button onclick="showHubView()" class="flex flex-col items-center space-y-0.5 text-indigo-600 dark:text-indigo-400 font-black active:scale-90 cursor-pointer" title="Centrale Hub">
+          <i class="fa-solid fa-house text-sm"></i>
+          <span class="text-[10px]">Hub</span>
+        </button>
+        <button onclick="selectTrack('greek')" class="flex flex-col items-center space-y-0.5 hover:text-blue-500 transition active:scale-90 cursor-pointer" title="Grieks">
+          <span class="text-sm">🏛️</span>
+          <span class="text-[10px]">Grieks</span>
+        </button>
+        <button onclick="selectTrack('french')" class="flex flex-col items-center space-y-0.5 hover:text-rose-500 transition active:scale-90 cursor-pointer" title="Frans">
+          <span class="text-sm">🇫🇷</span>
+          <span class="text-[10px]">Frans</span>
+        </button>
+        <button onclick="selectTrack('solidity')" class="flex flex-col items-center space-y-0.5 hover:text-emerald-500 transition active:scale-90 cursor-pointer" title="Solidity">
+          <span class="text-sm">⛓️</span>
+          <span class="text-[10px]">Solidity</span>
+        </button>
+        <button onclick="selectTrack('ai')" class="flex flex-col items-center space-y-0.5 hover:text-purple-500 transition active:scale-90 cursor-pointer" title="AI & LLM">
+          <span class="text-sm">🤖</span>
+          <span class="text-[10px]">AI/LLM</span>
+        </button>
+        <button onclick="toggleTheme()" class="flex flex-col items-center space-y-0.5 hover:text-amber-500 transition active:scale-90 cursor-pointer" title="Thema wisselen">
+          <i id="dock-hub-theme-icon" class="fa-solid fa-moon text-sm text-indigo-500 dark:text-amber-400"></i>
+          <span id="dock-hub-theme-text" class="text-[10px]">Thema</span>
+        </button>
+      </nav>
+
+      <!-- Dock Nav B: When inside Track Workspace (Jump to Lesson Sections) -->
+      <nav id="dock-track-nav" class="hidden apple-dock pointer-events-auto rounded-full py-2 px-3 sm:px-4 flex items-center justify-around text-xs font-bold text-slate-600 dark:text-slate-300 shadow-2xl backdrop-blur-3xl border border-white/20 dark:border-white/10">
         <button onclick="showHubView()" class="flex flex-col items-center space-y-0.5 hover:text-indigo-500 transition active:scale-90 cursor-pointer" title="Centrale Hub">
           <i class="fa-solid fa-house text-sm text-indigo-600 dark:text-indigo-400"></i>
           <span class="text-[10px]">Hub</span>
@@ -2937,6 +2981,27 @@
     };
 
     // --- View Routing: Hub vs Track ---
+    function updateMobileDock(view, trackKey) {
+      const hubDock = document.getElementById('dock-hub-nav');
+      const trackDock = document.getElementById('dock-track-nav');
+      const audioBtn = document.getElementById('nav-audio-btn');
+
+      if (view === 'hub') {
+        if (hubDock) hubDock.classList.remove('hidden');
+        if (trackDock) trackDock.classList.add('hidden');
+      } else {
+        if (hubDock) hubDock.classList.add('hidden');
+        if (trackDock) trackDock.classList.remove('hidden');
+        if (audioBtn) {
+          if (trackKey === 'solidity' || trackKey === 'ai') {
+            audioBtn.classList.add('hidden');
+          } else {
+            audioBtn.classList.remove('hidden');
+          }
+        }
+      }
+    }
+
     function showHubView() {
       state.view = 'hub';
       
@@ -2947,6 +3012,7 @@
 
       updateSegmentedNavTabs('hub');
       updateAmbientLighting('hub');
+      updateMobileDock('hub');
       renderHubView();
       saveState();
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2965,6 +3031,7 @@
 
       updateSegmentedNavTabs(trackKey);
       updateAmbientLighting(trackKey);
+      updateMobileDock('track', trackKey);
 
       const trackData = state[trackKey];
       const maxUnlocked = trackData.unlocked && trackData.unlocked.length > 0
@@ -3078,10 +3145,14 @@
         const badgeEl = document.getElementById(`hub-badge-${tKey}`);
         const textEl = document.getElementById(`hub-progress-text-${tKey}`);
         const barEl = document.getElementById(`hub-bar-${tKey}`);
+        const descEl = document.getElementById(`hub-desc-${tKey}`);
 
         if (badgeEl) badgeEl.textContent = `${trackPct}%`;
         if (textEl) textEl.textContent = `${trackCompletedCount} / ${trackLessonsCount} Voltooid`;
         if (barEl) barEl.style.width = `${trackPct}%`;
+        if (descEl && cur.subtitle) {
+          descEl.textContent = `${trackLessonsCount} Lessen • ${cur.subtitle}`;
+        }
       });
 
       const overallPct = totalLessons > 0 ? Math.round((totalCompleted / totalLessons) * 100) : 0;
@@ -3882,6 +3953,10 @@ class HandwritingPad {
       }
       if (dockIcon) {
         dockIcon.className = isDark ? "fa-solid fa-sun text-sm text-amber-400" : "fa-solid fa-moon text-sm text-indigo-500";
+      }
+      const dockHubIcon = document.getElementById('dock-hub-theme-icon');
+      if (dockHubIcon) {
+        dockHubIcon.className = isDark ? "fa-solid fa-sun text-sm text-amber-400" : "fa-solid fa-moon text-sm text-indigo-500";
       }
 
       updateSegmentedNavTabs(state.view === 'hub' ? 'hub' : state.track);
