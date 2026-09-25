@@ -193,6 +193,11 @@ def build(lenient=False, out_dir=REPO, today=None):
     version = hashlib.sha256((css + js + json.dumps(content, ensure_ascii=False, sort_keys=True)).encode("utf-8")).hexdigest()[:10]
     content["version"] = version
     content["built"] = datetime.datetime.now().isoformat(timespec="seconds")
+    prev = os.path.join(out_dir, "index.html")
+    if os.path.exists(prev):  # same content → keep the old timestamp, so the output is identical (no empty daily commits)
+        m = re.search(r'"version":"([0-9a-f]+)","built":"([^"]+)"', open(prev, encoding="utf-8").read())
+        if m and m.group(1) == version:
+            content["built"] = m.group(2)
     content_json = json.dumps(content, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 
     theme_boot = """(function(){try{var t=JSON.parse(localStorage.getItem('polyglot_theme_v2')||'"auto"');if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}})();"""
