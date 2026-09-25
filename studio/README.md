@@ -31,6 +31,7 @@ launchd → ~/scripts/run_daily.sh → ~/scripts/daily_orchestrator.py → studi
 4. Antigravity schrijft (headless, zonder tools) → validatie + code uitvoeren → max. 2 herkansingen
 5. bouwen → commit → push
 6. Apple Herinneringen: `🎓 Polyglot Studio` met één subtaak per vak, zonder uur of alarm
+7. kopie van de nachtelijke database-back-up naar OneDrive
 
 Lessen waar je aan begonnen bent, worden nooit meer gewijzigd.
 
@@ -57,6 +58,6 @@ python3 -m http.server 8765                                        # lokaal test
 
 - Je data staat op je eigen server (MacBook 2), in aparte `polyglot_*`-tabellen met rij-beveiliging: alleen jouw account kan erbij.
 - Login met e-mail + wachtwoord. In de website staat alleen de publieke *anon key*; je Mac leest de database via SSH, zonder sleutels.
-- Elke nacht een back-up op de server (30 dagen).
+- Elke nacht een back-up op de server (30 dagen), en elke ochtend een kopie in je OneDrive (`Polyglot Studio/backups`).
 - Code die je schrijft draait in een afgeschermde sandbox zonder toegang tot je login.
 - Antigravity krijgt geen toegang tot bestanden of terminal; alles wat het teruggeeft wordt eerst gecontroleerd.

@@ -10,7 +10,7 @@ Je voortgang staat in de **Supabase die al op MacBook 2 draait** (`macbook-serve
 | Bereikbaar voor de app | `https://macbook-server-2017.tail99c06b.ts.net:8443` (Tailscale Funnel, al ingesteld voor Lullaby) |
 | Publieke sleutel in de app | [`config.json`](config.json) → `anonKey` (veilig: anoniem heeft geen enkel recht op de `polyglot_*`-tabellen) |
 | Ochtendrun op je Mac | leest de tabellen via SSH (`POLYGLOT_SSH=macbook2` in `~/scripts/polyglot.env`), **zonder** sleutels op je Mac |
-| Back-up | elke nacht om 03:30 naar `~/polyglot/backups/` op MacBook 2, 30 dagen bewaard (`~/polyglot/backup.sh`, eigen blok in `crontab`) |
+| Back-up | elke nacht om 03:30 naar `~/polyglot/backups/` op MacBook 2, 30 dagen bewaard (`~/polyglot/backup.sh`, eigen blok in `crontab`); elke ochtend kopieert de ochtendrun ze naar OneDrive → `Polyglot Studio/backups` (laatste 30 dagen + de 1e van elke maand, `studio/tools/offsite_backup.py`) |
 
 ### Eerste keer
 
@@ -25,8 +25,10 @@ Je voortgang staat in de **Supabase die al op MacBook 2 draait** (`macbook-serve
 ssh macbook2 "docker exec -i supabase-db psql -U postgres -d postgres -c 'select m.user_id, u.email, (select count(*) from polyglot_events e where e.user_id = m.user_id) as events from polyglot_members m join auth.users u on u.id = m.user_id'"
 # schema opnieuw toepassen (idempotent)
 ssh macbook2 'docker exec -i supabase-db psql -U postgres -d postgres -v ON_ERROR_STOP=1 --single-transaction' < studio/cloud/supabase.sql
-# back-up terugzetten
+# back-up terugzetten (van de server)
 ssh macbook2 'gunzip -c ~/polyglot/backups/polyglot-JJJJ-MM-DD.sql.gz | docker exec -i supabase-db psql -U postgres -d postgres'
+# … of vanuit OneDrive, als de server-schijf weg is
+gunzip -c ~/Library/CloudStorage/OneDrive-Personnel/"Polyglot Studio"/backups/polyglot-JJJJ-MM-DD.sql.gz | ssh macbook2 'docker exec -i supabase-db psql -U postgres -d postgres'
 ```
 
 Wachtwoord vergeten? Er is geen mailserver, dus herstel gaat via de server (nieuw wachtwoord instellen met de admin-API van Supabase op MacBook 2).

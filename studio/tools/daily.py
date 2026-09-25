@@ -9,6 +9,7 @@ daily.py — the 07:30 loop of Polyglot Studio (called by ~/scripts/daily_orches
  4. Antigravity writes/revises (validated, code executed) · coach pack from yesterday's results
  5. build index.html · commit · push (GitHub Pages)
  6. Apple Reminders: 1 master + 1 subtask per track (today, all-day, no alarms)
+ 7. copy the server's nightly database backup to OneDrive (offsite_backup.py)
 
   python3 daily.py            # full run
   python3 daily.py --dry-run  # plan only, no agy calls, no push, no reminders
@@ -326,6 +327,17 @@ def main(argv):
             model2 = learner.build_model(states, events, idx, items)
             sync_reminders(model2, idx)
             write_profile_compat(model2)
+
+        if not dry and cfg.get("POLYGLOT_SSH") and cfg.get("OFFSITE_BACKUP", "1") == "1":
+            log("[7] Back-up naar OneDrive")
+            try:  # child process with a time limit: OneDrive can hang
+                r = subprocess.run([sys.executable, os.path.join(HERE, "offsite_backup.py")], capture_output=True, text=True, timeout=300)
+                log("    " + ((r.stdout or r.stderr).strip() or f"exit {r.returncode}")[:300])
+                if r.returncode != 0:
+                    report["errors"].append("offsite backup: " + (r.stdout or r.stderr).strip()[:200])
+            except subprocess.TimeoutExpired:
+                log("    ⚠ OneDrive reageerde niet binnen 5 minuten — morgen opnieuw")
+                report["errors"].append("offsite backup: timeout")
         log("✅ Klaar")
         return 0
     finally:
