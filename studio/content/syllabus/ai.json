@@ -1,0 +1,599 @@
+{
+ "track": "ai",
+ "goal": "Moderne LLM-systemen tot op de formule begrijpen, doorrekenen (compute, geheugen, kosten) en kritisch beoordelen — als ingenieur én als strateeg.",
+ "principles": [
+  "Elke les combineert wiskunde (KaTeX), een interactieve simulator en rekenopdrachten met numerieke controle.",
+  "Cijfers en claims met bronvermelding (paper + jaar); geen marketingtaal.",
+  "Vertaal altijd naar gevolgen voor product, kost en strategie (handelsingenieur)."
+ ],
+ "modules": [
+  {
+   "id": "fundament",
+   "title": "Fundament — van tekst tot transformer",
+   "topics": [
+    "ai-01-tokenization-embeddings",
+    "ai-02-attention",
+    "ai-19-vlm",
+    "ai-20-diffusion",
+    "ai-21-ssm"
+   ]
+  },
+  {
+   "id": "training",
+   "title": "Training en alignment",
+   "topics": [
+    "ai-03-pretraining-scaling",
+    "ai-04-optimization",
+    "ai-05-distributed",
+    "ai-06-post-training",
+    "ai-07-reasoning",
+    "ai-24-data",
+    "ai-25-distillation",
+    "ai-30-project-finetune"
+   ]
+  },
+  {
+   "id": "inferentie",
+   "title": "Inferentie en efficiëntie",
+   "topics": [
+    "ai-08-decoding",
+    "ai-09-inference",
+    "ai-10-quantization",
+    "ai-11-peft",
+    "ai-12-moe",
+    "ai-13-long-context"
+   ]
+  },
+  {
+   "id": "systemen",
+   "title": "Systemen, evaluatie en strategie",
+   "topics": [
+    "ai-14-evaluation",
+    "ai-15-rag",
+    "ai-16-agents",
+    "ai-17-prompting",
+    "ai-18-structured-output",
+    "ai-22-interpretability",
+    "ai-23-safety",
+    "ai-26-serving-economics",
+    "ai-27-strategy",
+    "ai-28-regulation",
+    "ai-29-project-rag"
+   ]
+  }
+ ],
+ "topics": [
+  {
+   "id": "ai-01-tokenization-embeddings",
+   "title": "Tokenisatie, embeddings en positie (RoPE)",
+   "level": "advanced",
+   "objectives": [
+    "BPE trainen en toepassen",
+    "embedding-matrix en parameterkost",
+    "RoPE: relatieve positie via rotaties"
+   ],
+   "theory": [
+    "byte-level BPE, vocab 32k–200k",
+    "W_E ∈ R^{V×d}",
+    "⟨R_m q, R_n k⟩ = qᵀR_{n−m}k"
+   ],
+   "example": "Waarom Nederlands meer tokens kost dan Engels (en wat dat kost).",
+   "exercise": "BPE-merges met de hand + simulator.",
+   "test": "Numeriek (parameters, tokens) + concept.",
+   "sims": [
+    "bpe",
+    "rope"
+   ]
+  },
+  {
+   "id": "ai-02-attention",
+   "title": "Attention en het transformerblok",
+   "level": "advanced",
+   "objectives": [
+    "scaled dot-product attention",
+    "causaal masker",
+    "MHA vs GQA vs MQA",
+    "RMSNorm, SwiGLU, residuals"
+   ],
+   "theory": [
+    "softmax(QKᵀ/√d_k + M)V",
+    "variantieargument √d_k",
+    "KV-heads delen"
+   ],
+   "example": "Waarom GQA de KV-cache 8× kleiner maakt.",
+   "exercise": "Attention-gewichten met de hand berekenen.",
+   "test": "Numeriek + matrixvragen.",
+   "sims": [
+    "attention"
+   ]
+  },
+  {
+   "id": "ai-03-pretraining-scaling",
+   "title": "Pretraining, verlies en scaling laws",
+   "level": "advanced",
+   "objectives": [
+    "cross-entropy en perplexity",
+    "C ≈ 6ND",
+    "Kaplan vs Chinchilla",
+    "over-trainen voor inferentie"
+   ],
+   "theory": [
+    "PPL = e^L",
+    "N_opt ∝ C^0.5, D ≈ 20N",
+    "L(N,D) = E + A/N^α + B/D^β"
+   ],
+   "example": "Budgettering van een 8B-model.",
+   "exercise": "Compute- en kostenraming.",
+   "test": "Numeriek.",
+   "sims": [
+    "chinchilla"
+   ]
+  },
+  {
+   "id": "ai-04-optimization",
+   "title": "Optimalisatie: AdamW, LR-schema's en precisie",
+   "level": "advanced",
+   "objectives": [
+    "AdamW-update",
+    "warmup + cosine decay",
+    "bf16/fp8 mixed precision",
+    "gradient clipping"
+   ],
+   "theory": [
+    "m, v, bias-correctie",
+    "weight decay ontkoppeld",
+    "loss spikes"
+   ],
+   "example": "Een trainingsrun die divergeert.",
+   "exercise": "Diagnose en fix voorstellen.",
+   "test": "Concept + numeriek."
+  },
+  {
+   "id": "ai-05-distributed",
+   "title": "Gedistribueerd trainen",
+   "level": "advanced",
+   "objectives": [
+    "data/tensor/pipeline parallelism",
+    "ZeRO/FSDP",
+    "geheugen per GPU berekenen"
+   ],
+   "theory": [
+    "16 bytes/param met Adam (mixed)",
+    "communicatiekost"
+   ],
+   "example": "Hoeveel H100's voor een 70B-model?",
+   "exercise": "Geheugenbudget opstellen.",
+   "test": "Numeriek."
+  },
+  {
+   "id": "ai-06-post-training",
+   "title": "Post-training: SFT, RLHF en DPO",
+   "level": "advanced",
+   "objectives": [
+    "SFT",
+    "reward model + PPO met KL",
+    "DPO-loss",
+    "trade-offs"
+   ],
+   "theory": [
+    "L_DPO = −log σ(β[(log π/π_ref)(y_w) − (log π/π_ref)(y_l)])",
+    "reward hacking"
+   ],
+   "example": "Een assistent die te veel ‘ja’ zegt.",
+   "exercise": "DPO-loss narekenen.",
+   "test": "Numeriek + concept."
+  },
+  {
+   "id": "ai-07-reasoning",
+   "title": "Redeneermodellen en test-time compute",
+   "level": "advanced",
+   "objectives": [
+    "RL met verifieerbare beloningen",
+    "GRPO",
+    "test-time scaling"
+   ],
+   "theory": [
+    "chain-of-thought als latent werk",
+    "pass@k vs majority voting"
+   ],
+   "example": "Wanneer loont een redeneermodel?",
+   "exercise": "Kosten/baten-analyse.",
+   "test": "Concept + numeriek."
+  },
+  {
+   "id": "ai-08-decoding",
+   "title": "Decoding en sampling",
+   "level": "advanced",
+   "objectives": [
+    "temperatuur, top-k, top-p",
+    "beam search",
+    "speculative decoding"
+   ],
+   "theory": [
+    "softmax(z/T)",
+    "acceptatiekans min(1, p/q)"
+   ],
+   "example": "Creatief vs deterministisch genereren.",
+   "exercise": "Verdelingen berekenen.",
+   "test": "Numeriek."
+  },
+  {
+   "id": "ai-09-inference",
+   "title": "Inferentie: prefill, decode en de KV-cache",
+   "level": "advanced",
+   "objectives": [
+    "memory-bound decode",
+    "KV-cache-grootte",
+    "FlashAttention",
+    "PagedAttention/continuous batching"
+   ],
+   "theory": [
+    "KV = 2·L·h_kv·d_h·T·B·bytes",
+    "arithmetic intensity"
+   ],
+   "example": "Hoeveel gebruikers per GPU?",
+   "exercise": "Capaciteitsplanning.",
+   "test": "Numeriek.",
+   "sims": [
+    "kvcache"
+   ]
+  },
+  {
+   "id": "ai-10-quantization",
+   "title": "Quantisatie",
+   "level": "advanced",
+   "objectives": [
+    "INT8/INT4, FP8",
+    "GPTQ, AWQ, NF4",
+    "kwaliteitsverlies meten"
+   ],
+   "theory": [
+    "absmax vs zero-point",
+    "outlier-kanalen"
+   ],
+   "example": "Een 70B-model op één GPU.",
+   "exercise": "Geheugen en kwaliteit afwegen.",
+   "test": "Numeriek."
+  },
+  {
+   "id": "ai-11-peft",
+   "title": "PEFT: LoRA en QLoRA",
+   "level": "advanced",
+   "objectives": [
+    "LoRA-wiskunde",
+    "rang en α",
+    "QLoRA"
+   ],
+   "theory": [
+    "W = W₀ + (α/r)BA, B=0 init",
+    "params r(d+k)"
+   ],
+   "example": "Fine-tunen op bedrijfsdata met één GPU.",
+   "exercise": "Parameter- en geheugenberekening.",
+   "test": "Numeriek.",
+   "sims": [
+    "lora"
+   ]
+  },
+  {
+   "id": "ai-12-moe",
+   "title": "Mixture of Experts",
+   "level": "advanced",
+   "objectives": [
+    "top-k routing",
+    "load balancing loss",
+    "totale vs actieve parameters"
+   ],
+   "theory": [
+    "Mixtral 8×7B: 46,7B totaal, ~12,9B actief"
+   ],
+   "example": "Kosten van een MoE vs dense model.",
+   "exercise": "Actieve parameters berekenen.",
+   "test": "Numeriek."
+  },
+  {
+   "id": "ai-13-long-context",
+   "title": "Lange context",
+   "level": "advanced",
+   "objectives": [
+    "RoPE-scaling (PI, NTK, YaRN)",
+    "sliding window",
+    "lost in the middle"
+   ],
+   "theory": [
+    "θ-schaalfactoren",
+    "KV-kosten bij 128k"
+   ],
+   "example": "Een contract van 300 pagina's analyseren.",
+   "exercise": "Strategie kiezen: lange context vs RAG.",
+   "test": "Concept + numeriek.",
+   "sims": [
+    "rope",
+    "kvcache"
+   ]
+  },
+  {
+   "id": "ai-14-evaluation",
+   "title": "Evaluatie van LLM's",
+   "level": "advanced",
+   "objectives": [
+    "benchmarks en contaminatie",
+    "LLM-as-judge-bias",
+    "eigen evals bouwen"
+   ],
+   "theory": [
+    "pass@k",
+    "Elo/arena"
+   ],
+   "example": "Kiezen tussen twee modellen voor een klant.",
+   "exercise": "Evalplan opstellen.",
+   "test": "Concept."
+  },
+  {
+   "id": "ai-15-rag",
+   "title": "Retrieval-Augmented Generation",
+   "level": "advanced",
+   "objectives": [
+    "embeddings en cosine similarity",
+    "ANN (HNSW)",
+    "chunking en reranking",
+    "RAG evalueren"
+   ],
+   "theory": [
+    "recall@k",
+    "hybrid search (BM25 + dense)"
+   ],
+   "example": "Een kennisbank-assistent voor een KMO.",
+   "exercise": "RAG-architectuur ontwerpen.",
+   "test": "Concept + numeriek."
+  },
+  {
+   "id": "ai-16-agents",
+   "title": "Agents en tool use",
+   "level": "advanced",
+   "objectives": [
+    "function calling",
+    "ReAct-loop",
+    "planning en foutafhandeling",
+    "agent-evaluatie"
+   ],
+   "theory": [
+    "tool-schema's",
+    "MCP"
+   ],
+   "example": "Een agent die facturen verwerkt.",
+   "exercise": "Agent-ontwerp met guardrails.",
+   "test": "Concept."
+  },
+  {
+   "id": "ai-17-prompting",
+   "title": "Prompting en in-context learning",
+   "level": "advanced",
+   "objectives": [
+    "few-shot",
+    "systeemprompts",
+    "ICL-theorie"
+   ],
+   "theory": [
+    "prompt als programma",
+    "consistentie"
+   ],
+   "example": "Een robuuste classificatieprompt.",
+   "exercise": "Prompt schrijven + evalueren.",
+   "test": "Rubric."
+  },
+  {
+   "id": "ai-18-structured-output",
+   "title": "Structured output en constrained decoding",
+   "level": "advanced",
+   "objectives": [
+    "JSON Schema-output",
+    "grammar-constrained decoding",
+    "validatie"
+   ],
+   "theory": [
+    "logit masking",
+    "retry/repair"
+   ],
+   "example": "Betrouwbare extractie uit e-mails.",
+   "exercise": "Schema ontwerpen.",
+   "test": "Concept."
+  },
+  {
+   "id": "ai-19-vlm",
+   "title": "Multimodale modellen: ViT, CLIP en VLM's",
+   "level": "advanced",
+   "objectives": [
+    "patches als tokens",
+    "contrastieve loss",
+    "projectie naar LLM-ruimte"
+   ],
+   "theory": [
+    "N = HW/P²",
+    "InfoNCE"
+   ],
+   "example": "Facturen als afbeelding verwerken.",
+   "exercise": "Tokenkost van beelden berekenen.",
+   "test": "Numeriek."
+  },
+  {
+   "id": "ai-20-diffusion",
+   "title": "Diffusiemodellen",
+   "level": "advanced",
+   "objectives": [
+    "forward/reverse proces",
+    "latent diffusion",
+    "flow matching"
+   ],
+   "theory": [
+    "ε-predictie",
+    "CFG"
+   ],
+   "example": "Productfoto's genereren.",
+   "exercise": "Concept.",
+   "test": "Concept."
+  },
+  {
+   "id": "ai-21-ssm",
+   "title": "Alternatieven voor attention",
+   "level": "advanced",
+   "objectives": [
+    "SSM's (Mamba)",
+    "lineaire attention",
+    "hybride modellen"
+   ],
+   "theory": [
+    "O(T) vs O(T²)"
+   ],
+   "example": "Wanneer is een SSM interessant?",
+   "exercise": "Vergelijking.",
+   "test": "Concept."
+  },
+  {
+   "id": "ai-22-interpretability",
+   "title": "Interpreteerbaarheid",
+   "level": "advanced",
+   "objectives": [
+    "probing",
+    "attention-patronen",
+    "sparse autoencoders en features"
+   ],
+   "theory": [
+    "superpositie"
+   ],
+   "example": "Waarom weigert een model?",
+   "exercise": "Concept.",
+   "test": "Concept."
+  },
+  {
+   "id": "ai-23-safety",
+   "title": "Alignment en veiligheid",
+   "level": "advanced",
+   "objectives": [
+    "reward hacking",
+    "red-teaming",
+    "constitutional AI"
+   ],
+   "theory": [
+    "specification gaming"
+   ],
+   "example": "Risico-analyse voor een klantenservicebot.",
+   "exercise": "Risicoregister.",
+   "test": "Rubric."
+  },
+  {
+   "id": "ai-24-data",
+   "title": "Data: curatie en synthetische data",
+   "level": "advanced",
+   "objectives": [
+    "deduplicatie",
+    "kwaliteitsfilters",
+    "synthetische data"
+   ],
+   "theory": [
+    "MinHash",
+    "model collapse"
+   ],
+   "example": "Een fine-tuning-dataset bouwen.",
+   "exercise": "Dataplan.",
+   "test": "Concept."
+  },
+  {
+   "id": "ai-25-distillation",
+   "title": "Distillatie en kleine modellen",
+   "level": "advanced",
+   "objectives": [
+    "knowledge distillation",
+    "small language models"
+   ],
+   "theory": [
+    "KL tussen teacher en student"
+   ],
+   "example": "Een on-device model.",
+   "exercise": "Kosten/kwaliteit.",
+   "test": "Concept."
+  },
+  {
+   "id": "ai-26-serving-economics",
+   "title": "Serving-economie",
+   "level": "advanced",
+   "objectives": [
+    "throughput vs latency",
+    "kosten per miljoen tokens",
+    "GPU-keuze"
+   ],
+   "theory": [
+    "tokens/s/GPU",
+    "utilisatie"
+   ],
+   "example": "Eigen hosting vs API.",
+   "exercise": "Kostenmodel.",
+   "test": "Numeriek.",
+   "sims": [
+    "kvcache"
+   ]
+  },
+  {
+   "id": "ai-27-strategy",
+   "title": "LLM-productstrategie en unit economics",
+   "level": "advanced",
+   "objectives": [
+    "build vs buy",
+    "moats",
+    "prijsmodellen"
+   ],
+   "theory": [
+    "marge per request"
+   ],
+   "example": "Business case voor een AI-feature.",
+   "exercise": "Business case.",
+   "test": "Rubric."
+  },
+  {
+   "id": "ai-28-regulation",
+   "title": "EU AI Act en governance",
+   "level": "advanced",
+   "objectives": [
+    "risicoklassen",
+    "verplichtingen GPAI",
+    "praktische compliance"
+   ],
+   "theory": [
+    "hoog-risico-systemen",
+    "transparantie"
+   ],
+   "example": "Is jouw toepassing hoog-risico?",
+   "exercise": "Compliance-checklist.",
+   "test": "Concept."
+  },
+  {
+   "id": "ai-29-project-rag",
+   "title": "Project: RAG-systeem ontwerpen en evalueren",
+   "level": "advanced",
+   "objectives": [
+    "end-to-end ontwerp",
+    "evaluatie"
+   ],
+   "theory": [
+    "alles uit eerdere lessen"
+   ],
+   "example": "Kennisbank voor een klant.",
+   "exercise": "Volledig ontwerp.",
+   "test": "Rubric."
+  },
+  {
+   "id": "ai-30-project-finetune",
+   "title": "Project: fine-tuning-plan met kostenraming",
+   "level": "advanced",
+   "objectives": [
+    "data, methode, compute, evaluatie"
+   ],
+   "theory": [
+    "LoRA/QLoRA, budget"
+   ],
+   "example": "Een domeinspecifiek model.",
+   "exercise": "Plan + raming.",
+   "test": "Rubric + numeriek."
+  }
+ ]
+}

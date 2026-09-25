@@ -1,0 +1,1246 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "greek",
+ "id": 1,
+ "roadmap": "gr-a1-01-alphabet",
+ "title": "Het Griekse alfabet: letters, klanken en de klemtoon",
+ "subtitle": "24 letters, vijf klinkerklanken, de valse vrienden, de tónos en de twee sigma's",
+ "level": "A1",
+ "minutes": 40,
+ "summary": "Grieks schrijf je grotendeels zoals je het uitspreekt. Wie de 24 letters, de vijf klinkerklanken en de klemtoon beheerst, kan vanaf vandaag elk Grieks woord hardop lezen — ook als je het nog niet begrijpt.",
+ "objectives": [
+  {
+   "id": "letters",
+   "text": "Je herkent de 24 letters (klein en hoofdletter) en koppelt ze aan hun klank."
+  },
+  {
+   "id": "vowels",
+   "text": "Je weet welke letters dezelfde klank delen: η, ι, υ = ie en ο, ω = o."
+  },
+  {
+   "id": "false-friends",
+   "text": "Je trapt niet in de valse vrienden: β = v, γ = zachte g/j, δ = th, η = ie, ν = n, ρ = r, χ = ch."
+  },
+  {
+   "id": "tonos",
+   "text": "Je leest en schrijft de klemtoon (τόνος) correct en weet dat hij de betekenis kan veranderen."
+  },
+  {
+   "id": "sigma",
+   "text": "Je gebruikt σ in het begin of midden en ς aan het einde van een woord."
+  },
+  {
+   "id": "reading",
+   "text": "Je leest eenvoudige Griekse woorden hardop en schrijft ze foutloos uit het hoofd."
+  }
+ ],
+ "vocab": [
+  {
+   "term": "νερό",
+   "translit": "neró",
+   "meaning": "water"
+  },
+  {
+   "term": "καφές",
+   "translit": "kafés",
+   "meaning": "koffie"
+  },
+  {
+   "term": "σπίτι",
+   "translit": "spíti",
+   "meaning": "huis"
+  },
+  {
+   "term": "φίλος",
+   "translit": "fílos",
+   "meaning": "vriend"
+  },
+  {
+   "term": "θάλασσα",
+   "translit": "thálassa",
+   "meaning": "zee"
+  },
+  {
+   "term": "ψωμί",
+   "translit": "psomí",
+   "meaning": "brood"
+  },
+  {
+   "term": "μέρα",
+   "translit": "méra",
+   "meaning": "dag",
+   "alt": [
+    "ημέρα"
+   ]
+  },
+  {
+   "term": "βιβλίο",
+   "translit": "vivlío",
+   "meaning": "boek"
+  },
+  {
+   "term": "χέρι",
+   "translit": "chéri",
+   "meaning": "hand"
+  },
+  {
+   "term": "ύπνος",
+   "translit": "ípnos",
+   "meaning": "slaap"
+  },
+  {
+   "term": "γάλα",
+   "translit": "gála",
+   "meaning": "melk"
+  },
+  {
+   "term": "δρόμος",
+   "translit": "ðrómos",
+   "meaning": "straat; weg"
+  }
+ ],
+ "diagnostic": {
+  "intro": "Je volgde eerder al lessen Grieks. Deze test meet wat je nog **echt** kent — van letters (A0) tot verleden tijd (A2). Je coach gebruikt je resultaat om de volgende lessen te versnellen of te verstevigen. Weet je iets niet: kies “Weet ik niet” in plaats van te gokken.",
+  "bands": [
+   "A0",
+   "A1",
+   "A2"
+  ],
+  "items": [
+   {
+    "id": "d01",
+    "type": "mcq",
+    "skill": "alfabet",
+    "level": 1,
+    "prompt": "Hoe klinkt de letter **β**?",
+    "explain": "β klinkt in het Nieuwgrieks als **v**: βιβλίο = *vivlío*.",
+    "options": [
+     "v",
+     "b",
+     "p",
+     "f"
+    ],
+    "answer": 0,
+    "band": "A0"
+   },
+   {
+    "id": "d02",
+    "type": "multi",
+    "skill": "klinkers",
+    "level": 1,
+    "prompt": "Welke letters klinken als **ie**?",
+    "explain": "η, ι en υ klinken allemaal als *ie* (iotacisme).",
+    "options": [
+     "η",
+     "ι",
+     "υ",
+     "ε",
+     "ο"
+    ],
+    "answers": [
+     0,
+     1,
+     2
+    ],
+    "band": "A0"
+   },
+   {
+    "id": "d03",
+    "type": "type",
+    "skill": "schrijven",
+    "level": 2,
+    "prompt": "Schrijf in het Grieks: **koffie** (met tónos).",
+    "explain": "ο καφές — klemtoon op de laatste lettergreep en ς op het einde.",
+    "answers": [
+     "καφές"
+    ],
+    "lang": "el",
+    "band": "A0"
+   },
+   {
+    "id": "d04",
+    "type": "mcq",
+    "skill": "klankcombinaties",
+    "level": 2,
+    "prompt": "Hoe lees je **μπύρα** (bier)?",
+    "explain": "μπ klinkt als **b** aan het begin van een woord: μπύρα = *bíra*.",
+    "options": [
+     "bíra",
+     "mpíra",
+     "víra",
+     "píra"
+    ],
+    "answer": 0,
+    "band": "A0"
+   },
+   {
+    "id": "d05",
+    "type": "type",
+    "skill": "klankcombinaties",
+    "level": 2,
+    "prompt": "Transcribeer in Latijnse letters: **ευχαριστώ** (dank je).",
+    "explain": "ευ klinkt als **ef** vóór een stemloze medeklinker (χ): *ef-cha-ri-STÓ*.",
+    "answers": [
+     "efcharisto",
+     "efharisto",
+     "efkharisto",
+     "efxaristo"
+    ],
+    "lang": "nl",
+    "accentsOptional": true,
+    "band": "A0"
+   },
+   {
+    "id": "d06",
+    "type": "mcq",
+    "skill": "begroeten",
+    "level": 1,
+    "prompt": "Je begroet een oudere onbekende dame. Wat zeg je?",
+    "explain": "**Γεια σας** is beleefd (en meervoud); Γεια σου gebruik je tegen één vriend of kind.",
+    "options": [
+     "Γεια σας",
+     "Γεια σου",
+     "Καληνύχτα",
+     "Αντίο"
+    ],
+    "answer": 0,
+    "band": "A1"
+   },
+   {
+    "id": "d07",
+    "type": "cloze",
+    "skill": "zijn",
+    "level": 2,
+    "prompt": "Vul de vorm van **είμαι** (zijn) in.",
+    "explain": "Εγώ είμαι — ik ben. Omdat de uitgang al 'ik' aangeeft, laten Grieken εγώ vaak weg.",
+    "text": "Εγώ {{είμαι}} από το Βέλγιο.",
+    "lang": "el",
+    "band": "A1"
+   },
+   {
+    "id": "d08",
+    "type": "cloze",
+    "skill": "lidwoorden",
+    "level": 2,
+    "prompt": "Vul het bepaald lidwoord in (ο, η of το).",
+    "explain": "Uitgang -α/-η → vrouwelijk (η); -ο/-ι/-μα → onzijdig (το); -ος/-ας/-ης/-ές → mannelijk (ο).",
+    "text": "{{η}} θάλασσα · {{το}} νερό · {{ο}} καφές",
+    "lang": "el",
+    "band": "A1"
+   },
+   {
+    "id": "d09",
+    "type": "type",
+    "skill": "hebben",
+    "level": 2,
+    "prompt": "Vertaal: **wij hebben**.",
+    "explain": "έχω, έχεις, έχει, **έχουμε**, έχετε, έχουν.",
+    "answers": [
+     "έχουμε",
+     "εμείς έχουμε"
+    ],
+    "lang": "el",
+    "band": "A1"
+   },
+   {
+    "id": "d10",
+    "type": "mcq",
+    "skill": "accusatief",
+    "level": 2,
+    "prompt": "Βλέπω ___ (ik zie de vriend).",
+    "explain": "Lijdend voorwerp → accusatief: ο φίλος → **τον φίλο** (de -ς valt weg).",
+    "options": [
+     "τον φίλο",
+     "το φίλος",
+     "τον φίλος",
+     "ο φίλο"
+    ],
+    "answer": 0,
+    "band": "A1"
+   },
+   {
+    "id": "d11",
+    "type": "cloze",
+    "skill": "aoristos",
+    "level": 3,
+    "prompt": "Vul de verleden tijd van **γράφω** (schrijven) in.",
+    "explain": "γράφω → **έγραψα**: augment έ-, stam γραψ-, uitgang -α.",
+    "text": "Χθες {{έγραψα}} ένα γράμμα.",
+    "lang": "el",
+    "band": "A2"
+   },
+   {
+    "id": "d12",
+    "type": "mcq",
+    "skill": "toekomst",
+    "level": 2,
+    "prompt": "Αύριο ___ στην Αθήνα. (Morgen ga ik naar Athene.)",
+    "explain": "Toekomende tijd: **θα** + werkwoord: θα πάω.",
+    "options": [
+     "θα πάω",
+     "πήγα",
+     "πάω να",
+     "θα πήγα"
+    ],
+    "answer": 0,
+    "band": "A2"
+   },
+   {
+    "id": "d13",
+    "type": "type",
+    "skill": "na",
+    "level": 3,
+    "prompt": "Vertaal: **ik wil gaan**.",
+    "explain": "Na θέλω volgt **να** + werkwoord: θέλω να πάω.",
+    "answers": [
+     "θέλω να πάω"
+    ],
+    "lang": "el",
+    "band": "A2"
+   },
+   {
+    "id": "d14",
+    "type": "mcq",
+    "skill": "meervoud",
+    "level": 2,
+    "prompt": "Wat is het meervoud van **το σπίτι**?",
+    "explain": "Onzijdig op -ι → meervoud op **-ια**, lidwoord **τα**.",
+    "options": [
+     "τα σπίτια",
+     "τα σπίτι",
+     "οι σπίτια",
+     "τα σπίτις"
+    ],
+    "answer": 0,
+    "band": "A2"
+   },
+   {
+    "id": "d15",
+    "type": "order",
+    "skill": "zinsbouw",
+    "level": 3,
+    "prompt": "Zet in de juiste volgorde: *Ik hou niet van koffie.*",
+    "explain": "Letterlijk: 'mij bevalt de koffie niet'. Het zwakke voornaamwoord μου staat vóór het werkwoord, δεν ervoor.",
+    "tiles": [
+     "Δεν",
+     "μου",
+     "αρέσει",
+     "ο",
+     "καφές"
+    ],
+    "lang": "el",
+    "band": "A2"
+   }
+  ]
+ },
+ "sections": [
+  {
+   "id": "alfabet",
+   "title": "Een alfabet dat je al half kent",
+   "md": "Het Nieuwgrieks gebruikt **24 letters**: 7 klinkers en 17 medeklinkers. Veel ken je al uit wiskunde en statistiek: $\\alpha$, $\\beta$, $\\pi$, $\\sigma$, $\\mu$, $\\lambda$, $\\Delta$, $\\Sigma$. Het goede nieuws: Grieks wordt **fonetisch** geschreven. Beheers je de klank van elke letter, dan kun je vanaf vandaag elk Grieks woord hardop lezen — ook woorden die je nog nooit zag.\n\nHet lastige zit in twee dingen: enkele letters *lijken* op Latijnse letters maar klinken anders (**valse vrienden**), en drie verschillende letters klinken allemaal als *ie*. Daar besteden we deze les extra aandacht aan.\n\n:::sim greek-alphabet {}\n:::\n\n| Groot | Klein | Naam | Klank | Voorbeeld |\n|:---:|:---:|---|---|---|\n| Α | α | άλφα | a (bad) | αγάπη — liefde |\n| Β | β | βήτα | **v** | βιβλίο — boek |\n| Γ | γ | γάμμα | zachte g (Vlaams *gaan*); vóór e/i: **j** | γάλα — melk |\n| Δ | δ | δέλτα | **th** (Engels *this*) | δρόμος — straat |\n| Ε | ε | έψιλον | e (bed) | ένα — één |\n| Ζ | ζ | ζήτα | z | ζωή — leven |\n| Η | η | ήτα | **ie** | ημέρα — dag |\n| Θ | θ | θήτα | **th** (Engels *think*) | θάλασσα — zee |\n| Ι | ι | γιώτα | ie | ιδέα — idee |\n| Κ | κ | κάπα | k | καφές — koffie |\n| Λ | λ | λάμδα | l | λεμόνι — citroen |\n| Μ | μ | μι | m | μητέρα — moeder |\n| Ν | ν | νι | **n** | νερό — water |\n| Ξ | ξ | ξι | ks | ξένος — vreemdeling |\n| Ο | ο | όμικρον | o (pot) | όνομα — naam |\n| Π | π | πι | p | πόλη — stad |\n| Ρ | ρ | ρο | **r** (getikt) | ρόδι — granaatappel |\n| Σ | σ / ς | σίγμα | s | σπίτι — huis |\n| Τ | τ | ταυ | t | τραπέζι — tafel |\n| Υ | υ | ύψιλον | **ie** | ύπνος — slaap |\n| Φ | φ | φι | f | φίλος — vriend |\n| Χ | χ | χι | **ch** (*lachen*) | χέρι — hand |\n| Ψ | ψ | ψι | ps | ψάρι — vis |\n| Ω | ω | ωμέγα | o (pot) | ώρα — uur |\n\n> [!tip] Zo leer je dit het snelst\n> Lees elk Grieks woord in deze les hardop, tik erop om het te horen en schrijf het één keer over — op je iPad met de Pencil of met het ingebouwde Griekse toetsenbord. Hardop lezen + zelf schrijven + later ophalen werkt veel beter dan herlezen.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "type",
+     "skill": "letters",
+     "level": 1,
+     "prompt": "Welke kleine Griekse letter is de **p**?",
+     "explain": "π (pi) — zoals in de wiskunde.",
+     "answers": [
+      "π"
+     ],
+     "lang": "el"
+    }
+   ]
+  },
+  {
+   "id": "klinkers",
+   "title": "Zeven klinkerletters, vijf klanken",
+   "md": "Het Nieuwgrieks heeft maar **vijf klinkerklanken**: *a*, *e*, *i*, *o* en *oe*. Er zijn wel zeven klinkerletters — omdat enkele letters dezelfde klank delen.\n\n| Klank | Letter(s) | Voorbeelden |\n|---|---|---|\n| **a** zoals in *bad* | α | αγάπη (liefde), γάλα (melk) |\n| **e** zoals in *bed* | ε | ένα (één), μέρα (dag) |\n| **ie** zoals in *fiets* | η · ι · υ | ημέρα (dag), ιδέα (idee), ύπνος (slaap) |\n| **o** zoals in *pot* | ο · ω | όνομα (naam), ώρα (uur) |\n\nDe vijfde klank, **oe** (*boek*), schrijf je met twee letters samen: ου. Die combinaties zijn voor les 2.\n\n> [!rule] Iotacisme: drie letters, één klank\n> **η, ι en υ** klinken exact hetzelfde: *ie*. **ο en ω** klinken allebei als een korte *o*. Het verschil zie je alleen op papier — wie Grieks schrijft, moet de spelling van elk woord dus echt kennen.\n\nWaarom? In het Oudgrieks waren dit verschillende klanken (een lange *ē*, een korte *i*, een Franse *u* …). In tweeduizend jaar zijn ze samengevallen tot één *ie*: taalkundigen noemen dat **iotacisme**. De spelling bleef bewaard, de uitspraak evolueerde — vergelijk met het Engelse *knight*, waar je de *k* en *gh* ook niet meer hoort.\n\n> [!mnemonic] Onthoud de ie-club\n> Denk aan het woord **ηιυ** als één “familie”: *ita*, *jota*, *ipsilon*. Klinkt het als *ie*, dan is het één van die drie (of later: ει, οι).",
+   "checks": [
+    {
+     "id": "c2",
+     "type": "mcq",
+     "skill": "vowels",
+     "level": 1,
+     "prompt": "Welke drie letters klinken allemaal als **ie**?",
+     "explain": "De ie-club: **η, ι, υ**.",
+     "options": [
+      "η · ι · υ",
+      "ε · η · ι",
+      "ι · υ · ω",
+      "η · ο · υ"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "valse-vrienden",
+   "title": "Valse vrienden: letters die je bedriegen",
+   "md": "Deze letters lijken op letters die je kent, maar klinken anders. Leer ze bewust apart:\n\n| Letter | Lijkt op | Klinkt als | Voorbeeld |\n|:---:|:---:|---|---|\n| β | b | **v** | βιβλίο (*vivlío*) — boek |\n| γ | y | zachte **g** zoals Vlaams *gaan*; vóór een e- of i-klank: **j** | γάλα (*gála*) — melk · γεια (*ja*) — hallo |\n| δ | — | **th** zoals Engels *this* | δρόμος (*ðrómos*) — straat |\n| η | n | **ie** | ημέρα (*iméra*) — dag |\n| ν | v | **n** | νερό (*neró*) — water |\n| ρ | p | **r** (getikt of licht gerold) | ρόδι (*ródi*) — granaatappel |\n| υ | u / y | **ie** | ύπνος (*ípnos*) — slaap |\n| χ | x | **ch** zoals in *lachen*; vóór e/i iets zachter | χέρι (*chéri*) — hand |\n| θ | — | **th** zoals Engels *think* | θάλασσα (*thálassa*) — zee |\n\nDrie letters bevatten twee klanken of een klank die je gewoon kent: **ξ = ks** (ξένος, vreemdeling), **ψ = ps** (ψωμί, brood) en **ζ = z** (ζωή, leven).\n\n> [!pitfall] Klassieke beginnersfouten\n> - ν is een **n**, geen v: νερό lees je *neró*, niet *veró*.\n> - η is een **ie**, geen n: ήλιος (zon) lees je *ílios*.\n> - ρ is een **r**, geen p: ρόδι lees je *ródi*.\n\n> [!note] δ tegenover θ\n> Beide worden in transcripties vaak als *th* geschreven, maar het zijn twee klanken: **δ** is stemhebbend (je keel trilt, zoals in *this*), **θ** stemloos (alleen lucht, zoals in *think*). Leg je hand op je keel en voel het verschil.\n\nEn een voordeel voor Nederlandstaligen: π, τ en κ worden **zonder** zuchtje uitgesproken (anders dan het Engelse *pen*). Dat doe je in het Nederlands al vanzelf goed.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "type",
+     "skill": "false-friends",
+     "level": 1,
+     "prompt": "Hoe klinkt **β**? (typ de Latijnse letter)",
+     "explain": "β = **v**, nooit b.",
+     "answers": [
+      "v"
+     ],
+     "lang": "nl"
+    },
+    {
+     "id": "c4",
+     "type": "mcq",
+     "skill": "false-friends",
+     "level": 2,
+     "prompt": "Hoe lees je **νερό** (water)?",
+     "explain": "ν = n en ρ = r: *ne-RÓ*.",
+     "options": [
+      "neró",
+      "veró",
+      "neró met een v-klank",
+      "nepó"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "tonos",
+   "title": "De klemtoon: één accent per woord",
+   "md": "Elk Grieks woord met **twee of meer lettergrepen** krijgt een klemteken: de **τόνος** (*tónos*), een schuin streepje ( ΄ ) boven de klinker van de beklemtoonde lettergreep. Het is **verplicht** — een woord zonder tónos is een spelfout.\n\n- καλημέρα → ka-li-**MÉ**-ra (goedemorgen)\n- νερό → ne-**RÓ** (water)\n- θάλασσα → **THÁ**-las-sa (zee)\n\nWoorden van één lettergreep krijgen géén tónos: και (en), το (het), με (met). Een handvol uitzonderingen krijgt er wel één om twee betekenissen uit elkaar te houden, zoals ή (of) tegenover η (de, vrouwelijk lidwoord).\n\n> [!rule] De klemtoon kan de betekenis veranderen\n> | Woord | Uitspraak | Betekenis |\n> |---|---|---|\n> | πότε | **PÓ**-te | wanneer? |\n> | ποτέ | po-**TÉ** | nooit |\n> | πού | poe (vraag) | waar? |\n> | που | poe | dat, die (voegwoord) |\n> | μόνος | **MÓ**-nos | alleen |\n> | μονός | mo-**NÓS** | oneven, enkel |\n\n**Waar kan de klemtoon staan?** Altijd op één van de **laatste drie lettergrepen** — nooit verder naar links. Die *wet van de drie lettergrepen* kom je later terug tegen bij de verleden tijd.\n\nBij een **hoofdletter** staat de tónos links bovenaan de letter: Άννα, Ώρα. Wordt een woord volledig in HOOFDLETTERS geschreven (straatnaambordjes, titels), dan laat men de tónos weg: ΑΘΗΝΑ = Αθήνα.",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "mcq",
+     "skill": "tonos",
+     "level": 2,
+     "prompt": "Wat betekent **ποτέ**?",
+     "explain": "**ποτέ** (po-TÉ) = nooit; **πότε** (PÓ-te) = wanneer?",
+     "options": [
+      "wanneer?",
+      "nooit",
+      "altijd",
+      "soms"
+     ],
+     "answer": 1
+    }
+   ]
+  },
+  {
+   "id": "sigma",
+   "title": "Σ, σ en ς: één letter, drie vormen",
+   "md": "De sigma heeft één hoofdletter **Σ** en twee kleine vormen:\n\n- **σ** aan het begin en in het midden van een woord: σπίτι (huis), θάλασσα (zee)\n- **ς** uitsluitend **aan het einde** van een woord: καφές (koffie), φίλος (vriend), δρόμος (straat)\n\nEen woord als σεισμός (aardbeving) bevat ze allebei: **σ**ει**σ**μό**ς**.\n\n> [!warning] Let op bij het typen\n> Op een Grieks toetsenbord zit ς op een aparte toets (bij het ingebouwde toetsenbord van deze app: tweede toets bovenaan; op de Mac: de W-toets). Een σ aan het einde van een woord telt de app als fout — net zoals een Griekse leerkracht zou doen.\n\nQua klank is σ gewoon een **s**, maar vóór een stemhebbende medeklinker (β, γ, δ, μ, ν, λ, ρ) wordt ze een **z**: κόσμος klinkt als *kózmos* (wereld; ook: volk, mensen).",
+   "checks": [
+    {
+     "id": "c6",
+     "type": "cloze",
+     "skill": "sigma",
+     "level": 1,
+     "prompt": "Vul de juiste sigma in.",
+     "explain": "ς alleen op het einde; elders σ.",
+     "text": "καφέ{{ς}} · {{σ}}πίτι",
+     "lang": "el"
+    }
+   ]
+  },
+  {
+   "id": "lezen",
+   "title": "Van letters naar woorden: lezen en schrijven",
+   "md": "Lezen doe je letter voor letter: Grieks heeft (bijna) geen stille letters zoals het Frans. Gebruik deze methode:\n\n1. Zoek eerst de **tónos** — daar ligt de nadruk.\n2. Geef elke letter zijn klank en let op de valse vrienden (β, γ, δ, η, ν, ρ, υ, χ).\n3. Zeg het woord vloeiend, met nadruk op de juiste lettergreep.\n\n| Grieks | Uitspraak | Betekenis |\n|---|---|---|\n| καφές | ka-**FES** | koffie |\n| ψωμί | pso-**MI** | brood |\n| φίλος | **FI**-los | vriend |\n| μέρα | **ME**-ra | dag |\n| βιβλίο | vi-**VLI**-o | boek |\n| χέρι | **CHE**-ri | hand |\n| νερό | ne-**RO** | water |\n| σπίτι | **SPI**-ti | huis |\n| γάλα | **GA**-la | melk |\n| δρόμος | **DRO**-mos (δ = th!) | straat |\n\n> [!example] Grieks typen in deze app\n> Op iPhone en iPad verschijnt bij Griekse invulvelden een **ingebouwd Grieks toetsenbord** met een tónos-toets ( ΄ ): tik eerst ΄ en dan de klinker. Op de Mac typ je met je gewone toetsen volgens de standaard Griekse indeling: a→α, b→β, g→γ, d→δ, u→θ, j→ξ, c→ψ, v→ω, w→ς — en de **;**-toets is de tónos (**;** dan **a** → ά). Met de knop **ΑΒΓ** schakel je naar Latijnse letters, bijvoorbeeld voor je naam.\n\nTranscriptie (Latijnse letters) is een steunwiel voor de eerste dagen. Laat het zo snel mogelijk los: vanaf les 2 gebruiken we vooral Griekse letters.",
+   "checks": [
+    {
+     "id": "c7",
+     "type": "type",
+     "skill": "reading",
+     "level": 2,
+     "prompt": "Schrijf in het Grieks: **water**.",
+     "explain": "το νερό — klemtoon op de laatste lettergreep.",
+     "answers": [
+      "νερό"
+     ],
+     "lang": "el"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "match",
+   "skill": "letters",
+   "level": 1,
+   "prompt": "Koppel elke letter aan zijn klank.",
+   "explain": "Let vooral op δ (stemhebbend) tegenover θ (stemloos).",
+   "pairs": [
+    [
+     "β",
+     "v"
+    ],
+    [
+     "δ",
+     "th (this)"
+    ],
+    [
+     "θ",
+     "th (think)"
+    ],
+    [
+     "χ",
+     "ch (lachen)"
+    ],
+    [
+     "ξ",
+     "ks"
+    ],
+    [
+     "ψ",
+     "ps"
+    ]
+   ]
+  },
+  {
+   "id": "p02",
+   "type": "mcq",
+   "skill": "letters",
+   "level": 1,
+   "prompt": "Welke Griekse letter hoort bij de klank **f**?",
+   "explain": "φ (fi) = f: φίλος (vriend).",
+   "options": [
+    "φ",
+    "θ",
+    "ψ",
+    "β"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p03",
+   "type": "type",
+   "skill": "letters",
+   "level": 2,
+   "prompt": "Typ de kleine Griekse letter voor **l**.",
+   "explain": "λ (lamda): λεμόνι.",
+   "answers": [
+    "λ"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p03b",
+   "type": "type",
+   "skill": "letters",
+   "level": 2,
+   "prompt": "Typ de kleine Griekse letter voor **ks**.",
+   "explain": "ξ (ksi): ξένος.",
+   "answers": [
+    "ξ"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p04",
+   "type": "mcq",
+   "skill": "vowels",
+   "level": 1,
+   "prompt": "Welke twee letters klinken allebei als een korte **o**?",
+   "explain": "ο (omikron) en ω (omega) klinken identiek.",
+   "options": [
+    "ο en ω",
+    "ο en υ",
+    "ω en υ",
+    "ε en ο"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p05",
+   "type": "multi",
+   "skill": "vowels",
+   "level": 2,
+   "prompt": "Duid **alle** letters aan die als *ie* klinken.",
+   "explain": "Alleen η, ι en υ.",
+   "options": [
+    "η",
+    "ι",
+    "υ",
+    "ε",
+    "α",
+    "ω"
+   ],
+   "answers": [
+    0,
+    1,
+    2
+   ]
+  },
+  {
+   "id": "p06",
+   "type": "type",
+   "skill": "vowels",
+   "level": 2,
+   "prompt": "Hoeveel verschillende klinker**klanken** heeft het Nieuwgrieks?",
+   "explain": "Vijf: a, e, i, o en oe (die laatste schrijf je als ου).",
+   "answers": [
+    "5",
+    "vijf"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "p07",
+   "type": "mcq",
+   "skill": "false-friends",
+   "level": 1,
+   "prompt": "Hoe lees je **ρόδι** (granaatappel)?",
+   "explain": "ρ is een **r**, δ een zachte th: *RÓ-ði*.",
+   "options": [
+    "ródi",
+    "pódi",
+    "róði met een v",
+    "ródy"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p08",
+   "type": "type",
+   "skill": "false-friends",
+   "level": 2,
+   "prompt": "Transcribeer in Latijnse letters: **βιβλίο**.",
+   "explain": "β = v: *vi-VLÍ-o*.",
+   "answers": [
+    "vivlio"
+   ],
+   "lang": "nl",
+   "accentsOptional": true,
+   "errors": [
+    {
+     "match": "biblio",
+     "feedback": "Bijna iedereen doet dit de eerste keer: **β klinkt als v**, dus *vivlío*.",
+     "tag": "beta-v"
+    }
+   ]
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "false-friends",
+   "level": 2,
+   "prompt": "Transcribeer in Latijnse letters: **ημέρα**.",
+   "explain": "η = ie: *i-MÉ-ra*.",
+   "answers": [
+    "imera"
+   ],
+   "lang": "nl",
+   "accentsOptional": true,
+   "errors": [
+    {
+     "match": "/^[hn]mera$|^emera$/",
+     "feedback": "η is geen n, h of e: het is een **ie**.",
+     "tag": "eta-ie"
+    }
+   ]
+  },
+  {
+   "id": "p10",
+   "type": "mcq",
+   "skill": "false-friends",
+   "level": 2,
+   "prompt": "Welke letter klinkt als de Engelse *th* in **this**?",
+   "explain": "δ = stemhebbende th (*this*); θ = stemloze th (*think*).",
+   "options": [
+    "δ",
+    "θ",
+    "τ",
+    "ζ"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p11",
+   "type": "mcq",
+   "skill": "tonos",
+   "level": 1,
+   "prompt": "Op welke lettergreep ligt de klemtoon in **θάλασσα**?",
+   "explain": "De tónos staat op de eerste α: **THÁ**-las-sa.",
+   "options": [
+    "THÁ",
+    "las",
+    "sa"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p12",
+   "type": "type",
+   "skill": "tonos",
+   "level": 2,
+   "prompt": "Schrijf dit woord over **mét** tónos: καλημερα (ka-li-**MÉ**-ra).",
+   "explain": "De tónos komt op de beklemtoonde klinker: καλημ**έ**ρα.",
+   "answers": [
+    "καλημέρα"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p13",
+   "type": "mcq",
+   "skill": "tonos",
+   "level": 2,
+   "prompt": "Wat is het verschil tussen **πότε** en **ποτέ**?",
+   "explain": "Klemtoon verandert betekenis: **PÓ**-te = wanneer?, po-**TÉ** = nooit.",
+   "options": [
+    "πότε = wanneer?, ποτέ = nooit",
+    "πότε = nooit, ποτέ = wanneer?",
+    "geen verschil",
+    "ποτέ is de hoofdletterversie"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p13b",
+   "type": "type",
+   "skill": "tonos",
+   "level": 3,
+   "prompt": "Schrijf in het Grieks, met tónos: **nooit**.",
+   "explain": "ποτέ — klemtoon op het einde. (Met de klemtoon vooraan zou je ‘wanneer?’ schrijven.)",
+   "answers": [
+    "ποτέ"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "πότε",
+     "feedback": "Dat is **πότε** = wanneer? Voor ‘nooit’ ligt de klemtoon op het einde: ποτέ.",
+     "tag": "tonos-meaning"
+    }
+   ]
+  },
+  {
+   "id": "p14",
+   "type": "cloze",
+   "skill": "sigma",
+   "level": 1,
+   "prompt": "Vul telkens σ of ς in.",
+   "explain": "Begin en midden: σ; einde: ς.",
+   "text": "{{σ}}πίτι · καφέ{{ς}} · θάλα{{σ}}{{σ}}α",
+   "lang": "el"
+  },
+  {
+   "id": "p15",
+   "type": "mcq",
+   "skill": "sigma",
+   "level": 2,
+   "prompt": "Welke schrijfwijze is correct?",
+   "explain": "Tónos op ι en ς aan het einde: **φίλος**.",
+   "options": [
+    "φίλος",
+    "φίλοσ",
+    "φιλος",
+    "φίλλος"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p16",
+   "type": "type",
+   "skill": "reading",
+   "level": 3,
+   "prompt": "Schrijf in het Grieks: **zee**.",
+   "explain": "η θάλασσα — θ, dubbele σσ, tónos op de eerste α.",
+   "answers": [
+    "θάλασσα"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p17",
+   "type": "type",
+   "skill": "reading",
+   "level": 2,
+   "prompt": "Schrijf in het Grieks: **brood**.",
+   "explain": "το ψωμί — ψ = ps, ω, tónos op ί.",
+   "answers": [
+    "ψωμί"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p18",
+   "type": "order",
+   "skill": "reading",
+   "level": 2,
+   "prompt": "Bouw het woord voor **huis** met de letters.",
+   "explain": "σπίτι: σ vooraan (niet ς), tónos op de eerste ι.",
+   "tiles": [
+    "σ",
+    "π",
+    "ί",
+    "τ",
+    "ι"
+   ],
+   "lang": "el",
+   "distractors": [
+    "ς"
+   ],
+   "join": ""
+  },
+  {
+   "id": "p19",
+   "type": "dictation",
+   "skill": "reading",
+   "level": 2,
+   "prompt": "Luister en schrijf het woord.",
+   "explain": "ο καφές — ka-FES.",
+   "text": "καφές",
+   "lang": "el"
+  },
+  {
+   "id": "p20",
+   "type": "dictation",
+   "skill": "vowels",
+   "level": 3,
+   "prompt": "Luister en schrijf het woord (let op welke *ie*-letter!).",
+   "explain": "ο ύπνος (slaap) schrijf je met υ — je moet de spelling kennen, horen kan niet.",
+   "text": "ύπνος",
+   "lang": "el"
+  },
+  {
+   "id": "p21",
+   "type": "speak",
+   "skill": "reading",
+   "level": 2,
+   "prompt": "Spreek dit woord uit en vergelijk met het voorbeeld.",
+   "explain": "THÁ-las-sa: θ als in *think*, nadruk vooraan.",
+   "text": "θάλασσα",
+   "lang": "el",
+   "translit": "thálassa"
+  },
+  {
+   "id": "p22",
+   "type": "handwrite",
+   "skill": "reading",
+   "level": 2,
+   "prompt": "Schrijf met de hand (Apple Pencil of vinger): **ψωμί** — eerst overtrekken, dan uit het hoofd.",
+   "explain": "Let op de vorm van ψ (een drietand) en ω (een open w).",
+   "target": "ψωμί"
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "match",
+   "skill": "letters",
+   "level": 1,
+   "prompt": "Koppel letter en klank.",
+   "explain": "γ is de zachte (Vlaamse) g, vóór e/i een j.",
+   "pairs": [
+    [
+     "γ",
+     "zachte g / j"
+    ],
+    [
+     "ζ",
+     "z"
+    ],
+    [
+     "ρ",
+     "r"
+    ],
+    [
+     "ν",
+     "n"
+    ],
+    [
+     "η",
+     "ie"
+    ],
+    [
+     "φ",
+     "f"
+    ]
+   ]
+  },
+  {
+   "id": "m02",
+   "type": "type",
+   "skill": "letters",
+   "level": 2,
+   "prompt": "Welke kleine Griekse letter klinkt als **ps**?",
+   "explain": "ψ (psi): ψωμί, ψάρι.",
+   "answers": [
+    "ψ"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m03",
+   "type": "mcq",
+   "skill": "letters",
+   "level": 1,
+   "prompt": "Welke letter is een **n**?",
+   "explain": "ν (ni) = n. η (ita) is een ie!",
+   "options": [
+    "ν",
+    "η",
+    "μ",
+    "π"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m03b",
+   "type": "type",
+   "skill": "letters",
+   "level": 2,
+   "prompt": "Typ de kleine Griekse letter voor **d**-klank zoals in Engels *this*.",
+   "explain": "δ (delta): δρόμος.",
+   "answers": [
+    "δ"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m04",
+   "type": "mcq",
+   "skill": "vowels",
+   "level": 2,
+   "prompt": "In welk woord hoor je **geen** ie-klank?",
+   "explain": "όνομα = *Ó-no-ma*: alleen o- en a-klanken.",
+   "options": [
+    "όνομα",
+    "ύπνος",
+    "ημέρα",
+    "ιδέα"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m05",
+   "type": "type",
+   "skill": "vowels",
+   "level": 2,
+   "prompt": "Typ de twee letters die als een korte **o** klinken (met een spatie ertussen).",
+   "explain": "ο en ω.",
+   "answers": [
+    "ο ω",
+    "ω ο"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m06",
+   "type": "type",
+   "skill": "false-friends",
+   "level": 2,
+   "prompt": "Transcribeer in Latijnse letters: **δρόμος**.",
+   "explain": "δ = stemhebbende th; in transcripties vaak *d* of *dh*: *ðrómos*.",
+   "answers": [
+    "dromos",
+    "thromos",
+    "ðromos",
+    "dhromos"
+   ],
+   "lang": "nl",
+   "accentsOptional": true
+  },
+  {
+   "id": "m07",
+   "type": "type",
+   "skill": "false-friends",
+   "level": 2,
+   "prompt": "Transcribeer in Latijnse letters: **χέρι**.",
+   "explain": "χ = ch zoals in *lachen*: *chéri*.",
+   "answers": [
+    "cheri",
+    "kheri",
+    "heri",
+    "xeri",
+    "chéri"
+   ],
+   "lang": "nl",
+   "accentsOptional": true
+  },
+  {
+   "id": "m08",
+   "type": "mcq",
+   "skill": "false-friends",
+   "level": 2,
+   "prompt": "Hoe klinkt γ in **γάλα**?",
+   "explain": "Vóór a, o, oe en medeklinkers is γ een zachte g; vóór een e- of i-klank een j.",
+   "options": [
+    "zachte g zoals in 'gaan'",
+    "j zoals in 'ja'",
+    "harde k",
+    "ng"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "tonos",
+   "level": 2,
+   "prompt": "Schrijf dit woord met de juiste tónos: νερο (ne-**RÓ**).",
+   "explain": "νερό: klemtoon op de laatste lettergreep.",
+   "answers": [
+    "νερό"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m10",
+   "type": "mcq",
+   "skill": "tonos",
+   "level": 2,
+   "prompt": "Welk woord is **fout** gespeld?",
+   "explain": "καλημέρα heeft vier lettergrepen en moet dus een tónos hebben. και is één lettergreep: geen tónos.",
+   "options": [
+    "καλημερα",
+    "θάλασσα",
+    "νερό",
+    "και"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m11",
+   "type": "type",
+   "skill": "tonos",
+   "level": 3,
+   "prompt": "Wat betekent **πότε**?",
+   "explain": "πότε = wanneer? (klemtoon vooraan).",
+   "answers": [
+    "wanneer"
+   ],
+   "lang": "nl",
+   "errors": [
+    {
+     "match": "nooit",
+     "feedback": "Dat is **ποτέ** (klemtoon achteraan). πότε = wanneer?",
+     "tag": "tonos-meaning"
+    }
+   ]
+  },
+  {
+   "id": "m12",
+   "type": "cloze",
+   "skill": "sigma",
+   "level": 2,
+   "prompt": "Vul σ of ς in.",
+   "explain": "ς alleen op het einde van het woord.",
+   "text": "δρόμο{{ς}} · {{σ}}ει{{σ}}μό{{ς}}",
+   "lang": "el"
+  },
+  {
+   "id": "m13",
+   "type": "type",
+   "skill": "sigma",
+   "level": 2,
+   "prompt": "Schrijf in het Grieks: **vriend**.",
+   "explain": "ο φίλος — tónos op ί en ς op het einde.",
+   "answers": [
+    "φίλος"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m14",
+   "type": "dictation",
+   "skill": "reading",
+   "level": 2,
+   "prompt": "Luister en schrijf het woord.",
+   "explain": "το ψωμί (brood).",
+   "text": "ψωμί",
+   "lang": "el"
+  },
+  {
+   "id": "m15",
+   "type": "dictation",
+   "skill": "reading",
+   "level": 3,
+   "prompt": "Luister en schrijf het woord.",
+   "explain": "η θάλασσα — dubbele σ.",
+   "text": "θάλασσα",
+   "lang": "el"
+  },
+  {
+   "id": "m16",
+   "type": "type",
+   "skill": "reading",
+   "level": 3,
+   "prompt": "Schrijf in het Grieks: **boek**.",
+   "explain": "το βιβλίο — twee keer β (= v), tónos op de tweede ι.",
+   "answers": [
+    "βιβλίο"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m17",
+   "type": "type",
+   "skill": "reading",
+   "level": 3,
+   "prompt": "Schrijf in het Grieks: **hand**.",
+   "explain": "το χέρι.",
+   "answers": [
+    "χέρι"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m18",
+   "type": "order",
+   "skill": "reading",
+   "level": 2,
+   "prompt": "Bouw het woord voor **dag**.",
+   "explain": "μέρα (of het formelere ημέρα).",
+   "tiles": [
+    "μ",
+    "έ",
+    "ρ",
+    "α"
+   ],
+   "lang": "el",
+   "distractors": [
+    "η",
+    "ε"
+   ],
+   "alts": [
+    "ημέρα"
+   ],
+   "join": ""
+  },
+  {
+   "id": "m19",
+   "type": "type",
+   "skill": "reading",
+   "level": 3,
+   "prompt": "Schrijf in het Grieks: **koffie**.",
+   "explain": "ο καφές.",
+   "answers": [
+    "καφές"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m20",
+   "type": "mcq",
+   "skill": "reading",
+   "level": 2,
+   "prompt": "Hoe lees je **ξένος** (vreemdeling)?",
+   "explain": "ξ = ks, tónos op έ: *KSÉ-nos*.",
+   "options": [
+    "KSÉ-nos",
+    "ZÉ-nos",
+    "CHÉ-nos",
+    "SÉ-nos"
+   ],
+   "answer": 0
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "el",
+  "minWords": 8,
+  "prompt": "Schrijf **uit het hoofd** de Griekse woorden voor: water · koffie · huis · vriend · zee · brood · dag · boek · hand · slaap.\n\nGebruik de tónos en de juiste sigma. Kijk pas daarna naar het model — en wees streng voor jezelf.",
+  "model": "νερό · καφές · σπίτι · φίλος · θάλασσα · ψωμί · μέρα (of ημέρα) · βιβλίο · χέρι · ύπνος",
+  "rubric": [
+   "Elk woord heeft precies één tónos, op de juiste lettergreep",
+   "καφές en φίλος eindigen op **ς**, σπίτι begint met **σ**",
+   "βιβλίο met **β** (klinkt als v) en ψωμί met **ψ** en **ω**",
+   "ύπνος met **υ** — de juiste letter uit de ie-club",
+   "θάλασσα met **θ** en dubbele **σσ**"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-beta",
+   "front": "Hoe klinkt **β**?",
+   "back": "als **v** — βιβλίο = *vivlío*",
+   "answers": [
+    "v"
+   ],
+   "lang": "nl",
+   "skill": "false-friends"
+  },
+  {
+   "id": "c-delta",
+   "front": "Hoe klinkt **δ**?",
+   "back": "stemhebbende **th**, zoals Engels *this* — δρόμος",
+   "skill": "false-friends"
+  },
+  {
+   "id": "c-theta",
+   "front": "Hoe klinkt **θ**?",
+   "back": "stemloze **th**, zoals Engels *think* — θάλασσα",
+   "skill": "false-friends"
+  },
+  {
+   "id": "c-ie",
+   "front": "Welke drie letters klinken als *ie*?",
+   "back": "**η, ι, υ** (de ie-club)",
+   "skill": "vowels"
+  },
+  {
+   "id": "c-pote",
+   "front": "Wat betekent **ποτέ**?",
+   "back": "**nooit** (≠ πότε, wanneer?)",
+   "answers": [
+    "nooit"
+   ],
+   "lang": "nl",
+   "skill": "tonos"
+  },
+  {
+   "id": "c-sigma",
+   "front": "Wanneer schrijf je **ς**?",
+   "back": "uitsluitend aan het **einde** van een woord",
+   "skill": "sigma"
+  },
+  {
+   "id": "c-ks",
+   "front": "Welke letter klinkt als **ks**?",
+   "back": "ξ",
+   "answers": [
+    "ξ"
+   ],
+   "lang": "el",
+   "skill": "letters"
+  },
+  {
+   "id": "c-ps",
+   "front": "Welke letter klinkt als **ps**?",
+   "back": "ψ",
+   "answers": [
+    "ψ"
+   ],
+   "lang": "el",
+   "skill": "letters"
+  },
+  {
+   "id": "c-nu",
+   "front": "Hoe klinkt **ν**?",
+   "back": "als **n** (niet v!) — νερό",
+   "answers": [
+    "n"
+   ],
+   "lang": "nl",
+   "skill": "false-friends"
+  }
+ ],
+ "sources": [
+  "Holton, Mackridge & Philippaki-Warburton, *Greek: A Comprehensive Grammar* (Routledge)",
+  "Κέντρο Ελληνικής Γλώσσας — Πιστοποίηση Ελληνομάθειας, niveau A1"
+ ],
+ "kind": "core",
+ "meta": {
+  "author": "claude",
+  "created": "2026-09-25"
+ }
+}

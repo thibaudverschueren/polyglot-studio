@@ -1,0 +1,1938 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "automation",
+ "id": 1,
+ "roadmap": "au-01-json-items",
+ "title": "JSON en het n8n-itemmodel",
+ "subtitle": "Hoe data door een workflow stroomt: items, 1 vs N uitvoeringen, expressies en de klassieke datafouten",
+ "level": "praktijk",
+ "minutes": 45,
+ "summary": "Bijna elke kapotte workflow is een datafout: een string waar een getal hoort, een pad dat niet bestaat, of een node die 40 keer draait in plaats van één keer. Wie het itemmodel van n8n echt begrijpt, lost zulke problemen in minuten op — en legt ze helder uit aan een klant.",
+ "objectives": [
+  {
+   "id": "json-read",
+   "text": "Je leest JSON feilloos: types, nesting en paden (punt- en haakjesnotatie)."
+  },
+  {
+   "id": "item-model",
+   "text": "Je kent het n8n-itemformaat [{ json: … }] en weet waar de Webhook-node de payload zet."
+  },
+  {
+   "id": "per-item",
+   "text": "Je voorspelt hoeveel keer een node draait bij 0, 1 of N items en kiest Execute Once of Aggregate waar nodig."
+  },
+  {
+   "id": "expressions",
+   "text": "Je schrijft expressies met $json die geneste waarden, arrays en standaardwaarden correct ophalen."
+  },
+  {
+   "id": "data-bugs",
+   "text": "Je herkent en herstelt klassieke datafouten: string vs getal, null vs ontbrekend, object vs array."
+  }
+ ],
+ "diagnostic": {
+  "intro": "Je bouwt al automatiseringen voor klanten. Deze test meet waar je staat over de vijf pijlers heen (basis → expert), zodat je coach de volgende lessen kan versnellen waar je sterk bent en verdiepen waar het wringt. Geen idee? Kies ‘Weet ik niet’.",
+  "bands": [
+   "basis",
+   "gevorderd",
+   "expert"
+  ],
+  "items": [
+   {
+    "id": "d01",
+    "type": "mcq",
+    "skill": "json",
+    "level": 1,
+    "prompt": "Welke tekst is **geldige** JSON?",
+    "explain": "Keys en strings tussen dubbele aanhalingstekens, geen komma na het laatste element.",
+    "options": [
+     "`{\"name\": \"Acme\", \"vip\": true}`",
+     "`{name: \"Acme\"}`",
+     "`{'name': 'Acme'}`",
+     "`{\"name\": \"Acme\",}`"
+    ],
+    "answer": 0,
+    "band": "basis"
+   },
+   {
+    "id": "d02",
+    "type": "jsexpr",
+    "skill": "expressies",
+    "level": 1,
+    "prompt": "Schrijf de expressie die het **e-mailadres** uit deze webhook haalt.",
+    "explain": "De Webhook-node zet de payload onder `body`: `{{ $json.body.customer.email }}`.",
+    "input": {
+     "headers": {
+      "content-type": "application/json",
+      "user-agent": "Shopify-Captain-Hook"
+     },
+     "params": {},
+     "query": {},
+     "body": {
+      "id": 4521,
+      "customer": {
+       "name": "Sofie Peeters",
+       "email": "Sofie.Peeters@Acme.be",
+       "vip": true
+      },
+      "lines": [
+       {
+        "sku": "A-1",
+        "qty": 2,
+        "price": "19.99"
+       },
+       {
+        "sku": "B-7",
+        "qty": 1,
+        "price": "5.50"
+       }
+      ],
+      "coupon": null,
+      "created_at": "2026-09-24T08:15:00Z"
+     }
+    },
+    "expected": "Sofie.Peeters@Acme.be",
+    "solution": "{{ $json.body.customer.email }}",
+    "band": "basis"
+   },
+   {
+    "id": "d03",
+    "type": "mcq",
+    "skill": "http",
+    "level": 1,
+    "prompt": "Een API antwoordt met **401**. Wat betekent dat?",
+    "explain": "401 = Unauthorized (ontbrekende/ongeldige credentials). 403 = wel geauthenticeerd, geen rechten.",
+    "options": [
+     "Niet (correct) geauthenticeerd",
+     "Geen toegang ondanks geldige login",
+     "Te veel requests",
+     "Serverfout"
+    ],
+    "answer": 0,
+    "band": "basis"
+   },
+   {
+    "id": "d04",
+    "type": "numeric",
+    "skill": "items",
+    "level": 1,
+    "prompt": "3 bestellingen met elk 4 orderlijnen gaan door een *Split Out* op de orderlijnen. Hoeveel items komen eruit?",
+    "explain": "Split Out maakt van elke orderlijn een eigen item: 3 × 4 = 12.",
+    "value": 12,
+    "abs": 0,
+    "band": "basis"
+   },
+   {
+    "id": "d05",
+    "type": "jsexpr",
+    "skill": "expressies",
+    "level": 2,
+    "prompt": "De huidige node krijgt items van een CRM-node, maar je hebt het order-ID uit de node **Webhook** nodig. Schrijf de expressie.",
+    "explain": "Met `$('Node').item` haal je het gekoppelde item van een eerdere node op.",
+    "input": {
+     "crm_id": 88
+    },
+    "nodes": {
+     "Webhook": [
+      {
+       "headers": {
+        "content-type": "application/json",
+        "user-agent": "Shopify-Captain-Hook"
+       },
+       "params": {},
+       "query": {},
+       "body": {
+        "id": 4521,
+        "customer": {
+         "name": "Sofie Peeters",
+         "email": "Sofie.Peeters@Acme.be",
+         "vip": true
+        },
+        "lines": [
+         {
+          "sku": "A-1",
+          "qty": 2,
+          "price": "19.99"
+         },
+         {
+          "sku": "B-7",
+          "qty": 1,
+          "price": "5.50"
+         }
+        ],
+        "coupon": null,
+        "created_at": "2026-09-24T08:15:00Z"
+       }
+      }
+     ]
+    },
+    "expected": 4521,
+    "solution": "{{ $('Webhook').item.json.body.id }}",
+    "band": "gevorderd"
+   },
+   {
+    "id": "d06",
+    "type": "mcq",
+    "skill": "webhooks",
+    "level": 2,
+    "prompt": "Een workflow achter een webhook duurt 45 seconden. De afzender verstuurt de webhook opnieuw na 10 seconden time-out. Beste aanpak?",
+    "explain": "Bevestig snel, verwerk daarna, en maak de verwerking idempotent.",
+    "options": [
+     "Meteen antwoorden (202), daarna verwerken, dedupliceren op event-id",
+     "De time-out negeren: de afzender stopt vanzelf met opnieuw proberen",
+     "‘When Last Node Finishes’ zodat de afzender wacht tot alles klaar is",
+     "Execute Once aanzetten zodat de workflow maar één keer draait"
+    ],
+    "answer": 0,
+    "band": "gevorderd"
+   },
+   {
+    "id": "d07",
+    "type": "mcq",
+    "skill": "rate-limits",
+    "level": 2,
+    "prompt": "Een API geeft **429** met header `Retry-After: 30`. Wat doe je?",
+    "explain": "429 = rate limit. Respecteer Retry-After en gebruik exponential backoff.",
+    "options": [
+     "30 s wachten en dan opnieuw proberen (met backoff bij herhaling)",
+     "Meteen opnieuw proberen tot het lukt",
+     "De API-key vervangen",
+     "De request als mislukt markeren en doorgaan"
+    ],
+    "answer": 0,
+    "band": "gevorderd"
+   },
+   {
+    "id": "d08",
+    "type": "jscode",
+    "skill": "code-node",
+    "level": 2,
+    "prompt": "Code-node (Run Once for All Items): voeg aan elk item het veld `domain` toe (alles na de @ van `email`).",
+    "explain": "`email.split('@')[1]` en spread van het bestaande object.",
+    "mode": "all",
+    "starter": "return $input.all();",
+    "solution": "return $input.all().map((i) => ({ json: { ...i.json, domain: i.json.email.split('@')[1] } }));",
+    "cases": [
+     {
+      "items": [
+       {
+        "email": "sofie@acme.be"
+       },
+       {
+        "email": "jonas@beta.nl"
+       }
+      ],
+      "expected": [
+       {
+        "email": "sofie@acme.be",
+        "domain": "acme.be"
+       },
+       {
+        "email": "jonas@beta.nl",
+        "domain": "beta.nl"
+       }
+      ]
+     }
+    ],
+    "band": "gevorderd"
+   },
+   {
+    "id": "d09",
+    "type": "mcq",
+    "skill": "hosting",
+    "level": 3,
+    "prompt": "Je verliest de `N8N_ENCRYPTION_KEY` van een self-hosted instantie. Gevolg?",
+    "explain": "Credentials worden versleuteld met die sleutel: bewaar hem in je wachtwoordbeheer en back-ups.",
+    "options": [
+     "Opgeslagen credentials kunnen niet meer ontsleuteld worden",
+     "Alleen de webhooks werken niet meer",
+     "Niets, n8n genereert een nieuwe sleutel",
+     "De workflows worden verwijderd"
+    ],
+    "answer": 0,
+    "band": "expert"
+   },
+   {
+    "id": "d10",
+    "type": "mcq",
+    "skill": "hosting",
+    "level": 3,
+    "prompt": "Wat heb je minimaal nodig voor **queue mode** in n8n?",
+    "explain": "Queue mode: main instance zet jobs in Redis, workers voeren ze uit, allemaal op dezelfde Postgres-database.",
+    "options": [
+     "Redis, een gedeelde PostgreSQL-database en workers",
+     "Meer CPU-kernen en RAM op dezelfde server",
+     "SQLite met WAL-modus en een tweede n8n-proces",
+     "Een aparte webhook-URL per worker"
+    ],
+    "answer": 0,
+    "band": "expert"
+   },
+   {
+    "id": "d11",
+    "type": "jscode",
+    "skill": "security",
+    "level": 3,
+    "prompt": "Verifieer een webhook-handtekening: `signature` = HMAC-SHA256 (hex) van `body` met secret `whsec_123`. Geef per item `{ valid: true/false }` terug.",
+    "explain": "`require('crypto').createHmac('sha256', secret).update(body).digest('hex')` en vergelijk.",
+    "mode": "all",
+    "starter": "const crypto = require('crypto');\nreturn $input.all();",
+    "solution": "const crypto = require('crypto');\nreturn $input.all().map((i) => {\n  const expected = crypto.createHmac('sha256', 'whsec_123').update(i.json.body).digest('hex');\n  return { json: { valid: expected === i.json.signature } };\n});",
+    "cases": [
+     {
+      "items": [
+       {
+        "body": "{\"id\":1}",
+        "signature": "8a0d1a6c7f9fb54d4ea4e3e9b5b1c07d64ea7c0a3f9b2dca1b69f3a1c0ae0f6d"
+       },
+       {
+        "body": "{\"id\":2}",
+        "signature": "724ca213a4e996140e92eebbbce16920d3a3ac04df7e9a208bce63f0986b545b"
+       }
+      ],
+      "expected": [
+       {
+        "valid": false
+       },
+       {
+        "valid": true
+       }
+      ]
+     }
+    ],
+    "band": "expert"
+   },
+   {
+    "id": "d12",
+    "type": "mcq",
+    "skill": "licentie",
+    "level": 3,
+    "prompt": "Je wilt klanten toegang geven tot **jouw** n8n-instantie als betaalde, white-label dienst. Wat zegt de n8n-licentie?",
+    "explain": "Workflows bouwen voor klanten mag; n8n zelf als dienst doorverkopen/white-labelen niet onder de standaardlicentie. Check altijd de actuele licentie-FAQ.",
+    "options": [
+     "Valt buiten de Sustainable Use License: je hebt een (Embed-)licentie nodig",
+     "Mag zonder voorwaarden: de broncode van n8n is openbaar",
+     "Mag, zolang je de broncode van je aanpassingen publiek deelt",
+     "Mag, maar alleen als je instantie op n8n Cloud draait"
+    ],
+    "answer": 0,
+    "band": "expert"
+   },
+   {
+    "id": "d13",
+    "type": "numeric",
+    "skill": "retries",
+    "level": 2,
+    "prompt": "Retry-schema: basis 1 s, factor 2, 5 retries, geen jitter. Hoeveel seconden wacht je **in totaal** vóór de laatste poging?",
+    "explain": "1 + 2 + 4 + 8 + 16 = 31 s.",
+    "value": 31,
+    "abs": 0,
+    "unit": "s",
+    "band": "expert"
+   }
+  ]
+ },
+ "sections": [
+  {
+   "id": "json",
+   "title": "JSON: de moedertaal van automatisering",
+   "md": "Vrijwel elke API, webhook en AI-model praat **JSON** (*JavaScript Object Notation*). Wie JSON vlot leest, debugt workflows in minuten in plaats van uren. JSON kent maar zes soorten waarden:\n\n| Type | Voorbeeld | Valkuil |\n|---|---|---|\n| object | `{\"name\": \"Acme\", \"vip\": true}` | keys altijd tussen **dubbele** aanhalingstekens |\n| array | `[1, 2, 3]` of `[{\"sku\": \"A-1\"}]` | volgorde telt; index begint bij **0** |\n| string | `\"19.99\"` | een getal tussen aanhalingstekens is **tekst** |\n| number | `19.99` | geen duizendtalscheiding, punt als decimaalteken |\n| boolean | `true` / `false` | kleine letters, geen aanhalingstekens |\n| null | `null` | ≠ ontbrekende key ≠ lege string `\"\"` |\n\nStructuren zijn **genest**: een object kan arrays bevatten die objecten bevatten. Je navigeert met een **pad**: `body.customer.email` of `body.lines[1].sku`. Heeft een key een spatie of een streepje, dan gebruik je haakjes: `body[\"Billing Address\"].City`.\n\n> [!pitfall] JSON is strenger dan JavaScript\n> Geen enkele aanhalingstekens (`'naam'`), geen komma na het laatste element, geen commentaar. Eén foute komma en een API antwoordt met **400 Bad Request** — de meest voorkomende fout bij handmatig gebouwde HTTP-bodies.\n\nHieronder een typische webhook zoals n8n die van een webshop ontvangt. Lees hem rustig: je gebruikt hem in de oefeningen.\n\n```json Webhook-output (1 item)\n{\n  \"headers\": { \"content-type\": \"application/json\", \"user-agent\": \"Shopify-Captain-Hook\" },\n  \"params\": {},\n  \"query\": {},\n  \"body\": {\n    \"id\": 4521,\n    \"customer\": { \"name\": \"Sofie Peeters\", \"email\": \"Sofie.Peeters@Acme.be\", \"vip\": true },\n    \"lines\": [\n      { \"sku\": \"A-1\", \"qty\": 2, \"price\": \"19.99\" },\n      { \"sku\": \"B-7\", \"qty\": 1, \"price\": \"5.50\" }\n    ],\n    \"coupon\": null,\n    \"created_at\": \"2026-09-24T08:15:00Z\"\n  }\n}\n```",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "json-read",
+     "level": 1,
+     "prompt": "Welk type heeft de waarde van `price` in `{\"price\": \"19.99\"}`?",
+     "explain": "Tussen aanhalingstekens = tekst (string), ook al lijkt het een getal.",
+     "options": [
+      "string",
+      "number",
+      "object",
+      "boolean"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "items",
+   "title": "Het n8n-itemmodel",
+   "md": "Binnen n8n reist data altijd als een **lijst van items**. Elk item is een object met een vaste structuur:\n\n```json Wat n8n intern doorgeeft\n[\n  { \"json\": { \"name\": \"Sofie\", \"company\": \"Acme BV\" } },\n  { \"json\": { \"name\": \"Jonas\", \"company\": \"Beta NV\" } }\n]\n```\n\n- `json` bevat de eigenlijke data (wat je in de *Table*- en *JSON*-weergave ziet).\n- `binary` (optioneel) bevat bestanden: pdf's, afbeeldingen, csv's.\n- `pairedItem` (automatisch) onthoudt uit welk input-item een output-item voortkomt — daarmee werkt `$('Node').item` (les 2).\n\nEen node krijgt dus **N items binnen** en geeft **M items door**. Die M kan groter zijn (Split Out: 1 bestelling → 5 orderlijnen), kleiner (Filter, Remove Duplicates) of 1 (Aggregate, Summarize).\n\n> [!rule] De Webhook-node verpakt de request\n> De Webhook-node geeft **één item** per binnenkomende request, met de onderdelen `headers`, `params`, `query` en `body`. Je payload zit dus in `$json.body`, niet in `$json`. Stuurt de klant een body met een array van 100 contacten, dan is dat nog altijd **1 item** met een array erin — splits hem met *Split Out* om per contact te werken.\n\nIn de n8n-editor zie je items in drie weergaven: **Table** (overzicht per item), **JSON** (de exacte structuur, handig bij debuggen) en **Schema** (de velden, ideaal om te slepen naar expressies).",
+   "checks": [
+    {
+     "id": "c2",
+     "type": "mcq",
+     "skill": "item-model",
+     "level": 1,
+     "prompt": "Een Webhook-node ontvangt één POST met een body die een **array van 3 contacten** bevat. Hoeveel items geeft de node door?",
+     "explain": "Eén request = één item. De array zit in `$json.body`; splits hem met Split Out.",
+     "options": [
+      "1",
+      "3",
+      "0",
+      "Hangt af van Execute Once"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "per-item",
+   "title": "Eén keer per item",
+   "md": "Dit is het belangrijkste mentale model van n8n: **een node voert zijn operatie één keer per input-item uit**. Parameters met expressies worden voor elk item opnieuw berekend.\n\n- 50 items in een *HTTP Request*-node → **50 requests** (let op rate limits en kosten!).\n- 3 items in een *Slack*-node → **3 berichten**.\n- 0 items op een tak → de volgende nodes op die tak **draaien niet**.\n\nTwee instellingen (*Settings* van een node) veranderen dat gedrag:\n\n| Instelling | Effect | Typisch gebruik |\n|---|---|---|\n| **Execute Once** | draait één keer, met alleen het eerste item | één samenvattend bericht sturen |\n| **Always Output Data** | geeft een leeg item door als er 0 items zijn | een tak laten doorlopen bij ‘geen resultaten’ |\n\nWil je 40 contacten in **één** Slack-bericht, dan bundel je eerst met *Aggregate* (items → één item met een array) of *Summarize*, en stuur je daarna één bericht.\n\n:::sim n8n-items {}\n:::\n\n> [!example] Klantvraag die je nu kunt beantwoorden\n> “Waarom kreeg ons Slack-kanaal 40 berichten toen we 40 contacten importeerden?” — Omdat de Slack-node per item draait. Oplossing: *Aggregate* vóór Slack en één samenvattend bericht opbouwen, of *Execute Once* als je alleen een melding ‘import klaar’ wilt.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "numeric",
+     "skill": "per-item",
+     "level": 1,
+     "prompt": "50 items gaan een HTTP Request-node in (standaardinstellingen). Hoeveel requests worden er verstuurd?",
+     "explain": "De node draait per item: 50 requests.",
+     "value": 50,
+     "abs": 0
+    }
+   ]
+  },
+  {
+   "id": "expressies",
+   "title": "Expressies: data uit het huidige item halen",
+   "md": "Een **expressie** is JavaScript tussen dubbele accolades. In een parameterveld schakel je naar *Expression* en schrijf je bijvoorbeeld `{{ $json.body.customer.email }}`. Voor elk item geeft `$json` de data van dát item.\n\n| Doel | Expressie | Resultaat (webhook hierboven) |\n|---|---|---|\n| geneste waarde | `{{ $json.body.customer.name }}` | `\"Sofie Peeters\"` |\n| element uit array | `{{ $json.body.lines[1].sku }}` | `\"B-7\"` |\n| lengte van array | `{{ $json.body.lines.length }}` | `2` |\n| key met spatie | `{{ $json[\"Billing Address\"].City }}` | … |\n| rekenen | `{{ $json.body.lines[0].qty * 2 }}` | `4` |\n| tekstmethodes | `{{ $json.body.customer.email.toLowerCase() }}` | `\"sofie.peeters@acme.be\"` |\n| standaardwaarde | `{{ $json.body.coupon ?? 'geen' }}` | `\"geen\"` |\n| voorwaarde | `{{ $json.body.customer.vip ? 'VIP' : 'normaal' }}` | `\"VIP\"` |\n\nStaat er tekst rond de accolades, dan plakt n8n alles aan elkaar tot één string: `Order {{ $json.body.id }} van {{ $json.body.customer.name }}` → `\"Order 4521 van Sofie Peeters\"`. Staat de expressie **alleen** in het veld, dan behoudt ze haar type (getal, boolean, object).\n\n> [!tip] Optional chaining en nullish coalescing\n> `$json.body?.customer?.phone ?? 'onbekend'` crasht niet als een tussenliggend veld ontbreekt. Gebruik het bij data van externe systemen: velden verdwijnen sneller dan je denkt (*schema drift*).",
+   "checks": [
+    {
+     "id": "c4",
+     "type": "jsexpr",
+     "skill": "expressions",
+     "level": 1,
+     "prompt": "Haal het **order-ID** uit de webhook.",
+     "explain": "`{{ $json.body.id }}` — de payload staat onder `body`.",
+     "input": {
+      "headers": {
+       "content-type": "application/json",
+       "user-agent": "Shopify-Captain-Hook"
+      },
+      "params": {},
+      "query": {},
+      "body": {
+       "id": 4521,
+       "customer": {
+        "name": "Sofie Peeters",
+        "email": "Sofie.Peeters@Acme.be",
+        "vip": true
+       },
+       "lines": [
+        {
+         "sku": "A-1",
+         "qty": 2,
+         "price": "19.99"
+        },
+        {
+         "sku": "B-7",
+         "qty": 1,
+         "price": "5.50"
+        }
+       ],
+       "coupon": null,
+       "created_at": "2026-09-24T08:15:00Z"
+      }
+     },
+     "expected": 4521,
+     "solution": "{{ $json.body.id }}"
+    }
+   ]
+  },
+  {
+   "id": "datafouten",
+   "title": "Klassieke datafouten en hoe je ze herkent",
+   "md": "Negen op de tien ‘mysterieuze’ workflowfouten zijn datafouten. Leer ze herkennen:\n\n1. **Tekst in plaats van getal.** `\"10\" + 5` geeft `\"105\"`. Prijzen komen vaak als string binnen (`\"19.99\"`): zet om met `Number($json.price)`.\n2. **`toFixed` geeft een string terug.** `(45.4789).toFixed(2)` is `\"45.48\"`. Wil je een getal: `Math.round(x * 100) / 100`.\n3. **Ontbrekend vs `null` vs leeg.** `$json.phone` kan `undefined` (key bestaat niet), `null` (expliciet leeg) of `\"\"` zijn. Behandel alle drie.\n4. **Object vs array.** `.map()` bestaat enkel op arrays. “`… is not a function`” betekent bijna altijd: je dacht dat iets een array was.\n5. **Payload zit in `body`.** Bij webhooks: `$json.body.email`, niet `$json.email`.\n6. **JSON-in-een-string.** Sommige API's sturen `\"metadata\": \"{\\\"plan\\\":\\\"pro\\\"}\"`. Eerst `JSON.parse($json.metadata)`.\n7. **Datums en tijdzones.** `2026-09-24T08:15:00Z` is UTC; in België is dat 10:15 (zomertijd). Zet `GENERIC_TIMEZONE` correct op je n8n-server.\n\n> [!rule] Debugmethode in drie stappen\n> 1. Open de uitvoering (*Executions*) en klik op de node **vóór** de fout.\n> 2. Bekijk de **JSON**-weergave van de output: welk type en welk pad heeft het veld echt?\n> 3. Pas je expressie aan en test met **gepinde data** (Pin data) zodat je niet telkens een nieuwe webhook moet sturen.",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "mcq",
+     "skill": "data-bugs",
+     "level": 2,
+     "prompt": "Wat geeft de expressie `{{ \"10\" + 5 }}`?",
+     "explain": "Een string plus een getal = tekst aan elkaar plakken. Gebruik `Number(\"10\") + 5`.",
+     "options": [
+      "\"105\"",
+      "15",
+      "een fout",
+      "NaN"
+     ],
+     "answer": 0
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "match",
+   "skill": "json-read",
+   "level": 1,
+   "prompt": "Koppel elke waarde aan haar JSON-type.",
+   "explain": "Aanhalingstekens maken van alles een string.",
+   "pairs": [
+    [
+     "\"19.99\"",
+     "string"
+    ],
+    [
+     "19.99",
+     "number"
+    ],
+    [
+     "[1, 2]",
+     "array"
+    ],
+    [
+     "{\"a\": 1}",
+     "object"
+    ],
+    [
+     "null",
+     "null"
+    ],
+    [
+     "true",
+     "boolean"
+    ]
+   ]
+  },
+  {
+   "id": "p02",
+   "type": "mcq",
+   "skill": "json-read",
+   "level": 1,
+   "prompt": "Welke tekst is **geen** geldige JSON?",
+   "explain": "Enkele aanhalingstekens zijn niet toegestaan in JSON.",
+   "options": [
+    "`{'sku': 'A-1'}`",
+    "`{\"sku\": \"A-1\"}`",
+    "`[{\"sku\": \"A-1\"}, {\"sku\": \"B-7\"}]`",
+    "`{\"ok\": true, \"n\": 0}`"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p03",
+   "type": "jsexpr",
+   "skill": "json-read",
+   "level": 2,
+   "prompt": "Haal de **SKU van de tweede orderlijn** op.",
+   "explain": "Arrays beginnen bij index 0: `{{ $json.body.lines[1].sku }}`.",
+   "input": {
+    "headers": {
+     "content-type": "application/json",
+     "user-agent": "Shopify-Captain-Hook"
+    },
+    "params": {},
+    "query": {},
+    "body": {
+     "id": 4521,
+     "customer": {
+      "name": "Sofie Peeters",
+      "email": "Sofie.Peeters@Acme.be",
+      "vip": true
+     },
+     "lines": [
+      {
+       "sku": "A-1",
+       "qty": 2,
+       "price": "19.99"
+      },
+      {
+       "sku": "B-7",
+       "qty": 1,
+       "price": "5.50"
+      }
+     ],
+     "coupon": null,
+     "created_at": "2026-09-24T08:15:00Z"
+    }
+   },
+   "expected": "B-7",
+   "solution": "{{ $json.body.lines[1].sku }}"
+  },
+  {
+   "id": "p04",
+   "type": "jsexpr",
+   "skill": "json-read",
+   "level": 2,
+   "prompt": "Hoe lees je een key met een spatie? Haal de stad op.",
+   "explain": "Haakjesnotatie: `{{ $json[\"Billing Address\"].City }}`.",
+   "input": {
+    "Billing Address": {
+     "Street": "Veldstraat 1",
+     "City": "Gent"
+    }
+   },
+   "expected": "Gent",
+   "solution": "{{ $json[\"Billing Address\"].City }}"
+  },
+  {
+   "id": "p05",
+   "type": "mcq",
+   "skill": "item-model",
+   "level": 1,
+   "prompt": "Waar staat de payload van een POST in de output van de **Webhook-node**?",
+   "explain": "De Webhook-node geeft `headers`, `params`, `query` en `body`.",
+   "options": [
+    "`$json.body`",
+    "`$json`",
+    "`$json.data`",
+    "`$json.payload`"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p06",
+   "type": "mcq",
+   "skill": "item-model",
+   "level": 2,
+   "prompt": "Wat is de interne structuur van n8n-data?",
+   "explain": "`[{ json: {…} }, …]` — eventueel met `binary` en `pairedItem`.",
+   "options": [
+    "Een array van objecten met een `json`-key",
+    "Eén groot JSON-object met alle records als keys",
+    "Een tabel met rijen en kolommen, zoals een CSV",
+    "Een array van JSON-strings die je zelf parset"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p07",
+   "type": "jsexpr",
+   "skill": "item-model",
+   "level": 2,
+   "prompt": "Hoeveel **orderlijnen** telt de bestelling?",
+   "explain": "`{{ $json.body.lines.length }}`",
+   "input": {
+    "headers": {
+     "content-type": "application/json",
+     "user-agent": "Shopify-Captain-Hook"
+    },
+    "params": {},
+    "query": {},
+    "body": {
+     "id": 4521,
+     "customer": {
+      "name": "Sofie Peeters",
+      "email": "Sofie.Peeters@Acme.be",
+      "vip": true
+     },
+     "lines": [
+      {
+       "sku": "A-1",
+       "qty": 2,
+       "price": "19.99"
+      },
+      {
+       "sku": "B-7",
+       "qty": 1,
+       "price": "5.50"
+      }
+     ],
+     "coupon": null,
+     "created_at": "2026-09-24T08:15:00Z"
+    }
+   },
+   "expected": 2,
+   "solution": "{{ $json.body.lines.length }}"
+  },
+  {
+   "id": "p08",
+   "type": "numeric",
+   "skill": "per-item",
+   "level": 1,
+   "prompt": "3 bestellingen met elk 4 orderlijnen → *Split Out* op de orderlijnen → *Slack*-node. Hoeveel berichten verstuurt Slack?",
+   "explain": "12 items na Split Out → 12 berichten (tenzij Execute Once of Aggregate).",
+   "value": 12,
+   "abs": 0
+  },
+  {
+   "id": "p09",
+   "type": "mcq",
+   "skill": "per-item",
+   "level": 2,
+   "prompt": "Welke instelling laat een node exact **één** keer draaien, ook bij 20 input-items?",
+   "explain": "Execute Once gebruikt alleen het eerste item.",
+   "options": [
+    "Execute Once",
+    "Always Output Data",
+    "Retry On Fail",
+    "Continue On Fail"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p10",
+   "type": "mcq",
+   "skill": "per-item",
+   "level": 2,
+   "prompt": "Een IF-node stuurt **0 items** naar de false-tak. Wat gebeurt er met de nodes op die tak?",
+   "explain": "Geen items = niets uit te voeren. ‘Always Output Data’ kan een leeg item forceren.",
+   "options": [
+    "Ze draaien niet",
+    "Ze draaien met een leeg item",
+    "Ze falen met een fout",
+    "Ze draaien één keer met null"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p11",
+   "type": "jsexpr",
+   "skill": "expressions",
+   "level": 2,
+   "prompt": "Schrijf de expressie die **'VIP'** of **'normaal'** teruggeeft op basis van `customer.vip`.",
+   "explain": "Ternaire operator: `{{ $json.body.customer.vip ? 'VIP' : 'normaal' }}`.",
+   "input": {
+    "headers": {
+     "content-type": "application/json",
+     "user-agent": "Shopify-Captain-Hook"
+    },
+    "params": {},
+    "query": {},
+    "body": {
+     "id": 4521,
+     "customer": {
+      "name": "Sofie Peeters",
+      "email": "Sofie.Peeters@Acme.be",
+      "vip": true
+     },
+     "lines": [
+      {
+       "sku": "A-1",
+       "qty": 2,
+       "price": "19.99"
+      },
+      {
+       "sku": "B-7",
+       "qty": 1,
+       "price": "5.50"
+      }
+     ],
+     "coupon": null,
+     "created_at": "2026-09-24T08:15:00Z"
+    }
+   },
+   "expected": "VIP",
+   "solution": "{{ $json.body.customer.vip ? 'VIP' : 'normaal' }}"
+  },
+  {
+   "id": "p12",
+   "type": "jsexpr",
+   "skill": "expressions",
+   "level": 2,
+   "prompt": "Geef de kortingscode terug, of **'geen'** als die ontbreekt.",
+   "explain": "`??` vervangt `null` en `undefined`: `{{ $json.body.coupon ?? 'geen' }}`.",
+   "input": {
+    "headers": {
+     "content-type": "application/json",
+     "user-agent": "Shopify-Captain-Hook"
+    },
+    "params": {},
+    "query": {},
+    "body": {
+     "id": 4521,
+     "customer": {
+      "name": "Sofie Peeters",
+      "email": "Sofie.Peeters@Acme.be",
+      "vip": true
+     },
+     "lines": [
+      {
+       "sku": "A-1",
+       "qty": 2,
+       "price": "19.99"
+      },
+      {
+       "sku": "B-7",
+       "qty": 1,
+       "price": "5.50"
+      }
+     ],
+     "coupon": null,
+     "created_at": "2026-09-24T08:15:00Z"
+    }
+   },
+   "expected": "geen",
+   "solution": "{{ $json.body.coupon ?? 'geen' }}"
+  },
+  {
+   "id": "p13",
+   "type": "jsexpr",
+   "skill": "expressions",
+   "level": 3,
+   "prompt": "Bouw de tekst **Order 4521 van Sofie Peeters** met twee expressies in één veld.",
+   "explain": "Tekst + expressies worden aaneengeplakt tot één string.",
+   "input": {
+    "headers": {
+     "content-type": "application/json",
+     "user-agent": "Shopify-Captain-Hook"
+    },
+    "params": {},
+    "query": {},
+    "body": {
+     "id": 4521,
+     "customer": {
+      "name": "Sofie Peeters",
+      "email": "Sofie.Peeters@Acme.be",
+      "vip": true
+     },
+     "lines": [
+      {
+       "sku": "A-1",
+       "qty": 2,
+       "price": "19.99"
+      },
+      {
+       "sku": "B-7",
+       "qty": 1,
+       "price": "5.50"
+      }
+     ],
+     "coupon": null,
+     "created_at": "2026-09-24T08:15:00Z"
+    }
+   },
+   "expected": "Order 4521 van Sofie Peeters",
+   "solution": "Order {{ $json.body.id }} van {{ $json.body.customer.name }}"
+  },
+  {
+   "id": "p14",
+   "type": "mcq",
+   "skill": "data-bugs",
+   "level": 1,
+   "prompt": "Wat geeft `(45.4789).toFixed(2)` terug?",
+   "explain": "toFixed levert altijd een string op.",
+   "options": [
+    "de string \"45.48\"",
+    "het getal 45.48",
+    "het getal 45",
+    "een fout"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p15",
+   "type": "mcq",
+   "skill": "data-bugs",
+   "level": 2,
+   "prompt": "Je krijgt de fout `lines.map is not a function`. Meest waarschijnlijke oorzaak?",
+   "explain": "`.map` bestaat enkel op arrays — controleer het type in de JSON-weergave.",
+   "options": [
+    "`lines` is geen array (bv. een object of null)",
+    "De Code-node is te traag",
+    "Je hebt Execute Once aangezet",
+    "De API gaf een 500"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p16",
+   "type": "jscode",
+   "skill": "data-bugs",
+   "level": 2,
+   "prompt": "Code-node: verwijder items **zonder bruikbaar e-mailadres** en normaliseer de rest (trim + kleine letters).",
+   "explain": "Filter op een niet-lege string, map naar een genormaliseerd object.",
+   "mode": "all",
+   "starter": "// Verwijder items zonder bruikbaar e-mailadres\n// en normaliseer het adres (spaties weg, kleine letters).\nreturn $input.all();",
+   "solution": "return $input.all()\n  .filter((i) => typeof i.json.email === 'string' && i.json.email.trim() !== '')\n  .map((i) => ({ json: { ...i.json, email: i.json.email.trim().toLowerCase() } }));",
+   "cases": [
+    {
+     "name": "gemengde data",
+     "items": [
+      {
+       "name": "Jan",
+       "email": "Jan@Acme.be"
+      },
+      {
+       "name": "Els",
+       "email": null
+      },
+      {
+       "name": "Bart",
+       "email": "  info@beta.be "
+      },
+      {
+       "name": "Mo"
+      }
+     ],
+     "expected": [
+      {
+       "name": "Jan",
+       "email": "jan@acme.be"
+      },
+      {
+       "name": "Bart",
+       "email": "info@beta.be"
+      }
+     ]
+    },
+    {
+     "name": "lege input",
+     "items": [],
+     "expected": []
+    }
+   ]
+  },
+  {
+   "id": "p17",
+   "type": "jscode",
+   "skill": "per-item",
+   "level": 2,
+   "prompt": "Code-node in modus **Run Once for Each Item**: voeg `segment` toe ('enterprise' vanaf 50 werknemers, anders 'smb').",
+   "explain": "In ‘each’-modus is `$json` het huidige item; geef één item terug.",
+   "mode": "each",
+   "starter": "// Run Once for Each Item: $json is het huidige item.\n// Voeg het veld segment toe: 'enterprise' vanaf 50 werknemers, anders 'smb'.\nreturn { json: $json };",
+   "solution": "return { json: { ...$json, segment: $json.employees >= 50 ? 'enterprise' : 'smb' } };",
+   "cases": [
+    {
+     "items": [
+      {
+       "name": "Sofie",
+       "company": "Acme BV",
+       "employees": 250
+      },
+      {
+       "name": "Jonas",
+       "company": "Beta NV",
+       "employees": 12
+      },
+      {
+       "name": "Lotte",
+       "company": "Gamma",
+       "employees": 60
+      }
+     ],
+     "expected": [
+      {
+       "name": "Sofie",
+       "company": "Acme BV",
+       "employees": 250,
+       "segment": "enterprise"
+      },
+      {
+       "name": "Jonas",
+       "company": "Beta NV",
+       "employees": 12,
+       "segment": "smb"
+      },
+      {
+       "name": "Lotte",
+       "company": "Gamma",
+       "employees": 60,
+       "segment": "enterprise"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p18",
+   "type": "jscode",
+   "skill": "item-model",
+   "level": 3,
+   "prompt": "Code-node: maak van elke **orderlijn** een apart item (zoals Split Out), met sku, qty, price (getal) en email (kleine letters).",
+   "explain": "Twee lussen: over de input-items en over `body.lines`.",
+   "mode": "all",
+   "starter": "// Elk input-item is een Webhook-item met de payload in json.body.\n// Geef één item per orderlijn terug met:\n//   sku, qty, price (als getal) en email (de klant, in kleine letters)\nconst out = [];\nfor (const item of $input.all()) {\n  const body = item.json.body;\n  // TODO: loop over body.lines en push per lijn { json: { … } }\n}\nreturn out;",
+   "solution": "const out = [];\nfor (const item of $input.all()) {\n  const body = item.json.body;\n  for (const line of body.lines) {\n    out.push({ json: {\n      sku: line.sku,\n      qty: line.qty,\n      price: Number(line.price),\n      email: body.customer.email.toLowerCase(),\n    } });\n  }\n}\nreturn out;",
+   "cases": [
+    {
+     "name": "1 bestelling",
+     "items": [
+      {
+       "headers": {
+        "content-type": "application/json",
+        "user-agent": "Shopify-Captain-Hook"
+       },
+       "params": {},
+       "query": {},
+       "body": {
+        "id": 4521,
+        "customer": {
+         "name": "Sofie Peeters",
+         "email": "Sofie.Peeters@Acme.be",
+         "vip": true
+        },
+        "lines": [
+         {
+          "sku": "A-1",
+          "qty": 2,
+          "price": "19.99"
+         },
+         {
+          "sku": "B-7",
+          "qty": 1,
+          "price": "5.50"
+         }
+        ],
+        "coupon": null,
+        "created_at": "2026-09-24T08:15:00Z"
+       }
+      }
+     ],
+     "expected": [
+      {
+       "sku": "A-1",
+       "qty": 2,
+       "price": 19.99,
+       "email": "sofie.peeters@acme.be"
+      },
+      {
+       "sku": "B-7",
+       "qty": 1,
+       "price": 5.5,
+       "email": "sofie.peeters@acme.be"
+      }
+     ]
+    },
+    {
+     "name": "2 bestellingen",
+     "items": [
+      {
+       "headers": {
+        "content-type": "application/json",
+        "user-agent": "Shopify-Captain-Hook"
+       },
+       "params": {},
+       "query": {},
+       "body": {
+        "id": 4521,
+        "customer": {
+         "name": "Sofie Peeters",
+         "email": "Sofie.Peeters@Acme.be",
+         "vip": true
+        },
+        "lines": [
+         {
+          "sku": "A-1",
+          "qty": 2,
+          "price": "19.99"
+         },
+         {
+          "sku": "B-7",
+          "qty": 1,
+          "price": "5.50"
+         }
+        ],
+        "coupon": null,
+        "created_at": "2026-09-24T08:15:00Z"
+       }
+      },
+      {
+       "headers": {
+        "content-type": "application/json",
+        "user-agent": "Shopify-Captain-Hook"
+       },
+       "params": {},
+       "query": {},
+       "body": {
+        "id": 4522,
+        "customer": {
+         "name": "Jonas Maes",
+         "email": "JONAS@beta.be",
+         "vip": false
+        },
+        "lines": [
+         {
+          "sku": "C-3",
+          "qty": 5,
+          "price": "2.00"
+         }
+        ],
+        "coupon": "WELKOM10",
+        "created_at": "2026-09-24T09:00:00Z"
+       }
+      }
+     ],
+     "expected": [
+      {
+       "sku": "A-1",
+       "qty": 2,
+       "price": 19.99,
+       "email": "sofie.peeters@acme.be"
+      },
+      {
+       "sku": "B-7",
+       "qty": 1,
+       "price": 5.5,
+       "email": "sofie.peeters@acme.be"
+      },
+      {
+       "sku": "C-3",
+       "qty": 5,
+       "price": 2,
+       "email": "jonas@beta.be"
+      }
+     ]
+    },
+    {
+     "name": "bestelling zonder lijnen",
+     "items": [
+      {
+       "headers": {
+        "content-type": "application/json",
+        "user-agent": "Shopify-Captain-Hook"
+       },
+       "params": {},
+       "query": {},
+       "body": {
+        "id": 4523,
+        "customer": {
+         "name": "Lotte",
+         "email": "lotte@gamma.be",
+         "vip": false
+        },
+        "lines": [],
+        "coupon": null,
+        "created_at": "2026-09-24T10:00:00Z"
+       }
+      }
+     ],
+     "expected": []
+    }
+   ]
+  },
+  {
+   "id": "p19",
+   "type": "explain",
+   "skill": "per-item",
+   "level": 3,
+   "prompt": "Een klant mailt: *“Waarom kreeg ons Slack-kanaal 40 berichten toen we 40 contacten importeerden?”* Schrijf een antwoord van 3–4 zinnen in gewone taal, met oorzaak én oplossing.",
+   "explain": "Klantcommunicatie is de helft van je dienstverlening.",
+   "model": "n8n voert een node uit voor elk item dat binnenkomt. Jullie import leverde 40 items (één per contact), dus de Slack-node verstuurde 40 berichten. Ik bundel de contacten voortaan eerst tot één item (Aggregate) en stuur één samenvattend bericht, bijvoorbeeld ‘40 contacten geïmporteerd’ met de namen. Wil je alleen een melding dat de import klaar is, dan zet ik de Slack-node op ‘Execute Once’.",
+   "rubric": [
+    "Legt uit dat een node per item draait",
+    "Verbindt 40 contacten met 40 items/berichten",
+    "Geeft een concrete oplossing (Aggregate of Execute Once)",
+    "Geen jargon zonder uitleg; klantvriendelijke toon"
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "mcq",
+   "skill": "json-read",
+   "level": 1,
+   "prompt": "Wat is het verschil tussen `\"phone\": null` en een ontbrekende key `phone`?",
+   "explain": "`$json.phone` geeft `null` of `undefined` — behandel beide (bv. met `??`).",
+   "options": [
+    "null = expliciet leeg; ontbrekend = undefined in een expressie",
+    "Er is geen verschil",
+    "null is een lege string",
+    "Een ontbrekende key geeft altijd een fout"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m02",
+   "type": "jsexpr",
+   "skill": "json-read",
+   "level": 2,
+   "prompt": "Haal de **voornaam** van de klant op (alles vóór de eerste spatie).",
+   "explain": "`{{ $json.body.customer.name.split(' ')[0] }}`",
+   "input": {
+    "headers": {
+     "content-type": "application/json",
+     "user-agent": "Shopify-Captain-Hook"
+    },
+    "params": {},
+    "query": {},
+    "body": {
+     "id": 4521,
+     "customer": {
+      "name": "Sofie Peeters",
+      "email": "Sofie.Peeters@Acme.be",
+      "vip": true
+     },
+     "lines": [
+      {
+       "sku": "A-1",
+       "qty": 2,
+       "price": "19.99"
+      },
+      {
+       "sku": "B-7",
+       "qty": 1,
+       "price": "5.50"
+      }
+     ],
+     "coupon": null,
+     "created_at": "2026-09-24T08:15:00Z"
+    }
+   },
+   "expected": "Sofie",
+   "solution": "{{ $json.body.customer.name.split(' ')[0] }}"
+  },
+  {
+   "id": "m03",
+   "type": "jsexpr",
+   "skill": "json-read",
+   "level": 2,
+   "prompt": "Haal de **prijs van de eerste orderlijn als getal** op.",
+   "explain": "`{{ Number($json.body.lines[0].price) }}` — de prijs komt binnen als string.",
+   "input": {
+    "headers": {
+     "content-type": "application/json",
+     "user-agent": "Shopify-Captain-Hook"
+    },
+    "params": {},
+    "query": {},
+    "body": {
+     "id": 4521,
+     "customer": {
+      "name": "Sofie Peeters",
+      "email": "Sofie.Peeters@Acme.be",
+      "vip": true
+     },
+     "lines": [
+      {
+       "sku": "A-1",
+       "qty": 2,
+       "price": "19.99"
+      },
+      {
+       "sku": "B-7",
+       "qty": 1,
+       "price": "5.50"
+      }
+     ],
+     "coupon": null,
+     "created_at": "2026-09-24T08:15:00Z"
+    }
+   },
+   "expected": 19.99,
+   "solution": "{{ Number($json.body.lines[0].price) }}"
+  },
+  {
+   "id": "m04",
+   "type": "mcq",
+   "skill": "item-model",
+   "level": 1,
+   "prompt": "Een Webhook ontvangt één request met 100 contacten in `body.contacts`. Je wilt per contact een CRM-record. Welke node zet je direct na de Webhook?",
+   "explain": "Split Out: één item met een array → één item per element.",
+   "options": [
+    "Split Out op `body.contacts`",
+    "Aggregate op `body.contacts`",
+    "Execute Once op de CRM-node",
+    "Merge met de CRM-node"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m05",
+   "type": "jsexpr",
+   "skill": "item-model",
+   "level": 2,
+   "prompt": "Schrijf de expressie voor het **aantal contacten** in deze webhook.",
+   "explain": "`{{ $json.body.contacts.length }}`",
+   "input": {
+    "headers": {
+     "content-type": "application/json",
+     "user-agent": "Shopify-Captain-Hook"
+    },
+    "params": {},
+    "query": {},
+    "body": {
+     "contacts": [
+      {
+       "email": "a@x.be"
+      },
+      {
+       "email": "b@x.be"
+      },
+      {
+       "email": "c@x.be"
+      }
+     ]
+    }
+   },
+   "expected": 3,
+   "solution": "{{ $json.body.contacts.length }}"
+  },
+  {
+   "id": "m06",
+   "type": "numeric",
+   "skill": "per-item",
+   "level": 2,
+   "prompt": "Een Schedule-trigger geeft 1 item; een HTTP-node haalt 25 leads op en geeft 25 items; daarna een *Send Email*-node zonder speciale instellingen. Hoeveel e-mails?",
+   "explain": "25 items → 25 e-mails.",
+   "value": 25,
+   "abs": 0
+  },
+  {
+   "id": "m07",
+   "type": "mcq",
+   "skill": "per-item",
+   "level": 2,
+   "prompt": "Je wilt na een import van 40 contacten **één** Slack-bericht met alle namen. Beste aanpak?",
+   "explain": "Execute Once zou alleen het eerste contact gebruiken; Aggregate bundelt alles.",
+   "options": [
+    "Aggregate (items → één item) en dan één bericht opbouwen",
+    "Execute Once op de Slack-node zodat hij één keer draait",
+    "Split Out vóór Slack zodat elk contact apart verwerkt wordt",
+    "Always Output Data aanzetten op de Slack-node"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m08",
+   "type": "jsexpr",
+   "skill": "per-item",
+   "level": 3,
+   "prompt": "Deze expressie draait **per item**. Schrijf ze zo dat je voor elk lead `Bedrijf (segment)` krijgt, met segment 'enterprise' vanaf 50 werknemers en anders 'smb'.",
+   "explain": "`{{ $json.company }} ({{ $json.employees >= 50 ? 'enterprise' : 'smb' }})`",
+   "items": [
+    {
+     "name": "Sofie",
+     "company": "Acme BV",
+     "employees": 250
+    },
+    {
+     "name": "Jonas",
+     "company": "Beta NV",
+     "employees": 12
+    },
+    {
+     "name": "Lotte",
+     "company": "Gamma",
+     "employees": 60
+    }
+   ],
+   "perItem": true,
+   "expected": [
+    "Acme BV (enterprise)",
+    "Beta NV (smb)",
+    "Gamma (enterprise)"
+   ],
+   "solution": "{{ $json.company }} ({{ $json.employees >= 50 ? 'enterprise' : 'smb' }})"
+  },
+  {
+   "id": "m09",
+   "type": "jsexpr",
+   "skill": "expressions",
+   "level": 2,
+   "prompt": "Geef het e-mailadres van de klant in **kleine letters**.",
+   "explain": "`{{ $json.body.customer.email.toLowerCase() }}`",
+   "input": {
+    "headers": {
+     "content-type": "application/json",
+     "user-agent": "Shopify-Captain-Hook"
+    },
+    "params": {},
+    "query": {},
+    "body": {
+     "id": 4521,
+     "customer": {
+      "name": "Sofie Peeters",
+      "email": "Sofie.Peeters@Acme.be",
+      "vip": true
+     },
+     "lines": [
+      {
+       "sku": "A-1",
+       "qty": 2,
+       "price": "19.99"
+      },
+      {
+       "sku": "B-7",
+       "qty": 1,
+       "price": "5.50"
+      }
+     ],
+     "coupon": null,
+     "created_at": "2026-09-24T08:15:00Z"
+    }
+   },
+   "expected": "sofie.peeters@acme.be",
+   "solution": "{{ $json.body.customer.email.toLowerCase() }}"
+  },
+  {
+   "id": "m10",
+   "type": "jsexpr",
+   "skill": "expressions",
+   "level": 3,
+   "prompt": "Bereken het **totaalbedrag** (qty × prijs over alle lijnen) als **getal** met 2 decimalen.",
+   "explain": "reduce + Number + afronden: `{{ Math.round($json.body.lines.reduce((s, l) => s + l.qty * Number(l.price), 0) * 100) / 100 }}`. `toFixed` zou een string geven.",
+   "input": {
+    "headers": {
+     "content-type": "application/json",
+     "user-agent": "Shopify-Captain-Hook"
+    },
+    "params": {},
+    "query": {},
+    "body": {
+     "id": 4521,
+     "customer": {
+      "name": "Sofie Peeters",
+      "email": "Sofie.Peeters@Acme.be",
+      "vip": true
+     },
+     "lines": [
+      {
+       "sku": "A-1",
+       "qty": 2,
+       "price": "19.99"
+      },
+      {
+       "sku": "B-7",
+       "qty": 1,
+       "price": "5.50"
+      }
+     ],
+     "coupon": null,
+     "created_at": "2026-09-24T08:15:00Z"
+    }
+   },
+   "expected": 45.48,
+   "solution": "{{ Math.round($json.body.lines.reduce((s, l) => s + l.qty * Number(l.price), 0) * 100) / 100 }}"
+  },
+  {
+   "id": "m11",
+   "type": "jsexpr",
+   "skill": "expressions",
+   "level": 2,
+   "prompt": "Geef het telefoonnummer van de klant, of **'onbekend'** als het veld ontbreekt — zonder dat de expressie crasht.",
+   "explain": "`{{ $json.body.customer?.phone ?? 'onbekend' }}`",
+   "input": {
+    "headers": {
+     "content-type": "application/json",
+     "user-agent": "Shopify-Captain-Hook"
+    },
+    "params": {},
+    "query": {},
+    "body": {
+     "id": 4521,
+     "customer": {
+      "name": "Sofie Peeters",
+      "email": "Sofie.Peeters@Acme.be",
+      "vip": true
+     },
+     "lines": [
+      {
+       "sku": "A-1",
+       "qty": 2,
+       "price": "19.99"
+      },
+      {
+       "sku": "B-7",
+       "qty": 1,
+       "price": "5.50"
+      }
+     ],
+     "coupon": null,
+     "created_at": "2026-09-24T08:15:00Z"
+    }
+   },
+   "expected": "onbekend",
+   "solution": "{{ $json.body.customer?.phone ?? 'onbekend' }}"
+  },
+  {
+   "id": "m12",
+   "type": "mcq",
+   "skill": "data-bugs",
+   "level": 2,
+   "prompt": "Prijzen komen binnen als `\"19.99\"`. Je expressie `{{ $json.price + 5 }}` geeft `\"19.995\"`. Correcte fix?",
+   "explain": "Eerst omzetten naar een getal.",
+   "options": [
+    "`{{ Number($json.price) + 5 }}`",
+    "`{{ $json.price.toFixed(2) + 5 }}`",
+    "`{{ $json.price - -5 }}`",
+    "`{{ JSON.stringify($json.price) + 5 }}`"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m13",
+   "type": "mcq",
+   "skill": "data-bugs",
+   "level": 2,
+   "prompt": "Een API stuurt `\"metadata\": \"{\\\"plan\\\":\\\"pro\\\"}\"`. Hoe haal je `plan` op?",
+   "explain": "De waarde is een JSON-string; eerst parsen.",
+   "options": [
+    "`{{ JSON.parse($json.metadata).plan }}`",
+    "`{{ $json.metadata.plan }}`",
+    "`{{ $json.metadata[\"plan\"] }}`",
+    "`{{ $json.metadata.toJSON().plan }}`"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m14",
+   "type": "jscode",
+   "skill": "data-bugs",
+   "level": 3,
+   "prompt": "Code-node: zet `amount` om naar een getal (het kan binnenkomen als `\"12,50\"` met komma, als `\"12.50\"` of als getal) en laat items met een ongeldig bedrag weg.",
+   "explain": "Vervang de komma, zet om met Number en filter op `Number.isFinite`.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all()\n  .map((i) => ({ json: { ...i.json, amount: Number(String(i.json.amount).replace(',', '.')) } }))\n  .filter((i) => Number.isFinite(i.json.amount));",
+   "cases": [
+    {
+     "items": [
+      {
+       "id": 1,
+       "amount": "12,50"
+      },
+      {
+       "id": 2,
+       "amount": "7.25"
+      },
+      {
+       "id": 3,
+       "amount": 3
+      },
+      {
+       "id": 4,
+       "amount": "n.v.t."
+      }
+     ],
+     "expected": [
+      {
+       "id": 1,
+       "amount": 12.5
+      },
+      {
+       "id": 2,
+       "amount": 7.25
+      },
+      {
+       "id": 3,
+       "amount": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m15",
+   "type": "jscode",
+   "skill": "item-model",
+   "level": 3,
+   "prompt": "Code-node: tel per bestelling het aantal **stuks** (som van `qty`) en geef per input-item `{ order, pieces }` terug.",
+   "explain": "Per item `body.lines.reduce(...)`.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().map((i) => ({ json: { order: i.json.body.id, pieces: i.json.body.lines.reduce((s, l) => s + l.qty, 0) } }));",
+   "cases": [
+    {
+     "items": [
+      {
+       "headers": {
+        "content-type": "application/json",
+        "user-agent": "Shopify-Captain-Hook"
+       },
+       "params": {},
+       "query": {},
+       "body": {
+        "id": 4521,
+        "customer": {
+         "name": "Sofie Peeters",
+         "email": "Sofie.Peeters@Acme.be",
+         "vip": true
+        },
+        "lines": [
+         {
+          "sku": "A-1",
+          "qty": 2,
+          "price": "19.99"
+         },
+         {
+          "sku": "B-7",
+          "qty": 1,
+          "price": "5.50"
+         }
+        ],
+        "coupon": null,
+        "created_at": "2026-09-24T08:15:00Z"
+       }
+      },
+      {
+       "headers": {
+        "content-type": "application/json",
+        "user-agent": "Shopify-Captain-Hook"
+       },
+       "params": {},
+       "query": {},
+       "body": {
+        "id": 4522,
+        "customer": {
+         "name": "Jonas Maes",
+         "email": "JONAS@beta.be",
+         "vip": false
+        },
+        "lines": [
+         {
+          "sku": "C-3",
+          "qty": 5,
+          "price": "2.00"
+         }
+        ],
+        "coupon": "WELKOM10",
+        "created_at": "2026-09-24T09:00:00Z"
+       }
+      },
+      {
+       "headers": {
+        "content-type": "application/json",
+        "user-agent": "Shopify-Captain-Hook"
+       },
+       "params": {},
+       "query": {},
+       "body": {
+        "id": 4523,
+        "customer": {
+         "name": "Lotte",
+         "email": "lotte@gamma.be",
+         "vip": false
+        },
+        "lines": [],
+        "coupon": null,
+        "created_at": "2026-09-24T10:00:00Z"
+       }
+      }
+     ],
+     "expected": [
+      {
+       "order": 4521,
+       "pieces": 3
+      },
+      {
+       "order": 4522,
+       "pieces": 5
+      },
+      {
+       "order": 4523,
+       "pieces": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m16",
+   "type": "mcq",
+   "skill": "json-read",
+   "level": 2,
+   "prompt": "Welk pad geeft `\"B-7\"` in de voorbeeldwebhook?",
+   "explain": "Index 1 = tweede element; payload zit onder body.",
+   "options": [
+    "`body.lines[1].sku`",
+    "`body.lines[2].sku`",
+    "`body.lines.sku[1]`",
+    "`lines[1].sku`"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m17",
+   "type": "numeric",
+   "skill": "per-item",
+   "level": 3,
+   "prompt": "Een workflow: Webhook (1 item) → Split Out op 6 orderlijnen → HTTP Request naar een voorraad-API (standaardinstellingen) → Aggregate → Slack. Hoeveel HTTP-requests en hoeveel Slack-berichten samen?",
+   "explain": "6 requests (één per orderlijn) + 1 Slack-bericht (na Aggregate is er 1 item) = 7.",
+   "value": 7,
+   "abs": 0
+  }
+ ],
+ "production": {
+  "type": "jscode",
+  "mode": "all",
+  "prompt": "**Klantopdracht.** Een webshop stuurt bij elke bestelling een webhook (zie input). De boekhoudsoftware van de klant verwacht **één regel per product**. Bouw de Code-node die van elke webhook-bestelling één item per product maakt met deze velden:\n\n- `order` — het ordernummer\n- `sku`, `title`\n- `quantity` — als getal\n- `unit_price` — als getal\n- `line_total` — getal, afgerond op 2 decimalen\n- `customer_email` — getrimd en in kleine letters\n\nLet op: sommige waarden komen als string binnen, en een bestelling kan **nul** producten hebben.",
+  "starter": "// Shopify-achtige webhook → één item per product.\n// Velden per item: order, sku, title, quantity (getal), unit_price (getal),\n// line_total (getal, afgerond op 2 decimalen), customer_email (getrimd, kleine letters)\nconst out = [];\nfor (const item of $input.all()) {\n  const order = item.json.body;\n  // TODO\n}\nreturn out;",
+  "solution": "const out = [];\nfor (const item of $input.all()) {\n  const order = item.json.body;\n  for (const li of order.line_items) {\n    const unit = Number(li.price);\n    const qty = Number(li.quantity);\n    out.push({ json: {\n      order: order.order_number,\n      sku: li.sku,\n      title: li.title,\n      quantity: qty,\n      unit_price: unit,\n      line_total: Math.round(unit * qty * 100) / 100,\n      customer_email: String(order.email).trim().toLowerCase(),\n    } });\n  }\n}\nreturn out;",
+  "cases": [
+   {
+    "name": "2 producten",
+    "items": [
+     {
+      "headers": {
+       "content-type": "application/json",
+       "user-agent": "Shopify-Captain-Hook"
+      },
+      "params": {},
+      "query": {},
+      "body": {
+       "order_number": 1042,
+       "email": "Info@Klant.BE ",
+       "line_items": [
+        {
+         "sku": "TSH-M",
+         "title": "T-shirt M",
+         "quantity": 2,
+         "price": "12.50"
+        },
+        {
+         "sku": "MUG",
+         "title": "Mok",
+         "quantity": 1,
+         "price": "8.00"
+        }
+       ]
+      }
+     }
+    ],
+    "expected": [
+     {
+      "order": 1042,
+      "sku": "TSH-M",
+      "title": "T-shirt M",
+      "quantity": 2,
+      "unit_price": 12.5,
+      "line_total": 25,
+      "customer_email": "info@klant.be"
+     },
+     {
+      "order": 1042,
+      "sku": "MUG",
+      "title": "Mok",
+      "quantity": 1,
+      "unit_price": 8,
+      "line_total": 8,
+      "customer_email": "info@klant.be"
+     }
+    ]
+   },
+   {
+    "name": "decimalen en string-hoeveelheid",
+    "items": [
+     {
+      "headers": {
+       "content-type": "application/json",
+       "user-agent": "Shopify-Captain-Hook"
+      },
+      "params": {},
+      "query": {},
+      "body": {
+       "order_number": 1043,
+       "email": "jan@voorbeeld.be",
+       "line_items": [
+        {
+         "sku": "PEN",
+         "title": "Pen",
+         "quantity": 3,
+         "price": "0.10"
+        },
+        {
+         "sku": "NB",
+         "title": "Notitieboek",
+         "quantity": 3,
+         "price": "19.99"
+        },
+        {
+         "sku": "BAG",
+         "title": "Tas",
+         "quantity": "1",
+         "price": "4.95"
+        }
+       ]
+      }
+     }
+    ],
+    "expected": [
+     {
+      "order": 1043,
+      "sku": "PEN",
+      "title": "Pen",
+      "quantity": 3,
+      "unit_price": 0.1,
+      "line_total": 0.3,
+      "customer_email": "jan@voorbeeld.be"
+     },
+     {
+      "order": 1043,
+      "sku": "NB",
+      "title": "Notitieboek",
+      "quantity": 3,
+      "unit_price": 19.99,
+      "line_total": 59.97,
+      "customer_email": "jan@voorbeeld.be"
+     },
+     {
+      "order": 1043,
+      "sku": "BAG",
+      "title": "Tas",
+      "quantity": 1,
+      "unit_price": 4.95,
+      "line_total": 4.95,
+      "customer_email": "jan@voorbeeld.be"
+     }
+    ]
+   },
+   {
+    "name": "bestelling zonder producten",
+    "items": [
+     {
+      "headers": {
+       "content-type": "application/json",
+       "user-agent": "Shopify-Captain-Hook"
+      },
+      "params": {},
+      "query": {},
+      "body": {
+       "order_number": 1044,
+       "email": "leeg@voorbeeld.be",
+       "line_items": []
+      }
+     }
+    ],
+    "expected": []
+   },
+   {
+    "name": "twee bestellingen tegelijk",
+    "items": [
+     {
+      "headers": {
+       "content-type": "application/json",
+       "user-agent": "Shopify-Captain-Hook"
+      },
+      "params": {},
+      "query": {},
+      "body": {
+       "order_number": 1042,
+       "email": "Info@Klant.BE ",
+       "line_items": [
+        {
+         "sku": "TSH-M",
+         "title": "T-shirt M",
+         "quantity": 2,
+         "price": "12.50"
+        },
+        {
+         "sku": "MUG",
+         "title": "Mok",
+         "quantity": 1,
+         "price": "8.00"
+        }
+       ]
+      }
+     },
+     {
+      "headers": {
+       "content-type": "application/json",
+       "user-agent": "Shopify-Captain-Hook"
+      },
+      "params": {},
+      "query": {},
+      "body": {
+       "order_number": 1044,
+       "email": "leeg@voorbeeld.be",
+       "line_items": []
+      }
+     }
+    ],
+    "expected": [
+     {
+      "order": 1042,
+      "sku": "TSH-M",
+      "title": "T-shirt M",
+      "quantity": 2,
+      "unit_price": 12.5,
+      "line_total": 25,
+      "customer_email": "info@klant.be"
+     },
+     {
+      "order": 1042,
+      "sku": "MUG",
+      "title": "Mok",
+      "quantity": 1,
+      "unit_price": 8,
+      "line_total": 8,
+      "customer_email": "info@klant.be"
+     }
+    ]
+   }
+  ],
+  "model": "Twee geneste lussen (bestellingen → producten), expliciete `Number(...)`-conversies, afronden met `Math.round(x * 100) / 100` en `String(email).trim().toLowerCase()`. Een lege `line_items`-array levert vanzelf nul items op.",
+  "rubric": []
+ },
+ "cards": [
+  {
+   "id": "c-format",
+   "front": "Hoe ziet n8n-data er intern uit?",
+   "back": "Een **array van items**: `[{ json: { … } }]` (optioneel met `binary` en `pairedItem`)",
+   "skill": "item-model"
+  },
+  {
+   "id": "c-body",
+   "front": "Waar zit de payload van een webhook?",
+   "back": "`$json.body`",
+   "answers": [
+    "$json.body",
+    "{{ $json.body }}"
+   ],
+   "lang": "code",
+   "skill": "item-model"
+  },
+  {
+   "id": "c-per-item",
+   "front": "Hoeveel keer draait een node bij N input-items?",
+   "back": "**N keer** (tenzij *Execute Once*)",
+   "answers": [
+    "N",
+    "n keer",
+    "N keer"
+   ],
+   "lang": "nl",
+   "skill": "per-item"
+  },
+  {
+   "id": "c-zero",
+   "front": "Wat gebeurt er als een tak 0 items krijgt?",
+   "back": "De volgende nodes op die tak **draaien niet** (tenzij *Always Output Data*)",
+   "skill": "per-item"
+  },
+  {
+   "id": "c-split-agg",
+   "front": "Split Out vs Aggregate?",
+   "back": "**Split Out**: array → items · **Aggregate**: items → één item met een array",
+   "skill": "per-item"
+  },
+  {
+   "id": "c-tofixed",
+   "front": "Welk type geeft `toFixed(2)` terug?",
+   "back": "een **string**",
+   "answers": [
+    "string",
+    "een string"
+   ],
+   "lang": "nl",
+   "skill": "data-bugs"
+  },
+  {
+   "id": "c-nullish",
+   "front": "Welke operator geeft een standaardwaarde bij `null`/`undefined`?",
+   "back": "`??` (nullish coalescing)",
+   "answers": [
+    "??"
+   ],
+   "lang": "code",
+   "skill": "expressions"
+  },
+  {
+   "id": "c-space-key",
+   "front": "Hoe lees je de key `First Name` uit `$json`?",
+   "back": "`$json[\"First Name\"]`",
+   "answers": [
+    "$json[\"First Name\"]",
+    "$json['First Name']"
+   ],
+   "lang": "code",
+   "skill": "json-read"
+  }
+ ],
+ "sources": [
+  "n8n Docs — Data structure, Expressions, Webhook node (docs.n8n.io)",
+  "RFC 8259 — The JavaScript Object Notation (JSON) Data Interchange Format"
+ ],
+ "kind": "core",
+ "meta": {
+  "author": "claude",
+  "created": "2026-09-25"
+ }
+}

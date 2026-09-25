@@ -1,0 +1,935 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "french",
+ "id": 1,
+ "roadmap": "fr-c1-01-registres",
+ "title": "Registres et tournures soutenues",
+ "subtitle": "Van courant naar soutenu: precieze werkwoorden, tournures met de juiste nuance, de subjonctif in de relatieve zin en de vraag met inversie",
+ "level": "C1",
+ "minutes": 45,
+ "summary": "Op C1/C2-niveau overtuig je niet met meer woorden maar met de juiste woorden in het juiste register. Deze les geeft je de reflexen om elke tekst of e-mail bewust een register hoger te tillen — zonder archaïsch te worden.",
+ "objectives": [
+  {
+   "id": "registres",
+   "text": "Je herkent familier, courant en soutenu en plaatst een zin in het juiste register."
+  },
+  {
+   "id": "lexique",
+   "text": "Je vervangt faire, dire, mettre, avoir en il y a door het precieze soutenu-werkwoord."
+  },
+  {
+   "id": "tournures",
+   "text": "Je begrijpt en gebruikt tournures soutenues met de juiste nuance, inclusief de valkuil faire long feu."
+  },
+  {
+   "id": "subj-relative",
+   "text": "Je kiest indicatif of subjonctif in een relatieve bijzin (ideaal, superlatief, ontkenning)."
+  },
+  {
+   "id": "interrogation",
+   "text": "Je formuleert vragen in het soutenu met (complexe) inversie en de euphonische t."
+  }
+ ],
+ "vocab": [
+  {
+   "term": "avoir voix au chapitre",
+   "meaning": "inspraak hebben; mogen meebeslissen"
+  },
+  {
+   "term": "chercher midi à quatorze heures",
+   "meaning": "het onnodig ingewikkeld maken"
+  },
+  {
+   "term": "faire long feu",
+   "meaning": "mislukken; zijn doel missen"
+  },
+  {
+   "term": "au demeurant",
+   "meaning": "overigens; trouwens"
+  },
+  {
+   "term": "péremptoire",
+   "meaning": "stellig; categorisch"
+  },
+  {
+   "term": "battre en brèche",
+   "meaning": "ondermijnen; onderuithalen"
+  },
+  {
+   "term": "il appert que",
+   "meaning": "het blijkt dat"
+  },
+  {
+   "term": "être sur la sellette",
+   "meaning": "onder vuur liggen"
+  },
+  {
+   "term": "de surcroît",
+   "meaning": "bovendien"
+  },
+  {
+   "term": "commettre une erreur",
+   "meaning": "een fout begaan"
+  }
+ ],
+ "diagnostic": {
+  "intro": "Je bent volgens je profiel C1. Deze test gaat van B2 tot C2 en meet waar je écht staat: je coach gebruikt het resultaat om de volgende lessen scherper af te stemmen — minder herhaling van wat je al kent, meer diepgang waar het wringt.",
+  "bands": [
+   "B2",
+   "C1",
+   "C2"
+  ],
+  "items": [
+   {
+    "id": "d01",
+    "type": "cloze",
+    "skill": "subjonctif",
+    "level": 1,
+    "prompt": "Vul de juiste vorm van **venir** in.",
+    "explain": "*Il faut que* + subjonctif.",
+    "text": "Il faut que tu {{viennes}} demain.",
+    "lang": "fr",
+    "band": "B2"
+   },
+   {
+    "id": "d02",
+    "type": "mcq",
+    "skill": "hypothese",
+    "level": 1,
+    "prompt": "Si j'avais su, je ___ venu.",
+    "explain": "Irréel du passé: si + plus-que-parfait → conditionnel passé (*je serais venu*).",
+    "options": [
+     "serais",
+     "serai",
+     "aurais",
+     "étais"
+    ],
+    "answer": 0,
+    "band": "B2"
+   },
+   {
+    "id": "d03",
+    "type": "cloze",
+    "skill": "subjonctif",
+    "level": 2,
+    "prompt": "Vul de juiste vorm van **être** in.",
+    "explain": "*Bien que* + subjonctif.",
+    "text": "Bien qu'il {{soit}} tard, nous continuons.",
+    "lang": "fr",
+    "band": "B2"
+   },
+   {
+    "id": "d04",
+    "type": "mcq",
+    "skill": "faux-amis",
+    "level": 1,
+    "prompt": "Wat betekent **actuellement**?",
+    "explain": "Faux ami: *actuellement* = momenteel.",
+    "options": [
+     "op dit moment",
+     "eigenlijk",
+     "uiteindelijk",
+     "werkelijk"
+    ],
+    "answer": 0,
+    "band": "B2"
+   },
+   {
+    "id": "d05",
+    "type": "cloze",
+    "skill": "accord-pp",
+    "level": 2,
+    "prompt": "Vul het voltooid deelwoord van **écrire** in.",
+    "explain": "COD (*que* = les lettres) staat vóór *avoir* → akkoord.",
+    "text": "Les lettres qu'elle a {{écrites}} sont arrivées.",
+    "lang": "fr",
+    "band": "C1"
+   },
+   {
+    "id": "d06",
+    "type": "cloze",
+    "skill": "accord-pp",
+    "level": 2,
+    "prompt": "Vul het voltooid deelwoord van **laver** in.",
+    "explain": "COD *les mains* staat erachter → geen akkoord.",
+    "text": "Elles se sont {{lavé}} les mains.",
+    "lang": "fr",
+    "band": "C1"
+   },
+   {
+    "id": "d07",
+    "type": "mcq",
+    "skill": "modes",
+    "level": 2,
+    "prompt": "Au cas où vous ___ des questions, contactez-moi.",
+    "explain": "*Au cas où* + conditionnel.",
+    "options": [
+     "auriez",
+     "avez",
+     "ayez",
+     "aurez"
+    ],
+    "answer": 0,
+    "band": "C1"
+   },
+   {
+    "id": "d08",
+    "type": "type",
+    "skill": "nominalisation",
+    "level": 2,
+    "prompt": "Geef het zelfstandig naamwoord van **refuser** (met lidwoord).",
+    "explain": "refuser → le refus.",
+    "answers": [
+     "le refus"
+    ],
+    "lang": "fr",
+    "band": "C1"
+   },
+   {
+    "id": "d09",
+    "type": "cloze",
+    "skill": "orthographe",
+    "level": 3,
+    "prompt": "Vul in (quel que / quelque).",
+    "explain": "*Quel que* + être, akkoord met het onderwerp (*arguments*, m. mv.).",
+    "text": "{{Quels que}} soient vos arguments, la décision est prise.",
+    "lang": "fr",
+    "band": "C2"
+   },
+   {
+    "id": "d10",
+    "type": "cloze",
+    "skill": "accord-pp",
+    "level": 3,
+    "prompt": "Vul het voltooid deelwoord van **succéder** in.",
+    "explain": "*succéder à* → *se* is COI → onveranderlijk.",
+    "text": "Les rois qui se sont {{succédé}} ont tous échoué.",
+    "lang": "fr",
+    "band": "C2"
+   },
+   {
+    "id": "d11",
+    "type": "mcq",
+    "skill": "tournures",
+    "level": 3,
+    "prompt": "« Ce projet a fait long feu. » Betekenis?",
+    "explain": "*Faire long feu* = mislukken.",
+    "options": [
+     "Het project is mislukt",
+     "Het project duurde lang",
+     "Het project was een succes",
+     "Het project werd uitgesteld"
+    ],
+    "answer": 0,
+    "band": "C2"
+   },
+   {
+    "id": "d12",
+    "type": "cloze",
+    "skill": "passe-simple",
+    "level": 3,
+    "prompt": "Vul de passé simple van **venir** in (3e pers. mv.).",
+    "explain": "venir → ils vinrent.",
+    "text": "Ils {{vinrent}} à l'aube.",
+    "lang": "fr",
+    "band": "C2"
+   },
+   {
+    "id": "d13",
+    "type": "cloze",
+    "skill": "accord-pp",
+    "level": 3,
+    "prompt": "Vul het voltooid deelwoord van **falloir** in.",
+    "explain": "Onpersoonlijk werkwoord → altijd onveranderlijk.",
+    "text": "Les efforts qu'il a {{fallu}} ont été considérables.",
+    "lang": "fr",
+    "band": "C2"
+   }
+  ]
+ },
+ "sections": [
+  {
+   "id": "registres",
+   "title": "Trois registres, trois effets",
+   "md": "Op C1/C2-niveau is correcte grammatica de ondergrens. Wat je als overtuigend spreker onderscheidt, is **registerbeheersing**: bewust kiezen tussen *familier*, *courant* en *soutenu* — en nooit onbedoeld wisselen binnen één tekst.\n\n| Familier | Courant | Soutenu |\n|---|---|---|\n| [[fr:T'as vu le mec ?]] | [[fr:Tu as vu cet homme ?]] | [[fr:Avez-vous aperçu cet individu ?]] |\n| [[fr:Ça me gonfle.]] | [[fr:Ça m'ennuie.]] | [[fr:Cela m'importune.]] |\n| [[fr:On laisse tomber le projet.]] | [[fr:Nous abandonnons le projet.]] | [[fr:Il nous faut renoncer à ce projet.]] |\n\n**Kenmerken van het soutenu:**\n\n- *ne* van de ontkenning staat er altijd (*je ne sais pas*, nooit *je sais pas*);\n- *nous* in plaats van *on*; *cela* in plaats van *ça*;\n- vragen met **inversie** (*Venez-vous ?*), geen *est-ce que* of intonatievraag;\n- precieze werkwoorden in plaats van *faire, dire, mettre, avoir, il y a*;\n- geen anglicismen of afkortingen (*le boss, un mail, la réu*).\n\n> [!pitfall] Te hoog is ook fout\n> Soutenu is niet archaïsch. *Ne… point* of de *subjonctif imparfait* (*qu'il fût*) zijn in een zakelijke e-mail eerder lachwekkend dan elegant. Mik op **helder, precies en verzorgd** — het register van een goed geschreven jaarverslag of een diplomatieke nota.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "registres",
+     "level": 1,
+     "prompt": "In welk register staat « Cela m'importune » ?",
+     "explain": "*Cela* + *importuner*: verzorgd register.",
+     "options": [
+      "soutenu",
+      "courant",
+      "familier",
+      "argotique"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "verbes",
+   "title": "Les verbes passe-partout",
+   "md": "De snelste weg naar een hoger register: vervang de **passe-partoutwerkwoorden** door het precieze werkwoord dat bij het zelfstandig naamwoord hoort (*collocatie*).\n\n| Courant | Soutenu | Voorbeeld |\n|---|---|---|\n| faire une enquête | **mener / conduire** une enquête | La commission **mène** une enquête. |\n| faire une erreur | **commettre** une erreur | Il a **commis** une erreur de jugement. |\n| faire un effort | **fournir / consentir** un effort | Nous **consentirons** cet effort. |\n| dire son avis | **exprimer / émettre** un avis | Le comité **a émis** un avis favorable. |\n| mettre en place | **instaurer / établir** | Nous **instaurons** une procédure. |\n| il y a un problème | **il se pose** un problème | Un problème **se pose**. |\n| donner une autorisation | **accorder / octroyer** | L'État **octroie** une subvention. |\n| commencer | **entamer / amorcer** | Les parties **ont entamé** les négociations. |\n| finir | **achever / parachever** | Le chantier **est achevé**. |\n| demander | **solliciter** | Je **sollicite** votre bienveillance. |\n\n> [!tip] Werkwijze bij het herschrijven\n> Onderstreep in je tekst elk *faire, dire, mettre, avoir, il y a* en vraag je af: welk specifiek werkwoord hoort bij dit naamwoord? Dat ene reflex tilt een tekst meteen een register hoger.",
+   "checks": [
+    {
+     "id": "c2",
+     "type": "type",
+     "skill": "lexique",
+     "level": 2,
+     "prompt": "Herschrijf in het soutenu: **faire une erreur**",
+     "explain": "*commettre une erreur*.",
+     "answers": [
+      "commettre une erreur"
+     ],
+     "lang": "fr"
+    }
+   ]
+  },
+  {
+   "id": "tournures",
+   "title": "Tournures soutenues à maîtriser",
+   "md": "Een handvol **tournures** geeft je Frans autoriteit — op voorwaarde dat je de nuance exact kent.\n\n| Tournure | Betekenis | Voorbeeld |\n|---|---|---|\n| avoir voix au chapitre | inspraak hebben, mogen meebeslissen | Les salariés doivent **avoir voix au chapitre**. |\n| chercher midi à quatorze heures | het onnodig ingewikkeld maken | La solution est simple : ne cherchons pas **midi à quatorze heures**. |\n| **faire long feu** | **mislukken**, zijn doel missen | Ses promesses **ont fait long feu** face au budget. |\n| **ne pas faire long feu** | **niet lang duren** | Ce gouvernement **n'a pas fait long feu**. |\n| au demeurant | overigens, trouwens | L'argument, **au demeurant** fragile, n'a convaincu personne. |\n| péremptoire | stellig, categorisch | Il a opposé un refus **péremptoire**. |\n| battre en brèche | ondermijnen, onderuithalen | Ces chiffres **battent en brèche** la thèse officielle. |\n| il appert que | het blijkt (juridisch/administratief) | **Il appert que** le contrat a été résilié. |\n| être sur la sellette | onder vuur liggen, ter verantwoording geroepen worden | Le directeur est **sur la sellette**. |\n| de surcroît | bovendien | Le projet est coûteux et, **de surcroît**, risqué. |\n\n> [!warning] De grootste valkuil: *faire long feu*\n> Het beeld komt van een vuurwapen waarvan het kruit traag opbrandt zonder dat het schot vertrekt: de poging **mislukt**. Wie *faire long feu* gebruikt voor ‘lang duren’, zegt precies het omgekeerde van wat hij bedoelt — een fout die ook moedertaalsprekers maken. ‘Niet lang duren’ is **ne pas faire long feu**.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "mcq",
+     "skill": "tournures",
+     "level": 2,
+     "prompt": "« Ses promesses n'ont pas fait long feu. » Betekenis?",
+     "explain": "*Ne pas faire long feu* = niet lang duren.",
+     "options": [
+      "Ze hielden niet lang stand",
+      "Ze zijn mislukt",
+      "Ze waren overtuigend",
+      "Ze werden ingelost"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "subjonctif",
+   "title": "Le subjonctif dans la relative",
+   "md": "In een relatieve bijzin kies je tussen **indicatif** (feit, bestaand antecedent) en **subjonctif** (hypothese, ideaal, subjectief oordeel).\n\n| Context | Wijs | Voorbeeld |\n|---|---|---|\n| concreet, bestaand antecedent | indicatif | Je connais un avocat qui **est** spécialisé en droit fiscal. |\n| gezocht ideaal (bestaat het?) | **subjonctif** | Je cherche un collaborateur qui **connaisse** le marché grec. |\n| na superlatief / *le seul, l'unique, le premier, le dernier* | **subjonctif** (soutenu) | C'est le meilleur rapport que j'**aie** lu. |\n| na ontkennende of vragende hoofdzin | **subjonctif** | Je ne connais personne qui **puisse** vous aider. |\n\nHetzelfde antecedent kan dus twee wijzen krijgen, met een ander effect:\n\n- [[fr:Je cherche un assistant qui parle grec.]] → ik weet dat zo iemand bestaat (of ik denk aan iemand).\n- [[fr:Je cherche un assistant qui sache le grec.]] → ik zoek een ideaalprofiel; of het bestaat, is onzeker.\n\n> [!rule] Na de superlatief\n> In verzorgd Frans volgt na een superlatief of *le seul / l'unique* de **subjonctif**, omdat het oordeel subjectief is: *C'est la seule issue qui **soit** envisageable.* De indicatif is daar courant en klinkt in een formele tekst slordig.",
+   "checks": [
+    {
+     "id": "c4",
+     "type": "cloze",
+     "skill": "subj-relative",
+     "level": 2,
+     "prompt": "Vul de juiste vorm van **connaître** in (gezocht ideaal).",
+     "explain": "Ideaal/hypothetisch antecedent → subjonctif.",
+     "text": "Je cherche un collaborateur qui {{connaisse}} le marché grec.",
+     "lang": "fr"
+    }
+   ]
+  },
+  {
+   "id": "question",
+   "title": "La question soutenue",
+   "md": "Een vraag verraadt meteen je register.\n\n| Register | Vorm | Voorbeeld |\n|---|---|---|\n| familier | intonatie | Vous venez ? · C'est quoi, le problème ? |\n| courant | *est-ce que* | Est-ce que vous venez ? |\n| **soutenu** | **inversie** | **Venez-vous ?** · Quel est le problème ? |\n\n**Complexe inversie** — met een zelfstandig naamwoord als onderwerp blijft het naamwoord vooraan en herhaal je het met een voornaamwoord: [[fr:Le directeur viendra-t-il demain ?]]\n\n**Euphonische *t*** — eindigt het werkwoord op een klinker en volgt *il, elle* of *on*, dan voeg je *-t-* in: [[fr:Parle-t-il français ?]], [[fr:A-t-elle signé le contrat ?]], [[fr:Viendra-t-on à un accord ?]]\n\nAndere soutenu-formules: [[fr:Que pensez-vous de cette proposition ?]] · [[fr:Qu'en est-il du budget ?]] · [[fr:Pourriez-vous me faire part de votre position ?]]",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "mcq",
+     "skill": "interrogation",
+     "level": 1,
+     "prompt": "Welke vraag is correct gevormd?",
+     "explain": "Euphonische *-t-* tussen klinker en *elle*.",
+     "options": [
+      "A-t-elle signé le contrat ?",
+      "A-elle signé le contrat ?",
+      "At-elle signé le contrat ?",
+      "A t'elle signé le contrat ?"
+     ],
+     "answer": 0
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "registres",
+   "level": 1,
+   "prompt": "In welk register staat « T'as vu le mec ? » ?",
+   "explain": "Weggelaten klinker (*t'as*), *mec*, intonatievraag.",
+   "options": [
+    "familier",
+    "courant",
+    "soutenu",
+    "littéraire"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "mcq",
+   "skill": "registres",
+   "level": 2,
+   "prompt": "Welke zin is **soutenu**?",
+   "explain": "*Il nous faut* + precies werkwoord (*renoncer à*).",
+   "options": [
+    "Il nous faut renoncer à ce projet.",
+    "On laisse tomber le projet.",
+    "Faut qu'on arrête ce projet.",
+    "Le projet, on l'arrête."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p03",
+   "type": "match",
+   "skill": "lexique",
+   "level": 1,
+   "prompt": "Koppel het courant werkwoord aan het soutenu-alternatief.",
+   "explain": "Precieze werkwoorden = hoger register.",
+   "pairs": [
+    [
+     "commencer",
+     "entamer"
+    ],
+    [
+     "finir",
+     "achever"
+    ],
+    [
+     "demander",
+     "solliciter"
+    ],
+    [
+     "donner (une autorisation)",
+     "octroyer"
+    ]
+   ]
+  },
+  {
+   "id": "p04",
+   "type": "type",
+   "skill": "lexique",
+   "level": 2,
+   "prompt": "Herschrijf in het soutenu: **faire une enquête**",
+   "explain": "*mener / conduire une enquête*.",
+   "answers": [
+    "mener une enquête",
+    "conduire une enquête",
+    "diligenter une enquête"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "p05",
+   "type": "type",
+   "skill": "lexique",
+   "level": 2,
+   "prompt": "Herschrijf in het soutenu: **mettre en place une procédure**",
+   "explain": "*instaurer une procédure*.",
+   "answers": [
+    "instaurer une procédure",
+    "établir une procédure",
+    "instituer une procédure"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "p06",
+   "type": "cloze",
+   "skill": "lexique",
+   "level": 2,
+   "prompt": "Vervang *il y a* door een verzorgde constructie.",
+   "explain": "*Il existe* is verzorgder dan *il y a*.",
+   "text": "Il {{existe}} plusieurs solutions.",
+   "lang": "fr"
+  },
+  {
+   "id": "p07",
+   "type": "mcq",
+   "skill": "tournures",
+   "level": 1,
+   "prompt": "« Ce projet a fait long feu. » Betekenis?",
+   "explain": "*Faire long feu* = mislukken.",
+   "options": [
+    "Het is mislukt",
+    "Het heeft lang geduurd",
+    "Het was een groot succes",
+    "Het werd uitgesteld"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p08",
+   "type": "match",
+   "skill": "tournures",
+   "level": 2,
+   "prompt": "Koppel tournure en betekenis.",
+   "explain": "Ken de exacte nuance.",
+   "pairs": [
+    [
+     "avoir voix au chapitre",
+     "inspraak hebben"
+    ],
+    [
+     "chercher midi à quatorze heures",
+     "het onnodig ingewikkeld maken"
+    ],
+    [
+     "au demeurant",
+     "overigens"
+    ],
+    [
+     "battre en brèche",
+     "onderuithalen"
+    ],
+    [
+     "être sur la sellette",
+     "onder vuur liggen"
+    ]
+   ]
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "tournures",
+   "level": 3,
+   "prompt": "Welke tournure betekent **'het blijkt dat'** in juridische taal?",
+   "explain": "*Il appert que…*",
+   "answers": [
+    "il appert que"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "p10",
+   "type": "cloze",
+   "skill": "subj-relative",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **être** in.",
+   "explain": "Na *la seule* → subjonctif.",
+   "text": "C'est la seule solution qui {{soit}} envisageable.",
+   "lang": "fr"
+  },
+  {
+   "id": "p11",
+   "type": "mcq",
+   "skill": "subj-relative",
+   "level": 2,
+   "prompt": "J'ai trouvé un assistant qui ___ le grec.",
+   "explain": "Concreet, gevonden antecedent → indicatif.",
+   "options": [
+    "sait",
+    "sache",
+    "saurait",
+    "sût"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p12",
+   "type": "cloze",
+   "skill": "subj-relative",
+   "level": 3,
+   "prompt": "Vul de juiste vorm van **pouvoir** in.",
+   "explain": "Ontkennende hoofdzin → subjonctif.",
+   "text": "Je ne connais personne qui {{puisse}} vous aider.",
+   "lang": "fr"
+  },
+  {
+   "id": "p13",
+   "type": "type",
+   "skill": "interrogation",
+   "level": 2,
+   "prompt": "Herschrijf met inversie: « Est-ce que vous acceptez nos conditions ? »",
+   "explain": "*Acceptez-vous nos conditions ?*",
+   "answers": [
+    "Acceptez-vous nos conditions"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "p14",
+   "type": "order",
+   "skill": "interrogation",
+   "level": 2,
+   "prompt": "Bouw de vraag met complexe inversie.",
+   "explain": "Naamwoord vooraan + werkwoord-t-il.",
+   "tiles": [
+    "Le",
+    "directeur",
+    "viendra-t-il",
+    "demain",
+    "?"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "p15",
+   "type": "dictation",
+   "skill": "tournures",
+   "level": 2,
+   "prompt": "Luister en schrijf de zin.",
+   "explain": "*Il appert que* + *commettre une erreur*.",
+   "text": "Il appert que la société a commis une erreur.",
+   "lang": "fr"
+  },
+  {
+   "id": "p16",
+   "type": "speak",
+   "skill": "tournures",
+   "level": 2,
+   "prompt": "Spreek deze zin vlot uit.",
+   "explain": "Let op de liaison en het ritme.",
+   "text": "Il convient de ne pas chercher midi à quatorze heures.",
+   "lang": "fr"
+  },
+  {
+   "id": "p17",
+   "type": "explain",
+   "skill": "registres",
+   "level": 3,
+   "prompt": "Herschrijf in het soutenu: « On a un gros souci avec ce client, il paie jamais à temps et ça nous coûte cher. »",
+   "explain": "Vergelijk jouw versie punt per punt.",
+   "model": "Nous rencontrons une difficulté sérieuse avec ce client : il ne règle jamais ses factures dans les délais, ce qui nous occasionne des frais considérables.",
+   "rubric": [
+    "*on* → *nous*",
+    "*ne … jamais* met *ne*",
+    "precieze werkwoorden (*rencontrer, régler, occasionner*)",
+    "geen *souci/ça*"
+   ],
+   "lang": "fr"
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "mcq",
+   "skill": "registres",
+   "level": 1,
+   "prompt": "Welk kenmerk hoort **niet** bij het soutenu?",
+   "explain": "Soutenu gebruikt *nous*.",
+   "options": [
+    "*on* in plaats van *nous*",
+    "*cela* in plaats van *ça*",
+    "vragen met inversie",
+    "de volledige ontkenning *ne… pas*"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m02b",
+   "type": "cloze",
+   "skill": "registres",
+   "level": 2,
+   "prompt": "Maak de zin soutenu (vervang *ça*).",
+   "explain": "*ça* → *cela* in het soutenu.",
+   "text": "{{Cela}} m'importune profondément.",
+   "lang": "fr"
+  },
+  {
+   "id": "m02",
+   "type": "mcq",
+   "skill": "registres",
+   "level": 2,
+   "prompt": "Welke vervanging tilt « Ça m'ennuie » naar het soutenu?",
+   "explain": "*Cela* + precies werkwoord.",
+   "options": [
+    "Cela m'importune.",
+    "Ça me gonfle.",
+    "Ça me saoule.",
+    "Ça me dérange un peu."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m03",
+   "type": "type",
+   "skill": "lexique",
+   "level": 2,
+   "prompt": "Herschrijf in het soutenu: **commencer une négociation**",
+   "explain": "*entamer une négociation*.",
+   "answers": [
+    "entamer une négociation",
+    "amorcer une négociation",
+    "engager une négociation"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m04",
+   "type": "type",
+   "skill": "lexique",
+   "level": 2,
+   "prompt": "Herschrijf in het soutenu: **donner une subvention**",
+   "explain": "*octroyer / accorder une subvention*.",
+   "answers": [
+    "octroyer une subvention",
+    "accorder une subvention",
+    "allouer une subvention"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m05",
+   "type": "cloze",
+   "skill": "lexique",
+   "level": 2,
+   "prompt": "Vul het precieze werkwoord in (i.p.v. *faire*).",
+   "explain": "*fournir / consentir un effort*.",
+   "text": "Il convient de {{fournir|consentir}} un effort supplémentaire.",
+   "lang": "fr"
+  },
+  {
+   "id": "m06",
+   "type": "type",
+   "skill": "lexique",
+   "level": 3,
+   "prompt": "Herschrijf in het soutenu: **il y a un problème**",
+   "explain": "*Un problème se pose.*",
+   "answers": [
+    "il se pose un problème",
+    "un problème se pose",
+    "il existe un problème"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m07",
+   "type": "mcq",
+   "skill": "tournures",
+   "level": 2,
+   "prompt": "« Cette mode a fait long feu. » Betekenis?",
+   "explain": "*Faire long feu* = mislukken.",
+   "options": [
+    "Ze heeft niet het verhoopte effect gehad",
+    "Ze heeft lang geduurd",
+    "Ze is overal doorgebroken",
+    "Ze komt terug"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m08",
+   "type": "type",
+   "skill": "tournures",
+   "level": 2,
+   "prompt": "Welke tournure betekent **'het onnodig ingewikkeld maken'**?",
+   "explain": "*chercher midi à quatorze heures*.",
+   "answers": [
+    "chercher midi à quatorze heures",
+    "chercher midi à 14 heures"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m09",
+   "type": "mcq",
+   "skill": "tournures",
+   "level": 2,
+   "prompt": "Les syndicats ont ___ la thèse du gouvernement.",
+   "explain": "*battre en brèche* = onderuithalen.",
+   "options": [
+    "battu en brèche",
+    "fait long feu",
+    "eu voix au chapitre",
+    "cherché midi à quatorze heures"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m10",
+   "type": "mcq",
+   "skill": "tournures",
+   "level": 1,
+   "prompt": "Wat betekent **au demeurant**?",
+   "explain": "*Au demeurant* = du reste, d'ailleurs.",
+   "options": [
+    "overigens, trouwens",
+    "tot slot, als besluit",
+    "desondanks, toch nog",
+    "voorlopig, in afwachting"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m11",
+   "type": "cloze",
+   "skill": "subj-relative",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **avoir** in.",
+   "explain": "Na een superlatief → subjonctif.",
+   "text": "C'est le meilleur rapport que j'{{aie}} lu.",
+   "lang": "fr"
+  },
+  {
+   "id": "m12",
+   "type": "cloze",
+   "skill": "subj-relative",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **être** in (bestaande persoon).",
+   "explain": "Concreet antecedent → indicatif.",
+   "text": "Je connais un avocat qui {{est}} spécialisé en droit fiscal.",
+   "lang": "fr"
+  },
+  {
+   "id": "m13",
+   "type": "cloze",
+   "skill": "subj-relative",
+   "level": 3,
+   "prompt": "Vul de juiste vorm van **pouvoir** in (vragende hoofdzin).",
+   "explain": "Vragende hoofdzin → subjonctif.",
+   "text": "Existe-t-il quelqu'un qui {{puisse}} trancher ?",
+   "lang": "fr"
+  },
+  {
+   "id": "m14",
+   "type": "mcq",
+   "skill": "subj-relative",
+   "level": 3,
+   "prompt": "Welke zin drukt een **gezocht ideaal** uit?",
+   "explain": "Subjonctif = bestaan niet gegarandeerd.",
+   "options": [
+    "Nous cherchons un local qui soit proche de la gare.",
+    "Nous avons un local qui est proche de la gare.",
+    "Nous louons le local qui est proche de la gare.",
+    "Nous visitons un local qui est proche de la gare."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m15",
+   "type": "type",
+   "skill": "interrogation",
+   "level": 2,
+   "prompt": "Herschrijf met complexe inversie: « Est-ce que le ministre viendra ? »",
+   "explain": "*Le ministre viendra-t-il ?*",
+   "answers": [
+    "Le ministre viendra-t-il"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m16",
+   "type": "mcq",
+   "skill": "interrogation",
+   "level": 1,
+   "prompt": "Welke vorm is correct?",
+   "explain": "Euphonische *-t-*, met twee koppeltekens.",
+   "options": [
+    "Parle-t-il français ?",
+    "Parle-il français ?",
+    "Parlet-il français ?",
+    "Parle t'il français ?"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m17",
+   "type": "dictation",
+   "skill": "tournures",
+   "level": 2,
+   "prompt": "Luister en schrijf de zin.",
+   "explain": "*a fait long feu* = is mislukt.",
+   "text": "Cette réforme a fait long feu.",
+   "lang": "fr"
+  },
+  {
+   "id": "m18",
+   "type": "type",
+   "skill": "interrogation",
+   "level": 3,
+   "prompt": "Herschrijf in het soutenu: « C'est quoi, votre avis ? »",
+   "explain": "*Quel est votre avis ?*",
+   "answers": [
+    "Quel est votre avis",
+    "Quel est votre avis ?"
+   ],
+   "lang": "fr"
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "fr",
+  "minWords": 70,
+  "prompt": "**Réécrivez ce courriel en registre soutenu** (70–120 mots). Vouvoyez le destinataire.\n\n> Salut Marc, on a un gros souci avec le fournisseur. Il nous a encore envoyé les mauvaises pièces et ça commence à nous coûter cher. Je pense qu'on devrait arrêter de bosser avec eux, mais je veux d'abord ton avis. Tu peux me dire ce que t'en penses avant vendredi ? Merci !",
+  "model": "Cher Monsieur,\n\nJe me permets de vous faire part d'une difficulté sérieuse avec notre fournisseur. Celui-ci nous a de nouveau livré des pièces non conformes, ce qui engendre des coûts de plus en plus importants. Il me semble opportun d'envisager de mettre un terme à cette collaboration ; je souhaiterais toutefois recueillir votre avis au préalable.\n\nPourriez-vous me faire part de votre position d'ici vendredi ? Je vous en remercie par avance.\n\nJe vous prie d'agréer, Monsieur, l'expression de mes salutations distinguées.",
+  "rubric": [
+   "Consequent *vous*; *on* vervangen door *nous* of een onpersoonlijke constructie",
+   "Geen familiere woorden meer (*souci, bosser, ça, t'en*)",
+   "Minstens drie precieze werkwoorden (bv. *faire part, engendrer, mettre un terme, recueillir*)",
+   "Vraag met inversie (*Pourriez-vous… ?*)",
+   "Correcte aanhef en slotformule"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-erreur",
+   "front": "Soutenu voor **faire une erreur**?",
+   "back": "commettre une erreur",
+   "answers": [
+    "commettre une erreur"
+   ],
+   "lang": "fr",
+   "skill": "lexique"
+  },
+  {
+   "id": "c-lfeu",
+   "front": "Wat betekent **faire long feu**?",
+   "back": "**mislukken**, zijn doel missen (≠ lang duren)",
+   "skill": "tournures"
+  },
+  {
+   "id": "c-nlfeu",
+   "front": "Wat betekent **ne pas faire long feu**?",
+   "back": "**niet lang duren**",
+   "skill": "tournures"
+  },
+  {
+   "id": "c-subj-rel",
+   "front": "Wanneer subjonctif in een relatieve zin?",
+   "back": "Gezocht **ideaal**, na **superlatief / le seul**, na **ontkennende of vragende** hoofdzin",
+   "skill": "subj-relative"
+  },
+  {
+   "id": "c-inv",
+   "front": "Soutenu voor **Est-ce que vous venez ?**",
+   "back": "Venez-vous ?",
+   "answers": [
+    "Venez-vous",
+    "Venez-vous ?"
+   ],
+   "lang": "fr",
+   "skill": "interrogation"
+  },
+  {
+   "id": "c-euph",
+   "front": "Waarom *A-t-elle* en niet *A-elle*?",
+   "back": "Euphonische **t** tussen een klinker en *il/elle/on*",
+   "skill": "interrogation"
+  },
+  {
+   "id": "c-enquete",
+   "front": "Soutenu voor **faire une enquête**?",
+   "back": "mener une enquête",
+   "answers": [
+    "mener une enquête",
+    "conduire une enquête"
+   ],
+   "lang": "fr",
+   "skill": "lexique"
+  }
+ ],
+ "sources": [
+  "Académie française — *Dire, ne pas dire*",
+  "Grevisse & Goosse, *Le Bon Usage* (16e éd.)",
+  "CNRTL — Trésor de la langue française informatisé"
+ ],
+ "kind": "core",
+ "meta": {
+  "author": "claude",
+  "created": "2026-09-25"
+ }
+}

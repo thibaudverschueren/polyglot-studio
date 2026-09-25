@@ -1,0 +1,544 @@
+{
+ "track": "french",
+ "goal": "Foutloos, genuanceerd Frans op C2-niveau (DALF C2): synthese, argumentatie, formele correspondentie en debat — ook in economische en juridische context.",
+ "principles": [
+  "Theorie in het Nederlands, voorbeelden en productie in het Frans (soutenu).",
+  "Elke les bevat een schrijfopdracht die de coach de volgende ochtend verbetert.",
+  "Grammatica gaat tot de uitzonderingen die ook moedertaalsprekers fout doen.",
+  "Register en precisie wegen even zwaar als correctheid."
+ ],
+ "modules": [
+  {
+   "id": "C1",
+   "title": "C1 — Precisie en register",
+   "topics": [
+    "fr-c1-01-registres",
+    "fr-c1-02-pp-pronominaux",
+    "fr-c1-03-hypothetique",
+    "fr-c1-04-precision-lexicale",
+    "fr-c1-05-rhetorique",
+    "fr-c1-06-subjonctif",
+    "fr-c1-07-pp-avoir",
+    "fr-c1-08-temps-litteraires",
+    "fr-c1-09-relatifs",
+    "fr-c1-10-negation",
+    "fr-c1-11-connecteurs",
+    "fr-c1-12-nominalisation",
+    "fr-c1-13-discours-rapporte",
+    "fr-c1-14-mise-en-relief",
+    "fr-c1-15-constructions-verbales"
+   ]
+  },
+  {
+   "id": "C2",
+   "title": "C2 — Meesterschap en genres",
+   "topics": [
+    "fr-c2-16-homophones",
+    "fr-c2-17-accords-avances",
+    "fr-c2-18-lexique-eco",
+    "fr-c2-19-synthese",
+    "fr-c2-20-essai",
+    "fr-c2-21-correspondance",
+    "fr-c2-22-oral",
+    "fr-c2-23-idiomes",
+    "fr-c2-24-stylistique",
+    "fr-c2-25-belgicismes",
+    "fr-c2-26-nl-fr",
+    "fr-c2-27-juridique",
+    "fr-c2-28-coherence",
+    "fr-c2-29-lecture-complexe",
+    "fr-c2-30-dalf"
+   ]
+  }
+ ],
+ "topics": [
+  {
+   "id": "fr-c1-01-registres",
+   "title": "Registres et tournures soutenues",
+   "level": "C1",
+   "objectives": [
+    "registres herkennen en omzetten",
+    "5 tournures soutenues correct gebruiken",
+    "subjonctif in relatieve zinnen"
+   ],
+   "theory": [
+    "courant → soutenu",
+    "avoir voix au chapitre, chercher midi à quatorze heures, faire long feu",
+    "subjonctif na superlatief/le seul"
+   ],
+   "example": "Een e-mail van een collega herschrijven voor een directie.",
+   "exercise": "Een alinea in drie registers.",
+   "test": "Register-transformaties, idiomatische betekenis, subjonctif."
+  },
+  {
+   "id": "fr-c1-02-pp-pronominaux",
+   "title": "L'accord du participe passé des verbes pronominaux",
+   "level": "C1",
+   "objectives": [
+    "COD-analyse bij pronominale werkwoorden",
+    "COI-werkwoorden herkennen",
+    "essentiellement pronominaux",
+    "se rendre compte"
+   ],
+   "theory": [
+    "regel van avoir binnen être",
+    "se succéder, se parler, se plaire: onveranderlijk",
+    "s'absenter, s'enfuir: altijd akkoord"
+   ],
+   "example": "Een verslag van een vergadering corrigeren.",
+   "exercise": "Een tekst met 10 pronominale vormen.",
+   "test": "Accord invullen en verantwoorden."
+  },
+  {
+   "id": "fr-c1-03-hypothetique",
+   "title": "Le système hypothétique et les modes après conjonction",
+   "level": "C1",
+   "objectives": [
+    "si + temps",
+    "au cas où + conditionnel",
+    "pourvu que/à condition que + subjonctif",
+    "quand bien même"
+   ],
+   "theory": [
+    "nooit conditionnel na si (hypothese)",
+    "irréel du passé",
+    "concessieve hypothese"
+   ],
+   "example": "Scenario's in een businessplan.",
+   "exercise": "Een scenario-analyse van 150 woorden.",
+   "test": "Wijs en tijd kiezen."
+  },
+  {
+   "id": "fr-c1-04-precision-lexicale",
+   "title": "Précision lexicale: anglicismes, barbarismes, paronymes",
+   "level": "C1",
+   "objectives": [
+    "frequente anglicismen vervangen",
+    "barbarismen corrigeren",
+    "paronymen onderscheiden"
+   ],
+   "theory": [
+    "pallier (sans à), initier ≠ lancer, opportunité ≠ occasion, être en charge de",
+    "conjecture/conjoncture, éminent/imminent"
+   ],
+   "example": "Een managementnota zuiveren.",
+   "exercise": "Een gecorrigeerde nota.",
+   "test": "Fouten opsporen en corrigeren."
+  },
+  {
+   "id": "fr-c1-05-rhetorique",
+   "title": "Rhétorique: litote, euphémisme, chiasme, connecteurs d'éloquence",
+   "level": "C1",
+   "objectives": [
+    "stijlfiguren herkennen",
+    "connecteurs soutenus gebruiken"
+   ],
+   "theory": [
+    "litote, euphémisme, chiasme, anaphore",
+    "partant, d'aucuns, il appert que, nonobstant"
+   ],
+   "example": "Een toespraak analyseren.",
+   "exercise": "Een retorische alinea.",
+   "test": "Figuren benoemen en produceren."
+  },
+  {
+   "id": "fr-c1-06-subjonctif",
+   "title": "Le subjonctif: tous les déclencheurs",
+   "level": "C1",
+   "objectives": [
+    "alle triggers",
+    "concordance",
+    "subjonctif vs indicatif na bepaalde werkwoorden (espérer, penser)"
+   ],
+   "theory": [
+    "bien que, afin que, avant que (ne), sans que, à moins que (ne)",
+    "je ne pense pas que + subj.",
+    "il est probable que + ind."
+   ],
+   "example": "Een aanbevelingsrapport.",
+   "exercise": "Een rapport van 150 woorden.",
+   "test": "Wijs kiezen, vormen produceren."
+  },
+  {
+   "id": "fr-c1-07-pp-avoir",
+   "title": "Accord du participe passé avec avoir: les cas épineux",
+   "level": "C1",
+   "objectives": [
+    "COD antéposé",
+    "en",
+    "fait/laissé + infinitif",
+    "onpersoonlijke werkwoorden"
+   ],
+   "theory": [
+    "les efforts qu'il a fallu (inv.)",
+    "des pommes, j'en ai mangé (inv.)",
+    "la maison que j'ai fait construire"
+   ],
+   "example": "Een dicteetekst op niveau Bernard Pivot.",
+   "exercise": "Een zelf geschreven tekst met 8 gevallen.",
+   "test": "Accord met verantwoording."
+  },
+  {
+   "id": "fr-c1-08-temps-litteraires",
+   "title": "Passé simple, passé antérieur et subjonctif imparfait",
+   "level": "C1",
+   "objectives": [
+    "vormen herkennen en produceren",
+    "gebruik in schrijftaal"
+   ],
+   "theory": [
+    "il fit, ils vinrent, qu'il fût",
+    "à peine eut-il fini que…"
+   ],
+   "example": "Een literair fragment analyseren.",
+   "exercise": "Een verhaal in passé simple.",
+   "test": "Vormen produceren."
+  },
+  {
+   "id": "fr-c1-09-relatifs",
+   "title": "Pronoms relatifs complexes",
+   "level": "C1",
+   "objectives": [
+    "dont, lequel/auquel/duquel",
+    "ce dont, ce à quoi",
+    "où temporel"
+   ],
+   "theory": [
+    "la personne à laquelle je pense",
+    "ce dont il s'agit",
+    "le jour où"
+   ],
+   "example": "Contractclausules formuleren.",
+   "exercise": "Een clausule-tekst.",
+   "test": "Relatieve zinnen bouwen."
+  },
+  {
+   "id": "fr-c1-10-negation",
+   "title": "Négation soutenue et ne explétif",
+   "level": "C1",
+   "objectives": [
+    "ne… point/guère/nullement",
+    "ne seul (je ne saurais)",
+    "ne explétif"
+   ],
+   "theory": [
+    "avant qu'il ne parte, je crains qu'il ne vienne",
+    "je ne saurais vous dire"
+   ],
+   "example": "Diplomatieke weigering formuleren.",
+   "exercise": "Een beleefde weigeringsbrief.",
+   "test": "Negatievormen produceren."
+  },
+  {
+   "id": "fr-c1-11-connecteurs",
+   "title": "Connecteurs logiques et articulation du discours",
+   "level": "C1",
+   "objectives": [
+    "concessie, oppositie, oorzaak, gevolg, doel"
+   ],
+   "theory": [
+    "certes… toutefois, dès lors, eu égard à, faute de, de sorte que (ind./subj.)"
+   ],
+   "example": "Een argumentatieve tekst structureren.",
+   "exercise": "Een betoog van 200 woorden.",
+   "test": "Connecteurs kiezen en gebruiken."
+  },
+  {
+   "id": "fr-c1-12-nominalisation",
+   "title": "Nominalisation et style administratif",
+   "level": "C1",
+   "objectives": [
+    "werkwoordelijke zinnen nominaliseren",
+    "administratieve stijl"
+   ],
+   "theory": [
+    "la mise en œuvre, le report, l'augmentation de"
+   ],
+   "example": "Een beleidsnota schrijven.",
+   "exercise": "Een nota van 150 woorden.",
+   "test": "Transformaties."
+  },
+  {
+   "id": "fr-c1-13-discours-rapporte",
+   "title": "Discours rapporté et concordance des temps",
+   "level": "C1",
+   "objectives": [
+    "direct → indirect",
+    "tijdverschuivingen"
+   ],
+   "theory": [
+    "il a dit qu'il viendrait",
+    "il se demandait si…"
+   ],
+   "example": "Een interview verslaan.",
+   "exercise": "Een verslag.",
+   "test": "Omzettingen."
+  },
+  {
+   "id": "fr-c1-14-mise-en-relief",
+   "title": "Mise en relief et inversion du sujet",
+   "level": "C1",
+   "objectives": [
+    "c'est… qui/que",
+    "dislocation",
+    "inversion na à peine, sans doute, peut-être, aussi"
+   ],
+   "theory": [
+    "Aussi faut-il…",
+    "Peut-être viendra-t-il"
+   ],
+   "example": "Een persbericht met nadruk.",
+   "exercise": "Een persbericht.",
+   "test": "Zinnen herschrijven."
+  },
+  {
+   "id": "fr-c1-15-constructions-verbales",
+   "title": "Constructions verbales et prépositions",
+   "level": "C1",
+   "objectives": [
+    "vaste voorzetsels",
+    "à ce que / de ce que"
+   ],
+   "theory": [
+    "se souvenir de / se rappeler qqch",
+    "s'attendre à ce que + subj.",
+    "pallier qqch"
+   ],
+   "example": "Een klachtenbrief.",
+   "exercise": "Een brief.",
+   "test": "Constructies invullen."
+  },
+  {
+   "id": "fr-c2-16-homophones",
+   "title": "Homophones grammaticaux et orthographe avancée",
+   "level": "C2",
+   "objectives": [
+    "quelque/quel que",
+    "tout (adverbe)",
+    "leur/leurs",
+    "participe présent vs adjectif verbal"
+   ],
+   "theory": [
+    "convainquant/convaincant, différant/différent",
+    "tout émue / toute honteuse"
+   ],
+   "example": "Een dictee.",
+   "exercise": "Eigen tekst met valkuilen.",
+   "test": "Spelling onder tijdsdruk."
+  },
+  {
+   "id": "fr-c2-17-accords-avances",
+   "title": "Accords avancés",
+   "level": "C2",
+   "objectives": [
+    "kleuren",
+    "demi/semi/nu",
+    "vu, excepté, ci-joint"
+   ],
+   "theory": [
+    "des robes bleu marine",
+    "une demi-heure / deux heures et demie"
+   ],
+   "example": "Een officiële brief met bijlagen.",
+   "exercise": "Een brief.",
+   "test": "Accorden."
+  },
+  {
+   "id": "fr-c2-18-lexique-eco",
+   "title": "Lexique économique et financier",
+   "level": "C2",
+   "objectives": [
+    "boekhouding, markten, fiscaliteit"
+   ],
+   "theory": [
+    "le bilan, le compte de résultat, la trésorerie, l'effet de levier"
+   ],
+   "example": "Een jaarverslag bespreken.",
+   "exercise": "Een analyse van cijfers.",
+   "test": "Woordenschat productief."
+  },
+  {
+   "id": "fr-c2-19-synthese",
+   "title": "La note de synthèse (DALF C2)",
+   "level": "C2",
+   "objectives": [
+    "methode",
+    "neutraliteit",
+    "structuur"
+   ],
+   "theory": [
+    "ontleding van bronnen, plan, herformulering"
+   ],
+   "example": "Een dossier van 3 bronnen.",
+   "exercise": "Een synthese van 220 woorden.",
+   "test": "Synthese beoordeeld met rubric."
+  },
+  {
+   "id": "fr-c2-20-essai",
+   "title": "L'essai argumenté",
+   "level": "C2",
+   "objectives": [
+    "dialectisch plan",
+    "overgangen",
+    "conclusie met ouverture"
+   ],
+   "theory": [
+    "thèse, antithèse, synthèse"
+   ],
+   "example": "Een stelling over AI en werk.",
+   "exercise": "Een essay van 250 woorden.",
+   "test": "Rubric-beoordeling."
+  },
+  {
+   "id": "fr-c2-21-correspondance",
+   "title": "La correspondance formelle",
+   "level": "C2",
+   "objectives": [
+    "aanhef en slotformules",
+    "toon"
+   ],
+   "theory": [
+    "Je vous prie d'agréer, Madame, l'expression de mes salutations distinguées"
+   ],
+   "example": "Een sollicitatiebrief.",
+   "exercise": "Een brief.",
+   "test": "Formules produceren."
+  },
+  {
+   "id": "fr-c2-22-oral",
+   "title": "Débat et prise de parole",
+   "level": "C2",
+   "objectives": [
+    "nuanceren",
+    "herformuleren",
+    "toegeven zonder te verliezen"
+   ],
+   "theory": [
+    "il n'en demeure pas moins que…",
+    "si je vous suis bien…"
+   ],
+   "example": "Een debat over duurzaamheid.",
+   "exercise": "Een uitgeschreven interventie.",
+   "test": "Uitdrukkingen gebruiken."
+  },
+  {
+   "id": "fr-c2-23-idiomes",
+   "title": "Expressions idiomatiques soutenues II",
+   "level": "C2",
+   "objectives": [
+    "20 idiomen met precieze nuance"
+   ],
+   "theory": [
+    "ménager la chèvre et le chou, tirer son épingle du jeu"
+   ],
+   "example": "Politieke analyse.",
+   "exercise": "Een column.",
+   "test": "Idiomen in context."
+  },
+  {
+   "id": "fr-c2-24-stylistique",
+   "title": "Stylistique: rythme et figures",
+   "level": "C2",
+   "objectives": [
+    "periode, gradatie, zeugma, oxymoron, hypallage"
+   ],
+   "theory": [
+    "ritme van de zin"
+   ],
+   "example": "Een passage van Camus analyseren.",
+   "exercise": "Een stilistische analyse.",
+   "test": "Figuren herkennen en maken."
+  },
+  {
+   "id": "fr-c2-25-belgicismes",
+   "title": "Belgicismes et variétés du français",
+   "level": "C2",
+   "objectives": [
+    "Belgische vs Franse normen",
+    "wanneer welk register"
+   ],
+   "theory": [
+    "septante, nonante, GSM, s'il vous plaît (= voilà)",
+    "à tantôt"
+   ],
+   "example": "Communicatie met een Franse vs Belgische klant.",
+   "exercise": "Een e-mail in beide varianten.",
+   "test": "Varianten herkennen."
+  },
+  {
+   "id": "fr-c2-26-nl-fr",
+   "title": "Pièges néerlandophones",
+   "level": "C2",
+   "objectives": [
+    "faux amis NL-FR",
+    "calques"
+   ],
+   "theory": [
+    "raar ≠ rare (zeldzaam), brutaal ≠ brutal (gewelddadig), ordinair ≠ ordinaire (gewoon), reclame → publicité",
+    "calques: *passer un examen* = een examen afleggen (slagen = *réussir*); *demander une question* ✗ → *poser une question*"
+   ],
+   "example": "Een vertaalde tekst corrigeren.",
+   "exercise": "Een vertaling.",
+   "test": "Interferentiefouten."
+  },
+  {
+   "id": "fr-c2-27-juridique",
+   "title": "Registre juridique et administratif",
+   "level": "C2",
+   "objectives": [
+    "juridische formules",
+    "contractuele taal"
+   ],
+   "theory": [
+    "nonobstant, attendu que, en vertu de"
+   ],
+   "example": "Een contractclausule analyseren.",
+   "exercise": "Een clausule redigeren.",
+   "test": "Formuleringen."
+  },
+  {
+   "id": "fr-c2-28-coherence",
+   "title": "Grammaire du texte: cohésion et anaphores",
+   "level": "C2",
+   "objectives": [
+    "anaforen",
+    "thematische progressie"
+   ],
+   "theory": [
+    "celui-ci/ce dernier, le premier… le second"
+   ],
+   "example": "Een onsamenhangende tekst herschrijven.",
+   "exercise": "Een herschreven tekst.",
+   "test": "Cohesie."
+  },
+  {
+   "id": "fr-c2-29-lecture-complexe",
+   "title": "Compréhension de textes complexes",
+   "level": "C2",
+   "objectives": [
+    "impliciete argumentatie",
+    "nuance"
+   ],
+   "theory": [
+    "analyse van editorialen"
+   ],
+   "example": "Een editoriaal uit Le Monde.",
+   "exercise": "Een kritische samenvatting.",
+   "test": "Begrip."
+  },
+  {
+   "id": "fr-c2-30-dalf",
+   "title": "Épreuve finale DALF C2",
+   "level": "C2",
+   "objectives": [
+    "integrale C2-vaardigheden"
+   ],
+   "theory": [
+    "examenformat DALF C2"
+   ],
+   "example": "Volledige simulatie.",
+   "exercise": "Synthese + essay.",
+   "test": "Integrale proef."
+  }
+ ]
+}

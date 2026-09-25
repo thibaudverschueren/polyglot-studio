@@ -1,0 +1,7 @@
+{
+  "url": "",
+  "anonKey": "",
+  "google": false,
+  "apple": false,
+  "_comment": "Publieke Supabase-gegevens (URL + anon key). Veilig om te publiceren: rij-beveiliging (RLS) beschermt de data. Zie SETUP.md."
+}

@@ -1,0 +1,50 @@
+{
+  "greek": {
+    "title": "Nieuwgrieks",
+    "short": "Grieks",
+    "subtitle": "Van alfabet tot zelfverzekerd B1 — lezen, spreken, schrijven, met een brug naar het Oudgrieks.",
+    "glyph": "Ω",
+    "lang": "el-GR",
+    "levels": "A0 → B1",
+    "goal": "Doel: vlot en correct communiceren op B1-niveau (ERK): je redt je in elk alledaags gesprek, begrijpt nieuwsberichten en schrijft foutloze korte teksten met correcte accenten."
+  },
+  "french": {
+    "title": "Français soutenu",
+    "short": "Frans",
+    "subtitle": "C1 → C2: grammaticale precisie, stijlregisters, retoriek en zakelijk-academisch schrijven.",
+    "glyph": "É",
+    "lang": "fr-FR",
+    "levels": "C1 → C2",
+    "goal": "Doel: foutloos en genuanceerd Frans op C2-niveau (DALF): synthese, argumentatie, correspondentie en debat — ook in economische en juridische context."
+  },
+  "solidity": {
+    "title": "Solidity & de EVM",
+    "short": "Solidity",
+    "subtitle": "Van je eerste contract tot veilige DeFi-bouwstenen — met een echte compiler en een virtuele EVM in je browser.",
+    "glyph": "0x",
+    "glyphMono": true,
+    "lang": "en",
+    "levels": "Beginner → auditor-minded",
+    "goal": "Doel: zelfstandig veilige, gas-efficiënte smart contracts schrijven, testen en auditen (ERC-20/721/4626, proxies, signatures, DeFi-mechanica)."
+  },
+  "ai": {
+    "title": "AI & Large Language Models",
+    "short": "AI",
+    "subtitle": "De wiskunde en engineering achter moderne LLM's — van tokenizer tot inference-economie.",
+    "glyph": "∇",
+    "lang": "en",
+    "levels": "Gevorderd",
+    "goal": "Doel: moderne LLM-systemen tot op de formule begrijpen, doorrekenen (compute, geheugen, kosten) en kritisch beoordelen — als ingenieur én als strateeg."
+  },
+  "automation": {
+    "title": "Workflow Automation & API Engineering",
+    "short": "Automation",
+    "subtitle": "n8n, API's, webhooks, AI-agents en productie-hosting — zodat je klantvragen beantwoordt, crashes in 10 minuten oplost en projecten juist prijst.",
+    "glyph": "{ }",
+    "glyphMono": true,
+    "lang": "en",
+    "levels": "Praktijk → productie-expert",
+    "icon": "zap",
+    "goal": "Doel: betrouwbare n8n-automatiseringen en AI-workflows ontwerpen, beveiligen, hosten en onderhouden voor B2B-klanten — met onderbouwde inschattingen en retainers."
+  }
+}

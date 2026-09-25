@@ -1,0 +1,754 @@
+{
+ "track": "greek",
+ "goal": "Vlot en correct Nieuwgrieks op B1-niveau (ERK): alledaagse gesprekken, nieuws begrijpen, foutloze korte teksten met correcte accenten — met een brug naar het Oudgrieks.",
+ "principles": [
+  "Elke les: 6–12 nieuwe woorden in context, één grammaticaal kernpunt, veel productie (typen, dictee, zinnen bouwen).",
+  "Grammatica altijd met Nederlandse vergelijking en de valkuilen voor Nederlandstaligen.",
+  "Accenten (tónos) en slot-sigma worden in elke productievraag streng beoordeeld.",
+  "Oude stof komt terug via herhaalkaarten en 2 cumulatieve vragen per meesterproef."
+ ],
+ "modules": [
+  {
+   "id": "A1",
+   "title": "A1 — Overleven in het Grieks",
+   "topics": [
+    "gr-a1-01-alphabet",
+    "gr-a1-02-digraphs",
+    "gr-a1-03-greetings",
+    "gr-a1-04-gender-articles",
+    "gr-a1-05-accusative",
+    "gr-a1-06-verbs-a",
+    "gr-a1-07-plural",
+    "gr-a1-08-adjectives",
+    "gr-a1-09-numbers-time",
+    "gr-a1-10-verbs-b",
+    "gr-a1-11-possessives-family",
+    "gr-a1-12-prepositions-place",
+    "gr-a1-13-medio-passive",
+    "gr-a1-14-routine-consolidation"
+   ]
+  },
+  {
+   "id": "A2",
+   "title": "A2 — Vertellen over verleden en toekomst",
+   "topics": [
+    "gr-a2-15-aorist-regular",
+    "gr-a2-16-aorist-irregular",
+    "gr-a2-17-future",
+    "gr-a2-18-na-subjunctive",
+    "gr-a2-19-weak-pronouns",
+    "gr-a2-20-imperative",
+    "gr-a2-21-genitive",
+    "gr-a2-22-comparison",
+    "gr-a2-23-imperfect",
+    "gr-a2-24-perfect",
+    "gr-a2-25-clauses",
+    "gr-a2-26-passive-aorist",
+    "gr-a2-27-travel-health",
+    "gr-a2-28-consolidation"
+   ]
+  },
+  {
+   "id": "B1",
+   "title": "B1 — Zelfstandig en genuanceerd",
+   "topics": [
+    "gr-b1-29-conditionals",
+    "gr-b1-30-participles",
+    "gr-b1-31-reported-speech",
+    "gr-b1-32-irregular-nouns",
+    "gr-b1-33-connectors",
+    "gr-b1-34-formal-register",
+    "gr-b1-35-business",
+    "gr-b1-36-media",
+    "gr-b1-37-idioms",
+    "gr-b1-38-ancient-bridge",
+    "gr-b1-39-ancient-basics",
+    "gr-b1-40-exam"
+   ]
+  }
+ ],
+ "topics": [
+  {
+   "id": "gr-a1-01-alphabet",
+   "title": "Het Griekse alfabet: letters, klanken en de klemtoon",
+   "level": "A1",
+   "objectives": [
+    "24 letters en hun klank",
+    "iotacisme (η, ι, υ = ie)",
+    "valse vrienden (β, γ, δ, η, ν, ρ, υ, χ)",
+    "tónos en σ/ς"
+   ],
+   "theory": [
+    "5 klinkerklanken, 7 klinkerletters",
+    "wet van de drie lettergrepen",
+    "tónos verplicht bij ≥ 2 lettergrepen",
+    "πότε/ποτέ, πού/που"
+   ],
+   "example": "Woorden op een menukaart en straatnaambordjes hardop lezen.",
+   "exercise": "10 basiswoorden uit het hoofd schrijven met tónos.",
+   "test": "Letters ↔ klanken, woorden schrijven met tónos en sigma, dictee.",
+   "sims": [
+    "greek-alphabet"
+   ]
+  },
+  {
+   "id": "gr-a1-02-digraphs",
+   "title": "Klankcombinaties: ου, αι, ει/οι, αυ/ευ, μπ, ντ, γκ, τσ, τζ",
+   "level": "A1",
+   "objectives": [
+    "tweeklanken lezen",
+    "αυ/ευ = av/ev of af/ef",
+    "b/d/g schrijven met μπ/ντ/γκ",
+    "γι + klinker = j"
+   ],
+   "theory": [
+    "ου = oe; αι = e; ει/οι/υι = ie",
+    "αυ/ευ: v vóór klinker of stemhebbende medeklinker, f vóór stemloze",
+    "μπ/ντ/γκ aan woordbegin b/d/g, in het midden mb/nd/ng",
+    "γγ = ng; τσ = ts; τζ = dz"
+   ],
+   "example": "Een koffiebar-bestelling lezen: τσάι, μπύρα, ντομάτα, αυγά.",
+   "exercise": "Dictee van 10 woorden met klankcombinaties.",
+   "test": "Transcriptie, dictee, spelling kiezen (αυ vs αβ).",
+   "sims": [
+    "greek-alphabet"
+   ]
+  },
+  {
+   "id": "gr-a1-03-greetings",
+   "title": "Begroeten, voorstellen en beleefdheid",
+   "level": "A1",
+   "objectives": [
+    "begroeten volgens tijdstip",
+    "σου vs σας (beleefdheidsvorm)",
+    "jezelf voorstellen",
+    "vragen hoe het gaat"
+   ],
+   "theory": [
+    "Γεια σου/σας, καλημέρα, καλησπέρα, καληνύχτα",
+    "Με λένε…, Είμαι ο/η…, Χαίρω πολύ",
+    "Τι κάνεις/κάνετε; Καλά, ευχαριστώ",
+    "lidwoord vóór eigennamen"
+   ],
+   "example": "Kennismaking met een Griekse collega en met een oudere buurvrouw.",
+   "exercise": "Een kort kennismakingsdialoogje schrijven (6 zinnen).",
+   "test": "Register kiezen, dialoogzinnen bouwen, dictee."
+  },
+  {
+   "id": "gr-a1-04-gender-articles",
+   "title": "Geslachten, lidwoorden en de werkwoorden είμαι en έχω",
+   "level": "A1",
+   "objectives": [
+    "geslacht herkennen aan de uitgang",
+    "ο/η/το en ένας/μία/ένα",
+    "είμαι en έχω vervoegen",
+    "onderwerp weglaten"
+   ],
+   "theory": [
+    "-ος/-ας/-ης/-ές mannelijk; -α/-η vrouwelijk; -ο/-ι/-μα onzijdig",
+    "persoonlijke voornaamwoorden (εγώ, εσύ…)",
+    "εμείς είμαστε, έχουμε",
+    "bijvoeglijk naamwoord volgt geslacht (preview)"
+   ],
+   "example": "Jezelf en je huis beschrijven: Έχω ένα σπίτι. Ο καφές είναι κρύος.",
+   "exercise": "8 zinnen over jezelf met είμαι/έχω.",
+   "test": "Lidwoord invullen, vervoegen, zinnen vertalen."
+  },
+  {
+   "id": "gr-a1-05-accusative",
+   "title": "De accusatief enkelvoud en bestellen in de taverna",
+   "level": "A1",
+   "objectives": [
+    "accusatief van lidwoord en naamwoord",
+    "de ν-regel (τον altijd, τη(ν) soms)",
+    "beleefd bestellen",
+    "rekening vragen"
+   ],
+   "theory": [
+    "ο φίλος → τον φίλο (-ς valt weg)",
+    "η/το blijven gelijk (τη(ν), το)",
+    "έναν/μία/ένα",
+    "θα ήθελα, θα πάρω, τον λογαριασμό παρακαλώ"
+   ],
+   "example": "Een volledige bestelling in een taverna, van tafel vragen tot afrekenen.",
+   "exercise": "Een bestellingsdialoog schrijven.",
+   "test": "Nominatief → accusatief, ν-regel, taverna-zinnen produceren."
+  },
+  {
+   "id": "gr-a1-06-verbs-a",
+   "title": "Werkwoorden op -ω, ontkenning en vragen",
+   "level": "A1",
+   "objectives": [
+    "tegenwoordige tijd groep A",
+    "δεν/μην",
+    "vraagwoorden",
+    "gewone activiteiten beschrijven"
+   ],
+   "theory": [
+    "κάνω, μένω, δουλεύω, διαβάζω, γράφω, πίνω, τρώω",
+    "-ω, -εις, -ει, -ουμε, -ετε, -ουν",
+    "τι, πού, πότε, πώς, γιατί, ποιος",
+    "vraag = intonatie + ;"
+   ],
+   "example": "Vertellen waar je woont, werkt en studeert.",
+   "exercise": "Een profiel van jezelf (8 zinnen).",
+   "test": "Vervoegen, vragen vormen, ontkennen."
+  },
+  {
+   "id": "gr-a1-07-plural",
+   "title": "Meervoud van naamwoorden en lidwoorden",
+   "level": "A1",
+   "objectives": [
+    "meervoud nominatief en accusatief",
+    "οι/τους/τις/τα",
+    "onregelmatige meervouden herkennen"
+   ],
+   "theory": [
+    "-ος → -οι/-ους",
+    "-α/-η → -ες",
+    "-ο → -α, -ι → -ια, -μα → -ματα",
+    "οι φίλοι / τους φίλους"
+   ],
+   "example": "Boodschappenlijstje en winkelgesprek.",
+   "exercise": "Een lijst met 10 meervouden in zinnen.",
+   "test": "Meervoud vormen in context, lidwoorden kiezen."
+  },
+  {
+   "id": "gr-a1-08-adjectives",
+   "title": "Bijvoeglijke naamwoorden en kleuren",
+   "level": "A1",
+   "objectives": [
+    "congruentie in geslacht, getal en naamval",
+    "-ος/-η/-ο vs -ος/-α/-ο",
+    "πολύ als bijwoord en bijvoeglijk"
+   ],
+   "theory": [
+    "καλός/καλή/καλό, ωραίος/ωραία/ωραίο",
+    "kleuren: άσπρος, μαύρος, κόκκινος, μπλε (onveranderlijk)",
+    "positie: vóór het naamwoord",
+    "ένας μεγάλος καφές"
+   ],
+   "example": "Een hotelkamer of stad beschrijven.",
+   "exercise": "Een beschrijving van je stad (8 zinnen).",
+   "test": "Congruentie invullen en produceren."
+  },
+  {
+   "id": "gr-a1-09-numbers-time",
+   "title": "Getallen, prijzen, klok en kalender",
+   "level": "A1",
+   "objectives": [
+    "getallen tot 1000",
+    "prijzen vragen",
+    "de tijd zeggen",
+    "dagen en maanden"
+   ],
+   "theory": [
+    "ένας/μία/ένα, τρεις/τρία, τέσσερις/τέσσερα (geslacht!)",
+    "Πόσο κάνει; Πόσο κοστίζει;",
+    "Τι ώρα είναι; στις οκτώ και μισή",
+    "Δευτέρα … Κυριακή; την Κυριακή (accusatief)"
+   ],
+   "example": "Treintickets kopen en een afspraak maken.",
+   "exercise": "Een weekplanning schrijven.",
+   "test": "Getallen dicteren, klokzinnen, data."
+  },
+  {
+   "id": "gr-a1-10-verbs-b",
+   "title": "Werkwoorden op -άω/-ώ (groep B)",
+   "level": "A1",
+   "objectives": [
+    "groep B1 (μιλάω) en B2 (μπορώ) vervoegen",
+    "veelgebruikte B-werkwoorden"
+   ],
+   "theory": [
+    "μιλάω/μιλώ, αγαπάω, ρωτάω, απαντάω",
+    "μπορώ, ζω, οδηγώ, προτιμώ",
+    "uitgangen -άω/-άς/-άει…, -ώ/-είς/-εί…"
+   ],
+   "example": "Over talen en hobby's praten.",
+   "exercise": "Een gesprek over wat je graag doet.",
+   "test": "Vervoegen in context, groep herkennen."
+  },
+  {
+   "id": "gr-a1-11-possessives-family",
+   "title": "Bezittelijke voornaamwoorden en familie",
+   "level": "A1",
+   "objectives": [
+    "μου/σου/του/της/μας/σας/τους",
+    "positie na het naamwoord",
+    "familieleden"
+   ],
+   "theory": [
+    "ο πατέρας μου, η μητέρα σου",
+    "dubbele tónos: το όνομά μου",
+    "familiewoordenschat"
+   ],
+   "example": "Je familie voorstellen aan de hand van foto's.",
+   "exercise": "Een stamboom beschrijven.",
+   "test": "Bezit uitdrukken, klemtoonregel toepassen."
+  },
+  {
+   "id": "gr-a1-12-prepositions-place",
+   "title": "Voorzetsels, plaats en richting",
+   "level": "A1",
+   "objectives": [
+    "σε + lidwoord (στο/στη/στον)",
+    "από, με, για, μέχρι",
+    "πάω/έρχομαι",
+    "de weg vragen"
+   ],
+   "theory": [
+    "σε + το = στο; σε + τον = στον; σε + τη(ν) = στη(ν)",
+    "voorzetsels + accusatief",
+    "δεξιά, αριστερά, ευθεία, κοντά, μακριά"
+   ],
+   "example": "De weg vragen naar het strand en het museum.",
+   "exercise": "Een route beschrijven.",
+   "test": "Samentrekkingen, richting geven."
+  },
+  {
+   "id": "gr-a1-13-medio-passive",
+   "title": "Werkwoorden op -ομαι",
+   "level": "A1",
+   "objectives": [
+    "vervoeging -ομαι/-άμαι",
+    "veelgebruikte deponentia"
+   ],
+   "theory": [
+    "έρχομαι, κάθομαι, λέγομαι, χρειάζομαι, σηκώνομαι, κοιμάμαι",
+    "-ομαι, -εσαι, -εται, -όμαστε, -εστε, -ονται"
+   ],
+   "example": "Je ochtendroutine en wat je nodig hebt.",
+   "exercise": "Je dag van opstaan tot slapen.",
+   "test": "Vervoegen, keuze -ω vs -ομαι."
+  },
+  {
+   "id": "gr-a1-14-routine-consolidation",
+   "title": "Dagelijkse routine en A1-consolidatie",
+   "level": "A1",
+   "objectives": [
+    "frequentie uitdrukken",
+    "alles van A1 combineren"
+   ],
+   "theory": [
+    "πάντα, συνήθως, συχνά, μερικές φορές, ποτέ",
+    "tijdsbepalingen in de accusatief"
+   ],
+   "example": "Een typische week beschrijven aan een Griekse vriend.",
+   "exercise": "Een A1-brief (80 woorden).",
+   "test": "Cumulatieve toets over A1."
+  },
+  {
+   "id": "gr-a2-15-aorist-regular",
+   "title": "Verleden tijd I: de sigmatische aoristos",
+   "level": "A2",
+   "objectives": [
+    "aoristos van regelmatige werkwoorden",
+    "augment en de klemtoonwet",
+    "tijdsuitdrukkingen voor het verleden"
+   ],
+   "theory": [
+    "-ζω/-σω → -σα; -κω/-γω/-χω → -ξα; -πω/-βω/-φω → -ψα",
+    "augment έ- enkel om de klemtoon op de 3e lettergreep te zetten",
+    "χθες, προχθές, πέρσι, την προηγούμενη εβδομάδα"
+   ],
+   "example": "Vertellen wat je gisteren deed.",
+   "exercise": "Een dagboekfragment (8 zinnen).",
+   "test": "Aoristvormen produceren, klemtoon plaatsen."
+  },
+  {
+   "id": "gr-a2-16-aorist-irregular",
+   "title": "Verleden tijd II: onregelmatige aoristos",
+   "level": "A2",
+   "objectives": [
+    "frequente onregelmatige vormen",
+    "ήμουν en είχα"
+   ],
+   "theory": [
+    "πήγα, ήρθα, είδα, είπα, έφαγα, ήπια, βρήκα, έμαθα, πήρα, έδωσα, βγήκα, μπήκα",
+    "ήμουν, ήσουν, ήταν…; είχα"
+   ],
+   "example": "Een reisverslag uit Athene.",
+   "exercise": "Een vakantieverhaal (100 woorden).",
+   "test": "Vormen in context, dictee."
+  },
+  {
+   "id": "gr-a2-17-future",
+   "title": "De toekomst: θα + duratief of punctueel",
+   "level": "A2",
+   "objectives": [
+    "θα + presensstam (herhaald/lopend)",
+    "θα + aoriststam (eenmalig)",
+    "plannen maken"
+   ],
+   "theory": [
+    "θα γράφω vs θα γράψω",
+    "aspect als kernidee van het Griekse werkwoord"
+   ],
+   "example": "Een weekend plannen met vrienden.",
+   "exercise": "Je plannen voor volgende maand.",
+   "test": "Aspect kiezen en verantwoorden."
+  },
+  {
+   "id": "gr-a2-18-na-subjunctive",
+   "title": "Να-constructies en aspect",
+   "level": "A2",
+   "objectives": [
+    "θέλω/μπορώ/πρέπει να",
+    "να + aoriststam vs presensstam"
+   ],
+   "theory": [
+    "θέλω να πάω / θέλω να πηγαίνω",
+    "πρέπει να: onpersoonlijk",
+    "μην + να-vorm voor verbod"
+   ],
+   "example": "Verplichtingen en wensen op het werk.",
+   "exercise": "Een e-mail met voorstellen.",
+   "test": "να-zinnen produceren met juist aspect."
+  },
+  {
+   "id": "gr-a2-19-weak-pronouns",
+   "title": "Zwakke persoonlijke voornaamwoorden",
+   "level": "A2",
+   "objectives": [
+    "με/σε/τον/την/το",
+    "μου/σου/του (indirect)",
+    "positie vóór het werkwoord / na de imperatief"
+   ],
+   "theory": [
+    "Τον βλέπω. Μου το έδωσε.",
+    "dubbele objecten: μου το",
+    "δώσ' το μου (imperatief)"
+   ],
+   "example": "Een cadeau geven en bedanken.",
+   "exercise": "Een dialoog met voornaamwoorden.",
+   "test": "Zinnen herschrijven met voornaamwoorden."
+  },
+  {
+   "id": "gr-a2-20-imperative",
+   "title": "De gebiedende wijs",
+   "level": "A2",
+   "objectives": [
+    "imperatief enkelvoud/meervoud",
+    "ontkende imperatief met μην"
+   ],
+   "theory": [
+    "κάνε/κάντε, γράψε/γράψτε, έλα/ελάτε, πες/πείτε, δώσε/δώστε",
+    "μην το κάνεις!"
+   ],
+   "example": "Een recept en instructies geven.",
+   "exercise": "Een recept schrijven.",
+   "test": "Imperatieven vormen en ontkennen."
+  },
+  {
+   "id": "gr-a2-21-genitive",
+   "title": "De genitief",
+   "level": "A2",
+   "objectives": [
+    "genitief enkelvoud en meervoud",
+    "bezit en tijd uitdrukken"
+   ],
+   "theory": [
+    "του φίλου, της μητέρας, του σπιτιού, των φίλων",
+    "genitief na sommige voorzetsels en werkwoorden"
+   ],
+   "example": "Wie is wie op een familiefeest.",
+   "exercise": "Een beschrijving met bezitsvormen.",
+   "test": "Genitiefvormen produceren."
+  },
+  {
+   "id": "gr-a2-22-comparison",
+   "title": "Vergelijken: trappen van vergelijking",
+   "level": "A2",
+   "objectives": [
+    "πιο … από",
+    "-ότερος",
+    "overtreffende trap",
+    "onregelmatig: καλύτερος, χειρότερος"
+   ],
+   "theory": [
+    "πιο μεγάλος από / μεγαλύτερος από",
+    "ο πιο… / -ότατος (absoluut)"
+   ],
+   "example": "Twee steden of producten vergelijken.",
+   "exercise": "Een vergelijkende productreview.",
+   "test": "Vergelijkingen bouwen."
+  },
+  {
+   "id": "gr-a2-23-imperfect",
+   "title": "Onvoltooid verleden (paratatikos) vs aoristos",
+   "level": "A2",
+   "objectives": [
+    "paratatikos vormen",
+    "aspectkeuze in verhalen"
+   ],
+   "theory": [
+    "έγραφα vs έγραψα",
+    "achtergrond (παρατατικός) vs gebeurtenis (αόριστος)"
+   ],
+   "example": "Een jeugdherinnering vertellen.",
+   "exercise": "Een verhaal met beide aspecten.",
+   "test": "Aspect kiezen in een tekst."
+  },
+  {
+   "id": "gr-a2-24-perfect",
+   "title": "Perfectum en plusquamperfectum",
+   "level": "A2",
+   "objectives": [
+    "έχω + αόριστο απαρέμφατο",
+    "είχα γράψει"
+   ],
+   "theory": [
+    "έχω γράψει / είχα γράψει",
+    "verschil met aoristos (resultaat nu)"
+   ],
+   "example": "Je cv mondeling toelichten.",
+   "exercise": "Een motivatiebrief-fragment.",
+   "test": "Tijden kiezen en vormen."
+  },
+  {
+   "id": "gr-a2-25-clauses",
+   "title": "Bijzinnen en betrekkelijke zinnen",
+   "level": "A2",
+   "objectives": [
+    "ότι/πως",
+    "επειδή/γιατί",
+    "όταν/αν/ενώ",
+    "που als betrekkelijk voornaamwoord"
+   ],
+   "theory": [
+    "νομίζω ότι…",
+    "ο άνθρωπος που ξέρω"
+   ],
+   "example": "Je mening geven en verantwoorden.",
+   "exercise": "Een betoogje van 100 woorden.",
+   "test": "Zinnen verbinden."
+  },
+  {
+   "id": "gr-a2-26-passive-aorist",
+   "title": "Passieve aoristos (-θηκα)",
+   "level": "A2",
+   "objectives": [
+    "vormen op -θηκα",
+    "veelgebruikte werkwoorden"
+   ],
+   "theory": [
+    "γεννήθηκα, χάρηκα, κουράστηκα, ντύθηκα, σηκώθηκα"
+   ],
+   "example": "Je levensloop vertellen.",
+   "exercise": "Een korte biografie.",
+   "test": "Passieve vormen produceren."
+  },
+  {
+   "id": "gr-a2-27-travel-health",
+   "title": "Reizen en gezondheid",
+   "level": "A2",
+   "objectives": [
+    "vervoer en hotel",
+    "klachten beschrijven bij dokter/apotheek"
+   ],
+   "theory": [
+    "πονάει το κεφάλι μου",
+    "κλείνω δωμάτιο, το εισιτήριο"
+   ],
+   "example": "Ziek op vakantie: apotheek en dokter.",
+   "exercise": "Een klachtenmail aan een hotel.",
+   "test": "Situationele productie."
+  },
+  {
+   "id": "gr-a2-28-consolidation",
+   "title": "A2-consolidatie en proeftoets",
+   "level": "A2",
+   "objectives": [
+    "alle A2-structuren combineren"
+   ],
+   "theory": [
+    "herhaling van aspect, naamvallen, voornaamwoorden"
+   ],
+   "example": "Een volledige reis plannen en navertellen.",
+   "exercise": "Een A2-tekst (150 woorden).",
+   "test": "Cumulatieve A2-proef."
+  },
+  {
+   "id": "gr-b1-29-conditionals",
+   "title": "Voorwaardelijke zinnen",
+   "level": "B1",
+   "objectives": [
+    "reële en irreële voorwaarde",
+    "θα + paratatikos (irrealis)"
+   ],
+   "theory": [
+    "αν έρθεις, θα φάμε",
+    "αν είχα χρόνο, θα ερχόμουν",
+    "αν είχα έρθει, θα είχα δει"
+   ],
+   "example": "Hypotheses over studie en werk.",
+   "exercise": "Een tekst 'wat als…'.",
+   "test": "Voorwaardezinnen bouwen."
+  },
+  {
+   "id": "gr-b1-30-participles",
+   "title": "Deelwoorden en gerundium",
+   "level": "B1",
+   "objectives": [
+    "-οντας/-ώντας",
+    "-μένος (passief deelwoord)"
+   ],
+   "theory": [
+    "περπατώντας, κλεισμένος, γραμμένος"
+   ],
+   "example": "Een stadswandeling beschrijven.",
+   "exercise": "Een beschrijvende paragraaf.",
+   "test": "Deelwoorden vormen en gebruiken."
+  },
+  {
+   "id": "gr-b1-31-reported-speech",
+   "title": "Indirecte rede en indirecte vragen",
+   "level": "B1",
+   "objectives": [
+    "είπε ότι…",
+    "ρώτησε αν/πού/πότε…"
+   ],
+   "theory": [
+    "tijdsverschuiving is in het Grieks beperkt"
+   ],
+   "example": "Een gesprek navertellen aan een collega.",
+   "exercise": "Een verslag van een vergadering.",
+   "test": "Omzetten naar indirecte rede."
+  },
+  {
+   "id": "gr-b1-32-irregular-nouns",
+   "title": "Onregelmatige naamwoorden",
+   "level": "B1",
+   "objectives": [
+    "-μα/-ματος",
+    "το δάσος, η οδός",
+    "-ης/-ους"
+   ],
+   "theory": [
+    "verbuigingstabellen en klemtoonverspringing"
+   ],
+   "example": "Kranten- en adrestaal.",
+   "exercise": "Een formele beschrijving.",
+   "test": "Verbuigingen produceren."
+  },
+  {
+   "id": "gr-b1-33-connectors",
+   "title": "Tekstverbinders",
+   "level": "B1",
+   "objectives": [
+    "concessie, tegenstelling, gevolg"
+   ],
+   "theory": [
+    "όμως, ωστόσο, επομένως, παρόλο που, αντί να, εκτός αν"
+   ],
+   "example": "Voor- en nadelen van telewerk.",
+   "exercise": "Een betoog van 150 woorden.",
+   "test": "Verbinders kiezen."
+  },
+  {
+   "id": "gr-b1-34-formal-register",
+   "title": "Formeel register en correspondentie",
+   "level": "B1",
+   "objectives": [
+    "formele aanhef en slot",
+    "beleefde verzoeken"
+   ],
+   "theory": [
+    "Αξιότιμε κύριε…, Με εκτίμηση, θα ήθελα να σας ζητήσω"
+   ],
+   "example": "Een e-mail aan een Griekse universiteit.",
+   "exercise": "Een formele aanvraag.",
+   "test": "Registerkeuze en productie."
+  },
+  {
+   "id": "gr-b1-35-business",
+   "title": "Werk, economie en bedrijf",
+   "level": "B1",
+   "objectives": [
+    "bedrijfs- en financiële woordenschat",
+    "cijfers bespreken"
+   ],
+   "theory": [
+    "η εταιρεία, ο προϋπολογισμός, τα έσοδα, η αγορά"
+   ],
+   "example": "Een korte presentatie over een bedrijf.",
+   "exercise": "Een bedrijfsprofiel.",
+   "test": "Vakwoordenschat produceren."
+  },
+  {
+   "id": "gr-b1-36-media",
+   "title": "Nieuws lezen",
+   "level": "B1",
+   "objectives": [
+    "krantentaal",
+    "lange samengestelde zinnen"
+   ],
+   "theory": [
+    "lijdende vorm, nominalisaties, afkortingen"
+   ],
+   "example": "Een echt nieuwsbericht samenvatten.",
+   "exercise": "Een samenvatting van 120 woorden.",
+   "test": "Begrip en samenvatting."
+  },
+  {
+   "id": "gr-b1-37-idioms",
+   "title": "Idiomen en spreekwoorden",
+   "level": "B1",
+   "objectives": [
+    "frequente uitdrukkingen begrijpen en gebruiken"
+   ],
+   "theory": [
+    "τα έκανε θάλασσα, στο φτερό, έχω κέφια"
+   ],
+   "example": "Een informeel gesprek met vrienden.",
+   "exercise": "Een dialoog met 5 idiomen.",
+   "test": "Idiomen in context."
+  },
+  {
+   "id": "gr-b1-38-ancient-bridge",
+   "title": "Brug naar het Oudgrieks: polytoniek en etymologie",
+   "level": "B1",
+   "objectives": [
+    "polytonische tekens herkennen",
+    "etymologische families"
+   ],
+   "theory": [
+    "spiritus asper/lenis, circumflex",
+    "λόγος, δημοκρατία, φιλοσοφία"
+   ],
+   "example": "Opschriften in een museum lezen.",
+   "exercise": "Een woordenweb van 5 stammen.",
+   "test": "Herkennen en afleiden."
+  },
+  {
+   "id": "gr-b1-39-ancient-basics",
+   "title": "Eerste zinnen Oudgrieks",
+   "level": "B1",
+   "objectives": [
+    "lidwoord ὁ ἡ τό",
+    "eenvoudige zinnen en citaten"
+   ],
+   "theory": [
+    "Γνῶθι σεαυτόν, πάντα ῥεῖ"
+   ],
+   "example": "Beroemde citaten ontleden.",
+   "exercise": "Een citaat vertalen en toelichten.",
+   "test": "Lezen en vertalen."
+  },
+  {
+   "id": "gr-b1-40-exam",
+   "title": "B1-eindproef",
+   "level": "B1",
+   "objectives": [
+    "alle vaardigheden op B1-niveau"
+   ],
+   "theory": [
+    "examenformat Πιστοποίηση Ελληνομάθειας B1"
+   ],
+   "example": "Een volledige proefexamen-simulatie.",
+   "exercise": "Schrijfopdracht B1 (180 woorden).",
+   "test": "Integrale B1-proef."
+  }
+ ]
+}

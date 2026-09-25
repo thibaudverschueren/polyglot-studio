@@ -1,0 +1,690 @@
+{
+ "track": "solidity",
+ "goal": "Zelfstandig veilige, gas-efficiënte smart contracts schrijven, testen en auditen: ERC-20/721/4626, proxies, signatures en DeFi-mechanica.",
+ "principles": [
+  "Elke les heeft een Bouwen-opdracht die in de browser écht gecompileerd (solc 0.8.37) en getest wordt op de ingebouwde EVM.",
+  "Security staat vanaf les 1 centraal: elke les eindigt met ‘wat kan hier misgaan?’.",
+  "Gas wordt gemeten, niet geraden: vergelijk varianten in de Studio.",
+  "Beperkingen van de simulator: geen ecrecover, geen forks van mainnet — gebruik voor die onderwerpen conceptuele items."
+ ],
+ "modules": [
+  {
+   "id": "basis",
+   "title": "Basis — de taal en de EVM",
+   "topics": [
+    "sol-01-evm-first-contract",
+    "sol-02-types-functions",
+    "sol-03-mappings-structs",
+    "sol-04-data-locations",
+    "sol-05-errors-modifiers",
+    "sol-06-events",
+    "sol-07-ether"
+   ]
+  },
+  {
+   "id": "security",
+   "title": "Veiligheid en standaarden",
+   "topics": [
+    "sol-08-reentrancy",
+    "sol-09-erc20",
+    "sol-10-inheritance",
+    "sol-11-libraries",
+    "sol-12-storage-layout",
+    "sol-13-gas",
+    "sol-14-testing"
+   ]
+  },
+  {
+   "id": "gevorderd",
+   "title": "Gevorderd — patronen en DeFi",
+   "topics": [
+    "sol-15-erc721",
+    "sol-16-security-access",
+    "sol-17-signatures",
+    "sol-18-proxies",
+    "sol-19-oracles",
+    "sol-20-amm",
+    "sol-21-lending",
+    "sol-22-erc4626",
+    "sol-23-assembly",
+    "sol-24-mev",
+    "sol-25-l2",
+    "sol-26-account-abstraction",
+    "sol-27-governance"
+   ]
+  },
+  {
+   "id": "projecten",
+   "title": "Projecten",
+   "topics": [
+    "sol-28-audit",
+    "sol-29-project-token",
+    "sol-30-project-dex",
+    "sol-31-project-ctf"
+   ]
+  }
+ ],
+ "topics": [
+  {
+   "id": "sol-01-evm-first-contract",
+   "title": "De EVM en je eerste smart contract",
+   "level": "beginner",
+   "objectives": [
+    "state machine, accounts, transacties vs calls",
+    "storage vs memory vs calldata (intro)",
+    "view-functies en gas",
+    "SimpleStorage schrijven, deployen en testen"
+   ],
+   "theory": [
+    "deterministische state machine",
+    "gas = rekenwerk + opslag; SSTORE is duur",
+    "eth_call vs transactie",
+    "default-waarden (0, false, address(0))"
+   ],
+   "example": "Een eenvoudige registry die een getal bijhoudt.",
+   "exercise": "SimpleStorage uitbreiden met reset en een tweede variabele.",
+   "test": "Tests: set/get, reset, events? (nee) — plus conceptvragen over gas.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-02-types-functions",
+   "title": "Types, functies, visibility en mutability",
+   "level": "beginner",
+   "objectives": [
+    "waardetypes en overflow-checks",
+    "public/external/internal/private",
+    "view/pure/payable",
+    "constructor en immutable"
+   ],
+   "theory": [
+    "uint/int-grootten en checked arithmetic sinds 0.8",
+    "external vs public (calldata)",
+    "constant vs immutable"
+   ],
+   "example": "Een tariefcalculator met fee-parameters.",
+   "exercise": "Contract met constructorparameters en pure helper.",
+   "test": "Tests met revert bij overflow (Panic 0x11).",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-03-mappings-structs",
+   "title": "Mappings, structs en arrays",
+   "level": "beginner",
+   "objectives": [
+    "mapping-semantiek (geen lengte, default 0)",
+    "structs in mappings",
+    "dynamische arrays en hun kost"
+   ],
+   "theory": [
+    "slot = keccak256(key . p)",
+    "arrays: length + data op keccak(p)",
+    "unbounded loops vermijden"
+   ],
+   "example": "Een gebruikersregister.",
+   "exercise": "UserRegistry met struct en mapping.",
+   "test": "Tests + storage-slotvragen.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-04-data-locations",
+   "title": "Datalocaties: storage, memory, calldata",
+   "level": "beginner",
+   "objectives": [
+    "kopie vs referentie",
+    "storage pointers",
+    "calldata voor externe params"
+   ],
+   "theory": [
+    "memory-kopie van struct wijzigt storage niet",
+    "storage-pointer wel",
+    "gas-impact"
+   ],
+   "example": "Een bug waar een update ‘verdwijnt’.",
+   "exercise": "Fix de data-location bug.",
+   "test": "Tests die de bug aantonen en fix bevestigen.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-05-errors-modifiers",
+   "title": "Fouten en toegangscontrole",
+   "level": "beginner",
+   "objectives": [
+    "require/revert/custom errors",
+    "modifiers",
+    "Ownable-patroon",
+    "Panic vs Error"
+   ],
+   "theory": [
+    "custom errors: 4-byte selector + args (sinds 0.8.4)",
+    "modifier met _;",
+    "ownership overdragen in twee stappen"
+   ],
+   "example": "Een kluis die alleen de eigenaar mag beheren.",
+   "exercise": "SecureVault met custom errors en onlyOwner.",
+   "test": "Tests op reverts met errornaam.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-06-events",
+   "title": "Events en logs",
+   "level": "beginner",
+   "objectives": [
+    "events declareren en uitstoten",
+    "indexed parameters",
+    "off-chain lezen"
+   ],
+   "theory": [
+    "LOG-opcodes, topics[0] = keccak(signature)",
+    "max 3 indexed",
+    "events zijn niet leesbaar vanuit contracts"
+   ],
+   "example": "Betalingsnotificaties voor een webshop.",
+   "exercise": "Deposit/Withdraw-events toevoegen.",
+   "test": "Tests op emits met argumenten.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-07-ether",
+   "title": "Ether ontvangen en versturen",
+   "level": "beginner",
+   "objectives": [
+    "payable, receive, fallback",
+    "call{value:} i.p.v. transfer",
+    "pull-over-push"
+   ],
+   "theory": [
+    "2300-gasstipend van transfer/send",
+    "return value van call checken",
+    "address(this).balance"
+   ],
+   "example": "Een spaarpot met opname.",
+   "exercise": "PiggyBank met receive en withdraw.",
+   "test": "Tests op saldi en reverts.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-08-reentrancy",
+   "title": "Security I: reentrancy en Checks-Effects-Interactions",
+   "level": "intermediate",
+   "objectives": [
+    "reentrancy-aanval begrijpen en uitvoeren",
+    "CEI-patroon",
+    "ReentrancyGuard"
+   ],
+   "theory": [
+    "DAO-hack 2016",
+    "state vóór externe call bijwerken",
+    "cross-function reentrancy"
+   ],
+   "example": "Een kwetsbare kluis leegtrekken met een Attacker-contract.",
+   "exercise": "Fix de kluis zodat de aanval faalt.",
+   "test": "Tests: aanval faalt, legitieme opname werkt.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-09-erc20",
+   "title": "De ERC-20-standaard",
+   "level": "intermediate",
+   "objectives": [
+    "balances en allowances",
+    "Transfer/Approval-events",
+    "decimals en schaal"
+   ],
+   "theory": [
+    "approve + transferFrom",
+    "approve-race en increaseAllowance",
+    "18 decimalen = fixed point"
+   ],
+   "example": "Een loyaliteitstoken voor een bedrijf.",
+   "exercise": "Mini-ERC-20 implementeren.",
+   "test": "Tests volgens de spec.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-10-inheritance",
+   "title": "Overerving en interfaces",
+   "level": "intermediate",
+   "objectives": [
+    "is, virtual/override, super",
+    "interfaces en abstracte contracten",
+    "C3-linearisatie"
+   ],
+   "theory": [
+    "volgorde van overerving",
+    "interface-calls naar andere contracten"
+   ],
+   "example": "Een Pausable token.",
+   "exercise": "Token met Pausable-basiscontract.",
+   "test": "Tests op pause/unpause.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-11-libraries",
+   "title": "Libraries en OpenZeppelin",
+   "level": "intermediate",
+   "objectives": [
+    "library-functies en using-for",
+    "SafeERC20",
+    "audited code hergebruiken"
+   ],
+   "theory": [
+    "internal vs external library",
+    "OpenZeppelin v5 patronen"
+   ],
+   "example": "Veilige tokentransfers in een betaalcontract.",
+   "exercise": "Library-gebaseerde helper.",
+   "test": "Tests.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-12-storage-layout",
+   "title": "Storage-layout en packing",
+   "level": "intermediate",
+   "objectives": [
+    "slots en offsets lezen",
+    "variabelen packen",
+    "constant/immutable kosten niets in storage"
+   ],
+   "theory": [
+    "32-byte slots",
+    "packing van rechts naar links",
+    "struct packing"
+   ],
+   "example": "Gas besparen in een NFT-contract.",
+   "exercise": "Herorden variabelen voor minder slots.",
+   "test": "Test op slotsUsed en gas.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-13-gas",
+   "title": "Gasoptimalisatie",
+   "level": "intermediate",
+   "objectives": [
+    "storage-reads cachen",
+    "unchecked waar veilig",
+    "calldata, short-circuit, bitmaps"
+   ],
+   "theory": [
+    "SLOAD cold 2100 / warm 100",
+    "SSTORE 20000/2900",
+    "refunds (EIP-3529)"
+   ],
+   "example": "Een airdrop-contract optimaliseren.",
+   "exercise": "Verlaag het gas van een functie met ≥ 20%.",
+   "test": "gasLt-tests.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-14-testing",
+   "title": "Testen als een professional (Foundry-denken)",
+   "level": "intermediate",
+   "objectives": [
+    "unit-, fuzz- en invariant-denken",
+    "edge cases",
+    "tests als specificatie"
+   ],
+   "theory": [
+    "forge test, vm.prank, vm.expectRevert (concept)",
+    "invariants: totalSupply = som balances"
+   ],
+   "example": "Een bug vinden met een slimme test.",
+   "exercise": "Schrijf tests die een verborgen bug vangen (via DSL).",
+   "test": "Conceptvragen + tests.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-15-erc721",
+   "title": "NFT's: ERC-721 en ERC-1155",
+   "level": "intermediate",
+   "objectives": [
+    "ownerOf, approve, safeTransferFrom",
+    "onERC721Received",
+    "metadata (tokenURI)"
+   ],
+   "theory": [
+    "safe vs unsafe transfer",
+    "ERC-1155 batch"
+   ],
+   "example": "Een badge-NFT voor cursisten.",
+   "exercise": "Minimal ERC-721 mint + transfer.",
+   "test": "Tests.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-16-security-access",
+   "title": "Security II: access control, tx.origin, delegatecall",
+   "level": "intermediate",
+   "objectives": [
+    "phishing via tx.origin",
+    "delegatecall-context",
+    "front-running"
+   ],
+   "theory": [
+    "msg.sender vs tx.origin",
+    "storage-context bij delegatecall"
+   ],
+   "example": "Een wallet die via tx.origin misbruikt wordt.",
+   "exercise": "Fix het access-control-lek.",
+   "test": "Aanvalstest + fix.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-17-signatures",
+   "title": "Handtekeningen: ECDSA, EIP-712 en permit",
+   "level": "advanced",
+   "objectives": [
+    "ECDSA-concepten",
+    "EIP-191 en EIP-712",
+    "permit (ERC-2612)",
+    "replay-bescherming (nonce, chainId, deadline)"
+   ],
+   "theory": [
+    "v, r, s",
+    "domain separator",
+    "signature malleability"
+   ],
+   "example": "Gasless approvals voor een dApp.",
+   "exercise": "Conceptueel: typed data opstellen (ecrecover niet in simulator).",
+   "test": "Conceptvragen en berekeningen."
+  },
+  {
+   "id": "sol-18-proxies",
+   "title": "Upgradeable contracts en proxies",
+   "level": "advanced",
+   "objectives": [
+    "transparent vs UUPS",
+    "storage collisions",
+    "initializers"
+   ],
+   "theory": [
+    "EIP-1967 slots",
+    "delegatecall naar implementatie",
+    "_disableInitializers"
+   ],
+   "example": "Een protocol upgraden zonder datasverlies.",
+   "exercise": "Mini-proxy met delegatecall bouwen.",
+   "test": "Tests op state na upgrade.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-19-oracles",
+   "title": "Oracles, prijsmanipulatie en flash loans",
+   "level": "advanced",
+   "objectives": [
+    "spot-prijs vs TWAP",
+    "Chainlink-concepten",
+    "flash-loan-aanval"
+   ],
+   "theory": [
+    "manipulatie binnen één transactie",
+    "stale prices"
+   ],
+   "example": "Een lening op basis van een manipuleerbare prijs.",
+   "exercise": "Analyseer en fix een oracle-bug.",
+   "test": "Conceptvragen + tests.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-20-amm",
+   "title": "DeFi I: AMM's en x·y = k",
+   "level": "advanced",
+   "objectives": [
+    "constant product",
+    "swap-formule met fee",
+    "slippage en prijsimpact"
+   ],
+   "theory": [
+    "amountOut = (in·997·R_out)/(R_in·1000 + in·997)",
+    "LP-shares"
+   ],
+   "example": "Een swap op Uniswap v2 narekenen.",
+   "exercise": "Mini-AMM swap implementeren.",
+   "test": "Numerieke items + tests.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-21-lending",
+   "title": "DeFi II: lending en liquidaties",
+   "level": "advanced",
+   "objectives": [
+    "collateral factor",
+    "health factor",
+    "rentemodellen"
+   ],
+   "theory": [
+    "HF = Σ(collateral·LT)/debt",
+    "liquidation bonus"
+   ],
+   "example": "Een positie die geliquideerd wordt.",
+   "exercise": "Health-factor-berekening in Solidity.",
+   "test": "Numeriek + tests.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-22-erc4626",
+   "title": "DeFi III: vaults en ERC-4626",
+   "level": "advanced",
+   "objectives": [
+    "assets vs shares",
+    "afronding in het voordeel van de vault",
+    "inflation attack"
+   ],
+   "theory": [
+    "convertToShares/convertToAssets",
+    "virtual shares/offset"
+   ],
+   "example": "Een yield-vault.",
+   "exercise": "Vault met correcte afronding.",
+   "test": "Tests + aanvalsscenario.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-23-assembly",
+   "title": "Yul en assembly",
+   "level": "advanced",
+   "objectives": [
+    "mload/mstore/sload/sstore",
+    "free memory pointer",
+    "wanneer (niet) gebruiken"
+   ],
+   "theory": [
+    "0x40 free memory pointer",
+    "scratch space 0x00–0x3f"
+   ],
+   "example": "Een goedkope hashfunctie.",
+   "exercise": "Kleine assembly-functie.",
+   "test": "Tests.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-24-mev",
+   "title": "MEV en front-running",
+   "level": "advanced",
+   "objectives": [
+    "mempool en ordering",
+    "sandwich-aanvallen",
+    "commit-reveal"
+   ],
+   "theory": [
+    "private orderflow",
+    "slippage-limieten"
+   ],
+   "example": "Een NFT-mint die gefront-run wordt.",
+   "exercise": "Commit-reveal implementeren.",
+   "test": "Tests.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-25-l2",
+   "title": "Layer 2 en rollups",
+   "level": "advanced",
+   "objectives": [
+    "optimistic vs ZK",
+    "bridges en risico's",
+    "gas op L2 (calldata/blobs)"
+   ],
+   "theory": [
+    "EIP-4844 blobs",
+    "challenge period"
+   ],
+   "example": "Kosten van een app op L1 vs L2.",
+   "exercise": "Kostenvergelijking maken.",
+   "test": "Numeriek + concept."
+  },
+  {
+   "id": "sol-26-account-abstraction",
+   "title": "Account abstraction (ERC-4337)",
+   "level": "advanced",
+   "objectives": [
+    "UserOperation, bundlers, paymasters",
+    "smart wallets"
+   ],
+   "theory": [
+    "EntryPoint",
+    "validatie vs uitvoering"
+   ],
+   "example": "Gasloze onboarding voor gebruikers.",
+   "exercise": "Conceptueel ontwerp.",
+   "test": "Conceptvragen."
+  },
+  {
+   "id": "sol-27-governance",
+   "title": "Governance, timelocks en multisigs",
+   "level": "advanced",
+   "objectives": [
+    "voting power en snapshots",
+    "timelock-vertraging",
+    "multisig-beheer"
+   ],
+   "theory": [
+    "governance attacks via flash loans"
+   ],
+   "example": "Een DAO-voorstel uitvoeren.",
+   "exercise": "Timelock implementeren.",
+   "test": "Tests.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-28-audit",
+   "title": "Auditmethode",
+   "level": "advanced",
+   "objectives": [
+    "threat modeling",
+    "checklists",
+    "findings rapporteren (ernst/impact)"
+   ],
+   "theory": [
+    "SWC/OWASP smart contract top 10",
+    "severity-matrix"
+   ],
+   "example": "Een mini-audit van een protocol.",
+   "exercise": "Schrijf een finding.",
+   "test": "Rubric-beoordeling."
+  },
+  {
+   "id": "sol-29-project-token",
+   "title": "Project: token met vesting",
+   "level": "advanced",
+   "objectives": [
+    "ERC-20 + vesting-schema",
+    "tijdsafhankelijke logica testen"
+   ],
+   "theory": [
+    "cliff en lineaire vesting",
+    "warp in tests"
+   ],
+   "example": "Tokens voor een startup-team.",
+   "exercise": "Volledig contract + tests.",
+   "test": "Uitgebreide test-suite.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-30-project-dex",
+   "title": "Project: mini-DEX",
+   "level": "advanced",
+   "objectives": [
+    "AMM + liquidity + swaps",
+    "security-review"
+   ],
+   "theory": [
+    "x·y=k",
+    "reentrancy/rounding"
+   ],
+   "example": "Een eigen swap-pool.",
+   "exercise": "Volledig contract + tests.",
+   "test": "Uitgebreide test-suite.",
+   "sims": [
+    "solidity"
+   ]
+  },
+  {
+   "id": "sol-31-project-ctf",
+   "title": "Project: CTF — hack en fix een protocol",
+   "level": "advanced",
+   "objectives": [
+    "meerdere kwetsbaarheden vinden",
+    "exploits schrijven",
+    "fixes testen"
+   ],
+   "theory": [
+    "alle eerdere aanvalsklassen"
+   ],
+   "example": "Een kwetsbare mini-lending-app.",
+   "exercise": "Exploit + fix.",
+   "test": "Tests op exploit en fix.",
+   "sims": [
+    "solidity"
+   ]
+  }
+ ]
+}

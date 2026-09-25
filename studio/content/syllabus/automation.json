@@ -1,0 +1,653 @@
+{
+ "track": "automation",
+ "goal": "Betrouwbare n8n-automatiseringen en AI-workflows ontwerpen, beveiligen, hosten en onderhouden voor B2B-klanten — met onderbouwde inschattingen, prijzen en retainers.",
+ "principles": [
+  "Doel van elke les: (1) een klantvraag zelfverzekerd kunnen beantwoorden, (2) een crash binnen 10 minuten kunnen diagnosticeren, (3) werk correct kunnen inschatten.",
+  "Hands-on met de ingebouwde n8n-sandbox: echte expressies ($json, $input, $('Node')) en Code-node-JavaScript op JSON-items.",
+  "Elke les eindigt met een ‘klantvraag’-oefening: een e-mail of uitleg in gewone taal (beoordeeld met rubric en de volgende ochtend door de coach).",
+  "Productie-realisme: statuscodes, rate limits, time-outs, credentials, back-ups en kosten."
+ ],
+ "modules": [
+  {
+   "id": "p1",
+   "title": "Pijler 1 — Dataflow en JSON",
+   "topics": [
+    "au-01-json-items",
+    "au-02-expressions",
+    "au-03-transform",
+    "au-04-code-node",
+    "au-05-flow-control"
+   ]
+  },
+  {
+   "id": "p2",
+   "title": "Pijler 2 — API's, webhooks en authenticatie",
+   "topics": [
+    "au-06-http-rest",
+    "au-07-http-node",
+    "au-08-auth",
+    "au-09-webhooks",
+    "au-10-webhook-security",
+    "au-11-pagination-rate-limits"
+   ]
+  },
+  {
+   "id": "p3",
+   "title": "Pijler 3 — AI-nodes en structured output",
+   "topics": [
+    "au-12-llm-nodes",
+    "au-13-structured-output",
+    "au-14-ai-agent",
+    "au-15-rag",
+    "au-16-ai-eval"
+   ]
+  },
+  {
+   "id": "p4",
+   "title": "Pijler 4 — Hosting, Docker en VPS",
+   "topics": [
+    "au-17-hosting-license",
+    "au-18-docker",
+    "au-19-production-stack",
+    "au-20-proxy-tls",
+    "au-21-backups-updates"
+   ]
+  },
+  {
+   "id": "p5",
+   "title": "Pijler 5 — Foutafhandeling en fouttolerantie",
+   "topics": [
+    "au-22-error-handling",
+    "au-23-backoff",
+    "au-24-dlq-alerting",
+    "au-25-debugging"
+   ]
+  },
+  {
+   "id": "p6",
+   "title": "Business en capstones",
+   "topics": [
+    "au-26-scoping-pricing",
+    "au-27-client-delivery",
+    "au-28-project-lead-pipeline",
+    "au-29-project-deploy",
+    "au-30-project-incident"
+   ]
+  }
+ ],
+ "topics": [
+  {
+   "id": "au-01-json-items",
+   "title": "JSON en het n8n-itemmodel",
+   "level": "praktijk",
+   "objectives": [
+    "JSON-types en structuren lezen",
+    "het itemformaat [{ json: {…} }]",
+    "1 item vs N items: een node draait per item",
+    "veelgemaakte datafouten herkennen"
+   ],
+   "theory": [
+    "JSON: object, array, string, number, boolean, null",
+    "n8n-items = array van objecten met json (en optioneel binary, pairedItem)",
+    "parameters met expressies worden per item geëvalueerd",
+    "‘0 items’ stopt de verdere uitvoering van die tak"
+   ],
+   "example": "Een klantwebhook stuurt 3 bestellingen tegelijk: waarom verstuurt je Slack-node 3 berichten?",
+   "exercise": "Expressies schrijven die per item waarden uit geneste JSON halen.",
+   "test": "jsexpr/jscode-items + JSON-leesvragen.",
+   "sims": [
+    "n8n-items"
+   ]
+  },
+  {
+   "id": "au-02-expressions",
+   "title": "Expressies en datamapping",
+   "level": "praktijk",
+   "objectives": [
+    "$json, $input.item, $input.all()",
+    "$('Node').item/first()/all()",
+    "item linking (pairedItem)",
+    "optional chaining en defaults"
+   ],
+   "theory": [
+    "{{ }}-syntax en JavaScript erin",
+    "paired items: waarom $('Node').item soms faalt",
+    "$json?.a?.b ?? 'onbekend'",
+    "Luxon-datums: $now.toFormat()"
+   ],
+   "example": "Klantdata uit een CRM-node combineren met een webhook-payload.",
+   "exercise": "Mapping van webhook naar CRM-velden.",
+   "test": "jsexpr met nodes-context.",
+   "sims": [
+    "n8n-items"
+   ]
+  },
+  {
+   "id": "au-03-transform",
+   "title": "Transformaties: Edit Fields, Split Out, Aggregate, Merge",
+   "level": "praktijk",
+   "objectives": [
+    "velden zetten/hernoemen",
+    "arrays opsplitsen en samenvoegen",
+    "Merge-modi kiezen",
+    "duplicaten verwijderen"
+   ],
+   "theory": [
+    "Split Out: array → items",
+    "Aggregate: items → array",
+    "Merge: append, combine by fields/position, SQL-achtige join",
+    "Remove Duplicates, Sort, Limit, Summarize"
+   ],
+   "example": "Orderlijnen per bestelling samenvatten voor een factuur.",
+   "exercise": "Code-node die groepeert per klant (reduce).",
+   "test": "jscode met testgevallen.",
+   "sims": [
+    "n8n-items"
+   ]
+  },
+  {
+   "id": "au-04-code-node",
+   "title": "De Code-node (JavaScript)",
+   "level": "praktijk",
+   "objectives": [
+    "Run Once for All vs Each Item",
+    "return-formaat",
+    "veelgemaakte fouten",
+    "wanneer géén Code-node gebruiken"
+   ],
+   "theory": [
+    "return items.map(i => ({ json: … }))",
+    "$input.all() vs items",
+    "async/await, geen fetch → HTTP Request-node",
+    "debuggen met console.log"
+   ],
+   "example": "Een onleesbare CSV-export opschonen.",
+   "exercise": "Normaliseer telefoonnummers en e-mails.",
+   "test": "jscode met meerdere testgevallen."
+  },
+  {
+   "id": "au-05-flow-control",
+   "title": "Flow control: IF, Switch, Filter, loops, Wait, sub-workflows",
+   "level": "praktijk",
+   "objectives": [
+    "routing met IF/Switch",
+    "batches met Loop Over Items",
+    "Wait voor rate limits",
+    "Execute Workflow voor hergebruik"
+   ],
+   "theory": [
+    "true/false-takken",
+    "SplitInBatches-patroon",
+    "sub-workflow input/output",
+    "binaire data (bestanden)"
+   ],
+   "example": "Leads routeren per land en bedrijfsgrootte.",
+   "exercise": "Routeringslogica als Code-node.",
+   "test": "jscode + jsexpr."
+  },
+  {
+   "id": "au-06-http-rest",
+   "title": "HTTP en REST",
+   "level": "praktijk",
+   "objectives": [
+    "methodes, headers, body",
+    "statuscodes 2xx–5xx",
+    "idempotentie",
+    "JSON vs form-data"
+   ],
+   "theory": [
+    "GET/POST/PUT/PATCH/DELETE",
+    "200/201/204, 400/401/403/404/409/422/429, 500/502/503/504",
+    "idempotente methodes en idempotency keys"
+   ],
+   "example": "Een klant vraagt waarom zijn API ‘422’ teruggeeft.",
+   "exercise": "Klantuitleg schrijven over een 422.",
+   "test": "Statuscode-diagnose items."
+  },
+  {
+   "id": "au-07-http-node",
+   "title": "De HTTP Request-node in de praktijk",
+   "level": "praktijk",
+   "objectives": [
+    "cURL importeren",
+    "query/body/headers",
+    "time-outs",
+    "response-formaten"
+   ],
+   "theory": [
+    "cURL → HTTP-node",
+    "‘Include response headers’",
+    "timeout en redirects",
+    "pagination-instellingen"
+   ],
+   "example": "Een onbekende API integreren met alleen documentatie.",
+   "exercise": "Request-configuratie opstellen.",
+   "test": "Items + jscode (response parsen)."
+  },
+  {
+   "id": "au-08-auth",
+   "title": "Authenticatie: API keys, Bearer, Basic en OAuth2",
+   "level": "praktijk",
+   "objectives": [
+    "headers vs query auth",
+    "Basic = base64(user:pass)",
+    "OAuth2-flows",
+    "credentials veilig beheren"
+   ],
+   "theory": [
+    "Authorization: Bearer <token>",
+    "authorization code vs client credentials",
+    "access + refresh tokens, scopes",
+    "n8n credentials (versleuteld met N8N_ENCRYPTION_KEY)"
+   ],
+   "example": "Een klant verloor zijn API-key in een gedeelde workflow.",
+   "exercise": "Basic-auth header berekenen in een Code-node.",
+   "test": "jscode (Buffer/base64) + concept."
+  },
+  {
+   "id": "au-09-webhooks",
+   "title": "Webhooks: triggers, responses en time-outs",
+   "level": "praktijk",
+   "objectives": [
+    "test- vs productie-URL",
+    "response modes",
+    "sync vs async",
+    "retries van de afzender en idempotentie"
+   ],
+   "theory": [
+    "Respond immediately vs when last node finishes vs Respond to Webhook",
+    "afzender-timeouts (vaak 10–30 s)",
+    "dedupliceren op event-id"
+   ],
+   "example": "Stripe stuurt hetzelfde event drie keer.",
+   "exercise": "Deduplicatie-logica schrijven.",
+   "test": "jscode + scenario's."
+  },
+  {
+   "id": "au-10-webhook-security",
+   "title": "Webhook-beveiliging: HMAC, timestamps en replay",
+   "level": "praktijk",
+   "objectives": [
+    "HMAC-SHA256 verifiëren",
+    "raw body vs geparste JSON",
+    "timestamp-tolerantie",
+    "constant-time vergelijking"
+   ],
+   "theory": [
+    "signature = HMAC(secret, timestamp + '.' + body)",
+    "replay window (bv. 5 min)",
+    "IP allowlists als extra laag"
+   ],
+   "example": "Een valse webhook die orders aanmaakt.",
+   "exercise": "Signature-check in een Code-node met crypto.",
+   "test": "jscode met crypto-shim."
+  },
+  {
+   "id": "au-11-pagination-rate-limits",
+   "title": "Paginatie en rate limits",
+   "level": "praktijk",
+   "objectives": [
+    "cursor/offset/link-header",
+    "429 + Retry-After",
+    "batching en concurrency",
+    "quota plannen"
+   ],
+   "theory": [
+    "token bucket",
+    "backoff",
+    "items per batch × interval"
+   ],
+   "example": "10.000 contacten synchroniseren zonder ban.",
+   "exercise": "Paginatielogica en tijdsraming.",
+   "test": "jscode + numeriek.",
+   "sims": [
+    "backoff"
+   ]
+  },
+  {
+   "id": "au-12-llm-nodes",
+   "title": "LLM-nodes in n8n",
+   "level": "productie",
+   "objectives": [
+    "chat model sub-nodes",
+    "prompts en variabelen",
+    "temperatuur",
+    "tokens en kosten"
+   ],
+   "theory": [
+    "Basic LLM Chain",
+    "kost = tokens × prijs",
+    "context-limiet"
+   ],
+   "example": "Een e-mailclassificatie voor een klant.",
+   "exercise": "Kostenraming per 1.000 mails.",
+   "test": "Numeriek + concept."
+  },
+  {
+   "id": "au-13-structured-output",
+   "title": "Structured output met JSON Schema",
+   "level": "productie",
+   "objectives": [
+    "Structured Output Parser",
+    "schema-ontwerp",
+    "validatie en auto-fix",
+    "fallbacks"
+   ],
+   "theory": [
+    "required, enum, types",
+    "‘Require specific output format’",
+    "valideer in Code-node vóór je CRM-write"
+   ],
+   "example": "Leads uit vrije tekst halen zonder hallucinaties in je CRM.",
+   "exercise": "Validatie-Code-node voor LLM-output.",
+   "test": "jscode met ongeldige outputs."
+  },
+  {
+   "id": "au-14-ai-agent",
+   "title": "De AI Agent-node: tools, memory en guardrails",
+   "level": "productie",
+   "objectives": [
+    "tools/function calling",
+    "memory (window buffer)",
+    "systeemprompt",
+    "guardrails en logging"
+   ],
+   "theory": [
+    "tool-beschrijvingen als API-contract",
+    "max iterations",
+    "human-in-the-loop"
+   ],
+   "example": "Een support-agent met CRM-tool.",
+   "exercise": "Agent-ontwerp + testcases.",
+   "test": "Concept + rubric."
+  },
+  {
+   "id": "au-15-rag",
+   "title": "RAG in n8n",
+   "level": "productie",
+   "objectives": [
+    "documenten laden en splitsen",
+    "embeddings en vector stores",
+    "retrieval en bronvermelding"
+   ],
+   "theory": [
+    "chunk size/overlap",
+    "pgvector/Qdrant/Supabase",
+    "top-k en reranking"
+   ],
+   "example": "Een FAQ-bot voor een KMO.",
+   "exercise": "Chunking-strategie + kosten.",
+   "test": "Numeriek + concept."
+  },
+  {
+   "id": "au-16-ai-eval",
+   "title": "AI-workflows evalueren en monitoren",
+   "level": "productie",
+   "objectives": [
+    "testsets",
+    "kosten/latency bijhouden",
+    "kwaliteitsdrift"
+   ],
+   "theory": [
+    "golden datasets",
+    "LLM-as-judge met rubric"
+   ],
+   "example": "Een klant klaagt over ‘slechtere antwoorden’.",
+   "exercise": "Monitoringplan.",
+   "test": "Rubric."
+  },
+  {
+   "id": "au-17-hosting-license",
+   "title": "n8n Cloud vs self-hosted en de licentie",
+   "level": "productie",
+   "objectives": [
+    "hostingopties",
+    "Sustainable Use License: wat mag wel/niet",
+    "kostenvergelijking"
+   ],
+   "theory": [
+    "workflows bouwen voor klanten = oké",
+    "n8n als dienst doorverkopen/white-labelen = Embed-licentie",
+    "altijd de actuele licentie-FAQ checken"
+   ],
+   "example": "Een klant wil ‘jouw n8n’ gebruiken.",
+   "exercise": "Advies schrijven aan de klant.",
+   "test": "Concept + rubric."
+  },
+  {
+   "id": "au-18-docker",
+   "title": "Docker en Docker Compose",
+   "level": "productie",
+   "objectives": [
+    "images, containers, volumes",
+    "env-variabelen",
+    "compose-bestand lezen/schrijven",
+    "logs en restarts"
+   ],
+   "theory": [
+    "docker compose up -d",
+    "volume /home/node/.n8n",
+    "restart: unless-stopped"
+   ],
+   "example": "n8n op een nieuwe VPS zetten.",
+   "exercise": "Compose-bestand invullen.",
+   "test": "Items (YAML-regels) + concept."
+  },
+  {
+   "id": "au-19-production-stack",
+   "title": "Productiestack: PostgreSQL, encryption key, queue mode",
+   "level": "productie",
+   "objectives": [
+    "SQLite → PostgreSQL",
+    "N8N_ENCRYPTION_KEY",
+    "WEBHOOK_URL en proxy-instellingen",
+    "queue mode met Redis en workers"
+   ],
+   "theory": [
+    "DB_TYPE=postgresdb",
+    "encryption key kwijt = credentials kwijt",
+    "execution pruning"
+   ],
+   "example": "Een instantie die trager wordt met de maanden.",
+   "exercise": "Env-configuratie opstellen.",
+   "test": "Items + concept."
+  },
+  {
+   "id": "au-20-proxy-tls",
+   "title": "Reverse proxy, TLS en server-hardening",
+   "level": "productie",
+   "objectives": [
+    "Caddy/Nginx",
+    "DNS en Let's Encrypt",
+    "firewall en SSH",
+    "N8N_PROXY_HOPS"
+   ],
+   "theory": [
+    "Caddy auto-HTTPS",
+    "ufw allow 80,443,22",
+    "SSH keys, geen root-login"
+   ],
+   "example": "Webhooks werken niet achter een proxy.",
+   "exercise": "Caddyfile schrijven.",
+   "test": "Items + diagnose."
+  },
+  {
+   "id": "au-21-backups-updates",
+   "title": "Back-ups, restores en updates",
+   "level": "productie",
+   "objectives": [
+    "pg_dump en volume-back-ups",
+    "restore-drill",
+    "versies pinnen en updaten",
+    "monitoring"
+   ],
+   "theory": [
+    "3-2-1-regel",
+    "n8n export:workflow",
+    "staging vóór update"
+   ],
+   "example": "Een update brak de productie.",
+   "exercise": "Back-up- en updateprocedure.",
+   "test": "Rubric + items."
+  },
+  {
+   "id": "au-22-error-handling",
+   "title": "Foutafhandeling in n8n",
+   "level": "productie",
+   "objectives": [
+    "Retry On Fail",
+    "Continue (error output)",
+    "Error Trigger-workflow",
+    "Stop and Error"
+   ],
+   "theory": [
+    "node settings: max tries, wait between tries",
+    "error workflow in workflow settings",
+    "foutcontext meesturen"
+   ],
+   "example": "Een nachtelijke sync faalt stil.",
+   "exercise": "Error-workflow ontwerpen.",
+   "test": "Scenario-items + jscode."
+  },
+  {
+   "id": "au-23-backoff",
+   "title": "Retries met exponential backoff en jitter",
+   "level": "productie",
+   "objectives": [
+    "backoff-formule",
+    "jitter",
+    "idempotentie bij retries",
+    "wanneer níet retryen"
+   ],
+   "theory": [
+    "delay = min(cap, base·2^n) (+ jitter)",
+    "4xx vs 5xx",
+    "Retry-After respecteren"
+   ],
+   "example": "Een API geeft 503 tijdens piekuren.",
+   "exercise": "Backoff-schema berekenen en implementeren.",
+   "test": "Numeriek + jscode.",
+   "sims": [
+    "backoff"
+   ]
+  },
+  {
+   "id": "au-24-dlq-alerting",
+   "title": "Dead-letter queues, replay en alerting",
+   "level": "productie",
+   "objectives": [
+    "mislukte payloads bewaren",
+    "replay-procedure",
+    "alerts met context naar Slack/Telegram"
+   ],
+   "theory": [
+    "DLQ-tabel",
+    "alert-moeheid vermijden"
+   ],
+   "example": "Orders gingen verloren tijdens een storing.",
+   "exercise": "DLQ + alert-bericht ontwerpen.",
+   "test": "jscode + rubric."
+  },
+  {
+   "id": "au-25-debugging",
+   "title": "Debuggen onder tijdsdruk",
+   "level": "productie",
+   "objectives": [
+    "executions lezen",
+    "data pinnen",
+    "10-minuten-triage",
+    "communicatie met de klant"
+   ],
+   "theory": [
+    "schema drift, verlopen tokens, rate limits, time-outs",
+    "reproduceren met gepinde data"
+   ],
+   "example": "Een klant belt: ‘alles ligt plat’.",
+   "exercise": "Triage-oefening op een kapotte workflow.",
+   "test": "Scenario-items met tijdslimiet."
+  },
+  {
+   "id": "au-26-scoping-pricing",
+   "title": "Scoping en prijszetting",
+   "level": "expert",
+   "objectives": [
+    "uren schatten",
+    "complexiteitsfactoren",
+    "vaste prijs vs regie vs waarde",
+    "retainers opbouwen"
+   ],
+   "theory": [
+    "risicobuffer",
+    "VPS- en API-kosten doorrekenen",
+    "SLA-niveaus"
+   ],
+   "example": "Offerte voor een lead-pipeline.",
+   "exercise": "Volledige offerte met retainer.",
+   "test": "Numeriek + rubric."
+  },
+  {
+   "id": "au-27-client-delivery",
+   "title": "Oplevering, documentatie en GDPR",
+   "level": "expert",
+   "objectives": [
+    "documentatie en overdracht",
+    "credentials-beheer",
+    "verwerkersovereenkomst",
+    "EU-hosting"
+   ],
+   "theory": [
+    "least privilege",
+    "logging van persoonsgegevens beperken"
+   ],
+   "example": "Overdracht aan een klant-IT-team.",
+   "exercise": "Opleverdocument.",
+   "test": "Rubric."
+  },
+  {
+   "id": "au-28-project-lead-pipeline",
+   "title": "Project: lead-enrichment pipeline met AI",
+   "level": "expert",
+   "objectives": [
+    "webhook → verrijking → LLM → CRM",
+    "structured output",
+    "foutafhandeling"
+   ],
+   "theory": [
+    "alles uit pijler 1–3 en 5"
+   ],
+   "example": "Een echte klantcase.",
+   "exercise": "Volledig ontwerp + kerncode.",
+   "test": "jscode + rubric."
+  },
+  {
+   "id": "au-29-project-deploy",
+   "title": "Project: productie-deploy op een VPS",
+   "level": "expert",
+   "objectives": [
+    "Docker + Postgres + Caddy",
+    "back-ups en monitoring"
+   ],
+   "theory": [
+    "alles uit pijler 4"
+   ],
+   "example": "Nieuwe klantomgeving.",
+   "exercise": "Deploy-plan + configuratie.",
+   "test": "Rubric + items."
+  },
+  {
+   "id": "au-30-project-incident",
+   "title": "Project: incident-simulatie",
+   "level": "expert",
+   "objectives": [
+    "een kapotte workflow in 10 minuten herstellen",
+    "postmortem schrijven"
+   ],
+   "theory": [
+    "alles uit pijler 5"
+   ],
+   "example": "Incident bij een klant.",
+   "exercise": "Diagnose + fix + postmortem.",
+   "test": "Scenario + rubric."
+  }
+ ]
+}

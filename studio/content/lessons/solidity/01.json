@@ -1,0 +1,1064 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "solidity",
+ "id": 1,
+ "roadmap": "sol-01-evm-first-contract",
+ "title": "De EVM en je eerste smart contract",
+ "subtitle": "Accounts, transacties vs calls, gas, en SimpleStorage schrijven, deployen en testen",
+ "level": "beginner",
+ "minutes": 45,
+ "summary": "Smart contracts zijn programma's die op duizenden computers tegelijk draaien en nooit meer veranderen. Wie begrijpt wat de EVM doet, wat een transactie kost en waarom opslag duur is, schrijft vanaf de eerste regel veiliger en goedkoper.",
+ "objectives": [
+  {
+   "id": "state-machine",
+   "text": "Je legt uit hoe Ethereum een gedeelde state machine is met EOA's en contract-accounts."
+  },
+  {
+   "id": "tx-vs-call",
+   "text": "Je onderscheidt transacties (state, gas, handtekening) van calls (lezen, gratis voor externe lezers)."
+  },
+  {
+   "id": "gas",
+   "text": "Je rekent transactiekosten uit en verklaart waarom storage-schrijfacties duur zijn."
+  },
+  {
+   "id": "first-contract",
+   "text": "Je schrijft, deployt en test een eenvoudig contract met state-variabelen en functies."
+  },
+  {
+   "id": "types-defaults",
+   "text": "Je kent de basistypes, hun standaardwaarden en het gedrag bij overflow/underflow."
+  }
+ ],
+ "diagnostic": {
+  "intro": "Deze test meet je huidige niveau, van basis tot expert. Je coach gebruikt het resultaat om de volgende lessen te versnellen of te verdiepen. Weet je iets niet: kies ‘Weet ik niet’.",
+  "bands": [
+   "basis",
+   "gevorderd",
+   "expert"
+  ],
+  "items": [
+   {
+    "id": "d01",
+    "type": "mcq",
+    "skill": "tx-call",
+    "level": 1,
+    "prompt": "Welke actie kost de gebruiker **gas**?",
+    "explain": "Alleen transacties die state wijzigen kosten gas.",
+    "options": [
+     "`set(42)` als transactie",
+     "`get()` lezen vanuit een frontend",
+     "Een `public` variabele uitlezen via eth_call",
+     "Het contract bekijken op Etherscan"
+    ],
+    "answer": 0,
+    "band": "basis"
+   },
+   {
+    "id": "d02",
+    "type": "mcq",
+    "skill": "types",
+    "level": 1,
+    "prompt": "Wat is de standaardwaarde van een niet-ingevulde `uint256`?",
+    "explain": "Solidity kent geen null: elk type heeft een standaardwaarde.",
+    "options": [
+     "0",
+     "null",
+     "undefined",
+     "2^256 − 1"
+    ],
+    "answer": 0,
+    "band": "basis"
+   },
+   {
+    "id": "d03",
+    "type": "type",
+    "skill": "msg-sender",
+    "level": 1,
+    "prompt": "Welke globale variabele bevat het adres van wie de functie aanroept?",
+    "explain": "`msg.sender`.",
+    "answers": [
+     "msg.sender"
+    ],
+    "lang": "code",
+    "band": "basis"
+   },
+   {
+    "id": "d04",
+    "type": "cloze",
+    "skill": "mapping",
+    "level": 2,
+    "prompt": "Vul aan: een publieke mapping van adres naar saldo.",
+    "explain": "`mapping(address => uint256)`.",
+    "text": "mapping({{address}} => {{uint256}}) public balances;",
+    "lang": "code",
+    "band": "basis"
+   },
+   {
+    "id": "d05",
+    "type": "mcq",
+    "skill": "data-locations",
+    "level": 2,
+    "prompt": "Welke datalocatie gebruik je bij voorkeur voor een `string`-parameter van een **external** functie die je enkel leest?",
+    "explain": "calldata is read-only en vermijdt een kopie naar memory.",
+    "options": [
+     "calldata",
+     "storage",
+     "memory",
+     "stack"
+    ],
+    "answer": 0,
+    "band": "gevorderd"
+   },
+   {
+    "id": "d06",
+    "type": "mcq",
+    "skill": "reentrancy",
+    "level": 2,
+    "prompt": "Wat is de standaardverdediging tegen reentrancy?",
+    "explain": "CEI (eventueel + ReentrancyGuard).",
+    "options": [
+     "Checks-Effects-Interactions: state bijwerken vóór de externe call",
+     "transfer() gebruiken in plaats van call()",
+     "De functie `view` maken",
+     "tx.origin controleren"
+    ],
+    "answer": 0,
+    "band": "gevorderd"
+   },
+   {
+    "id": "d07",
+    "type": "numeric",
+    "skill": "gas",
+    "level": 2,
+    "prompt": "Een transactie verbruikt 100 000 gas bij een totale gasprijs van 30 gwei. Hoeveel ETH betaal je?",
+    "explain": "100 000 × 30 gwei = 3 000 000 gwei = 0,003 ETH.",
+    "value": 0.003,
+    "tolerance": 0.01,
+    "unit": "ETH",
+    "band": "gevorderd"
+   },
+   {
+    "id": "d08",
+    "type": "mcq",
+    "skill": "errors",
+    "level": 2,
+    "prompt": "Waarom zijn custom errors (`error NotOwner();`) goedkoper dan `require(cond, \"lange tekst\")`?",
+    "explain": "Selector + args i.p.v. een ABI-gecodeerde string.",
+    "options": [
+     "Een 4-byte selector i.p.v. een volledige string in bytecode en revert-data",
+     "Ze reverten niet, dus er is geen rollback nodig",
+     "De validator betaalt het gas van de foutmelding",
+     "Ze worden niet in de bytecode opgeslagen maar off-chain"
+    ],
+    "answer": 0,
+    "band": "gevorderd"
+   },
+   {
+    "id": "d09",
+    "type": "numeric",
+    "skill": "packing",
+    "level": 3,
+    "prompt": "`uint128 a; uint256 b; uint128 c;` — hoeveel storage-slots gebruikt dit contract (in deze volgorde)?",
+    "explain": "a (16 bytes) past niet samen met b (32 bytes) in één slot; c start een nieuw slot: 3 slots. Herorden a en c naast elkaar → 2 slots.",
+    "value": 3,
+    "abs": 0,
+    "band": "expert"
+   },
+   {
+    "id": "d10",
+    "type": "mcq",
+    "skill": "delegatecall",
+    "level": 3,
+    "prompt": "Bij `delegatecall` naar een ander contract, wiens **storage** wordt gewijzigd?",
+    "explain": "Code van de ander, context (storage, msg.sender, msg.value) van de aanroeper.",
+    "options": [
+     "Die van het aanroepende contract",
+     "Die van het aangeroepen contract",
+     "Die van tx.origin",
+     "Geen: delegatecall is read-only"
+    ],
+    "answer": 0,
+    "band": "expert"
+   },
+   {
+    "id": "d11",
+    "type": "mcq",
+    "skill": "erc4626",
+    "level": 3,
+    "prompt": "Welke maatregel beperkt de **inflation attack** op een lege ERC-4626-vault?",
+    "explain": "Virtuele shares/offset (OpenZeppelin) of een seed-deposit.",
+    "options": [
+     "Virtual shares/offset of een initiële deposit",
+     "Een hogere gasprijs voor deposits",
+     "transfer() gebruiken i.p.v. call()",
+     "De deposit-functie `nonReentrant` maken"
+    ],
+    "answer": 0,
+    "band": "expert"
+   },
+   {
+    "id": "d12",
+    "type": "mcq",
+    "skill": "eip712",
+    "level": 3,
+    "prompt": "Waarom bevat de EIP-712 domain separator de `chainId`?",
+    "explain": "Zonder chainId kan een handtekening op een fork/andere chain hergebruikt worden.",
+    "options": [
+     "Om replay van een handtekening op een andere chain te voorkomen",
+     "Om gas te besparen bij het verifiëren",
+     "Omdat ecrecover zonder chainId faalt",
+     "Voor compatibiliteit met oudere ERC-20-tokens"
+    ],
+    "answer": 0,
+    "band": "expert"
+   }
+  ]
+ },
+ "sections": [
+  {
+   "id": "evm",
+   "title": "Ethereum als wereldcomputer",
+   "md": "Ethereum is geen gewone database maar een **gedeelde, deterministische state machine**: duizenden computers (nodes) voeren exact dezelfde instructies uit en komen zo tot dezelfde toestand (*state*). Die state bestaat uit **accounts**:\n\n| Account | Beheerd door | Heeft | Voorbeeld |\n|---|---|---|---|\n| **EOA** (externally owned) | een private key (jouw wallet) | saldo, nonce | je MetaMask-adres |\n| **Contract** | zijn eigen code | saldo, code, storage | een token, een kluis, een DEX |\n\nAlleen een EOA kan een **transactie** starten (met een digitale handtekening). Een contract reageert enkel wanneer het wordt aangeroepen — rechtstreeks door een EOA of door een ander contract.\n\nDe **Ethereum Virtual Machine (EVM)** is de rekenmachine die contractcode uitvoert: een stack-machine met 256-bit woorden, tijdelijk geheugen (*memory*) en permanente opslag (*storage*). Contracten schrijf je in **Solidity**; de compiler (*solc*) zet dat om naar EVM-bytecode.\n\n> [!rule] Code is onveranderlijk\n> Na deployment kan de bytecode van een contract **niet meer gewijzigd** worden. Een bug patch je niet — je deployt een nieuw contract en migreert (of je bouwt vooraf een upgrade-mechanisme in, les 18). Daarom zijn testen en security in Solidity geen luxe maar voorwaarde.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "state-machine",
+     "level": 1,
+     "prompt": "Wie kan een transactie **starten**?",
+     "explain": "Contracten reageren alleen op aanroepen; een transactie begint altijd bij een EOA.",
+     "options": [
+      "Enkel een EOA (met private key)",
+      "Elk contract",
+      "Elke node",
+      "De miner/validator"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "tx-call",
+   "title": "Transacties versus calls",
+   "md": "Er zijn twee manieren om met een contract te praten:\n\n| | **Transactie** | **Call** (`eth_call`) |\n|---|---|---|\n| Wijzigt state | ja | nee |\n| Kost gas | ja, betaald door de afzender | nee (voor een externe lezer) |\n| Handtekening nodig | ja | nee |\n| Resultaat | na opname in een block | meteen |\n| Typisch | `set`, `transfer`, `deposit` | `get`, `balanceOf`, `totalSupply` |\n\nFuncties die de state niet wijzigen markeer je als **`view`** (leest state) of **`pure`** (leest zelfs geen state). Een frontend roept ze aan via een *call*: je node voert de code lokaal uit en stuurt het resultaat terug — gratis en direct.\n\n> [!warning] ‘Gratis’ geldt enkel voor calls van buitenaf\n> Wordt een `view`-functie aangeroepen **binnen** een transactie (door een ander contract), dan telt het gas wél mee in die transactie.\n\nMaak je een state-variabele **`public`**, dan genereert de compiler automatisch een gratis getter-functie met dezelfde naam: `uint256 public favorite;` geeft je `favorite()`.",
+   "checks": [
+    {
+     "id": "c2",
+     "type": "mcq",
+     "skill": "tx-vs-call",
+     "level": 1,
+     "prompt": "Wat genereert `uint256 public favorite;` automatisch?",
+     "explain": "public state-variabelen krijgen een getter.",
+     "options": [
+      "Een gratis getter-functie `favorite()`",
+      "Een setter-functie `setFavorite()`",
+      "Een event `FavoriteChanged`",
+      "Een modifier `onlyFavorite`"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "gas",
+   "title": "Gas: de prijs van rekenwerk en opslag",
+   "md": "Elke EVM-instructie (*opcode*) kost een vast aantal **gas-eenheden**. De afzender betaalt:\n\n$$\\text{fee} = \\text{gasUsed} \\times (\\text{baseFee} + \\text{priorityFee})$$\n\nDe prijs per gas wordt uitgedrukt in **gwei** ($1\\ \\text{gwei} = 10^{-9}\\ \\text{ETH}$). Een transactie van 50 000 gas bij 20 gwei kost dus $50\\,000 \\times 20 = 1\\,000\\,000$ gwei $= 0{,}001$ ETH.\n\nWaarom zijn sommige operaties duur? Omdat **elke node** ze moet uitvoeren en opslag **voor altijd** bewaard blijft.\n\n| Operatie | Gas (Cancun) | Waarom |\n|---|---|---|\n| basiskost van elke transactie | 21 000 | handtekening, nonce, overhead |\n| `SSTORE` 0 → niet-0 (koude slot) | 22 100 | nieuwe permanente opslag bij alle nodes |\n| `SSTORE` niet-0 → niet-0 | 5 000 | bestaande slot overschrijven |\n| `SLOAD` koud / warm | 2 100 / 100 | eerste lezing in een transactie is duur |\n| `ADD`, `MUL`, `LT` … | 3–5 | pure rekenwerk is goedkoop |\n\n> [!tip] Vuistregel\n> Rekenen is goedkoop, **opslag is duur**. Ontwerp contracten zo dat je zo weinig mogelijk storage-slots schrijft. In de Studio zie je het gasverbruik van elke transactie — experimenteer ermee.\n\nEen transactie die **revert** (bv. door een mislukte `require`) draait alle state-wijzigingen terug, maar het verbruikte gas ben je wél kwijt: de nodes hebben het werk immers gedaan.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "numeric",
+     "skill": "gas",
+     "level": 2,
+     "prompt": "Hoeveel ETH kost een transactie van 50 000 gas bij 20 gwei?",
+     "explain": "50 000 × 20 gwei = 10⁶ gwei = 0,001 ETH.",
+     "value": 0.001,
+     "tolerance": 0.01,
+     "unit": "ETH"
+    }
+   ]
+  },
+  {
+   "id": "contract",
+   "title": "Anatomie van een contract",
+   "md": "Een eerste contract, regel per regel:\n\n```solidity SimpleStorage.sol\n// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SimpleStorage {\n    uint256 public favorite;      // storage slot 0\n    address public lastChanger;   // storage slot 1\n\n    function set(uint256 x) external {\n        favorite = x;             // SSTORE: kost gas\n        lastChanger = msg.sender; // wie riep deze transactie aan?\n    }\n\n    function get() external view returns (uint256) {\n        return favorite;          // SLOAD: gratis via eth_call\n    }\n}\n```\n\n- **SPDX-licentie**: verplicht commentaar voor verificatie op Etherscan.\n- **`pragma solidity ^0.8.20;`**: compileer met 0.8.20 of een nieuwere 0.8-versie.\n- **State-variabelen** (`favorite`, `lastChanger`) leven in **storage**, elk in een eigen slot van 32 bytes.\n- **`external`**: enkel van buitenaf aanroepbaar (ook `public`: van buiten én binnen het contract).\n- **`msg.sender`**: het adres van wie de huidige functie aanroept — de basis van elke toegangscontrole.\n- **`view … returns (uint256)`**: leest state, geeft een getal terug.\n\nProbeer het zelf: klik **Compileer & deploy**, roep `set` aan als *alice*, en bekijk het tabblad **Opslag** — je ziet slot 0 en slot 1 veranderen.\n\n:::sim solidity {\"file\": \"SimpleStorage.sol\", \"contract\": \"SimpleStorage\", \"key\": \"demo-sol1\", \"code\": \"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.20;\\n\\ncontract SimpleStorage {\\n    uint256 public favorite;      // storage slot 0\\n    address public lastChanger;   // storage slot 1\\n\\n    function set(uint256 x) external {\\n        favorite = x;             // SSTORE: kost gas\\n        lastChanger = msg.sender; // wie riep deze transactie aan?\\n    }\\n\\n    function get() external view returns (uint256) {\\n        return favorite;          // SLOAD: gratis via eth_call\\n    }\\n}\"}\n:::",
+   "checks": [
+    {
+     "id": "c4",
+     "type": "type",
+     "skill": "first-contract",
+     "level": 1,
+     "prompt": "Welke globale variabele bevat het adres van de aanroeper?",
+     "explain": "`msg.sender` — basis van toegangscontrole.",
+     "answers": [
+      "msg.sender"
+     ],
+     "lang": "code"
+    }
+   ]
+  },
+  {
+   "id": "types",
+   "title": "Types en standaardwaarden",
+   "md": "Solidity kent **geen `null` of `undefined`**. Elke variabele heeft altijd een waarde; wat je niet invult, krijgt de **standaardwaarde**:\n\n| Type | Bereik / inhoud | Standaardwaarde |\n|---|---|---|\n| `uint256` | $0$ tot $2^{256}-1$ | `0` |\n| `int256` | $-2^{255}$ tot $2^{255}-1$ | `0` |\n| `bool` | `true` / `false` | `false` |\n| `address` | 20 bytes | `address(0)` |\n| `string` | tekst (UTF-8) | `\"\"` |\n| `bytes32` | 32 vaste bytes | `0x00…00` |\n\nSinds Solidity 0.8 zijn rekenkundige bewerkingen **gecontroleerd**: een `uint256` die onder 0 zou zakken, doet de transactie **reverten** met een *Panic 0x11* (overflow/underflow) in plaats van stilletjes rond te slaan naar $2^{256}-1$. Vroeger was dat een klassieke bron van hacks.\n\n> [!pitfall] address(0) is geen ‘leeg’ adres om naar te sturen\n> Tokens of ether naar `address(0)` sturen = ze voorgoed vernietigen. Controleer ontvangers daarom vaak met `require(to != address(0))`.",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "mcq",
+     "skill": "types-defaults",
+     "level": 2,
+     "prompt": "Wat gebeurt er in Solidity 0.8 als een `uint256` onder nul zou gaan?",
+     "explain": "Checked arithmetic sinds 0.8.",
+     "options": [
+      "De transactie revert (Panic 0x11)",
+      "De waarde wordt 2^256 − 1",
+      "De waarde blijft 0",
+      "Er komt een waarschuwing, maar de transactie slaagt"
+     ],
+     "answer": 0
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "state-machine",
+   "level": 1,
+   "prompt": "Welk account heeft **code en storage**?",
+   "explain": "EOA's hebben enkel saldo en nonce.",
+   "options": [
+    "Een contract-account",
+    "Een EOA",
+    "Beide",
+    "Geen van beide"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "mcq",
+   "skill": "state-machine",
+   "level": 2,
+   "prompt": "Je ontdekt een bug in een gedeployd contract zonder upgrade-mechanisme. Wat kan je doen?",
+   "explain": "Bytecode is onveranderlijk.",
+   "options": [
+    "Een nieuw contract deployen en migreren",
+    "De bytecode aanpassen via een transactie",
+    "De validators vragen de code te wijzigen",
+    "De functie `pure` maken"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p03",
+   "type": "mcq",
+   "skill": "tx-vs-call",
+   "level": 1,
+   "prompt": "Welke aanroep is **gratis** voor een frontend?",
+   "explain": "Lezen via een call wijzigt niets en kost geen gas.",
+   "options": [
+    "`balanceOf(alice)` via eth_call",
+    "`transfer(bob, 10)`",
+    "`deposit()` met 1 ether",
+    "`set(7)`"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p04",
+   "type": "mcq",
+   "skill": "tx-vs-call",
+   "level": 2,
+   "prompt": "Een contract A roept binnen een transactie de `view`-functie `B.get()` aan. Kost dat gas?",
+   "explain": "‘Gratis’ geldt enkel voor calls van buitenaf.",
+   "options": [
+    "Ja, het telt mee in het gas van de transactie",
+    "Nee, view-functies zijn altijd gratis",
+    "Alleen als B een EOA is",
+    "Alleen als de functie public is"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p05",
+   "type": "numeric",
+   "skill": "gas",
+   "level": 1,
+   "prompt": "Hoeveel gwei is 0,002 ETH?",
+   "explain": "1 ETH = 10⁹ gwei → 0,002 ETH = 2 000 000 gwei.",
+   "value": 2000000,
+   "tolerance": 0.001,
+   "unit": "gwei"
+  },
+  {
+   "id": "p06",
+   "type": "numeric",
+   "skill": "gas",
+   "level": 2,
+   "prompt": "Een koude SSTORE (0 → niet-0) kost 22 100 gas. Hoeveel gas kost het schrijven van **3** zulke nieuwe slots (enkel de SSTORE's)?",
+   "explain": "3 × 22 100 = 66 300.",
+   "value": 66300,
+   "tolerance": 0.001
+  },
+  {
+   "id": "p07",
+   "type": "mcq",
+   "skill": "gas",
+   "level": 2,
+   "prompt": "Een transactie revert halverwege. Wat gebeurt er met het gas?",
+   "explain": "Het werk is gedaan, dus het gas is weg.",
+   "options": [
+    "Het verbruikte gas is betaald; de state-wijzigingen worden teruggedraaid",
+    "Alles wordt terugbetaald",
+    "De state blijft gewijzigd",
+    "De transactie wordt later opnieuw geprobeerd"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p08",
+   "type": "cloze",
+   "skill": "first-contract",
+   "level": 1,
+   "prompt": "Maak de leesfunctie compleet.",
+   "explain": "`view` (leest state) + `returns (…)`.",
+   "text": "function get() external {{view}} {{returns}} (uint256) { return favorite; }",
+   "lang": "code"
+  },
+  {
+   "id": "p09",
+   "type": "order",
+   "skill": "first-contract",
+   "level": 2,
+   "prompt": "Zet de regels van een minimaal contract in de juiste volgorde.",
+   "explain": "Licentie, pragma, contract-blok met state-variabele.",
+   "tiles": [
+    "// SPDX-License-Identifier: MIT",
+    "pragma solidity ^0.8.20;",
+    "contract Hello {",
+    "string public greeting = \"hoi\";",
+    "}"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p10",
+   "type": "code",
+   "skill": "first-contract",
+   "level": 2,
+   "prompt": "Breid **SimpleStorage** uit met een functie `reset()` die `favorite` terug op 0 zet.",
+   "explain": "reset schrijft naar storage en is dus een transactie.",
+   "contract": "SimpleStorage",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SimpleStorage {\n    uint256 public favorite;\n\n    function set(uint256 x) external {\n        favorite = x;\n    }\n\n    function get() external view returns (uint256) {\n        return favorite;\n    }\n\n    // TODO: voeg een functie reset() toe die favorite terug op 0 zet\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SimpleStorage {\n    uint256 public favorite;\n\n    function set(uint256 x) external {\n        favorite = x;\n    }\n\n    function get() external view returns (uint256) {\n        return favorite;\n    }\n\n    function reset() external {\n        favorite = 0;\n    }\n}",
+   "tests": [
+    {
+     "name": "set en get werken",
+     "steps": [
+      {
+       "call": "set",
+       "args": [
+        42
+       ]
+      },
+      {
+       "expect": {
+        "call": "get",
+        "eq": 42
+       }
+      }
+     ]
+    },
+    {
+     "name": "reset zet favorite op 0",
+     "steps": [
+      {
+       "call": "set",
+       "args": [
+        7
+       ]
+      },
+      {
+       "call": "reset"
+      },
+      {
+       "expect": {
+        "call": "favorite",
+        "eq": 0
+       }
+      }
+     ]
+    },
+    {
+     "name": "iedereen mag resetten",
+     "steps": [
+      {
+       "call": "set",
+       "args": [
+        7
+       ]
+      },
+      {
+       "call": "reset",
+       "as": "bob"
+      },
+      {
+       "expect": {
+        "call": "get",
+        "eq": 0
+       }
+      }
+     ]
+    }
+   ],
+   "file": "SimpleStorage.sol"
+  },
+  {
+   "id": "p11",
+   "type": "match",
+   "skill": "types-defaults",
+   "level": 1,
+   "prompt": "Koppel elk type aan zijn standaardwaarde.",
+   "explain": "Geen null in Solidity.",
+   "pairs": [
+    [
+     "uint256",
+     "0"
+    ],
+    [
+     "bool",
+     "false"
+    ],
+    [
+     "address",
+     "address(0)"
+    ],
+    [
+     "string",
+     "\"\""
+    ]
+   ]
+  },
+  {
+   "id": "p12",
+   "type": "type",
+   "skill": "types-defaults",
+   "level": 2,
+   "prompt": "Welke standaardwaarde heeft een niet-ingevuld `address`? (typ zoals in Solidity)",
+   "explain": "`address(0)` — het nuladres.",
+   "answers": [
+    "address(0)"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p13",
+   "type": "mcq",
+   "skill": "types-defaults",
+   "level": 2,
+   "prompt": "Waarom is `require(to != address(0))` een goede gewoonte bij transfers?",
+   "explain": "address(0) is het ‘burn’-adres.",
+   "options": [
+    "Tokens naar address(0) zijn voorgoed verloren",
+    "Het bespaart gas",
+    "address(0) is het adres van de deployer",
+    "Het is verplicht door de compiler"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p14",
+   "type": "explain",
+   "skill": "tx-vs-call",
+   "level": 3,
+   "prompt": "Leg in 3–4 zinnen uit aan een niet-technische collega waarom het **lezen** van een tokensaldo gratis is maar een **overschrijving** geld kost.",
+   "explain": "Kunnen uitleggen = echt begrijpen.",
+   "model": "Een saldo lezen gebeurt lokaal op één node die de huidige toestand al kent; niemand moet daarvoor iets veranderen of bewaren, dus het is gratis. Een overschrijving wijzigt de gedeelde toestand: duizenden nodes moeten de berekening uitvoeren en het resultaat voor altijd opslaan. Daarvoor betaal je gas, een vergoeding per rekenstap en per opslag. Hoe drukker het netwerk, hoe hoger de prijs per gas.",
+   "rubric": [
+    "Lezen = lokaal, geen wijziging",
+    "Schrijven = alle nodes voeren uit en bewaren",
+    "Gas als vergoeding per operatie",
+    "Begrijpelijk zonder jargon"
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "mcq",
+   "skill": "state-machine",
+   "level": 1,
+   "prompt": "Wat is de EVM?",
+   "explain": "Solidity is de taal; de EVM voert de bytecode uit.",
+   "options": [
+    "De virtuele machine die contract-bytecode uitvoert op elke node",
+    "Een programmeertaal voor smart contracts",
+    "De wallet van de Ethereum Foundation",
+    "Een server die transacties goedkeurt"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m02",
+   "type": "mcq",
+   "skill": "state-machine",
+   "level": 2,
+   "prompt": "Waarom moeten alle nodes tot **dezelfde** state komen?",
+   "explain": "Determinisme: zelfde input → zelfde output op elke node.",
+   "options": [
+    "De EVM is deterministisch: consensus vereist overal hetzelfde resultaat",
+    "De nodes kopiëren de state van de snelste node",
+    "Eén centrale server bepaalt de state voor iedereen",
+    "De validators stemmen per transactie over het resultaat"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m03",
+   "type": "mcq",
+   "skill": "tx-vs-call",
+   "level": 2,
+   "prompt": "Welke functie kan je als **view** markeren?",
+   "explain": "Alleen functies die state lezen maar niet wijzigen.",
+   "options": [
+    "`function total() external returns (uint256) { return a + b; }` (leest state)",
+    "`function set(uint256 x) external { v = x; }`",
+    "`function pay() external payable { }`",
+    "`function inc() external { count++; }`"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m04",
+   "type": "type",
+   "skill": "tx-vs-call",
+   "level": 2,
+   "prompt": "Welke JSON-RPC-methode gebruikt een frontend om een view-functie gratis uit te voeren?",
+   "explain": "`eth_call` — lokaal uitgevoerd, niets opgeslagen.",
+   "answers": [
+    "eth_call"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m05",
+   "type": "numeric",
+   "skill": "gas",
+   "level": 2,
+   "prompt": "Een transactie verbruikt 65 000 gas bij een base fee van 18 gwei en een priority fee van 2 gwei. Hoeveel ETH kost ze?",
+   "explain": "65 000 × (18 + 2) gwei = 1 300 000 gwei = 0,0013 ETH.",
+   "value": 0.0013,
+   "tolerance": 0.01,
+   "unit": "ETH"
+  },
+  {
+   "id": "m06",
+   "type": "numeric",
+   "skill": "gas",
+   "level": 2,
+   "prompt": "Hoeveel gas kost een **warme** `SLOAD`?",
+   "explain": "Koud 2 100, warm 100 (EIP-2929).",
+   "value": 100,
+   "abs": 0
+  },
+  {
+   "id": "m07",
+   "type": "mcq",
+   "skill": "gas",
+   "level": 2,
+   "prompt": "Welke operatie is veruit het duurst?",
+   "explain": "~22 100 gas vs. enkele gas.",
+   "options": [
+    "Een nieuwe storage-slot vullen (SSTORE 0 → niet-0)",
+    "Twee getallen optellen",
+    "Een waarde van de stack kopiëren",
+    "Een view-functie aanroepen via eth_call"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m08",
+   "type": "cloze",
+   "skill": "first-contract",
+   "level": 2,
+   "prompt": "Vul aan: een publieke teller en een functie die hem verhoogt.",
+   "explain": "`public` voor de getter; `external` (of `public`) om de functie aan te roepen.",
+   "text": "uint256 {{public}} count; function increment() {{external}} { count += 1; }",
+   "lang": "code"
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "first-contract",
+   "level": 2,
+   "prompt": "Schrijf de pragma-regel voor ‘Solidity 0.8.20 of een nieuwere 0.8-versie’.",
+   "explain": "`pragma solidity ^0.8.20;`",
+   "answers": [
+    "pragma solidity ^0.8.20;"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m10",
+   "type": "code",
+   "skill": "first-contract",
+   "level": 3,
+   "prompt": "Schrijf een contract **Counter** met een publieke `count`, `increment()` en `decrement()`. `decrement()` moet reverten als `count` 0 is.",
+   "explain": "Checked arithmetic doet het werk: `count -= 1` revert bij 0.",
+   "contract": "Counter",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Counter {\n    // TODO 1: een publieke teller `count` (uint256)\n    // TODO 2: increment() verhoogt count met 1\n    // TODO 3: decrement() verlaagt count met 1 en moet reverten als count 0 is\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Counter {\n    uint256 public count;\n\n    function increment() external {\n        count += 1;\n    }\n\n    function decrement() external {\n        count -= 1; // reverts (Panic 0x11) bij 0 dankzij checked arithmetic\n    }\n}",
+   "tests": [
+    {
+     "name": "twee keer increment → 2",
+     "steps": [
+      {
+       "call": "increment"
+      },
+      {
+       "call": "increment"
+      },
+      {
+       "expect": {
+        "call": "count",
+        "eq": 2
+       }
+      }
+     ]
+    },
+    {
+     "name": "increment + decrement → 0",
+     "steps": [
+      {
+       "call": "increment"
+      },
+      {
+       "call": "decrement"
+      },
+      {
+       "expect": {
+        "call": "count",
+        "eq": 0
+       }
+      }
+     ]
+    },
+    {
+     "name": "decrement bij 0 revert",
+     "steps": [
+      {
+       "call": "decrement",
+       "reverts": true
+      }
+     ]
+    },
+    {
+     "name": "iedereen mag tellen",
+     "steps": [
+      {
+       "call": "increment",
+       "as": "alice"
+      },
+      {
+       "call": "increment",
+       "as": "bob"
+      },
+      {
+       "expect": {
+        "call": "count",
+        "eq": 2
+       }
+      }
+     ]
+    }
+   ],
+   "file": "Counter.sol"
+  },
+  {
+   "id": "m11",
+   "type": "match",
+   "skill": "types-defaults",
+   "level": 1,
+   "prompt": "Koppel type en standaardwaarde.",
+   "explain": "Elk type heeft een veilige nulwaarde.",
+   "pairs": [
+    [
+     "int256",
+     "0"
+    ],
+    [
+     "bool",
+     "false"
+    ],
+    [
+     "string",
+     "\"\""
+    ],
+    [
+     "address",
+     "address(0)"
+    ]
+   ]
+  },
+  {
+   "id": "m12",
+   "type": "mcq",
+   "skill": "types-defaults",
+   "level": 2,
+   "prompt": "`uint256 x = 0; x = x - 1;` in Solidity 0.8. Resultaat?",
+   "explain": "Underflow revert sinds 0.8 (tenzij in een `unchecked`-blok).",
+   "options": [
+    "Revert met Panic 0x11",
+    "x = 2^256 − 1",
+    "x = −1",
+    "x = 0"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m13",
+   "type": "type",
+   "skill": "types-defaults",
+   "level": 2,
+   "prompt": "Wat is het **grootste** getal dat een `uint8` kan bevatten?",
+   "explain": "2⁸ − 1 = 255.",
+   "answers": [
+    "255"
+   ],
+   "lang": "num"
+  },
+  {
+   "id": "m14b",
+   "type": "type",
+   "skill": "state-machine",
+   "level": 2,
+   "prompt": "Hoe heet een account dat door een private key beheerd wordt? (afkorting)",
+   "explain": "EOA = externally owned account.",
+   "answers": [
+    "EOA"
+   ],
+   "lang": "nl",
+   "caseSensitive": false
+  },
+  {
+   "id": "m14",
+   "type": "mcq",
+   "skill": "state-machine",
+   "level": 2,
+   "prompt": "Wat bevat een **contract-account** dat een EOA niet heeft?",
+   "explain": "Beide hebben een adres, saldo en nonce; alleen contracten hebben code en storage.",
+   "options": [
+    "Code en storage",
+    "Een saldo",
+    "Een nonce",
+    "Een adres"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m15",
+   "type": "mcq",
+   "skill": "tx-vs-call",
+   "level": 3,
+   "prompt": "Een frontend toont `favorite` meteen na het versturen van `set(7)`, maar ziet nog de oude waarde. Waarom?",
+   "explain": "Een transactie moet eerst gemined/opgenomen worden; een call leest de huidige bevestigde state.",
+   "options": [
+    "De transactie is nog niet in een block opgenomen",
+    "View-functies cachen altijd 10 minuten",
+    "set() is mislukt omdat view gratis is",
+    "De getter leest uit memory"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m16",
+   "type": "numeric",
+   "skill": "gas",
+   "level": 3,
+   "prompt": "Een transactie kost 21 000 basisgas + 2 koude SSTORE's (0 → niet-0) + 1 000 gas overhead. Hoeveel gas in totaal?",
+   "explain": "21 000 + 2 × 22 100 + 1 000 = 66 200.",
+   "value": 66200,
+   "abs": 0
+  }
+ ],
+ "production": {
+  "type": "code",
+  "contract": "Guestbook",
+  "file": "Guestbook.sol",
+  "prompt": "**Bouw een gastenboek op de blockchain.** Iedereen kan het contract ‘tekenen’ met een bericht.\n\n- `lastMessage` (string), `lastSigner` (address) en `signatures` (uint256) zijn **public**.\n- `sign(string calldata message)` bewaart het bericht en de afzender en verhoogt de teller.\n\nDeploy, teken als *alice* en *bob* via het tabblad **Contract**, bekijk de **Opslag** — en run dan de tests.",
+  "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\n/// Een gastenboek op de blockchain.\ncontract Guestbook {\n    // TODO 1: publieke state-variabelen\n    //   lastMessage (string), lastSigner (address), signatures (uint256)\n\n    // TODO 2: sign(string calldata message)\n    //   bewaar het bericht en de afzender, en verhoog de teller\n}",
+  "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\n/// Een gastenboek op de blockchain.\ncontract Guestbook {\n    string public lastMessage;\n    address public lastSigner;\n    uint256 public signatures;\n\n    function sign(string calldata message) external {\n        lastMessage = message;\n        lastSigner = msg.sender;\n        signatures += 1;\n    }\n}",
+  "tests": [
+   {
+    "name": "alice tekent",
+    "steps": [
+     {
+      "call": "sign",
+      "as": "alice",
+      "args": [
+       "Hallo vanuit Gent"
+      ]
+     },
+     {
+      "expect": {
+       "call": "lastMessage",
+       "eq": "Hallo vanuit Gent"
+      }
+     },
+     {
+      "expect": {
+       "call": "lastSigner",
+       "eq": "alice"
+      }
+     },
+     {
+      "expect": {
+       "call": "signatures",
+       "eq": 1
+      }
+     }
+    ]
+   },
+   {
+    "name": "bob tekent daarna",
+    "steps": [
+     {
+      "call": "sign",
+      "as": "alice",
+      "args": [
+       "eerste"
+      ]
+     },
+     {
+      "call": "sign",
+      "as": "bob",
+      "args": [
+       "tweede"
+      ]
+     },
+     {
+      "expect": {
+       "call": "lastSigner",
+       "eq": "bob"
+      }
+     },
+     {
+      "expect": {
+       "call": "lastMessage",
+       "eq": "tweede"
+      }
+     },
+     {
+      "expect": {
+       "call": "signatures",
+       "eq": 2
+      }
+     }
+    ]
+   },
+   {
+    "name": "gebruikt msg.sender",
+    "source": {
+     "contains": "msg.sender"
+    }
+   },
+   {
+    "name": "een handtekening kost < 120 000 gas",
+    "steps": [
+     {
+      "call": "sign",
+      "as": "carol",
+      "args": [
+       "kort"
+      ],
+      "gasLt": 120000
+     }
+    ]
+   }
+  ],
+  "model": "Drie `public` state-variabelen en één functie die ze bijwerkt. Merk in de Opslag op dat een korte string (≤ 31 bytes) in één slot past, samen met zijn lengte.",
+  "rubric": []
+ },
+ "cards": [
+  {
+   "id": "c-eoa",
+   "front": "EOA vs contract-account?",
+   "back": "**EOA**: private key, saldo, nonce — kan transacties starten. **Contract**: code + storage — reageert enkel op aanroepen.",
+   "skill": "state-machine"
+  },
+  {
+   "id": "c-view",
+   "front": "Wat betekent `view`?",
+   "back": "De functie **leest** state maar wijzigt niets (gratis via eth_call).",
+   "skill": "tx-vs-call"
+  },
+  {
+   "id": "c-call",
+   "front": "JSON-RPC-methode voor een gratis leesaanroep?",
+   "back": "`eth_call`",
+   "answers": [
+    "eth_call"
+   ],
+   "lang": "code",
+   "skill": "tx-vs-call"
+  },
+  {
+   "id": "c-fee",
+   "front": "Formule voor de transactiekost?",
+   "back": "gasUsed × (baseFee + priorityFee)",
+   "skill": "gas"
+  },
+  {
+   "id": "c-sstore",
+   "front": "Gas voor SSTORE 0 → niet-0 (koude slot)?",
+   "back": "22 100 gas",
+   "answers": [
+    "22100",
+    "22 100",
+    "22.100"
+   ],
+   "lang": "num",
+   "skill": "gas"
+  },
+  {
+   "id": "c-sender",
+   "front": "Adres van de aanroeper in Solidity?",
+   "back": "`msg.sender`",
+   "answers": [
+    "msg.sender"
+   ],
+   "lang": "code",
+   "skill": "first-contract"
+  },
+  {
+   "id": "c-panic",
+   "front": "Wat gebeurt er bij underflow in Solidity 0.8?",
+   "back": "revert met **Panic 0x11**",
+   "skill": "types-defaults"
+  },
+  {
+   "id": "c-gwei",
+   "front": "1 gwei = … ETH?",
+   "back": "10⁻⁹ ETH",
+   "answers": [
+    "10^-9",
+    "0.000000001",
+    "1e-9"
+   ],
+   "lang": "num",
+   "skill": "gas"
+  }
+ ],
+ "sources": [
+  "Solidity documentation v0.8 (docs.soliditylang.org)",
+  "Ethereum Yellow Paper & EIP-2929 / EIP-2200 / EIP-3529 (gas)",
+  "evm.codes — opcode reference"
+ ],
+ "kind": "core",
+ "meta": {
+  "author": "claude",
+  "created": "2026-09-25"
+ }
+}
