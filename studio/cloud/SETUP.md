@@ -1,58 +1,38 @@
-# Login en cloud-sync instellen (± 10 minuten, eenmalig)
+# Login en synchronisatie
 
-Na deze stappen log je op iPhone, iPad en Mac in met een **e-mailcode**. Je voortgang, herhaalkaarten en leerlog staan dan privé in je eigen database, en je Mac leest ze elke ochtend in voor Antigravity.
+## Zo is het nu ingesteld: je eigen server (MacBook 2)
 
-## 1. Supabase-project aanmaken
+Je voortgang staat in de **Supabase die al op MacBook 2 draait** (`macbook-server-2017`, map `~/lullaby/supabase`), in aparte tabellen `polyglot_*`. Lullaby gebruikt dezelfde installatie; Polyglot raakt niets van Lullaby aan.
 
-1. Ga naar <https://supabase.com> → **Start your project** → log in (bv. met GitHub).
-2. **New project** → naam `polyglot-studio`, regio **West EU (Ireland)** of **Central EU (Frankfurt)**, kies een sterk databasewachtwoord (bewaar het in je wachtwoordbeheer). Het gratis plan volstaat ruim.
+| Onderdeel | Waar |
+|---|---|
+| Database | `supabase-db` op MacBook 2, tabellen `polyglot_members`, `polyglot_progress`, `polyglot_events`, `polyglot_coach` ([schema](supabase.sql)) |
+| Bereikbaar voor de app | `https://macbook-server-2017.tail99c06b.ts.net:8443` (Tailscale Funnel, al ingesteld voor Lullaby) |
+| Publieke sleutel in de app | [`config.json`](config.json) → `anonKey` (veilig: anoniem heeft geen enkel recht op de `polyglot_*`-tabellen) |
+| Ochtendrun op je Mac | leest de tabellen via SSH (`POLYGLOT_SSH=macbook2` in `~/scripts/polyglot.env`), **zonder** sleutels op je Mac |
+| Back-up | elke nacht om 03:30 naar `~/polyglot/backups/` op MacBook 2, 30 dagen bewaard (`~/polyglot/backup.sh`, eigen blok in `crontab`) |
 
-## 2. Tabellen en beveiliging
+### Eerste keer
 
-1. Open in het project **SQL Editor** → **New query**.
-2. Plak de volledige inhoud van [`supabase.sql`](supabase.sql) en klik **Run**. Je krijgt de tabellen `progress`, `events` en `coach`, telkens met rijbeveiliging: elke gebruiker ziet enkel zijn eigen rijen.
+1. Open de app → **Account aanmaken** → e-mailadres + wachtwoord (min. 8 tekens). Er wordt geen mail verstuurd: het account is meteen actief.
+2. Het **eerste** account dat zich zo aanmeldt, wordt eigenaar (`polyglot_members`). Daarna kan geen enkel ander account nog bij de Polyglot-tabellen.
+3. Op je andere toestellen kies je gewoon **Log in** met hetzelfde e-mailadres en wachtwoord.
 
-## 3. Inloggen met een e-mailcode
+### Beheer
 
-1. **Authentication → Providers → Email**: laat *Enable Email provider* aan. Zet **Confirm email** aan.
-2. **Authentication → Emails → Templates → Magic Link** (in oudere dashboards: *Email Templates*): vervang de inhoud door:
+```bash
+# wie is eigenaar, hoeveel data?
+ssh macbook2 "docker exec -i supabase-db psql -U postgres -d postgres -c 'select m.user_id, u.email, (select count(*) from polyglot_events e where e.user_id = m.user_id) as events from polyglot_members m join auth.users u on u.id = m.user_id'"
+# schema opnieuw toepassen (idempotent)
+ssh macbook2 'docker exec -i supabase-db psql -U postgres -d postgres -v ON_ERROR_STOP=1 --single-transaction' < studio/cloud/supabase.sql
+# back-up terugzetten
+ssh macbook2 'gunzip -c ~/polyglot/backups/polyglot-JJJJ-MM-DD.sql.gz | docker exec -i supabase-db psql -U postgres -d postgres'
+```
 
-   ```html
-   <h2>Je Polyglot-code</h2>
-   <p>Je inlogcode is: <strong style="font-size:24px;letter-spacing:4px">{{ .Token }}</strong></p>
-   <p>De code is één uur geldig.</p>
-   ```
+Wachtwoord vergeten? Er is geen mailserver, dus herstel gaat via de server (nieuw wachtwoord instellen met de admin-API van Supabase op MacBook 2).
 
-   Doe hetzelfde bij **Confirm signup** (die mail krijg je bij je allereerste login).
-3. **Authentication → URL Configuration**: zet *Site URL* op `https://thibaudverschueren.github.io/polyglot-studio/`.
+> **Let op bij Lullaby:** `docker compose down -v` of een database-reset in `~/lullaby/supabase` wist ook de Polyglot-tabellen. Zet dan het schema opnieuw en de laatste back-up terug. De app bewaart alles ook lokaal en synchroniseert het daarna opnieuw.
 
-> Waarom een code en geen link? Een app op je beginscherm (PWA) opent links in Safari, niet in de app. Met een code van 6 cijfers log je rechtstreeks in de app zelf in.
+## Alternatief: Supabase in de cloud
 
-## 4. Gegevens invullen
-
-De *Project URL* staat onder **Project Settings → Data API**, de sleutels onder **Project Settings → API Keys**. Nieuwe projecten tonen een *publishable* en een *secret* key; oudere projecten (tabblad *Legacy API keys*) een `anon`- en `service_role`-key. Beide soorten werken.
-
-| Waarde | Waar invullen | Geheim? |
-|---|---|---|
-| Project URL (`https://<project>.supabase.co`) | `studio/cloud/config.json` → `url` **en** `~/scripts/polyglot.env` → `SUPABASE_URL` | nee |
-| *Publishable key* (`sb_publishable_…`) of legacy `anon` key | `studio/cloud/config.json` → `anonKey` | nee — veilig in de website dankzij rijbeveiliging |
-| *Secret key* (`sb_secret_…`) of legacy `service_role` key | **alleen** `~/scripts/polyglot.env` → `SUPABASE_SERVICE_KEY` | **ja** — nooit in de repo of website |
-
-Daarna: `python3 ~/Developer/polyglot-studio/studio/tools/build.py`, committen en pushen (of wacht op de run van 07:30).
-
-## 5. Eerste login en afsluiten
-
-1. Open de app op je iPhone → je ziet het inlogscherm → vul je e-mailadres in → typ de code uit je mail.
-2. Log ook in op je Mac en iPad met hetzelfde e-mailadres. Alles synchroniseert vanzelf.
-3. **Sluit registratie af** zodat niemand anders een account kan maken: *Authentication → Providers → Email → Allow new users to sign up* uitzetten (of het optionele blok onderaan `supabase.sql` uitvoeren met jouw e-mailadres).
-
-## Optioneel: Google of Apple
-
-- **Google** (handig op de Mac): *Authentication → Providers → Google* aanzetten met een OAuth-client uit Google Cloud Console (redirect-URL: `https://<project>.supabase.co/auth/v1/callback`). Zet daarna `"google": true` in `config.json`.
-- **Apple** vereist een betaald Apple Developer-account (€99/jaar) voor *Sign in with Apple*. De e-mailcode doet hetzelfde, gratis.
-
-## Wat als …
-
-- **Ik wis mijn Safari-gegevens?** Log opnieuw in met een code: alles komt terug uit de cloud.
-- **Supabase pauzeert gratis projecten na een week zonder activiteit.** Je Mac leest elke ochtend de data in, dus dat gebeurt niet zolang de dagelijkse run loopt. Gepauzeerd? Eén klik op *Restore* in het dashboard; er gaat niets verloren.
-- **Back-up?** In de app: *Voortgang → Exporteer* geeft een volledig JSON-bestand.
+Wil je later naar supabase.com: maak een project, voer [`supabase.sql`](supabase.sql) uit in de SQL Editor, en zet in `config.json` de project-URL en de *publishable key*. Met een echte mailserver kan `"auth": "otp"` (inloggen met een e-mailcode). Op de Mac: `SUPABASE_URL` en `SUPABASE_SERVICE_KEY` in `~/scripts/polyglot.env`, en `POLYGLOT_SSH` weghalen.

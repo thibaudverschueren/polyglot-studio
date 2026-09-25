@@ -29,7 +29,7 @@ sys.path.insert(0, HERE)
 
 import learner  # noqa: E402
 import antigravity as ag  # noqa: E402
-from cloud import Cloud, load_env  # noqa: E402
+from cloud import connect, load_env  # noqa: E402
 
 DATA = os.path.expanduser("~/scripts/polyglot-data")
 SWIFT = os.path.expanduser("~/scripts/sync_reminders.swift")
@@ -199,7 +199,7 @@ def coach(model, cloud, cfg, today, report):
         D = ag.coach_pack(model, cfg, today, log=log)
         if not D:
             return
-        if cloud.configured and cloud.user_id:
+        if cloud.configured and cloud.owner():
             cloud.put_coach(today, standalone_render(D))
             log("    ✓ coach-pakket privé naar Supabase")
         else:
@@ -266,19 +266,19 @@ def main(argv):
                 log(f"[1] git pull: {(r.stdout or r.stderr).strip().splitlines()[-1] if (r.stdout or r.stderr).strip() else 'ok'}")
 
         log("[2] Leerdersmodel opbouwen")
-        cloud = Cloud(cfg)
+        cloud = connect(cfg)
         states, events = [], []
         if cloud.configured:
             try:
                 rows = cloud.progress()
                 states = [r["state"] for r in rows]
                 events = cloud.events(since_ms=(time.time() - 60 * 86400) * 1000)
-                log(f"    Supabase: {len(rows)} toestel(len), {len(events)} events (60 d)")
+                log(f"    {cloud.label}: {len(rows)} toestel(len), {len(events)} events (60 d)" + ("" if cloud.owner() else " — nog geen account aangemaakt in de app"))
             except Exception as e:
-                report["errors"].append(f"supabase: {e}")
-                log(f"    ⚠ Supabase: {e}")
+                report["errors"].append(f"database: {e}")
+                log(f"    ⚠ database ({cloud.label}): {e}")
         else:
-            log("    ⚠ Supabase niet ingesteld (~/scripts/polyglot.env) — geen prestatiegegevens; genereren volgt enkel de roadmap.")
+            log("    ⚠ geen database ingesteld (~/scripts/polyglot.env) — geen prestatiegegevens; genereren volgt enkel de roadmap.")
         idx, items = learner.content_index(STUDIO)
         model = learner.build_model(states, events, idx, items)
         json.dump(model, open(os.path.join(DATA, "learner_profile.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)

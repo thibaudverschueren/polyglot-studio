@@ -419,18 +419,25 @@ PS.views.settings = () => {
 };
 
 
-/* ---------- Account (Supabase email-code login) ---------- */
+/* ---------- Account (Supabase: e-mail + password, or e-mail code) ---------- */
 PS.views.accountBox = () => {
   const c = PS.cloud; const sy = PS.S.s.settings.sync;
-  if (!c.configured()) return `<p class="small" style="margin-top:0">Cloud-sync is nog niet ingesteld. Tot dan blijft je voortgang op dit toestel (maak af en toe een export bij <a href="#/voortgang">Voortgang</a>).</p><p class="small muted">Instellen duurt ± 5 minuten: volg <span class="mono">studio/cloud/SETUP.md</span>. Daarna log je op elk toestel in met een e-mailcode.</p>
+  if (!c.configured()) return `<p class="small" style="margin-top:0">Synchronisatie is nog niet ingesteld. Tot dan blijft je voortgang op dit toestel (maak af en toe een export bij <a href="#/voortgang">Voortgang</a>).</p><p class="small muted">Instellen: zie <span class="mono">studio/cloud/SETUP.md</span>. Daarna log je op elk toestel in.</p>
     <details><summary class="small" style="cursor:pointer;font-weight:650">Geavanceerd: Supabase-gegevens handmatig invullen</summary><div class="form-row"><label>Project-URL</label><input data-cfg="url" placeholder="https://xxxx.supabase.co" value="${PS.attr(PS.S.s.settings.cloud.url)}"></div><div class="form-row"><label>Anon (publieke) key</label><input data-cfg="key" placeholder="eyJ…" value="${PS.attr(PS.S.s.settings.cloud.key)}"></div><button class="btn btn-line btn-sm" data-cfg-save>Bewaar</button></details>`;
   if (c.signedIn()) return `<div class="spread"><div><div style="font-weight:700">${PS.esc((c.user() || {}).email || 'Ingelogd')}</div><div class="tiny muted">${sy.last ? `Laatste sync ${new Date(sy.last).toLocaleString('nl-BE')}` : 'Nog niet gesynchroniseerd'}${sy.error ? ` · <span style="color:var(--bad)">${PS.esc(sy.error)}</span>` : ''}</div></div><span class="chip chip-good">${PS.icon('cloud')} actief</span></div>
-    <p class="small muted">Je voortgang, herhaalkaarten en leerlog staan versleuteld in je eigen Supabase-database (rij-beveiliging: alleen jij). Je Mac leest ze elke ochtend om 07:30 in voor Antigravity.</p>
+    <p class="small muted">Je voortgang, herhaalkaarten en leerlog staan in ${PS.esc(c.cfg().label || 'je eigen Supabase-database')}, afgeschermd zodat alleen jouw account erbij kan. Elke ochtend om 07:30 leest Antigravity ze in om je volgende lessen bij te sturen.</p>
     <div class="row-wrap"><button class="btn btn-primary btn-sm" data-act="sync">${PS.icon('sync', 'icon-s')} Nu synchroniseren</button><button class="btn btn-ghost btn-sm" data-signout>Uitloggen</button></div>`;
   return PS.views.loginForm();
 };
 PS.views.loginForm = () => {
   const c = PS.cloud.cfg();
+  if (c.auth === 'password') return `<form data-login data-mode="in" novalidate>
+    <p class="small" style="margin-top:0" data-intro>Log in met je e-mailadres en wachtwoord. Je blijft ingelogd op dit toestel, ook in de app op je beginscherm.</p>
+    <div class="form-row"><label for="pw-email">E-mailadres</label><input id="pw-email" type="email" data-email autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="jij@voorbeeld.be" value="${PS.attr(PS.store.get('polyglot_login_email') || '')}"></div>
+    <div class="form-row"><label for="pw-pass">Wachtwoord</label><input id="pw-pass" type="password" data-pass autocomplete="current-password"></div>
+    <div class="form-row" data-pass2-row hidden><label for="pw-pass2">Herhaal wachtwoord</label><input id="pw-pass2" type="password" data-pass2 autocomplete="new-password"></div>
+    <div class="row-wrap"><button class="btn btn-primary" type="submit" data-submit>${PS.icon('check', 'icon-s')} <span>Log in</span></button><button class="btn btn-line" type="button" data-mode-toggle>Account aanmaken</button></div>
+    <p class="tiny muted" data-msg style="margin:10px 0 0"></p></form>`;
   return `<div data-login><p class="small" style="margin-top:0">Log in met je e-mailadres: je krijgt een code van 6 cijfers. Werkt ook in de app op je beginscherm.</p>
     <div class="form-row"><label>E-mailadres</label><input type="email" data-email autocomplete="email" inputmode="email" placeholder="jij@voorbeeld.be" value="${PS.attr(PS.store.get('polyglot_login_email') || '')}"></div>
     <div class="form-row" data-code-row hidden><label>Code uit je mail</label><input data-code inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" style="letter-spacing:0.3em;font-family:var(--font-rounded);font-size:20px"></div>
@@ -460,6 +467,34 @@ PS.views.bindAccount = (box, onDone) => {
     catch (e) { msg(e.message, true); verify.disabled = false; }
   };
   if (verify) { verify.onclick = go; q('[data-code]').addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); }); }
+  const form = q('form[data-login]');
+  if (form) {
+    const intro = q('[data-intro]'), pass = q('[data-pass]'), row2 = q('[data-pass2-row]'), submit = q('[data-submit]'), toggle = q('[data-mode-toggle]');
+    const setMode = (mode) => {
+      form.dataset.mode = mode; const up = mode === 'up';
+      row2.hidden = !up; pass.autocomplete = up ? 'new-password' : 'current-password';
+      intro.textContent = up ? 'Kies een wachtwoord van minstens 8 tekens. Dit doe je maar één keer: op je andere toestellen log je gewoon in.' : 'Log in met je e-mailadres en wachtwoord. Je blijft ingelogd op dit toestel, ook in de app op je beginscherm.';
+      submit.querySelector('span').textContent = up ? 'Account aanmaken' : 'Log in';
+      toggle.textContent = up ? 'Ik heb al een account' : 'Account aanmaken';
+      msg('');
+    };
+    toggle.onclick = () => setMode(form.dataset.mode === 'up' ? 'in' : 'up');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = q('[data-email]').value.trim(), pw = pass.value, up = form.dataset.mode === 'up';
+      if (!/^\S+@\S+\.\S+$/.test(email)) return msg('Vul een geldig e-mailadres in.', true);
+      if (!pw) return msg('Vul je wachtwoord in.', true);
+      if (up && pw.length < 8) return msg('Kies een wachtwoord van minstens 8 tekens.', true);
+      if (up && pw !== q('[data-pass2]').value) return msg('De twee wachtwoorden zijn niet gelijk.', true);
+      PS.store.set('polyglot_login_email', email);
+      submit.disabled = true; msg(up ? 'Account aanmaken…' : 'Inloggen…');
+      try {
+        await (up ? PS.cloud.signUp(email, pw) : PS.cloud.signIn(email, pw));
+        msg('Ingelogd — synchroniseren…'); await PS.sync.now(true);
+        if (onDone) onDone(); else PS.render();
+      } catch (err) { msg(err.message, true); submit.disabled = false; }
+    });
+  }
   const g = q('[data-google]'); if (g) g.onclick = () => PS.cloud.oauth('google');
   const a = q('[data-apple]'); if (a) a.onclick = () => PS.cloud.oauth('apple');
 };

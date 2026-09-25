@@ -1,7 +1,9 @@
 {
-  "url": "",
-  "anonKey": "",
+  "url": "https://macbook-server-2017.tail99c06b.ts.net:8443",
+  "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkwMzQzNjM1LCJleHAiOjE5NDgwMjM2MzV9.ygdItyVefoollotSXarIO7DVTqSEO3UxpSHcpyLdr-o",
+  "auth": "password",
+  "label": "je eigen server (MacBook 2)",
   "google": false,
   "apple": false,
-  "_comment": "Publieke Supabase-gegevens (URL + anon key). Veilig om te publiceren: rij-beveiliging (RLS) beschermt de data. Zie SETUP.md."
+  "_comment": "Zelf gehoste Supabase op MacBook 2 (via Tailscale Funnel). De anon key is publiek en veilig: tabellen polyglot_* zijn afgeschermd met rij-beveiliging en alleen voor het eigenaarsaccount. auth: 'password' (e-mail + wachtwoord) of 'otp' (e-mailcode, vereist een echte mailserver)."
 }

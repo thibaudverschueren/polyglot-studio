@@ -177,7 +177,8 @@ def build(lenient=False, out_dir=REPO, today=None):
     if os.path.exists(cp):
         c = load(cp)
         if c.get("url") and c.get("anonKey"):
-            cloud_cfg = {"url": c["url"], "anonKey": c["anonKey"], "google": bool(c.get("google")), "apple": bool(c.get("apple"))}
+            cloud_cfg = {"url": c["url"], "anonKey": c["anonKey"], "auth": c.get("auth", "otp"), "label": c.get("label", ""),
+                         "google": bool(c.get("google")), "apple": bool(c.get("apple"))}
 
     content = {"tracks": tracks, "syllabus": syllabus, "lessons": lessons, "daily": daily, "profile": profile, "cloud": cloud_cfg}
     content, n_math = render_math(content)

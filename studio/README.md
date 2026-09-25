@@ -26,7 +26,7 @@ launchd → ~/scripts/run_daily.sh → ~/scripts/daily_orchestrator.py → studi
 ```
 
 1. `git pull`
-2. voortgang en leerlog uit Supabase → leerdersmodel (`~/scripts/polyglot-data/learner_profile.json`)
+2. voortgang en leerlog uit je eigen database op MacBook 2 (via SSH) → leerdersmodel (`~/scripts/polyglot-data/learner_profile.json`)
 3. plan per vak: herhalingsles na een mislukte retentiecheck · de eerstvolgende niet-gestarte les bijsturen op nieuwe resultaten · nieuwe lessen tot er 5 klaarstaan (max. 2 per dag)
 4. Antigravity schrijft (headless, zonder tools) → validatie + code uitvoeren → max. 2 herkansingen
 5. bouwen → commit → push
@@ -55,7 +55,8 @@ python3 -m http.server 8765                                        # lokaal test
 
 ## Privacy en veiligheid
 
-- Login met een e-mailcode via Supabase; elke rij in de database is afgeschermd per gebruiker (row level security).
-- In de website staat alleen de publieke *anon key*. De *service-role key* staat alleen op je Mac in `~/scripts/polyglot.env`.
+- Je data staat op je eigen server (MacBook 2), in aparte `polyglot_*`-tabellen met rij-beveiliging: alleen jouw account kan erbij.
+- Login met e-mail + wachtwoord. In de website staat alleen de publieke *anon key*; je Mac leest de database via SSH, zonder sleutels.
+- Elke nacht een back-up op de server (30 dagen).
 - Code die je schrijft draait in een afgeschermde sandbox zonder toegang tot je login.
 - Antigravity krijgt geen toegang tot bestanden of terminal; alles wat het teruggeeft wordt eerst gecontroleerd.
