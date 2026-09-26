@@ -149,7 +149,7 @@ def sync_reminders(model, idx):
         lessons.append({"track": t, "prefix": PREFIX[t], "lessonNum": i, "title": L["title"], "url": f"{SITE}?track={t}&lesson={i}",
                         "focus": (("Vandaag: " + ", ".join(todo) + ".\n") if todo else "") + focus, "duration": f"± {L.get('minutes', 40)} min",
                         "highlights": [o["id"] for o in L["objectives"][:3]]})
-    payload = {"masterTitle": "🎓 Polyglot Studio", "masterUrl": SITE, "lessons": lessons}
+    payload = {"masterTitle": "Polyglot", "masterUrl": SITE, "lessons": lessons}
     r = subprocess.run(["swift", SWIFT, "sync", json.dumps(payload, ensure_ascii=False)], capture_output=True, text=True, timeout=120)
     log("  " + (r.stdout.strip() or r.stderr.strip())[:300])
 

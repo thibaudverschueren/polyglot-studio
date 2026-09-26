@@ -34,6 +34,6 @@ python3 ~/scripts/daily_orchestrator.py --dry-run      # toont het plan van de o
 3. Volg de roadmap in `studio/content/syllabus/`. Afwijken mag alleen via een consolidatieles (`kind: "consolidation"`) of door twee onderwerpen te combineren (`"roadmap": "id1+id2"`).
 4. Geen geheimen in de repo. De anon key in `studio/cloud/config.json` is publiek en veilig (rijbeveiliging). De ochtendrun leest de database via SSH (`ssh macbook2`, container `supabase-db`), zonder sleutels.
 5. **De Supabase op MacBook 2 is van Lullaby.** Raak enkel de `polyglot_*`-tabellen aan; nooit Lullaby-tabellen, -instellingen, containers of de Lullaby-crontab.
-6. Apple Herinneringen: exact één master `🎓 Polyglot Studio` en één subtaak per vak, datum vandaag, **geen uur en geen alarm**. Alleen via EventKit (`sync_reminders.swift`), nooit AppleScript.
+6. Apple Herinneringen: exact één algemene herinnering `Polyglot` (met als doelstelling minstens 1 les per dag), datum vandaag, **geen uur en geen alarm**. Alleen via EventKit (`sync_reminders.swift`), nooit AppleScript.
 7. Taal van de interface en uitleg: Nederlands. Griekse accenten en Franse spelling zijn niet onderhandelbaar.
 8. Werk op de lokale APFS-schijf; niets in OneDrive.
