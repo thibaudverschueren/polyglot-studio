@@ -1,0 +1,944 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "solidity",
+ "id": 3,
+ "roadmap": "sol-03-mappings-structs",
+ "title": "Mappings, structs en arrays",
+ "subtitle": "Complexe datastructuren beheren, opslagmechanismen begrijpen en loops vermijden",
+ "level": "beginner",
+ "minutes": 45,
+ "summary": "Een smart contract bewaart vaak gegevens van duizenden gebruikers. In deze les leer je hoe je data efficiënt groepeert in structs, feilloos opzoekt in mappings, en waarom dynamische arrays vaak leiden tot onbruikbare contracten door de Block Gas Limit.",
+ "objectives": [
+  {
+   "id": "mappings",
+   "text": "Je verklaart de semantiek van mappings (geen lengte, geen iteratie, default 0)."
+  },
+  {
+   "id": "structs",
+   "text": "Je groepeert gerelateerde data in een struct en gebruikt deze in combinatie met een mapping."
+  },
+  {
+   "id": "arrays",
+   "text": "Je implementeert dynamische arrays en vermijdt unbounded loops vanwege de block gas limit."
+  },
+  {
+   "id": "storage",
+   "text": "Je berekent hoe array-elementen en mapping-waarden in storage verdeeld worden via keccak256."
+  }
+ ],
+ "sections": [
+  {
+   "id": "mappings",
+   "title": "Mappings (De ultieme hash table)",
+   "md": "Een `mapping` is de Solidity-versie van een hash table of dictionary. Je koppelt een unieke sleutel (key) aan een waarde (value). Het is de meest gebruikte manier om lijsten van gebruikers of saldi bij te houden.\n\n```solidity\nmapping(address => uint256) public balances;\n```\n\nEr zijn drie grote verschillen met datastructuren uit andere programmeertalen:\n1. **Geen lengte**: Een mapping weet niet hoeveel items erin zitten. Je kan niet `.length` opvragen.\n2. **Niet itereren**: Je kan niet met een `for`-loop over alle keys lopen, want de mapping houdt nergens een lijst van zijn keys bij.\n3. **Alles bestaat (default 0)**: Als je een waarde opvraagt voor een key die je nooit hebt ingesteld, krijg je gewoon de standaardwaarde terug (bijv. `0` voor uint256, `false` voor bool). Het concept `null` of `undefined` bestaat niet.\n\nAls je dus wilt bijhouden wélke gebruikers actief zijn, moet je dat zelf regelen, bijvoorbeeld door de waarde op `true` of `false` te zetten.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "mappings",
+     "level": 1,
+     "prompt": "Je vraagt het saldo op van een willekeurig nieuw adres dat nog nooit met je contract heeft gecommuniceerd. Wat gebeurt er?",
+     "explain": "Elke onbekende key geeft de standaardwaarde van het value-type.",
+     "options": [
+      "Je krijgt 0 terug",
+      "Je krijgt null of undefined",
+      "De transactie revert met een error",
+      "Je krijgt een out-of-bounds exception"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "storage",
+   "title": "Opslag van mappings (Onder de motorkap)",
+   "md": "Waarom heeft een mapping geen lengte en kan je er niet over itereren? Dat heeft te maken met hoe de EVM storage gebruikt.\n\nStel, je contract declareert `balances` als allereerste variabele op **slot 0** (dus $p = 0$).\nAls je `balances[alice] = 100;` uitvoert, wordt die `100` **niet** in slot 0 bewaard. Het declaratieslot $p$ blijft volledig leeg!\n\nSolidity berekent de werkelijke opslaglocatie door de sleutel en het slotnummer te hashen met de functie `keccak256`:\n\n$$\\text{locatie} = \\text{keccak256}(\\text{key} \\cdot p)$$\n\nOmdat de totale opslagruimte astronomisch groot is ($2^{256}$ slots), is de kans op een botsing (collision) vrijwel nul. Maar omdat de EVM nergens een centraal overzicht bijhoudt van welke slots gevuld zijn, kan het contract onmogelijk weten of de hash van `alice` of `bob` ooit gebruikt is. \n\nDaarom kan je een mapping niet itereren: je zou theoretsich $2^{256}$ hashes moeten controleren om te zien of ze niet `0` zijn.",
+   "checks": [
+    {
+     "id": "c2",
+     "type": "numeric",
+     "skill": "storage",
+     "level": 2,
+     "prompt": "Een mapping staat op opslagslot 3. Hoeveel bytes aan gebruikersdata (keys of values) worden er fysiek op slot 3 bewaard?",
+     "explain": "Het declaratieslot van een mapping is altijd helemaal leeg (0 bytes). De data staat op de gehashte locatie.",
+     "value": 0,
+     "abs": 0
+    }
+   ]
+  },
+  {
+   "id": "structs",
+   "title": "Structs (Groepeer je data)",
+   "md": "Vaak wil je per adres niet één, maar meerdere waarden onthouden (bijvoorbeeld een score, een status en een naam). In plaats van drie losse mappings te maken, groepeer je deze data in een `struct`:\n\n```solidity\nstruct User {\n    uint256 score;\n    bool isActive;\n}\n\n// Eén mapping die een adres aan de hele struct koppelt\nmapping(address => User) public users;\n```\n\nJe leest en schrijft de individuele velden met de **punt-notatie**:\n\n```solidity\nfunction activateAndScore() external {\n    // msg.sender updaten in de mapping\n    users[msg.sender].isActive = true;\n    users[msg.sender].score += 10;\n}\n```\n\nWanneer je een nieuwe user aanspreekt die nog niet bestond, staan alle velden van diens struct netjes op hun standaardwaarde (`0` voor score, `false` voor isActive). Je hoeft een struct dus niet expliciet te 'initialiseren' in storage voordat je velden kan aanpassen.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "cloze",
+     "skill": "structs",
+     "level": 1,
+     "prompt": "Zet de `score` van `msg.sender` op 50.",
+     "explain": "Gebruik de punt-notatie om het veld van de struct te bereiken.",
+     "text": "users[msg.sender]{{.}}score {{=}} 50;",
+     "lang": "code"
+    }
+   ]
+  },
+  {
+   "id": "arrays",
+   "title": "Dynamische Arrays (Lijsten)",
+   "md": "Soms heb je wél een lijst nodig waar je elementen aan wilt toevoegen en overheen wilt itereren. Dan gebruik je een array. In storage gebruiken we meestal **dynamische arrays** (zonder vooraf bepaalde lengte):\n\n```solidity\nuint256[] public scores;\n\nfunction addScore(uint256 s) external {\n    scores.push(s);    // Voegt s toe achteraan (kost veel gas de eerste keer!)\n}\n\nfunction removeLast() external {\n    scores.pop();      // Verwijdert het laatste element en verkleint de lengte\n}\n```\n\nMet `scores.length` vraag je het aantal elementen op. \n\n> [!pitfall] De getter van een public array\n> Als je een array `public` maakt, genereert Solidity automatisch een getter, maar die retourneert **niet** de hele array (dat zou te duur zijn). Hij verwacht een index en geeft één element terug: `scores(0)` geeft het eerste element.",
+   "checks": [
+    {
+     "id": "c4",
+     "type": "type",
+     "skill": "arrays",
+     "level": 1,
+     "prompt": "Welke array-methode gebruik je om een element achteraan toe te voegen?",
+     "explain": "push of push(waarde) voegt toe aan het einde.",
+     "answers": [
+      "push",
+      "push()"
+     ],
+     "lang": "code",
+     "errors": [
+      {
+       "match": "append",
+       "feedback": "In Solidity heet dit push, niet append.",
+       "tag": "array-push"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "loops",
+   "title": "Arrays, Storage en de Block Gas Limit (Gevaar!)",
+   "md": "In tegenstelling tot een mapping, gebruikt een array zijn declaratieslot $p$ wél: **het bevat de actuele lengte van de array**. De effectieve data van de array begint op `keccak256(p)` en loopt vanaf daar sequentieel verder.\n\n> [!warning] Unbounded Loops = Denial of Service (DoS)\n> Een veelgemaakte en dodelijke ontwerpfout is een array onbeperkt laten groeien en er in een transactie over itereren:\n> ```solidity\n> for (uint256 i = 0; i < scores.length; i++) { ... }\n> ```\n> Elke operatie in Ethereum kost gas. Als de array groeit naar duizenden elementen, kost het uitvoeren van deze loop op een gegeven moment **méér gas dan er maximaal in één Ethereum-blok past** (de Block Gas Limit).\n> Resultaat? De transactie zal altijd falen (Out of Gas). Je contract is permanent geblokkeerd en onbruikbaar.\n\n**Gouden regel voor smart contracts:**\nGebruik `mapping` voor data die onbeperkt kan groeien (zoals een gebruikerslijst). Gebruik `array` en `for`-loops uitsluitend als je 100% zeker bent dat de lengte een harde, kleine limiet heeft (bijv. maximaal 10 items).",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "mcq",
+     "skill": "arrays",
+     "level": 3,
+     "prompt": "Waarom is itereren over een array van alle geregistreerde gebruikers een dodelijk ontwerppatroon?",
+     "explain": "Gasverbruik is de beperkende factor.",
+     "options": [
+      "De transactie zal falen (Out of Gas) als de array te groot wordt voor de block gas limit",
+      "Het overschrijft per ongeluk de data in de mapping via een storage collision",
+      "for-loops zijn verboden in public functies",
+      "De array-lengte kan een overflow veroorzaken"
+     ],
+     "answer": 0
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "cloze",
+   "skill": "mappings",
+   "level": 1,
+   "prompt": "Definieer een mapping die een `uint256` ID koppelt aan een `address`.",
+   "explain": "mapping(Key => Value)",
+   "text": "{{mapping}}({{uint256}} => {{address}}) public owners;",
+   "lang": "code"
+  },
+  {
+   "id": "p02",
+   "type": "mcq",
+   "skill": "mappings",
+   "level": 1,
+   "prompt": "Wat is de standaardwaarde van een bool-mapping `mapping(address => bool)` voor een nieuw adres?",
+   "explain": "De standaardwaarde van een bool is false.",
+   "options": [
+    "false",
+    "true",
+    "null",
+    "undefined"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p03",
+   "type": "mcq",
+   "skill": "mappings",
+   "level": 2,
+   "prompt": "Kan je een functie schrijven die het aantal actieve gebruikers in een `mapping(address => bool)` telt?",
+   "explain": "Een mapping heeft geen lengte en je kan niet over keys itereren. Je moet ergens een aparte teller (uint256) bijhouden.",
+   "options": [
+    "Nee, een mapping houdt de keys niet bij. Je moet zelf een teller bijhouden.",
+    "Ja, door simpelweg de eigenschap `users.length` op te vragen.",
+    "Ja, met een for-loop over alle potentieel actieve adressen.",
+    "Ja, maar dat kan enkel door de nodes direct via eth_call te bevragen."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p04",
+   "type": "cloze",
+   "skill": "storage",
+   "level": 2,
+   "prompt": "Vul de formule in waarmee de opslaglocatie van een specifieke key in een mapping wordt berekend (als `p` het declaratieslot is).",
+   "explain": "De hash van de key en het slot.",
+   "text": "locatie = {{keccak256}}(key . {{p}})",
+   "lang": "code"
+  },
+  {
+   "id": "p05",
+   "type": "numeric",
+   "skill": "storage",
+   "level": 2,
+   "prompt": "Een mapping wordt gedeclareerd op slot 5. Hoeveel bytes aan effectieve data worden er in slot 5 zelf bewaard?",
+   "explain": "Het slotnummer wordt enkel gebruikt als 'seed' voor de hash. Het slot zelf blijft leeg.",
+   "value": 0,
+   "abs": 0
+  },
+  {
+   "id": "p06",
+   "type": "type",
+   "skill": "structs",
+   "level": 1,
+   "prompt": "Welk teken gebruik je om toegang te krijgen tot het veld `score` van een `User`-struct in Solidity?",
+   "explain": "De punt-notatie.",
+   "answers": [
+    ".",
+    "punt",
+    "dot"
+   ],
+   "errors": [
+    {
+     "match": "->",
+     "feedback": "In Solidity gebruik je een punt (.), geen pointer-pijl zoals in C++.",
+     "tag": "syntax-pointer"
+    }
+   ]
+  },
+  {
+   "id": "p07",
+   "type": "order",
+   "skill": "structs",
+   "level": 1,
+   "prompt": "Zet de definitie van een struct en de bijbehorende mapping in de juiste volgorde.",
+   "explain": "Eerst definieer je het type (struct), daarna gebruik je het als value-type in de mapping.",
+   "tiles": [
+    "struct Player {",
+    "uint256 level;",
+    "}",
+    "mapping(address => Player) public players;"
+   ],
+   "lang": "code",
+   "join": "\n"
+  },
+  {
+   "id": "p08",
+   "type": "cloze",
+   "skill": "arrays",
+   "level": 2,
+   "prompt": "Voeg het getal 42 toe aan de array en lees daarna de lengte uit.",
+   "explain": "push() en .length",
+   "text": "arr.{{push}}(42);\nuint256 len = arr.{{length}};",
+   "lang": "code"
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "arrays",
+   "level": 1,
+   "prompt": "Welke array-methode verwijdert het **laatste** element?",
+   "explain": "pop() verwijdert de laatste entry.",
+   "answers": [
+    "pop",
+    "pop()"
+   ],
+   "lang": "code",
+   "errors": [
+    {
+     "match": "remove",
+     "feedback": "Solidity gebruikt pop() voor arrays. 'remove' bestaat niet standaard.",
+     "tag": "array-remove"
+    },
+    {
+     "match": "delete",
+     "feedback": "delete wist de waarde, maar verandert de lengte van de array NIET! Gebruik pop().",
+     "tag": "array-delete"
+    }
+   ]
+  },
+  {
+   "id": "p10",
+   "type": "mcq",
+   "skill": "arrays",
+   "level": 2,
+   "prompt": "Wat gebeurt er als je de automatisch gegenereerde getter `scores(1)` aanroept?",
+   "explain": "Een public array-getter vraagt altijd een index en retourneert één item.",
+   "options": [
+    "Hij retourneert uitsluitend het element op index 1",
+    "Hij retourneert de hele array",
+    "Hij retourneert de lengte van de array",
+    "Hij verwijdert het element op index 1"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p11",
+   "type": "cloze",
+   "skill": "storage",
+   "level": 2,
+   "prompt": "In tegenstelling tot een mapping, gebruikt een array zijn declaratieslot `p` wél. Wat wordt er in slot `p` opgeslagen?",
+   "explain": "De array bewaart zijn lengte in het originele slot.",
+   "text": "De {{lengte}} van de array.",
+   "lang": "nl"
+  },
+  {
+   "id": "p12",
+   "type": "numeric",
+   "skill": "storage",
+   "level": 2,
+   "prompt": "Een dynamische array `uint256[] data` wordt als eerste state-variabele gedeclareerd (slot 0). In welk slot wordt de **lengte** opgeslagen?",
+   "explain": "Slot p (0) bevat de lengte.",
+   "value": 0,
+   "abs": 0
+  },
+  {
+   "id": "p13",
+   "type": "explain",
+   "skill": "arrays",
+   "level": 3,
+   "prompt": "Leg uit waarom itereren over een steeds groter wordende array (zoals een lijst van alle klanten) met een for-loop een fatale ontwerpfout is in Solidity.",
+   "explain": "Elke operatie kost gas, en een blok heeft een harde gaslimiet.",
+   "model": "Elke iteratie in een loop kost gas. Als de array blijft groeien, zal de totale gas-kost van de loop op een bepaald moment de Block Gas Limit overschrijden. Vanaf dat punt faalt (revert) de transactie altijd met een Out of Gas-fout, waardoor het contract onbruikbaar wordt (Denial of Service).",
+   "rubric": [
+    "Elke iteratie / operatie kost gas",
+    "Er is een maximale Block Gas Limit",
+    "Overschrijding leidt tot permanente revert / Out of Gas / DoS"
+   ]
+  },
+  {
+   "id": "p14",
+   "type": "mcq",
+   "skill": "arrays",
+   "level": 3,
+   "prompt": "Hoe voorkom je een Out of Gas DoS bij het beheren van gebruikersrechten?",
+   "explain": "Gebruik mappings, want die hebben een constante opzoektijd $O(1)$ zonder loops.",
+   "options": [
+    "Gebruik een mapping en controleer de rechten per transactie (zonder loop)",
+    "Gebruik een view-functie voor de for-loop, dan is het gratis",
+    "Zet de array in memory in plaats van storage",
+    "Beperk de gasprijs die de admin mag betalen"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p15",
+   "type": "code",
+   "skill": "mappings",
+   "level": 2,
+   "prompt": "Maak een functie `setBalance(uint256 b)` die het saldo van de aanroeper (`msg.sender`) instelt op `b`.",
+   "explain": "Wijs b toe aan balances[msg.sender].",
+   "contract": "Bank",
+   "starter": "contract Bank {\n    mapping(address => uint256) public balances;\n\n    // TODO: schrijf setBalance(uint256 b)\n}",
+   "solution": "contract Bank {\n    mapping(address => uint256) public balances;\n\n    function setBalance(uint256 b) external {\n        balances[msg.sender] = b;\n    }\n}",
+   "tests": [
+    {
+     "name": "setBalance werkt",
+     "steps": [
+      {
+       "call": "setBalance",
+       "args": [
+        100
+       ],
+       "as": "alice"
+      },
+      {
+       "expect": {
+        "call": "balances",
+        "args": [
+         "alice"
+        ],
+        "eq": 100
+       }
+      }
+     ]
+    },
+    {
+     "name": "maakt gebruik van msg.sender",
+     "source": {
+      "contains": "msg.sender"
+     }
+    }
+   ],
+   "file": "Bank.sol"
+  },
+  {
+   "id": "p16",
+   "type": "mcq",
+   "skill": "mappings",
+   "level": 2,
+   "prompt": "Je ontwerpt een stemsysteem voor een heel land (miljoenen mensen). Welke structuur kies je om bij te houden wie al gestemd heeft?",
+   "explain": "Een array van miljoenen mensen zou miljoenen gas kosten om te doorzoeken. Een mapping check je met een vaste kost.",
+   "options": [
+    "Een mapping",
+    "Een dynamische array",
+    "Een vaste array"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p17",
+   "type": "type",
+   "skill": "structs",
+   "level": 2,
+   "prompt": "Stel je hebt een `struct User { bool active; }`. Wat is de waarde van `users[bob].active` als Bob nieuw is in het contract?",
+   "explain": "De struct wordt geïnitialiseerd met de standaardwaarden van al zijn velden. Voor bool is dat false.",
+   "answers": [
+    "false"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p18",
+   "type": "match",
+   "skill": "storage",
+   "level": 2,
+   "prompt": "Koppel de formule aan wat er in storage bewaard wordt, als het declaratieslot `p` is.",
+   "explain": "Weet waar je data zich bevindt.",
+   "pairs": [
+    [
+     "Slot p bij een mapping",
+     "Blijft altijd volledig leeg"
+    ],
+    [
+     "keccak256(key . p)",
+     "De waarde van een specifieke key in een mapping"
+    ],
+    [
+     "Slot p bij een array",
+     "De huidige lengte van de array"
+    ],
+    [
+     "keccak256(p)",
+     "De start van de data-elementen van een array"
+    ]
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "cloze",
+   "skill": "mappings",
+   "level": 1,
+   "prompt": "Maak de declaratie compleet voor een mapping die controleert of een adres 'admin' is.",
+   "explain": "Syntax is mapping(Type => Type).",
+   "text": "{{mapping}}(address {{=>}} bool) public isAdmin;",
+   "lang": "code"
+  },
+  {
+   "id": "m02",
+   "type": "type",
+   "skill": "mappings",
+   "level": 2,
+   "prompt": "Je vraagt een `uint256` op uit een mapping voor een key die niet bestaat. Welk getal krijg je exact terug?",
+   "explain": "Solidity retourneert altijd 0 voor onbekende uint-keys.",
+   "answers": [
+    "0",
+    "nul"
+   ],
+   "lang": "num"
+  },
+  {
+   "id": "m03",
+   "type": "mcq",
+   "skill": "mappings",
+   "level": 2,
+   "prompt": "Waarom moet je bij een mapping(address => uint256) zélf een counter bijhouden als je wil weten hoeveel actieve adressen er zijn?",
+   "explain": "De mapping slaat uitsluitend de gehashte keys en hun values op, niet het totaal aantal.",
+   "options": [
+    "Een mapping houdt nergens bij welke keys in gebruik zijn",
+    "Adres-typen bevatten te veel unieke bytes om snel te tellen",
+    "De ingebouwde length()-functie verbruikt te veel gas",
+    "Je hoeft dit niet te doen, users.length werkt perfect"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m04",
+   "type": "cloze",
+   "skill": "storage",
+   "level": 2,
+   "prompt": "Vul de hash-functie in die de opslaglocatie voor mappings en arrays bepaalt.",
+   "explain": "De EVM gebruikt keccak256.",
+   "text": "{{keccak256}}(key . p)",
+   "lang": "code"
+  },
+  {
+   "id": "m05",
+   "type": "numeric",
+   "skill": "storage",
+   "level": 3,
+   "prompt": "Stel `mapping(address => uint256) balances` is gedeclareerd op slot 2. Hoeveel items zijn er direct opgeslagen in slot 2?",
+   "explain": "Een mapping gebruikt het declaratieslot zelf helemaal niet.",
+   "value": 0,
+   "abs": 0
+  },
+  {
+   "id": "m06",
+   "type": "cloze",
+   "skill": "structs",
+   "level": 2,
+   "prompt": "Definieer de `struct` en update het veld in de mapping.",
+   "explain": "Gebruik struct en de punt-notatie.",
+   "text": "{{struct}} User {\n    uint256 level;\n}\nmapping(address => User) users;\n\nusers[msg.sender]{{.}}level = 5;",
+   "lang": "code"
+  },
+  {
+   "id": "m07",
+   "type": "order",
+   "skill": "structs",
+   "level": 2,
+   "prompt": "Zet in de juiste volgorde om de naam van een asset te wijzigen.",
+   "explain": "Declaratie struct, mapping, en dan updaten.",
+   "tiles": [
+    "struct Asset {",
+    "string name;",
+    "}",
+    "mapping(uint256 => Asset) assets;",
+    "assets[1].name = \"Goud\";"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m08",
+   "type": "code",
+   "skill": "structs",
+   "level": 3,
+   "prompt": "Schrijf de functie `levelUp()` die het `level` van `msg.sender` met 1 verhoogt.",
+   "explain": "Gebruik `players[msg.sender].level += 1;`.",
+   "contract": "Game",
+   "starter": "contract Game {\n    struct Player {\n        uint256 level;\n    }\n    mapping(address => Player) public players;\n    \n    // TODO: function levelUp()\n}",
+   "solution": "contract Game {\n    struct Player {\n        uint256 level;\n    }\n    mapping(address => Player) public players;\n    \n    function levelUp() external {\n        players[msg.sender].level += 1;\n    }\n}",
+   "tests": [
+    {
+     "name": "levelUp werkt",
+     "steps": [
+      {
+       "call": "levelUp",
+       "as": "alice"
+      },
+      {
+       "expect": {
+        "call": "players",
+        "args": [
+         "alice"
+        ],
+        "eq": 1
+       }
+      }
+     ]
+    },
+    {
+     "name": "levelUp gebruikt msg.sender",
+     "source": {
+      "contains": "msg.sender"
+     }
+    }
+   ],
+   "file": "Game.sol"
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "arrays",
+   "level": 1,
+   "prompt": "Met welke ingebouwde syntax voeg je de waarde `7` toe aan de dynamische array `scores`?",
+   "explain": "scores.push(7)",
+   "answers": [
+    "scores.push(7)",
+    "scores.push(7);"
+   ],
+   "lang": "code",
+   "errors": [
+    {
+     "match": "append",
+     "feedback": "Gebruik push().",
+     "tag": "array-push"
+    }
+   ]
+  },
+  {
+   "id": "m10",
+   "type": "type",
+   "skill": "arrays",
+   "level": 1,
+   "prompt": "Welk commando verwijdert het laatste element uit de array `scores` en verkleint deze?",
+   "explain": "scores.pop()",
+   "answers": [
+    "scores.pop()",
+    "scores.pop();"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m11",
+   "type": "type",
+   "skill": "arrays",
+   "level": 1,
+   "prompt": "Welk veld roep je aan om het aantal elementen in `scores` te kennen?",
+   "explain": "scores.length",
+   "answers": [
+    "scores.length",
+    "length",
+    ".length"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m12",
+   "type": "mcq",
+   "skill": "arrays",
+   "level": 2,
+   "prompt": "Een externe frontend roept de gratis getter `scores(2)` aan op je public array. Wat komt er terug?",
+   "explain": "Getters van arrays geven één element op basis van de index.",
+   "options": [
+    "Het element op positie 2 (de derde waarde)",
+    "De volledige lijst met alle elementen",
+    "De lengte van de array",
+    "Een foutmelding, je moet getScore(2) schrijven"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m13",
+   "type": "numeric",
+   "skill": "storage",
+   "level": 2,
+   "prompt": "Een dynamische array bevindt zich op slot 4. In welk slot bewaart Solidity het **aantal elementen** van deze array?",
+   "explain": "De array bewaart de lengte exact in zijn declaratieslot.",
+   "value": 4,
+   "abs": 0
+  },
+  {
+   "id": "m14",
+   "type": "cloze",
+   "skill": "storage",
+   "level": 2,
+   "prompt": "Vul de berekening in: de data-elementen van een array gedeclareerd in slot `p` starten op positie...",
+   "explain": "De locatie is de keccak-hash van het declaratieslot p.",
+   "text": "{{keccak256}}({{p}})",
+   "lang": "code"
+  },
+  {
+   "id": "m15",
+   "type": "mcq",
+   "skill": "arrays",
+   "level": 3,
+   "prompt": "Wat is het exacte mechanisme waardoor een unbounded loop over een array je contract vernietigt (DoS)?",
+   "explain": "Gas limiet. Elke iteratie verbruikt gas tot de block limit is bereikt.",
+   "options": [
+    "De benodigde rekenkracht overschrijdt de Block Gas Limit, waardoor de transactie hard revert",
+    "De loop duurt te lang, waardoor de validator de transactie negeert via een timeout",
+    "Solidity 0.8 revert automatisch als een array groter wordt dan 100 elementen",
+    "De opslag overlapt met andere variabelen en corrumpeert de state"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m16",
+   "type": "order",
+   "skill": "arrays",
+   "level": 3,
+   "prompt": "Rangschik chronologisch hoe een array een contract onbruikbaar maakt.",
+   "explain": "Dit is de DoS via unbounded loop.",
+   "tiles": [
+    "Het contract wordt gedeployd met een array voor alle gebruikers",
+    "Duizenden mensen maken gebruik van de DApp, de array groeit massaal",
+    "Een admin roept een functie aan met een for-loop over deze array",
+    "De EVM telt gas op voor elke iteratie door de lijst",
+    "De Block Gas Limit wordt bereikt en de transactie revert permanent"
+   ]
+  },
+  {
+   "id": "m17",
+   "type": "match",
+   "skill": "mappings",
+   "level": 2,
+   "prompt": "Selecteer de juiste datastructuur voor elk doel.",
+   "explain": "Kies slim afhankelijk van je gas- en applicatielogica.",
+   "pairs": [
+    [
+     "Miljoenen gebruikerssaldi opslaan",
+     "Mapping"
+    ],
+    [
+     "Een lijst met exact 3 winnaars van een loterij",
+     "Array"
+    ],
+    [
+     "Verschillende properties (naam, leeftijd) bundelen",
+     "Struct"
+    ]
+   ]
+  },
+  {
+   "id": "m18",
+   "type": "code",
+   "skill": "arrays",
+   "level": 3,
+   "prompt": "Schrijf `addScore(uint256 s)` die de waarde `s` toevoegt aan de array.",
+   "explain": "Gebruik `scores.push(s)`.",
+   "contract": "ScoreBoard",
+   "starter": "contract ScoreBoard {\n    uint256[] public scores;\n\n    // TODO: addScore(uint256 s)\n}",
+   "solution": "contract ScoreBoard {\n    uint256[] public scores;\n\n    function addScore(uint256 s) external {\n        scores.push(s);\n    }\n}",
+   "tests": [
+    {
+     "name": "addScore pusht naar de array",
+     "steps": [
+      {
+       "call": "addScore",
+       "args": [
+        99
+       ]
+      },
+      {
+       "expect": {
+        "call": "scores",
+        "args": [
+         0
+        ],
+        "eq": 99
+       }
+      }
+     ]
+    },
+    {
+     "name": "gas kost is beperkt",
+     "steps": [
+      {
+       "call": "addScore",
+       "args": [
+        10
+       ],
+       "gasLt": 150000
+      }
+     ]
+    }
+   ],
+   "file": "ScoreBoard.sol"
+  },
+  {
+   "id": "m19",
+   "type": "code",
+   "skill": "structs",
+   "level": 3,
+   "prompt": "Schrijf `markRead(uint256 id)` die het veld `read` op `true` zet voor het boek met dit ID.",
+   "explain": "books[id].read = true",
+   "contract": "Library",
+   "starter": "contract Library {\n    struct Book {\n        string title;\n        bool read;\n    }\n    mapping(uint256 => Book) public books;\n\n    // Hulpfunctie (niet aanpassen)\n    function isRead(uint256 id) external view returns (bool) {\n        return books[id].read;\n    }\n\n    // TODO: markRead(uint256 id)\n}",
+   "solution": "contract Library {\n    struct Book {\n        string title;\n        bool read;\n    }\n    mapping(uint256 => Book) public books;\n\n    function isRead(uint256 id) external view returns (bool) {\n        return books[id].read;\n    }\n\n    function markRead(uint256 id) external {\n        books[id].read = true;\n    }\n}",
+   "tests": [
+    {
+     "name": "markRead zet de bool op true",
+     "steps": [
+      {
+       "call": "markRead",
+       "args": [
+        5
+       ]
+      },
+      {
+       "expect": {
+        "call": "isRead",
+        "args": [
+         5
+        ],
+        "eq": true
+       }
+      }
+     ]
+    },
+    {
+     "name": "meerdere boeken kunnen gemarkeerd worden",
+     "steps": [
+      {
+       "call": "markRead",
+       "args": [
+        1
+       ]
+      },
+      {
+       "call": "markRead",
+       "args": [
+        2
+       ]
+      },
+      {
+       "expect": {
+        "call": "isRead",
+        "args": [
+         2
+        ],
+        "eq": true
+       }
+      }
+     ]
+    }
+   ],
+   "file": "Library.sol"
+  },
+  {
+   "id": "m20",
+   "type": "mcq",
+   "skill": "arrays",
+   "level": 2,
+   "prompt": "Onder welke voorwaarde is het wél volkomen veilig om in storage over een array te itereren met een for-loop?",
+   "explain": "Alleen als je kan garanderen dat de loop eindigt vér voordat het gas op is.",
+   "options": [
+    "Wanneer de logica garandeert dat de array-lengte een strikte, kleine limiet heeft",
+    "Wanneer de functie door de eigenaar (owner) wordt aangeroepen",
+    "Als de array uint8-getallen bevat in plaats van uint256",
+    "Wanneer de loop achterwaarts wordt uitgevoerd (i--)"
+   ],
+   "answer": 0
+  }
+ ],
+ "production": {
+  "type": "code",
+  "contract": "UserRegistry",
+  "file": "UserRegistry.sol",
+  "prompt": "**Bouw een veilig UserRegistry.**\n\n- Definieer een `struct Profile` met een `uint256 score` en een `bool active`.\n- Maak een `mapping(address => Profile) public profiles;`\n- Schrijf `register()`: zet `active` op `true` voor `msg.sender`. \n  - Beveiliging: revert met de exacte string `\"Al geregistreerd\"` als de beller al actief is.\n- Schrijf `addScore(address user, uint256 points)`: verhoog de score van de opgegeven user met `points`.\n  - Beveiliging: revert met de exacte string `\"Niet geregistreerd\"` als de user niet actief is.\n\n*(Gebruik de meegeleverde hulpfuncties niet, deze dienen enkel voor het testkader.)*",
+  "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract UserRegistry {\n    // TODO 1: Definieer struct Profile met uint256 score en bool active\n    \n    // TODO 2: mapping(address => Profile) public profiles;\n\n    // TODO 3: register()\n    // - zet active op true voor msg.sender\n    // - revert met \"Al geregistreerd\" als al actief\n    \n    // TODO 4: addScore(address user, uint256 points)\n    // - verhoog score van user met points\n    // - revert met \"Niet geregistreerd\" als user niet actief is\n\n    // --- Hulpfuncties voor de tests (niet aanpassen) ---\n    function isActive(address u) external view returns (bool) {\n        return profiles[u].active;\n    }\n    function getScore(address u) external view returns (uint256) {\n        return profiles[u].score;\n    }\n}",
+  "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract UserRegistry {\n    struct Profile {\n        uint256 score;\n        bool active;\n    }\n    \n    mapping(address => Profile) public profiles;\n\n    function register() external {\n        require(!profiles[msg.sender].active, \"Al geregistreerd\");\n        profiles[msg.sender].active = true;\n    }\n    \n    function addScore(address user, uint256 points) external {\n        require(profiles[user].active, \"Niet geregistreerd\");\n        profiles[user].score += points;\n    }\n\n    function isActive(address u) external view returns (bool) {\n        return profiles[u].active;\n    }\n    function getScore(address u) external view returns (uint256) {\n        return profiles[u].score;\n    }\n}",
+  "tests": [
+   {
+    "name": "register activeert en voorkomt dubbele registratie",
+    "steps": [
+     {
+      "call": "register",
+      "as": "alice"
+     },
+     {
+      "expect": {
+       "call": "isActive",
+       "args": [
+        "alice"
+       ],
+       "eq": true
+      }
+     },
+     {
+      "call": "register",
+      "as": "alice",
+      "reverts": "Al geregistreerd"
+     }
+    ]
+   },
+   {
+    "name": "addScore reverten voor niet-actieve gebruikers",
+    "steps": [
+     {
+      "call": "addScore",
+      "as": "bob",
+      "args": [
+       "alice",
+       10
+      ],
+      "reverts": "Niet geregistreerd"
+     }
+    ]
+   },
+   {
+    "name": "addScore werkt na registratie",
+    "steps": [
+     {
+      "call": "register",
+      "as": "bob"
+     },
+     {
+      "call": "addScore",
+      "as": "alice",
+      "args": [
+       "bob",
+       50
+      ]
+     },
+     {
+      "expect": {
+       "call": "getScore",
+       "args": [
+        "bob"
+       ],
+       "eq": 50
+      }
+     }
+    ]
+   },
+   {
+    "name": "gebruikt msg.sender in register",
+    "source": {
+     "contains": "msg.sender"
+    }
+   }
+  ],
+  "model": "Een robuust patroon voor mappings met uitgebreide data. Door eerst een boolean `active` te checken met `require` vermijden we data-corruptie en ongeldige acties.",
+  "rubric": []
+ },
+ "cards": [
+  {
+   "id": "c-mapping-concept",
+   "front": "Wat is een mapping in Solidity?",
+   "back": "Een hash table die keys aan values koppelt. Je kan de lengte niet opvragen en je kan er niet over itereren.",
+   "skill": "mappings"
+  },
+  {
+   "id": "c-mapping-default",
+   "front": "Wat krijg je terug als je een onbekende key opvraagt uit een `mapping(address => uint256)`?",
+   "back": "`0` (de standaardwaarde voor uint256). Null of undefined bestaan niet in Solidity.",
+   "skill": "mappings"
+  },
+  {
+   "id": "c-mapping-slot",
+   "front": "Een mapping staat op declaratieslot `p`. Waar wordt de data (value) voor een `key` fysiek in storage opgeslagen?",
+   "back": "Op `keccak256(key . p)`. Het slot `p` zelf blijft leeg.",
+   "skill": "storage"
+  },
+  {
+   "id": "c-array-pop",
+   "front": "Hoe verwijder je het laatste element van een dynamische array `arr`?",
+   "back": "`arr.pop()`",
+   "answers": [
+    "arr.pop()"
+   ],
+   "lang": "code",
+   "skill": "arrays"
+  },
+  {
+   "id": "c-array-slot",
+   "front": "Een dynamische array staat op declaratieslot `p`. Wat wordt er in slot `p` bewaard?",
+   "back": "De **lengte** van de array. De effectieve elementen starten op `keccak256(p)`.",
+   "skill": "storage"
+  },
+  {
+   "id": "c-dos-loop",
+   "front": "Wat is het 'Block Gas Limit DoS' risico bij arrays?",
+   "back": "Als een array te groot wordt (unbounded array), zal een `for`-loop over alle elementen meer gas kosten dan het block toelaat, waardoor het contract voorgoed faalt (Out of Gas).",
+   "skill": "arrays"
+  },
+  {
+   "id": "c-struct-use",
+   "front": "Wanneer gebruik je een `struct`?",
+   "back": "Wanneer je meerdere datatypes (bijv. adres, leeftijd, boolean status) logisch wil groeperen onder één naam, vaak om in een mapping op te slaan.",
+   "skill": "structs"
+  }
+ ],
+ "sources": [
+  "Solidity documentation v0.8.20 (Layout of State Variables in Storage)",
+  "SWC-128: DoS With Block Gas Limit (Smart Contract Weakness Classification)"
+ ],
+ "kind": "core",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-26",
+  "adaptedFor": "Aangepast voor een behapbare herstart: aangezien je de afgelopen week niet hebt geoefend, zijn de concepten stap voor stap uitgewerkt en is de theorie bondig gehouden."
+ }
+}

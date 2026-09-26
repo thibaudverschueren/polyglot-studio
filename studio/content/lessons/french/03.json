@@ -1,0 +1,733 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "french",
+ "id": 3,
+ "roadmap": "fr-c1-03-hypothetique",
+ "kind": "core",
+ "title": "Le système hypothétique et les modes après conjonction",
+ "subtitle": "Scenario's en voorwaarden in het businessplan: de juiste wijs na si, au cas où, à condition que en quand bien même",
+ "level": "C1",
+ "minutes": 45,
+ "summary": "Scenario's uitdenken is de kern van strategisch taalgebruik. In het Frans verraadt je keuze voor de indicatif, de conditionnel of de subjonctif in een hypothese onmiddellijk je taalniveau. Deze les zet de valkuilen in conditionele bijzinnen recht.",
+ "objectives": [
+  {
+   "id": "si-temps",
+   "text": "Je past de juiste tijden toe na 'si' en vermijdt de conditionnel in de hypothese."
+  },
+  {
+   "id": "au-cas-ou",
+   "text": "Je gebruikt de conditionnel na 'au cas où' voor onvoorziene omstandigheden."
+  },
+  {
+   "id": "condition-subj",
+   "text": "Je kiest de subjonctif na 'pourvu que' en 'à condition que', of de infinitif bij eenzelfde onderwerp."
+  },
+  {
+   "id": "quand-bien-meme",
+   "text": "Je drukt een concessie uit met 'quand bien même' en de conditionnel."
+  }
+ ],
+ "vocab": [
+  {
+   "term": "un aléa",
+   "meaning": "een onvoorziene omstandigheid; een risico"
+  },
+  {
+   "term": "un plan de secours",
+   "meaning": "een noodplan"
+  },
+  {
+   "term": "un manque à gagner",
+   "meaning": "een gederfde inkomsten; een winstderving"
+  },
+  {
+   "term": "pallier (qqch)",
+   "meaning": "(iets) ondervangen; verhelpen (let op: zonder 'à' in het soutenu)"
+  },
+  {
+   "term": "escompter",
+   "meaning": "verwachten; rekenen op"
+  },
+  {
+   "term": "un scénario du pire",
+   "meaning": "een worstcasescenario"
+  },
+  {
+   "term": "la conjoncture",
+   "meaning": "de economische situatie; de conjunctuur"
+  }
+ ],
+ "sections": [
+  {
+   "id": "si-hypothese",
+   "title": "L'hypothèse classique avec « si »",
+   "md": "De klassieke hypothese met *si* is de ruggengraat van elk financieel of strategisch scenario. Ze kent strikte, onbuigzame regels voor de tijden. De allerbelangrijkste regel — en tevens de grootste foutenbron, zelfs bij moedertaalsprekers — is: **nooit een conditionnel direct na *si***. Een bekend ezelsbruggetje in Frankrijk is *les scies n'aiment pas les raies* (de zagen houden niet van de roggen — *si* houdt niet van de uitgang *-rais*).\n\nWanneer je een businessplan opstelt, werk je doorgaans met drie soorten scenario's:\n\n1. **Le potentiel (het reële, mogelijke scenario)**\n   Je beschrijft een waarschijnlijke situatie. De hypothese staat in de **présent**, de hoofdzin in de **futur simple** (of soms de présent of impératif).\n   - *Si l'inflation **baisse** ce trimestre, nos marges **augmenteront** considérablement.*\n   - *Si le client **accepte** ces conditions, nous **signons** le contrat demain.*\n\n2. **L'irréel du présent (het onwaarschijnlijke of puur hypothetische scenario)**\n   Je beschrijft een situatie die nu niet het geval is, of een hypothese waarvan de kans klein is. Hier gebruik je de **imparfait** in de bijzin en de **conditionnel présent** in de hoofdzin.\n   - *Si nous **avions** le monopole sur ce marché, nous **dicterions** les prix à notre guise.* (Maar we hébben geen monopolie).\n   - *Si le taux directeur **baissait** de 50 points de base, l'investissement **reprendrait**.*\n\n3. **L'irréel du passé (het scenario dat niet is gebeurd)**\n   Je kijkt terug op een situatie in het verleden die anders had kunnen uitdraaien. Je gebruikt de **plus-que-parfait** in de bijzin en de **conditionnel passé** in de hoofdzin.\n   - *Si le fournisseur **avait livré** les composants à temps, nous **aurions évité** la rupture de stock du mois dernier.*\n\n> [!pitfall] De \"si + conditionnel\"-fout\n> In het Nederlands zeggen we heel vaak: \"Als we dat zouden doen...\" (als + zou). Als je dit letterlijk vertaalt naar het Frans (*Si nous ferions cela*), bega je een regelrechte taalfout. Je móét de imparfait gebruiken: *Si nous **faisions** cela*.\n> Zelfs als er in het Nederlands een conditionele vorm staat, vertaal je die in de si-zin met een verleden tijd.\n\n> [!tip] La virgule (de komma)\n> Staat de *si*-zin vooraan, dan plaats je steevast een komma voor de hoofdzin. Komt de hoofdzin eerst, dan volgt er doorgaans geen komma.\n> - *Si le marché s'effondre, nous vendrons nos parts.*\n> - *Nous vendrons nos parts si le marché s'effondre.*",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "si-temps",
+     "level": 1,
+     "prompt": "Welke zin is grammaticaal correct?",
+     "explain": "De imparfait volgt op *si*, en de conditionnel staat in de hoofdzin.",
+     "options": [
+      "Si nous pouvions, nous investirions.",
+      "Si nous pourrions, nous investirions.",
+      "Si nous pouvons, nous investirions."
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c2",
+     "type": "cloze",
+     "skill": "si-temps",
+     "level": 2,
+     "prompt": "Vul de juiste vorm van **échouer** in (irréel du passé).",
+     "explain": "Si + plus-que-parfait -> conditionnel passé in de hoofdzin.",
+     "text": "Si le projet {{avait échoué}}, l'entreprise aurait fait faillite.",
+     "lang": "fr",
+     "errors": [
+      {
+       "match": "/aurait échoué/",
+       "feedback": "Les scies n'aiment pas les raies! Gebruik de plus-que-parfait (avait échoué) na 'si'.",
+       "tag": "si-cond"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "au-cas-ou",
+   "title": "Les aléas : « au cas où » et ses variantes",
+   "md": "In het bedrijfsleven moet je je voortdurend voorbereiden op onvoorziene omstandigheden (*un aléa*). Wanneer je anticipeert op een mogelijke gebeurtenis, gebruik je vaak *au cas où* (in het geval dat, voor het geval dat).\n\nIn tegenstelling tot het Nederlands (waar we vaak de onvoltooid tegenwoordige tijd gebruiken: \"voor het geval hij *komt*\") of het Engels (\"in case he *comes*\"), eist de constructie *au cas où* in het Frans **altijd de conditionnel**. Dit is een absolute regel in het verzorgde Frans. De conditionnel drukt immers de eventualiteit en onzekerheid van de gebeurtenis uit.\n\n- [[fr:Au cas où le marché s'effondrerait, nous avons prévu un plan de secours exhaustif.]] (Niet: *s'effondre* of *s'effondrera*)\n- [[fr:Nous prévoyons un fonds de roulement supplémentaire, au cas où les banques refuseraient notre prêt.]]\n- [[fr:Prenez vos documents financiers avec vous, au cas où l'inspecteur exigerait de les consulter.]]\n\n> [!rule] Dans l'hypothèse où / Dans le cas où\n> De meer formele en zakelijke synoniemen *dans l'hypothèse où* en *dans le cas où* volgen exact dezelfde regel: ze worden steevast gevolgd door de conditionnel. Dit zijn uitstekende alternatieven om je taalgebruik in rapporten en contracten naar een C2-niveau te tillen.\n> - *Dans l'hypothèse où le gouvernement **imposerait** une nouvelle taxe carbone, nos prévisions de rentabilité devraient être revues à la baisse.*\n> - *Dans le cas où la conjoncture se **dégraderait** davantage, un gel des embauches serait inévitable.*\n\nLet ook hier op de leestekens: als de bijzin met *au cas où* of *dans l'hypothèse où* aan het einde van de zin bungelt als een soort extra gedachte of voorzorgsmaatregel, wordt ze heel vaak voorafgegaan door een komma (zoals in het tweede en derde voorbeeld hierboven).",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "mcq",
+     "skill": "au-cas-ou",
+     "level": 1,
+     "prompt": "Au cas où il y ___ un problème, appelez-moi.",
+     "explain": "*Au cas où* vereist de conditionnel (*aurait*).",
+     "options": [
+      "aurait",
+      "avait",
+      "aura",
+      "ait"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c4",
+     "type": "cloze",
+     "skill": "au-cas-ou",
+     "level": 2,
+     "prompt": "Vul de juiste vorm van **se produire** in.",
+     "explain": "*Dans l'hypothèse où* + conditionnel.",
+     "text": "Dans l'hypothèse où cet aléa se {{produirait}}, nous sommes couverts.",
+     "lang": "fr"
+    }
+   ]
+  },
+  {
+   "id": "condition-subj",
+   "title": "La condition stricte : les conjonctions suivies du subjonctif",
+   "md": "Wanneer een bepaald scenario of resultaat afhangt van een heel strikte voorwaarde, maak je gebruik van conjuncties die de **subjonctif** uitlokken. De subjonctif drukt hier uit dat de realisatie van de handeling nog onzeker is of louter als een concept wordt overwogen.\n\nDe meest gebruikte voegwoorden in dit register zijn:\n\n- **À condition que** (op voorwaarde dat): drukt een objectieve, noodzakelijke en sine qua non voorwaarde uit. Het is de meest zakelijke en neutrale manier om een voorwaarde te stellen.\n  *Nous atteindrons le seuil de rentabilité dès cette année, **à condition que** les ventes du dernier trimestre **soient** particulièrement soutenues.*\n\n- **Pourvu que** (als ... maar, mits): drukt een veel subjectievere voorwaarde uit, vaak vergezeld van een sterke wens, hoop of vrees. Het heeft een iets meer emotionele of persoonlijke connotatie dan *à condition que*.\n  *Ce scénario de croissance est tout à fait réalisable, **pourvu que** la conjoncture économique **reste** favorable.* (We hopen vurig dat dit zo blijft).\n\n- **À moins que** (tenzij): drukt een negatieve voorwaarde of restrictie uit. In het formele Frans (soutenu) wordt *à moins que* vrijwel altijd gevolgd door een *ne explétif* — een 'ne' die geen echte ontkenning is, maar een stilistische verfijning.\n  *Nous lancerons le produit en septembre, **à moins que** les tests de sécurité **ne révèlent** une faille.*\n\n> [!tip] À condition de (bij eenzelfde onderwerp)\n> Er is een belangrijke grammaticale beperking bij *à condition que*: als de hoofdzin en de bijzin **hetzelfde grammaticale onderwerp** hebben, wordt het gebruik van *que + subjonctif* als zwaar en vaak zelfs als incorrect beschouwd. Je moet de constructie dan reduceren tot **à condition de + infinitif**.\n> Fout of op z'n minst zeer onhandig: *Nous réussirons à condition que nous soyons prudents.*\n> Correct en elegant: *Nous réussirons **à condition d'être** prudents.*\n> Hetzelfde geldt voor *à moins que* (wordt *à moins de* + infinitif): *Nous échouerons à moins de changer de stratégie.*",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "mcq",
+     "skill": "condition-subj",
+     "level": 2,
+     "prompt": "Welke constructie is grammaticaal correct?",
+     "explain": "Aangezien het onderwerp tweemaal *nous* is, moet je *à condition de* + infinitif gebruiken.",
+     "options": [
+      "Nous signerons à condition de finir les négociations.",
+      "Nous signerons à condition que nous finissions les négociations.",
+      "Nous signerons à condition que nous finissons les négociations."
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c6",
+     "type": "cloze",
+     "skill": "condition-subj",
+     "level": 2,
+     "prompt": "Vul de juiste vorm van **baisser** in.",
+     "explain": "*Pourvu que* vereist de subjonctif.",
+     "text": "Pourvu que l'inflation {{baisse}}, notre modèle tiendra.",
+     "lang": "fr"
+    }
+   ]
+  },
+  {
+   "id": "quand-bien-meme",
+   "title": "Le scénario du pire : l'hypothèse concessive avec « quand bien même »",
+   "md": "In een risicoanalyse (*scénario du pire* of stresstest) onderzoek je wat er met je bedrijf gebeurt als alles tegenzit. Je wil aantonen dat, zélfs in het meest negatieve geval, de uitkomst nog steeds onder controle is. Een uiterst krachtige, retorische en formele tournure hiervoor is **quand bien même** (zelfs al zou...).\n\n*Quand bien même* introduceert een concessieve hypothese (een tegenstelling in een hypothetisch kader) en wordt **altijd** gevolgd door de **conditionnel**. Dit is een schibbolet van hoogopgeleid Frans; de regel correct toepassen toont aan dat je de nuances van de taal feilloos beheerst.\n\n- [[fr:Quand bien même nos concurrents asiatiques baisseraient leurs prix de trente pour cent, notre positionnement premium nous protégerait efficacement.]]\n- [[fr:Le projet initial ne serait de toute façon pas rentable, quand bien même nous réduirions nos frais fixes de moitié.]]\n\nJe kan *quand bien même* ook combineren met de conditionnel passé om een hypothetisch verleden uit te drukken (zelfs al had...):\n- [[fr:Quand bien même ils auraient accepté notre offre, les délais de production étaient trop courts.]]\n\n> [!note] Même si vs. Quand bien même\n> Het courant gebruikte alternatief *même si* (zelfs als) betekent ongeveer hetzelfde, maar grammaticaal volgt het de strikte tijden van *si*. Je gebruikt er dus de indicatif na: *même si nous réduisions nos frais* (imparfait).\n> Hoewel *même si* volkomen correct is, klinkt *quand bien même* + conditionnel een stuk steviger, academischer en formeler. Het geeft je argumentatie in een debat of een strategische nota meer gewicht en gravitas.",
+   "checks": [
+    {
+     "id": "c7",
+     "type": "mcq",
+     "skill": "quand-bien-meme",
+     "level": 1,
+     "prompt": "Quand bien même nous le ___...",
+     "explain": "*Quand bien même* + conditionnel (*ferions*).",
+     "options": [
+      "ferions",
+      "faisions",
+      "fassions"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c8",
+     "type": "cloze",
+     "skill": "quand-bien-meme",
+     "level": 2,
+     "prompt": "Vul de juiste vorm van **réduire** in (let op, met *même si*).",
+     "explain": "*Même si* volgt de *si*-regels: *si* + imparfait (*réduisions*) -> conditionnel présent in de hoofdzin.",
+     "text": "Même si nous {{réduisions}} le prix, les ventes ne décolleraient pas.",
+     "lang": "fr"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "cloze",
+   "skill": "si-temps",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **investir** in (irréel du présent).",
+   "explain": "Hoofdzin in conditionnel (*pourrions*) -> *si* + imparfait.",
+   "text": "Si nous {{investissions}} dans ce secteur, nous pourrions doubler nos bénéfices.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "/investirions/",
+     "feedback": "Na 'si' mag nooit de conditionnel staan. Gebruik de imparfait.",
+     "tag": "si-cond"
+    }
+   ]
+  },
+  {
+   "id": "p02",
+   "type": "cloze",
+   "skill": "si-temps",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **accepter** in (irréel du passé).",
+   "explain": "Hoofdzin in conditionnel passé (*auraient été*) -> *si* + plus-que-parfait.",
+   "text": "Si les syndicats {{avaient accepté}} l'accord, les grèves auraient été évitées.",
+   "lang": "fr"
+  },
+  {
+   "id": "p03",
+   "type": "mcq",
+   "skill": "si-temps",
+   "level": 1,
+   "prompt": "Welke zin (met irréel du présent) is grammaticaal correct?",
+   "explain": "Si + imparfait (*réduisions*) -> conditionnel présent (*serions*).",
+   "options": [
+    "Si nous réduisions nos coûts, nous serions rentables.",
+    "Si nous réduirions nos coûts, nous serions rentables.",
+    "Si nous réduisons nos coûts, nous serions rentables.",
+    "Si nous réduisions nos coûts, nous serons rentables."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p04",
+   "type": "type",
+   "skill": "si-temps",
+   "level": 2,
+   "prompt": "Herschrijf het eerste deel correct (zonder de rest van de zin): « Si on ferait ça, ... » (gebruik *nous*).",
+   "explain": "Nooit conditionnel na *si*. *Si* + imparfait (*faisions*).",
+   "answers": [
+    "Si nous faisions cela",
+    "Si nous faisions ça"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "p05",
+   "type": "mcq",
+   "skill": "au-cas-ou",
+   "level": 1,
+   "prompt": "Au cas où le fournisseur ___ en faillite, nous avons un plan de secours.",
+   "explain": "*Au cas où* vereist de conditionnel.",
+   "options": [
+    "ferait",
+    "fasse",
+    "fait",
+    "fera"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p06",
+   "type": "cloze",
+   "skill": "au-cas-ou",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **devoir** in.",
+   "explain": "*Au cas où* + conditionnel.",
+   "text": "Prévoyez une marge, au cas où nous {{devrions}} annuler le vol.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "/devions|devons|devrons/",
+     "feedback": "Na 'au cas où' volgt altijd de conditionnel.",
+     "tag": "au-cas-ou-mode"
+    }
+   ]
+  },
+  {
+   "id": "p07",
+   "type": "type",
+   "skill": "au-cas-ou",
+   "level": 2,
+   "prompt": "Vertaal het fragment correct: \"in het geval dat dit zich voordoet\" (gebruik *dans l'hypothèse où* en *se produire*).",
+   "explain": "*Dans l'hypothèse où* eist de conditionnel.",
+   "answers": [
+    "dans l'hypothèse où cela se produirait",
+    "dans l'hypothèse où ceci se produirait"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "p08",
+   "type": "dictation",
+   "skill": "au-cas-ou",
+   "level": 2,
+   "prompt": "Luister naar de audio en typ de zin.",
+   "explain": "*Au cas où* + conditionnel (*aurait*).",
+   "text": "Au cas où il y aurait un problème, contactez-moi.",
+   "lang": "fr"
+  },
+  {
+   "id": "p09",
+   "type": "cloze",
+   "skill": "condition-subj",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **être** in (na *à condition que*).",
+   "explain": "*À condition que* + subjonctif.",
+   "text": "Le contrat sera signé, à condition que la clause {{soit}} modifiée.",
+   "lang": "fr"
+  },
+  {
+   "id": "p10",
+   "type": "cloze",
+   "skill": "condition-subj",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **rester** in.",
+   "explain": "*Pourvu que* + subjonctif.",
+   "text": "Ce scénario est valable, pourvu que l'inflation {{reste}} stable.",
+   "lang": "fr"
+  },
+  {
+   "id": "p11",
+   "type": "mcq",
+   "skill": "condition-subj",
+   "level": 2,
+   "prompt": "Welke constructie is correct?",
+   "explain": "Omdat de hoofd- en bijzin hetzelfde onderwerp hebben (*nous*), moet je *à condition de* + infinitif gebruiken.",
+   "options": [
+    "Nous réussirons à condition de rester prudents.",
+    "Nous réussirons à condition que nous restions prudents.",
+    "Nous réussirons à condition que nous restons prudents."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p12",
+   "type": "type",
+   "skill": "condition-subj",
+   "level": 3,
+   "prompt": "Maak de zin correct af met de juiste prepositie (en infinitif): « Vous obtiendrez un prêt à condition ___ (fournir) des garanties. »",
+   "explain": "Zelfde onderwerp: *à condition de fournir*.",
+   "answers": [
+    "de fournir",
+    "d'en fournir"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "p13",
+   "type": "mcq",
+   "skill": "quand-bien-meme",
+   "level": 1,
+   "prompt": "Wat is de juiste vorm na *quand bien même*?",
+   "explain": "*Quand bien même* eist altijd de conditionnel.",
+   "options": [
+    "quand bien même ils refuseraient",
+    "quand bien même ils refusent",
+    "quand bien même ils refusassent",
+    "quand bien même ils refuseront"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p14",
+   "type": "cloze",
+   "skill": "quand-bien-meme",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **avoir** in.",
+   "explain": "*Quand bien même* + conditionnel.",
+   "text": "Quand bien même nous {{aurions}} tort, il faudrait essayer.",
+   "lang": "fr"
+  },
+  {
+   "id": "p15",
+   "type": "match",
+   "skill": "si-temps",
+   "level": 2,
+   "prompt": "Koppel de start van de zin aan de grammaticaal vereiste wijs/tijd van de bijzin.",
+   "explain": "Dit zijn de vier gouden regels van de hypothesen.",
+   "pairs": [
+    [
+     "si l'inflation augmentait",
+     "imparfait"
+    ],
+    [
+     "au cas où l'inflation augmenterait",
+     "conditionnel"
+    ],
+    [
+     "à condition que l'inflation n'augmente pas",
+     "subjonctif"
+    ],
+    [
+     "à condition de (même sujet)",
+     "infinitif"
+    ]
+   ]
+  },
+  {
+   "id": "p16",
+   "type": "dictation",
+   "skill": "quand-bien-meme",
+   "level": 2,
+   "prompt": "Noteer wat je hoort.",
+   "explain": "*Quand bien même* eist de conditionnel (*s'effondrerait*).",
+   "text": "Quand bien même le marché s'effondrerait, nous survivrions.",
+   "lang": "fr"
+  },
+  {
+   "id": "p17",
+   "type": "cloze",
+   "skill": "au-cas-ou",
+   "level": 2,
+   "prompt": "Vul het juiste werkwoord in (ondervangen, verhelpen). Let op de prepositie!",
+   "explain": "*Pallier* is transitief direct in het soutenu. Je zegt niet *pallier à ce problème*.",
+   "text": "Nous avons mis en place cette procédure pour {{pallier}} ce problème.",
+   "lang": "fr"
+  },
+  {
+   "id": "p18",
+   "type": "type",
+   "skill": "si-temps",
+   "level": 3,
+   "prompt": "Hoe vertaal je \"een winstderving / gederfde inkomsten\"? (met lidwoord un/le)",
+   "explain": "Lexicaal element uit een zakelijk scenario.",
+   "answers": [
+    "un manque à gagner",
+    "le manque à gagner"
+   ],
+   "lang": "fr"
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "cloze",
+   "skill": "si-temps",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **savoir** in (irréel du passé).",
+   "explain": "Si + plus-que-parfait -> conditionnel passé (*aurais agi*).",
+   "text": "Si j'{{avais su}}, j'aurais agi différemment.",
+   "lang": "fr"
+  },
+  {
+   "id": "m02",
+   "type": "cloze",
+   "skill": "si-temps",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **faire** in (irréel du présent).",
+   "explain": "Si + imparfait -> conditionnel présent. Nooit conditionnel direct na si!",
+   "text": "Si nous {{faisions}} appel à ce prestataire, nous réduirions nos délais.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "/ferions/",
+     "feedback": "Les scies n'aiment pas les raies! Nooit conditionnel na 'si'. Gebruik de imparfait.",
+     "tag": "si-cond"
+    }
+   ]
+  },
+  {
+   "id": "m03",
+   "type": "cloze",
+   "skill": "si-temps",
+   "level": 3,
+   "prompt": "Vul de juiste vorm van **obtenir** in.",
+   "explain": "Wegens de conditionnel passé in de hoofdzin (*auraient monopolisé*) heb je in de si-zin een plus-que-parfait nodig.",
+   "text": "Si nos concurrents {{avaient obtenu}} ce marché, ils auraient monopolisé le secteur.",
+   "lang": "fr"
+  },
+  {
+   "id": "m04",
+   "type": "mcq",
+   "skill": "si-temps",
+   "level": 2,
+   "prompt": "Kies de juiste voortzetting in de hoofdzin.",
+   "explain": "*Si le client annulait* (imparfait) vraagt om een conditionnel présent.",
+   "options": [
+    "... nous devrions rembourser l'acompte.",
+    "... nous devrons rembourser l'acompte.",
+    "... nous devions rembourser l'acompte.",
+    "... nous dûmes rembourser l'acompte."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m05",
+   "type": "type",
+   "skill": "si-temps",
+   "level": 3,
+   "prompt": "Herschrijf de foute zin door uitsluitend de tijdsfout in de hypothese te verbeteren: « Si la BCE baisserait ses taux, l'investissement reprendrait. »",
+   "explain": "Geen conditionnel na 'si'. Je gebruikt de imparfait: *Si la BCE baissait ses taux...*",
+   "answers": [
+    "Si la BCE baissait ses taux, l'investissement reprendrait.",
+    "Si la BCE baissait ses taux, l'investissement reprendrait"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m06",
+   "type": "cloze",
+   "skill": "au-cas-ou",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **vouloir** in.",
+   "explain": "*Au cas où* eist de conditionnel.",
+   "text": "Au cas où la direction {{voudrait}} changer de cap, ce document servira de base.",
+   "lang": "fr"
+  },
+  {
+   "id": "m07",
+   "type": "cloze",
+   "skill": "au-cas-ou",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **connaître** in.",
+   "explain": "*Dans l'hypothèse où* eist de conditionnel.",
+   "text": "Dans l'hypothèse où le marché {{connaîtrait|connaitrait}} une récession, nos liquidités sont suffisantes.",
+   "lang": "fr"
+  },
+  {
+   "id": "m08",
+   "type": "mcq",
+   "skill": "au-cas-ou",
+   "level": 2,
+   "prompt": "Welke zin is 100% correct in een formele (zakelijke) context?",
+   "explain": "*Au cas où* wordt in keurig Frans exclusief gevolgd door de conditionnel.",
+   "options": [
+    "Au cas où il y aurait une grève, prévoyez du télétravail.",
+    "Au cas où il y a une grève, prévoyez du télétravail.",
+    "Au cas où il y ait une grève, prévoyez du télétravail."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "au-cas-ou",
+   "level": 3,
+   "prompt": "Herschrijf dit zinsdeel met *au cas où* in de juiste tijd: \"au cas où nous (devoir) licencier\"",
+   "explain": "Conditionnel: *devrions*.",
+   "answers": [
+    "au cas où nous devrions licencier"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m10",
+   "type": "cloze",
+   "skill": "condition-subj",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **pouvoir** in.",
+   "explain": "*À condition que* eist de subjonctif.",
+   "text": "L'actionnaire acceptera, à condition qu'il {{puisse}} conserver son droit de veto.",
+   "lang": "fr"
+  },
+  {
+   "id": "m11",
+   "type": "cloze",
+   "skill": "condition-subj",
+   "level": 2,
+   "prompt": "Vul het juiste woordje in (*que* of *de*).",
+   "explain": "Het onderwerp is tweemaal *l'entreprise*. Dan moet je de infinitif met *de* gebruiken.",
+   "text": "L'entreprise peut survivre, à condition {{de}} réduire ses frais fixes.",
+   "lang": "fr"
+  },
+  {
+   "id": "m12",
+   "type": "type",
+   "skill": "condition-subj",
+   "level": 2,
+   "prompt": "Vervoeg **atteindre** in de subjonctif présent, 3e pers. meervoud (na *pourvu que*).",
+   "explain": "ils atteignent.",
+   "answers": [
+    "atteignent",
+    "qu'ils atteignent"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m13",
+   "type": "mcq",
+   "skill": "condition-subj",
+   "level": 2,
+   "prompt": "Welke formulering is het meest grammaticaal accuraat (let op het onderwerp)?",
+   "explain": "Bij hetzelfde onderwerp (*nous*) gebruik je *à condition de* + infinitif, niet *à condition que*.",
+   "options": [
+    "Nous signerons à condition de recevoir les fonds.",
+    "Nous signerons à condition que nous recevions les fonds.",
+    "Nous signerons à condition que l'on reçoive les fonds."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m14",
+   "type": "cloze",
+   "skill": "quand-bien-meme",
+   "level": 2,
+   "prompt": "Vervoeg **être** in de juiste vorm voor deze hypothese.",
+   "explain": "*Quand bien même* eist altijd de conditionnel.",
+   "text": "Quand bien même la conjoncture {{serait}} idéale, ce lancement reste prématuré.",
+   "lang": "fr"
+  },
+  {
+   "id": "m15",
+   "type": "cloze",
+   "skill": "quand-bien-meme",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **falloir** in.",
+   "explain": "*Quand bien même* + conditionnel.",
+   "text": "Je soutiendrai ce projet, quand bien même il {{faudrait}} y passer mes nuits.",
+   "lang": "fr"
+  },
+  {
+   "id": "m16",
+   "type": "mcq",
+   "skill": "quand-bien-meme",
+   "level": 3,
+   "prompt": "Wat is de correcte vorm na *même si* (in tegenstelling tot *quand bien même*)?",
+   "explain": "*Même si* volgt de gewone *si*-regels (hier: imparfait), in tegenstelling tot *quand bien même* (conditionnel).",
+   "options": [
+    "Même si nos marges baissaient...",
+    "Même si nos marges baisseraient...",
+    "Même si nos marges baissent..."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m17",
+   "type": "cloze",
+   "skill": "quand-bien-meme",
+   "level": 3,
+   "prompt": "Vul de juiste vorm van **parvenir** in.",
+   "explain": "Conditionnel présent na *quand bien même*.",
+   "text": "Quand bien même nous {{parviendrions}} à un accord, la confiance est rompue.",
+   "lang": "fr"
+  },
+  {
+   "id": "m18",
+   "type": "cloze",
+   "skill": "au-cas-ou",
+   "level": 2,
+   "prompt": "Welk werkwoord (zonder prepositie) betekent 'ondervangen' in soutenu?",
+   "explain": "*Pallier qqch* zonder prepositie *à* is een kenmerk van zeer verzorgd Frans.",
+   "text": "Ce fonds d'urgence permettra de {{pallier}} toute perte de revenus soudaine.",
+   "lang": "fr"
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "fr",
+  "minWords": 100,
+  "prompt": "**Rédigez une brève analyse de scénarios** (100–150 mots) pour votre business plan. Adressez-vous à vos investisseurs potentiels en utilisant le vouvoiement.\n\nVous devez intégrer obligatoirement les 4 structures suivantes :\n1. Une phrase avec **si** (irréel du présent ou du passé)\n2. Une phrase avec **au cas où**\n3. Une phrase avec **à condition que** ou **pourvu que**\n4. Une phrase avec **quand bien même**",
+  "model": "Messieurs les investisseurs,\n\nSi nous obtenions ce financement, notre entreprise pourrait immédiatement lancer la production à grande échelle. Le succès de ce produit semble garanti sur le marché européen, à condition que nos concurrents ne dévoilent pas une technologie similaire avant la fin de l'année.\n\nAu cas où les ventes initiales seraient inférieures à nos prévisions, nous avons prévu de réaffecter une partie du budget marketing vers des campagnes ciblées sur les réseaux sociaux. Un fonds de roulement supplémentaire est également provisionné dans l'hypothèse où nous ferions face à des ruptures de la chaîne d'approvisionnement.\n\nEnfin, notre stratégie repose sur une forte fidélisation : quand bien même l'inflation poursuivrait sa courbe ascendante, nos marges resteraient protégées grâce à notre positionnement premium. Nous sommes convaincus que ce plan d'affaires palliera les risques inhérents à notre secteur.",
+  "rubric": [
+   "Correcte tijden na 'si' (imparfait + conditionnel, of plus-que-parfait + conditionnel passé)",
+   "'Au cas où' + conditionnel",
+   "'À condition que' of 'pourvu que' + subjonctif",
+   "'Quand bien même' + conditionnel",
+   "Formeel zakelijk register (soutenu) gericht aan investeerders, met verzorgde vocabulaire"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-si-pres",
+   "front": "Welke tijd volgt in de hoofdzin na **si + présent** (potentiel)?",
+   "back": "futur simple",
+   "skill": "si-temps",
+   "lang": "nl"
+  },
+  {
+   "id": "c-si-imp",
+   "front": "Welke tijd volgt in de hoofdzin na **si + imparfait** (irréel du présent)?",
+   "back": "conditionnel présent",
+   "skill": "si-temps",
+   "lang": "nl"
+  },
+  {
+   "id": "c-si-pqp",
+   "front": "Welke tijd volgt in de hoofdzin na **si + plus-que-parfait** (irréel du passé)?",
+   "back": "conditionnel passé",
+   "skill": "si-temps",
+   "lang": "nl"
+  },
+  {
+   "id": "c-au-cas-ou",
+   "front": "Welke wijs volgt altijd na **au cas où** en **dans l'hypothèse où**?",
+   "back": "conditionnel",
+   "skill": "au-cas-ou",
+   "lang": "nl"
+  },
+  {
+   "id": "c-pourvu",
+   "front": "Welke wijs volgt na **pourvu que** en **à condition que**?",
+   "back": "subjonctif",
+   "skill": "condition-subj",
+   "lang": "nl"
+  },
+  {
+   "id": "c-meme-sujet",
+   "front": "Wat gebeurt er met *à condition que* als hoofd- en bijzin **hetzelfde onderwerp** hebben?",
+   "back": "Je moet **à condition de + infinitif** gebruiken.",
+   "skill": "condition-subj",
+   "lang": "nl"
+  },
+  {
+   "id": "c-qbm",
+   "front": "Welke wijs volgt na **quand bien même** (zelfs al zou...)?",
+   "back": "conditionnel",
+   "skill": "quand-bien-meme",
+   "lang": "nl"
+  },
+  {
+   "id": "c-meme-si",
+   "front": "Welke tijden/wijs volgen op **même si**?",
+   "back": "Dezelfde regels als voor 'si' (altijd de indicatif).",
+   "skill": "quand-bien-meme",
+   "lang": "nl"
+  }
+ ],
+ "sources": [
+  "Académie française — *Dire, ne pas dire*",
+  "Grevisse & Goosse, *Le Bon Usage* (16e éd.)",
+  "CNRTL — Trésor de la langue française informatisé"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-26",
+  "adaptedFor": "Trager tempo overgenomen (geen activiteit in de afgelopen 7 dagen): theorie uitgebreid met extra context en duidelijke regels (zoals komma-gebruik), focus stevig op de belangrijkste grammaticale valkuilen en heldere zakelijke context in de voorbeelden."
+ }
+}

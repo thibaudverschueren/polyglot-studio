@@ -1,0 +1,803 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "greek",
+ "id": 3,
+ "roadmap": "gr-a1-03-greetings",
+ "kind": "core",
+ "title": "Begroeten, voorstellen en beleefdheid",
+ "subtitle": "Hallo, hoe gaat het, en de Griekse 'u'",
+ "level": "A1",
+ "minutes": 40,
+ "summary": "Een goed gesprek begint met een goede begroeting. In deze les leer je de juiste groet voor elk moment van de dag, hoe je jezelf voorstelt, en het verschil tussen informeel ('jij') en beleefd ('u').",
+ "objectives": [
+  {
+   "id": "greeting-time",
+   "text": "Je begroet iemand correct volgens het moment van de dag."
+  },
+  {
+   "id": "polite-form",
+   "text": "Je kiest correct tussen de informele en beleefde vorm (σου/σας, κάνεις/κάνετε)."
+  },
+  {
+   "id": "how-are-you",
+   "text": "Je vraagt hoe het gaat en antwoordt daar gepast op."
+  },
+  {
+   "id": "introduce",
+   "text": "Je stelt jezelf voor met je naam en zegt 'aangenaam'."
+  },
+  {
+   "id": "name-article",
+   "text": "Je gebruikt het juiste lidwoord (ο/η) vóór voornamen."
+  }
+ ],
+ "vocab": [
+  {
+   "term": "γεια σου",
+   "translit": "ja soe",
+   "meaning": "hallo; tot ziens (informeel)"
+  },
+  {
+   "term": "γεια σας",
+   "translit": "ja sas",
+   "meaning": "hallo; tot ziens (formeel of meervoud)"
+  },
+  {
+   "term": "καλημέρα",
+   "translit": "ka-li-MÉ-ra",
+   "meaning": "goedemorgen; goedendag"
+  },
+  {
+   "term": "καλησπέρα",
+   "translit": "ka-li-SPÉ-ra",
+   "meaning": "goedenavond"
+  },
+  {
+   "term": "καληνύχτα",
+   "translit": "ka-li-NÍ-chta",
+   "meaning": "welterusten; goedenacht"
+  },
+  {
+   "term": "τι κάνεις;",
+   "translit": "ti KÁ-nis",
+   "meaning": "hoe gaat het? (informeel)"
+  },
+  {
+   "term": "τι κάνετε;",
+   "translit": "ti KÁ-ne-te",
+   "meaning": "hoe gaat het? (formeel of meervoud)"
+  },
+  {
+   "term": "καλά",
+   "translit": "ka-LÁ",
+   "meaning": "goed"
+  },
+  {
+   "term": "ευχαριστώ",
+   "translit": "ef-cha-ri-STÓ",
+   "meaning": "dank je wel"
+  },
+  {
+   "term": "με λένε",
+   "translit": "me LÉ-ne",
+   "meaning": "ik heet; ze noemen me"
+  },
+  {
+   "term": "είμαι",
+   "translit": "Í-me",
+   "meaning": "ik ben"
+  },
+  {
+   "term": "χαίρω πολύ",
+   "translit": "CHÉ-ro po-LÍ",
+   "meaning": "aangenaam (kennis te maken)"
+  }
+ ],
+ "sections": [
+  {
+   "id": "greetings",
+   "title": "Hallo en goedemorgen",
+   "md": "Het meest universele woord in het Grieks is **Γεια** (*ja*). Je gebruikt het voor 'hallo' én voor 'tot ziens'. Het stamt af van het woord voor gezondheid (υγιεινή — denk aan hygiëne). Als je een winkel, een café of de bakkerij binnenstapt, is dit het eerste wat je zegt.\n\nDaarnaast zijn er groeten die afhangen van het moment van de dag. Het Griekse woord voor 'goed' is καλή (*ka-LÍ*). Dat plakken ze vast aan de tijd van de dag:\n\n- **Καλημέρα** (*ka-li-MÉ-ra*): goedemorgen / goedendag. Gebruik je tot de late namiddag. Het is een warme, positieve wens voor een mooie dag.\n- **Καλησπέρα** (*ka-li-SPÉ-ra*): goedenavond. Gebruik je vanaf de vroege avond (meestal als het donker begint te worden).\n- **Καληνύχτα** (*ka-li-NÍ-chta*): welterusten / goedenacht.\n\nIn Griekenland is groeten extreem belangrijk. Zelfs als je een lift instapt met onbekenden, mompel je op z'n minst een beleefde *Καλημέρα*. Het zet meteen de toon voor interactie. Je kunt *Καλημέρα* overigens ook zeggen als je ergens vertrekt (als wens: \"nog een prettige dag verder!\").\n\n> [!pitfall] Wanneer zeg je wat?\n> Καλημέρα en καλησπέρα kun je zowel bij aankomst als bij vertrek zeggen. **Καληνύχτα** daarentegen gebruik je *alleen* als je afscheid neemt om te gaan slapen, nooit als begroeting wanneer je ergens aankomt.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "greeting-time",
+     "level": 2,
+     "prompt": "Het is 20:00 uur en je wandelt een restaurant binnen. Wat zeg je?",
+     "explain": "Καλησπέρα is de groet voor de avond. Καληνύχτα zeg je alleen als je weggaat om te slapen.",
+     "options": [
+      "Καλησπέρα",
+      "Καλημέρα",
+      "Καληνύχτα",
+      "Γεια"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c2",
+     "type": "type",
+     "skill": "greeting-time",
+     "level": 2,
+     "prompt": "Schrijf in het Grieks: **goedemorgen**.",
+     "explain": "Καλημέρα (tónos op de έ).",
+     "answers": [
+      "καλημέρα"
+     ],
+     "lang": "el"
+    }
+   ]
+  },
+  {
+   "id": "politeness",
+   "title": "Jij of u: de beleefdheidsvorm",
+   "md": "Het woordje Γεια gebruik je zelden alleen. Grieken plakken er bijna altijd een woordje aan vast dat aangeeft tegen *wie* ze spreken:\n\n- **Γεια σου** (*ja soe*): Hallo / Tot ziens. Dit gebruik je tegen één persoon die je goed kent, tegen een kind, of informeel (jij-vorm). In Griekenland is de omgang vaak vrij informeel, en mensen schakelen sneller over op \"jij\" dan in België.\n- **Γεια σας** (*ja sas*): Hallo / Tot ziens. Dit gebruik je in twee situaties:\n  1. Tegen meerdere personen tegelijk (jullie-vorm). Zelfs als je je twee beste vrienden begroet, zeg je *Γεια σας*.\n  2. Als **beleefdheidsvorm** tegen een onbekende volwassene of een oudere (u-vorm). Respect voor ouderen is diepgeworteld in de cultuur. Zeg dus als twintiger niet zomaar *Γεια σου* tegen een man van zestig, tenzij hij je daartoe uitnodigt. Ben je aan het twijfelen? Dan is de veiligste keuze altijd de formele vorm.\n\n> [!rule] Meervoud = beleefd\n> Het Grieks heeft, net als het Engels vroeger, geen apart woord voor 'u'. Ze gebruiken gewoon de **meervoudsvorm**, precies zoals de Fransen met *vous* doen. 'Γεια σας' betekent letterlijk 'Gezondheid voor jullie'. Je wenst als het ware gezondheid aan de persoon én de hele groep waartoe die behoort.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "mcq",
+     "skill": "polite-form",
+     "level": 1,
+     "prompt": "Je spreekt een oudere, onbekende dame aan op straat. Wat zeg je?",
+     "explain": "Tegen een onbekende volwassene gebruik je de beleefdheidsvorm (meervoud): Γεια σας.",
+     "options": [
+      "Γεια σας",
+      "Γεια σου",
+      "Γεια μας",
+      "Γεια"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "how-are-you",
+   "title": "Hoe gaat het?",
+   "md": "De standaardvraag om te polsen hoe het met iemand gaat, is **Τι κάνεις;** (*ti KÁ-nis*).\n\nLetterlijk betekent dit 'Wat doe je?', maar het is dé vaste uitdrukking voor 'Hoe gaat het?'. Omdat de beleefdheidsvorm het meervoud gebruikt, wordt dit tegen een onbekende (of een groep) **Τι κάνετε;** (*ti KÁ-ne-te*).\n\nDe antwoorden zijn eenvoudig en meestal positief. Zelfs als een Griek een slechte dag heeft, begint het antwoord vaak met:\n- **Καλά** (*ka-LÁ*): Goed.\n- **Πολύ καλά** (*po-LÍ ka-LÁ*): Heel goed.\n- **Έτσι κι έτσι** (*é-tsi ki é-tsi*): Zozo, gaat wel (letterlijk: 'zo en zo').\n\nEn als goed Vlaming vergeet je niet om te bedanken en de bal terug te kaatsen:\n- **Ευχαριστώ** (*ef-cha-ri-STÓ*): Dank je wel.\n- **Εσύ;** (*e-SÍ*): En jij?\n- **Εσείς;** (*e-SÍS*): En u? / En jullie?\n\nEen complete, vloeiende uitwisseling klinkt dan bijvoorbeeld zo: \"Τι κάνεις;\" — \"Καλά, ευχαριστώ. Εσύ;\" — \"Πολύ καλά!\"\n\n> [!pitfall] De valse vriend in bedankt\n> Kijk goed naar ευχαριστώ. De letter υ in de combination ευ klinkt hier als een **f**. De χ is de harde *ch* van *lachen*. En let op de klemtoon helemaal op het einde: de ω krijgt de tónos. Leg echt gewicht op die laatste lettergreep, want een verkeerde klemtoon maakt het moeilijk verstaanbaar.",
+   "checks": [
+    {
+     "id": "c4",
+     "type": "type",
+     "skill": "how-are-you",
+     "level": 2,
+     "prompt": "Schrijf in het Grieks: **dank je wel**.",
+     "explain": "ευχαριστώ. Let op de ε-υ vooraan en de tónos achteraan.",
+     "answers": [
+      "ευχαριστώ"
+     ],
+     "lang": "el",
+     "errors": [
+      {
+       "match": "ευχαριστω",
+       "feedback": "Je bent de tónos vergeten op de ω! Het is ευχαριστώ.",
+       "tag": "tonos"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "introductions",
+   "title": "Jezelf voorstellen",
+   "md": "Er zijn twee courante manieren om je naam te zeggen in het Grieks:\n\n1. **Είμαι...** (*Í-me*): Ik ben...\n2. **Με λένε...** (*me LÉ-ne*): Ik heet...\n\n*Με λένε* betekent letterlijk 'ze noemen mij'. Dat klinkt voor ons misschien vreemd, maar in het Grieks is dit de meest natuurlijke manier om je voor te stellen. Vergelijk het met het Spaanse *Me llamo* of het Franse *Je m'appelle*, die ook niet letterlijk 'ik ben' gebruiken, maar 'ik heet' of 'ik word genoemd'.\n\nWanneer iemand zich voorstelt, is het beleefd om te antwoorden met:\n- **Χαίρω πολύ** (*CHÉ-ro po-LÍ*): Aangenaam.\n\nOok dit heeft een letterlijke betekenis: 'ik verheug me erg'. Let op de klank: χ is de ch-klank, ρ is de getikte r, en de υ in πολύ is een *ie*-klank uit de 'ie-club' (η, ι, υ). Samen klinkt het dus als *chéro polí*. Bij formele ontmoetingen in Griekenland gaat dit altijd gepaard met een stevige handdruk en direct oogcontact. Bij jongeren of goede kennissen kan men direct overgaan tot kussen op beide wangen.",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "type",
+     "skill": "introduce",
+     "level": 2,
+     "prompt": "Typ de meest natuurlijke manier om te zeggen 'Ik heet...' (2 woorden).",
+     "explain": "Με λένε (letterlijk: ze noemen me).",
+     "answers": [
+      "με λένε"
+     ],
+     "lang": "el"
+    }
+   ]
+  },
+  {
+   "id": "articles-names",
+   "title": "Lidwoorden bij namen",
+   "md": "Er is één groot verschil met het Nederlands als je je voorstelt met 'Ik ben...' (Είμαι).\n\nIn het Nederlands zeggen we 'Ik ben Thibaud', *zonder* lidwoord. Maar in het Grieks krijgen eigennamen in een zin bijna **altijd** een bepaald lidwoord ('de' of 'het'). Dat komt doordat het Grieks naamvallen heeft, en het lidwoord de duidelijkste manier is om aan te geven welke rol het woord in de zin speelt. Zonder lidwoord klinkt een naam in een lopende zin in het Grieks onaf, bijna alsof je de grammatica weigert te gebruiken.\n\n- Mannelijke namen krijgen **ο** (*o*): ο Νίκος, ο Γιώργος.\n- Vrouwelijke namen krijgen **η** (*i*): η Μαρία, η Άννα.\n\nJe zegt dus:\n- Είμαι **ο** Νίκος. (Ik ben *de* Nikos.)\n- Είμαι **η** Άννα. (Ik ben *de* Anna.)\n\nHet voelt in het begin raar om 'de Thibaud' te zeggen over jezelf, maar in de Griekse taallogica is dit de enige juiste manier.\n\n> [!note] Buitenlandse namen\n> Buitenlandse namen zoals Thibaud veranderen niet van vorm in het Grieks, maar krijgen wél het lidwoord: Είμαι ο Thibaud. Zelfs als je je achternaam toevoegt, blijft het principe staan.\n> \n> *(Let op: na de uitdrukking 'Με λένε' valt het lidwoord meestal weg: Με λένε Thibaud. De exacte reden hiervoor is voor een latere les!)*",
+   "checks": [
+    {
+     "id": "c6",
+     "type": "cloze",
+     "skill": "name-article",
+     "level": 2,
+     "prompt": "Vul het juiste lidwoord in.",
+     "explain": "Thibaud is een mannelijke naam, dus je gebruikt het mannelijk lidwoord 'ο'.",
+     "text": "Είμαι {{ο}} Thibaud.",
+     "lang": "el"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "greeting-time",
+   "level": 1,
+   "prompt": "Je komt om 10u 's ochtends aan op kantoor. Wat zeg je?",
+   "explain": "In de voormiddag gebruik je 'goedemorgen' = Καλημέρα.",
+   "options": [
+    "Καλημέρα",
+    "Καλησπέρα",
+    "Καληνύχτα",
+    "Γεια σας"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "type",
+   "skill": "greeting-time",
+   "level": 2,
+   "prompt": "Schrijf in het Grieks: **goedenavond**",
+   "explain": "Καλησπέρα (tónos op de έ).",
+   "answers": [
+    "καλησπέρα"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p03",
+   "type": "cloze",
+   "skill": "greeting-time",
+   "level": 2,
+   "prompt": "Vul aan: Welterusten",
+   "explain": "Καληνύχτα (tónos op de ύ).",
+   "text": "Καλη{{νύχτα}}",
+   "lang": "el"
+  },
+  {
+   "id": "p04",
+   "type": "mcq",
+   "skill": "polite-form",
+   "level": 1,
+   "prompt": "Tegen wie gebruik je **Γεια σας**?",
+   "explain": "Γεια σας is de beleefdheidsvorm ('u') óf meervoud. Een onbekende volwassene spreek je met 'u' aan.",
+   "options": [
+    "Een onbekende volwassene.",
+    "Je beste vriend.",
+    "Een kind op straat.",
+    "Je broer of zus."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p05",
+   "type": "type",
+   "skill": "polite-form",
+   "level": 2,
+   "prompt": "Schrijf in het Grieks: **hallo** (informeel tegen één persoon, 2 woorden).",
+   "explain": "Γεια σου. Γεια krijgt geen tónos (één lettergreep).",
+   "answers": [
+    "γεια σου"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "γεια σας",
+     "feedback": "Γεια σας is de beleefdheidsvorm ('u') of meervoud. Informeel is γεια σου.",
+     "tag": "formality"
+    }
+   ]
+  },
+  {
+   "id": "p06",
+   "type": "cloze",
+   "skill": "polite-form",
+   "level": 2,
+   "prompt": "Vul de formele (beleefde) vorm in.",
+   "explain": "De beleefdheidsvorm is 'σας' (meervoud).",
+   "text": "Γεια {{σας}}",
+   "lang": "el"
+  },
+  {
+   "id": "p07",
+   "type": "type",
+   "skill": "how-are-you",
+   "level": 2,
+   "prompt": "Vertaal: **Hoe gaat het?** (informeel)",
+   "explain": "Letterlijk 'wat doe je?': τι κάνεις.",
+   "answers": [
+    "τι κάνεις"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "τι κάνετε",
+     "feedback": "Τι κάνετε is formeel of meervoud. De informele vorm is τι κάνεις.",
+     "tag": "formality"
+    }
+   ]
+  },
+  {
+   "id": "p08",
+   "type": "order",
+   "skill": "how-are-you",
+   "level": 2,
+   "prompt": "Zet in de juiste volgorde: **Hoe gaat het? (beleefd)**",
+   "explain": "Τι (wat) κάνετε (doen jullie / doet u).",
+   "tiles": [
+    "Τι",
+    "κάνετε",
+    ";"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "how-are-you",
+   "level": 2,
+   "prompt": "Schrijf in het Grieks: **goed**",
+   "explain": "Καλά (tónos op de á).",
+   "answers": [
+    "καλά"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p10",
+   "type": "type",
+   "skill": "how-are-you",
+   "level": 3,
+   "prompt": "Schrijf in het Grieks: **dank je wel**",
+   "explain": "Ευχαριστώ (ευ klinkt hier als ef, tónos op de laatste letter).",
+   "answers": [
+    "ευχαριστώ"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "ευχαριστω",
+     "feedback": "Vergeet de tónos niet op de ω!",
+     "tag": "tonos"
+    }
+   ]
+  },
+  {
+   "id": "p11",
+   "type": "mcq",
+   "skill": "introduce",
+   "level": 1,
+   "prompt": "Wat is de letterlijke betekenis van **Με λένε Thibaud**?",
+   "explain": "Με = me, λένε = ze noemen. 'Ze noemen me Thibaud'.",
+   "options": [
+    "Ze noemen me Thibaud.",
+    "Ik heet Thibaud.",
+    "Mijn naam is Thibaud.",
+    "Ik ben Thibaud."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p12",
+   "type": "cloze",
+   "skill": "introduce",
+   "level": 2,
+   "prompt": "Vul aan: **Ik heet Maria**.",
+   "explain": "Με λένε = ik heet.",
+   "text": "{{Με}} λένε Μαρία.",
+   "lang": "el"
+  },
+  {
+   "id": "p13",
+   "type": "type",
+   "skill": "introduce",
+   "level": 2,
+   "prompt": "Schrijf in het Grieks: **Aangenaam** (2 woorden).",
+   "explain": "Χαίρω πολύ (letterlijk: ik verheug me erg).",
+   "answers": [
+    "χαίρω πολύ"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p14",
+   "type": "type",
+   "skill": "introduce",
+   "level": 2,
+   "prompt": "Schrijf in het Grieks: **Ik ben**",
+   "explain": "Είμαι (tónos op de í, of preciezer: op de tweede letter van de ει-klank).",
+   "answers": [
+    "είμαι"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p15",
+   "type": "mcq",
+   "skill": "name-article",
+   "level": 1,
+   "prompt": "Welke zin is grammaticaal correct om te zeggen: **Ik ben Nikos**?",
+   "explain": "Bij 'Είμαι' krijgt de eigennaam een lidwoord (ο voor mannen, η voor vrouwen).",
+   "options": [
+    "Είμαι ο Νίκος.",
+    "Είμαι Νίκος.",
+    "Με λένε ο Νίκος.",
+    "Νίκος είμαι."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p16",
+   "type": "cloze",
+   "skill": "name-article",
+   "level": 2,
+   "prompt": "Vul het juiste lidwoord in (ο of η).",
+   "explain": "Γιώργος is mannelijk (ο), Μαρία is vrouwelijk (η).",
+   "text": "{{ο}} Γιώργος, {{η}} Μαρία",
+   "lang": "el"
+  },
+  {
+   "id": "p17",
+   "type": "dictation",
+   "skill": "greeting-time",
+   "level": 2,
+   "prompt": "Luister en typ in het Grieks.",
+   "explain": "Καλημέρα (goedemorgen).",
+   "text": "Καλημέρα",
+   "lang": "el"
+  },
+  {
+   "id": "p18",
+   "type": "dictation",
+   "skill": "how-are-you",
+   "level": 2,
+   "prompt": "Luister en typ in het Grieks.",
+   "explain": "Τι κάνετε; (Hoe gaat het met u / jullie?).",
+   "text": "Τι κάνετε;",
+   "lang": "el"
+  },
+  {
+   "id": "p19",
+   "type": "dictation",
+   "skill": "introduce",
+   "level": 2,
+   "prompt": "Luister en typ in het Grieks (2 woorden).",
+   "explain": "Χαίρω πολύ (aangenaam).",
+   "text": "Χαίρω πολύ",
+   "lang": "el"
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "type",
+   "skill": "greeting-time",
+   "level": 2,
+   "prompt": "Schrijf in het Grieks: **goedemorgen**",
+   "explain": "Καλημέρα.",
+   "answers": [
+    "καλημέρα"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m02",
+   "type": "type",
+   "skill": "greeting-time",
+   "level": 2,
+   "prompt": "Schrijf in het Grieks: **welterusten**",
+   "explain": "Καληνύχτα.",
+   "answers": [
+    "καληνύχτα"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m03",
+   "type": "mcq",
+   "skill": "greeting-time",
+   "level": 2,
+   "prompt": "Het is 19:00 uur. Je wandelt een bakkerij binnen. Wat zeg je?",
+   "explain": "Vanaf de vroege avond gebruik je 'Καλησπέρα' (goedenavond).",
+   "options": [
+    "Καλησπέρα",
+    "Καλημέρα",
+    "Καληνύχτα",
+    "Χαίρω πολύ"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m04",
+   "type": "type",
+   "skill": "polite-form",
+   "level": 3,
+   "prompt": "Hoe groet je twee vrienden tegelijk? (2 woorden)",
+   "explain": "Tegen meerdere personen gebruik je altijd het meervoud, ook als het vrienden zijn: γεια σας.",
+   "answers": [
+    "γεια σας"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "γεια σου",
+     "feedback": "Voor twee personen is 'σου' (jij) fout. Gebruik het meervoud 'σας'.",
+     "tag": "formality"
+    }
+   ]
+  },
+  {
+   "id": "m05",
+   "type": "type",
+   "skill": "polite-form",
+   "level": 2,
+   "prompt": "Hoe groet je je broer? (2 woorden)",
+   "explain": "Tegen één bekende gebruik je informeel: γεια σου.",
+   "answers": [
+    "γεια σου"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m06",
+   "type": "cloze",
+   "skill": "polite-form",
+   "level": 1,
+   "prompt": "Hoe werkt de Griekse beleefdheidsvorm?",
+   "explain": "Het Grieks gebruikt het meervoud voor 'u' (net als in het Frans).",
+   "text": "In het Grieks gebruik je voor 'u' de vorm van het {{meervoud}}.",
+   "lang": "nl"
+  },
+  {
+   "id": "m07",
+   "type": "type",
+   "skill": "how-are-you",
+   "level": 3,
+   "prompt": "Hoe vraag je: **Hoe gaat het?** aan de kassa van de supermarkt? (beleefd, 2 woorden)",
+   "explain": "Tegen een onbekende gebruik je de meervoudsvorm (beleefd): τι κάνετε.",
+   "answers": [
+    "τι κάνετε"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "τι κάνεις",
+     "feedback": "Dat is de informele jij-vorm! Tegen onbekenden gebruik je τι κάνετε.",
+     "tag": "formality"
+    }
+   ]
+  },
+  {
+   "id": "m08",
+   "type": "cloze",
+   "skill": "how-are-you",
+   "level": 2,
+   "prompt": "Vul de juiste letter in voor de informele ('jij') vorm.",
+   "explain": "Τι κάνεις; (Wat doe jij?)",
+   "text": "Τι κάνει{{ς}};",
+   "lang": "el"
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "how-are-you",
+   "level": 2,
+   "prompt": "Vertaal: **Goed, dank je wel** (2 woorden, gescheiden door spatie).",
+   "explain": "Καλά (goed) ευχαριστώ (dank je wel).",
+   "answers": [
+    "καλά ευχαριστώ",
+    "καλά, ευχαριστώ"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m10",
+   "type": "dictation",
+   "skill": "how-are-you",
+   "level": 2,
+   "prompt": "Luister en typ in het Grieks.",
+   "explain": "Τι κάνεις; (Hoe gaat het met je?)",
+   "text": "Τι κάνεις;",
+   "lang": "el"
+  },
+  {
+   "id": "m11",
+   "type": "type",
+   "skill": "introduce",
+   "level": 2,
+   "prompt": "Schrijf in het Grieks: **ik heet** (2 woorden).",
+   "explain": "Με λένε.",
+   "answers": [
+    "με λένε"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m12",
+   "type": "type",
+   "skill": "introduce",
+   "level": 3,
+   "prompt": "Schrijf in het Grieks: **ik ben de Nikos** (zoals je het in het Grieks zegt).",
+   "explain": "Είμαι ο Νίκος.",
+   "answers": [
+    "είμαι ο Νίκος"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m13",
+   "type": "order",
+   "skill": "introduce",
+   "level": 2,
+   "prompt": "Zet in de juiste volgorde: **Aangenaam, ik ben Nikos**.",
+   "explain": "Χαίρω πολύ (aangenaam) en είμαι ο Νίκος (met lidwoord).",
+   "tiles": [
+    "Χαίρω",
+    "πολύ",
+    "είμαι",
+    "ο",
+    "Νίκος"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m14",
+   "type": "dictation",
+   "skill": "introduce",
+   "level": 3,
+   "prompt": "Luister en typ de hele zin.",
+   "explain": "Είμαι ο Νίκος (Ik ben Nikos). Vergeet het lidwoord niet!",
+   "text": "Είμαι ο Νίκος.",
+   "lang": "el"
+  },
+  {
+   "id": "m15",
+   "type": "cloze",
+   "skill": "name-article",
+   "level": 2,
+   "prompt": "Welk lidwoord gebruik je voor een vrouw? Vul aan.",
+   "explain": "Voor vrouwelijke eigennamen gebruik je η (de ie-club).",
+   "text": "Είμαι {{η}} Άννα.",
+   "lang": "el"
+  },
+  {
+   "id": "m16",
+   "type": "type",
+   "skill": "name-article",
+   "level": 2,
+   "prompt": "Welk lidwoord ontbreekt? Typ alleen dat ene woord: ___ Κώστας.",
+   "explain": "Κώστας is een man, dus het lidwoord is 'ο'.",
+   "answers": [
+    "ο"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m17",
+   "type": "mcq",
+   "skill": "name-article",
+   "level": 1,
+   "prompt": "Waarom zegt men **ο Νίκος** in plaats van gewoon **Νίκος** in een zin?",
+   "explain": "In het Grieks krijgen eigennamen in een zin bijna altijd een bepaald lidwoord.",
+   "options": [
+    "Eigennamen krijgen in het Grieks in de regel altijd een lidwoord.",
+    "'ο' betekent 'meneer'.",
+    "Alleen de mannelijke namen krijgen een extra letter.",
+    "Het klinkt mooier, maar het is niet verplicht."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m18",
+   "type": "dictation",
+   "skill": "greeting-time",
+   "level": 2,
+   "prompt": "Luister en typ in het Grieks.",
+   "explain": "Καλησπέρα (goedenavond).",
+   "text": "Καλησπέρα",
+   "lang": "el"
+  },
+  {
+   "id": "m19",
+   "type": "dictation",
+   "skill": "polite-form",
+   "level": 2,
+   "prompt": "Luister en typ (2 woorden).",
+   "explain": "Γεια σου (hallo, informeel).",
+   "text": "Γεια σου",
+   "lang": "el"
+  },
+  {
+   "id": "m20",
+   "type": "mcq",
+   "skill": "how-are-you",
+   "level": 2,
+   "prompt": "Wat betekent **Τι κάνεις** letterlijk?",
+   "explain": "Het betekent letterlijk 'wat doe je?', maar het wordt gebruikt als 'hoe gaat het?'.",
+   "options": [
+    "Wat doe je?",
+    "Hoe gaat het?",
+    "Wat is je naam?",
+    "Waar ga je heen?"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m21",
+   "type": "type",
+   "skill": "name-article",
+   "level": 2,
+   "prompt": "Welk lidwoord ontbreekt? Typ alleen dat ene woord: ___ Άννα.",
+   "explain": "Άννα is een vrouw, dus het lidwoord is 'η'.",
+   "answers": [
+    "η"
+   ],
+   "lang": "el"
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "el",
+  "minWords": 8,
+  "prompt": "Schrijf een korte kennismaking in het Grieks (ongeveer 6 korte zinnen). Begroet elkaar, vraag hoe het gaat (informeel of beleefd), zeg hoe je heet en rond af met 'aangenaam'. Je mag zelf de namen kiezen.\n\nDenk aan de tónos, de juiste sigma en de lidwoorden bij namen! Kijk pas daarna naar het model.",
+  "model": "– Γεια σου.\n– Γεια σου. Τι κάνεις;\n– Καλά, ευχαριστώ. Εσύ;\n– Πολύ καλά. Με λένε Thibaud.\n– Είμαι η Μαρία.\n– Χαίρω πολύ!",
+  "rubric": [
+   "Je gebruikt een passende begroeting (Γεια σου/σας of Καλημέρα/σπέρα).",
+   "Je vraagt hoe het gaat (Τι κάνεις of Τι κάνετε).",
+   "Je stelt jezelf voor met Με λένε... of Είμαι ο/η...",
+   "Bij 'Είμαι...' gebruik je het juiste lidwoord voor de naam (ο voor mannen, η voor vrouwen).",
+   "Je rondt af met Χαίρω πολύ (aangenaam).",
+   "Elk Grieks woord van twee of meer lettergrepen heeft een klemtoon (tónos)."
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-1",
+   "front": "Welke groet is typisch voor in de vroege avond (na 17u/18u)?",
+   "back": "Καλησπέρα (goedenavond)",
+   "skill": "greeting-time"
+  },
+  {
+   "id": "c-2",
+   "front": "Wat is het verschil in gebruik tussen Γεια σου en Γεια σας?",
+   "back": "Γεια σου = informeel (jij). Γεια σας = formeel (u) óf meervoud (jullie).",
+   "skill": "polite-form"
+  },
+  {
+   "id": "c-3",
+   "front": "Wat betekent Τι κάνεις; letterlijk, en wat bedoelen ze ermee?",
+   "back": "Letterlijk: Wat doe je? Bedoeld: Hoe gaat het?",
+   "skill": "how-are-you"
+  },
+  {
+   "id": "c-4",
+   "front": "Welke 2 manieren ken je om 'Ik ben / Ik heet [Naam]' te zeggen?",
+   "back": "Είμαι ο/η [Naam] OF Με λένε [Naam].",
+   "skill": "introduce"
+  },
+  {
+   "id": "c-5",
+   "front": "Wat is er bijzonder aan namen in het Grieks (in zinnen als 'Ik ben Anna')?",
+   "back": "Eigennamen krijgen in de regel altijd een lidwoord (ο voor mannen, η voor vrouwen).",
+   "skill": "name-article"
+  },
+  {
+   "id": "c-6",
+   "front": "Na welk werkwoord voor 'heten' valt het lidwoord voor de naam weg? (bv. '... Thibaud')",
+   "back": "Με λένε",
+   "skill": "name-article"
+  },
+  {
+   "id": "c-7",
+   "front": "Hoe maak je de meervoudsvorm (jullie / u) van Τι κάνεις; (Hoe gaat het?)",
+   "back": "Τι κάνετε;",
+   "skill": "polite-form"
+  }
+ ],
+ "sources": [
+  "Holton, Mackridge & Philippaki-Warburton, *Greek: A Comprehensive Grammar* (Routledge)",
+  "Κέντρο Ελληνικής Γλώσσας — Πιστοποίηση Ελληνομάθειας, niveau A1"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-26",
+  "adaptedFor": "Aangepast aan het feit dat er 7 dagen geen activiteit was: extra duidelijke grammaticale focus en veel herhalende productie."
+ }
+}
