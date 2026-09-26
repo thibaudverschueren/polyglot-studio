@@ -1,0 +1,958 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "automation",
+ "id": 3,
+ "roadmap": "au-03-transform",
+ "kind": "core",
+ "title": "Transformaties: Edit Fields, Split Out, Aggregate, Merge",
+ "subtitle": "Van ruwe data naar de juiste structuur: hoe je lijsten splitst, bundelt, opschoont en samenvoegt zonder complexe code.",
+ "level": "praktijk",
+ "minutes": 45,
+ "summary": "In B2B-automatiseringen kloppen de dataformaten zelden in één keer. De webshop stuurt een lijst orders, maar het boekhoudpakket eist losse facturen; je CRM en ERP geven gescheiden data die je moet combineren. Met vier kern-nodes (Edit Fields, Split Out, Aggregate, Merge) kneed je elke datastroom in de juiste vorm, zonder dat je in JavaScript hoeft te duiken.",
+ "objectives": [
+  {
+   "id": "fields",
+   "text": "Je kunt velden zetten, hernoemen en verwijderen met de Edit Fields-node."
+  },
+  {
+   "id": "split-agg",
+   "text": "Je kunt arrays opsplitsen in losse items en items weer samenvoegen met Split Out en Aggregate."
+  },
+  {
+   "id": "merge",
+   "text": "Je kunt de juiste Merge-modus (Append, Combine by Position of Fields) kiezen om meerdere datastromen te combineren."
+  },
+  {
+   "id": "clean",
+   "text": "Je kunt duplicaten verwijderen, items sorteren en de datastroom limiteren."
+  }
+ ],
+ "sections": [
+  {
+   "id": "edit-fields",
+   "title": "Data transformeren: de Edit Fields-node",
+   "md": "Je haalt data op uit een API, maar de veldnamen kloppen niet met je CRM. Of je wilt een veld toevoegen met een vaste status (bv. `state: 'nieuw'`). Vroeger gebruikte n8n hiervoor de *Set*-node. Vandaag is er de veel krachtigere **Edit Fields**-node (die onder de motorkap en in oudere tutorials nog vaak *Set* genoemd wordt).\n\nHiermee kan je vier dingen doen zonder een Code-node te gebruiken:\n\n1. **Velden toevoegen of overschrijven (Add Value)**: Wijs een vaste string, een getal, een boolean of een expressie (zoals `` `{{ $json.price * 1.21 }}` ``) toe aan een veld.\n2. **Velden hernoemen (Rename Field)**: Bv. verander `emailAddress` in simpelweg `email`.\n3. **Velden dupliceren (Duplicate Field)**.\n4. **Velden verwijderen (Remove Field / Keep Only Set)**: Dit is cruciaal voor schaalbaarheid. API's (zoals Shopify of WooCommerce) sturen vaak gigantische JSON-objecten terug. Als je al die overtollige data in je workflow houdt, wordt je browser traag, slibben je execution logs dicht en verbruik je onnodig geheugen. Gooi weg wat je niet nodig hebt!\n\n> [!tip] Code vs. No-Code\n> Voor één of twee velden is Edit Fields visueler en makkelijker leesbaar voor klanten dan een Code-node. Maar als je 15 velden moet omzetten of voorwaardelijke logica hebt (`if/else`), grijp dan meteen naar een Code-node. Dat scheelt een hoop muisklikken.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "fields",
+     "level": 1,
+     "prompt": "Waarom is het verstandig om overbodige velden te verwijderen na een zware API-request?",
+     "explain": "Minder data = minder RAM-gebruik en overzichtelijkere logs. Het heeft geen impact op de rate limits van de API zelf.",
+     "options": [
+      "Het bespaart geheugen en houdt de execution logs leesbaar",
+      "Het voorkomt 429 Rate Limit fouten bij de API",
+      "Het maakt de workflow idempotent",
+      "Het is verplicht voor de Split Out-node"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "split-agg",
+   "title": "Lijsten in en uit elkaar (Split Out & Aggregate)",
+   "md": "API's sturen vaak een object met daarin een array, bijvoorbeeld één bestelling met 5 orderlijnen in `{\"lines\": [ {…}, {…} ]}`. Als je voor elke orderlijn een aparte factuur moet boeken, moet je die array opsplitsen naar losse n8n-items.\n\n- **Split Out**: Neemt een array in een veld (bv. `lines`) en maakt voor elk element een nieuw n8n-item. De node geeft de overige velden optioneel mee. Van 1 item met 5 orderlijnen maak je **5 items**. Dit is je go-to node vóór een loop of iteratieve API-call.\n- **Aggregate**: Doet precies het omgekeerde. Stel, je hebt zojuist 10 leads verwerkt en wilt ze als één lijst naar een Slack-bericht sturen. Als je Slack direct koppelt, stuurt hij 10 losse berichten (want een node draait per item). Aggregate bundelt alle 10 items in **één nieuw item met een array**, zodat Slack maar één keer draait.\n- **Summarize**: Werkt als Aggregate, maar laat je direct groeperen (bv. per klant) en rekenen (som, gemiddelde, max, min). Dit is de no-code variant van een SQL `GROUP BY` of een JavaScript `reduce()`.\n\n> [!pitfall] Split Out mist de array\n> Als het veld dat je aan Split Out geeft geen array is (maar bv. een object of `null`), faalt de node. Controleer altijd of je doelveld echt een `[ ]` structuur is.",
+   "checks": [
+    {
+     "id": "c2",
+     "type": "mcq",
+     "skill": "split-agg",
+     "level": 1,
+     "prompt": "Wat doet de **Aggregate**-node met 5 losse items?",
+     "explain": "Aggregate bundelt items zodat latere nodes (zoals Slack of Email) maar één keer draaien met alle data.",
+     "options": [
+      "Hij voegt ze samen tot 1 item dat een array van de originele data bevat",
+      "Hij splitst ze op in 25 afzonderlijke items",
+      "Hij kiest het grootste item en gooit de rest weg",
+      "Hij filtert de dubbele items eruit"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c3",
+     "type": "numeric",
+     "skill": "split-agg",
+     "level": 2,
+     "prompt": "Een webhook brengt 2 items binnen. Elk item heeft een veld `tags` met een array van 3 strings. Je laat ze door een Split Out-node op het veld `tags` gaan. Hoeveel items komen eruit?",
+     "explain": "2 items × 3 tags = 6 items.",
+     "value": 6,
+     "abs": 0
+    }
+   ]
+  },
+  {
+   "id": "merge",
+   "title": "Datastromen samenvoegen met Merge",
+   "md": "Wanneer je data uit twee verschillende systemen ophaalt (bv. CRM-contacten uit Hubspot en ERP-facturen uit Exact), komen die samen in een **Merge**-node. De Merge-node wacht netjes tot beide inkomende takken klaar zijn en combineert ze op basis van je gekozen modus:\n\n1. **Append**: Plakt de items van Tak 2 simpelweg achter die van Tak 1. (3 items + 2 items = 5 items). Handig als je twee bronnen met identieke structuren combineert tot één lange lijst.\n2. **Combine by Position (Ritsen)**: Item 1 van Tak A wordt samengevoegd met Item 1 van Tak B, Item 2 met Item 2, enzovoort. Dit is gevaarlijk: je moet 100% zeker weten dat beide systemen exact dezelfde volgorde en aantallen retourneren. Vermijd dit in productie.\n3. **Combine by Fields (Match)**: De veiligste en meest gebruikte modus. Net als een SQL `JOIN` koppel je items op basis van een **gedeelde sleutel** (bv. `email` of `customer_id`). Je stelt in dat `Tak A.email` gelijk moet zijn aan `Tak B.klant_email`. Je kunt kiezen voor een Inner Join (alleen matches doorlaten) of een Outer Join (ook de overblijvers behouden).\n4. **Wait**: Combineert de data niet. Tak 1 pauzeert simpelweg tot Tak 2 klaar is met zijn werk, waarna Tak 1 gewoon met zijn eigen items verdergaat. Perfect om een notificatie te sturen pas nadat een zware achtergrondtaak is voltooid.\n\n> [!example] Typisch B2B scenario\n> Klant wil een maandelijks overzicht van actieve projecten (uit Asana) en de gefactureerde uren (uit Teamleader). Oplossing: Haal beide op, gebruik Merge (Combine by Fields) op `project_naam`, en gebruik dan een Markdown/HTML-node om één rapport te genereren.",
+   "checks": [
+    {
+     "id": "c4",
+     "type": "mcq",
+     "skill": "merge",
+     "level": 2,
+     "prompt": "Welke Merge-modus is in de praktijk het meest betrouwbaar om een lijst bestellingen aan een lijst klantprofielen te koppelen?",
+     "explain": "Combine by Fields werkt onafhankelijk van volgorde door exact te matchen op een ID (zoals een JOIN in SQL).",
+     "options": [
+      "Combine by Fields (matchen op bv. customer_id)",
+      "Combine by Position (ritsen op index)",
+      "Append",
+      "Wait"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "clean",
+   "title": "De stroom opschonen: Duplicates, Sort & Limit",
+   "md": "Data is in de praktijk zelden schoon. Klanten vullen formulieren twee keer in, API's sturen overlappende resultaten, of je bent aan het testen en wilt niet per ongeluk 5000 mails versturen. N8n heeft hiervoor specifieke, snelle nodes:\n\n- **Remove Duplicates**: Filtert dubbele items eruit. Je kiest op welk(e) veld(en) hij let, bv. `email`. Komt dat e-mailadres voor een tweede keer langs in de itemlijst, dan wordt dat item weggelaten. Altijd doen vóór je dure of trage API-calls uitvoert!\n- **Limit**: Laat maximaal N items door. Ontzettend nuttig tijdens het debuggen. Zet een Limit-node van `1` achter een zware database-query, zodat je de rest van je workflow snel kunt testen met één proefkonijn.\n- **Sort**: Sorteert de items alfabetisch of numeriek, oplopend of aflopend.\n\nTip voor de engineer: Hoewel je dit allemaal kunt oplossen in één enkele Code-node (met `filter`, `Set` en `sort`), maken deze ingebouwde no-code nodes je workflow veel sneller te begrijpen. Gebruik ze als visuele 'wegwijzers' voor je team of je klant.",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "mcq",
+     "skill": "clean",
+     "level": 1,
+     "prompt": "Waarom is de Limit-node populair tijdens het ontwerpen van een workflow?",
+     "explain": "Het voorkomt dat testuitvoeringen onnodig zwaar zijn of te veel e-mails/requests uitsturen.",
+     "options": [
+      "Je kunt er de output van API's mee inperken zodat je met 1 of 2 items veilig kunt testen",
+      "Het beveiligt n8n tegen geheugenlekken in de Code-node",
+      "Het garandeert dat alle items identiek zijn",
+      "Het formatteert de data volgens een strikte limiet"
+     ],
+     "answer": 0
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "fields",
+   "level": 1,
+   "prompt": "In oudere tutorials zie je vaak de **Set**-node. Welke moderne node vervangt deze voor het toevoegen of hernoemen van velden?",
+   "explain": "Set is hernoemd en uitgebreid naar Edit Fields.",
+   "options": [
+    "Edit Fields",
+    "Merge Data",
+    "Rename Field",
+    "Code Snippet"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "mcq",
+   "skill": "split-agg",
+   "level": 1,
+   "prompt": "Welke node gebruik je om één n8n-item met een array (bv. 10 orderlijnen) om te zetten naar 10 losse n8n-items?",
+   "explain": "Split Out haalt de elementen uit een array en maakt er losse items van.",
+   "options": [
+    "Split Out",
+    "Aggregate",
+    "Summarize",
+    "Edit Fields"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p03",
+   "type": "numeric",
+   "skill": "split-agg",
+   "level": 2,
+   "prompt": "Je hebt 3 items die elk een array `[ \"a\", \"b\" ]` in het veld `tags` hebben. Je voert een Split Out uit op `tags`. Hoeveel items krijg je?",
+   "explain": "3 items × 2 tags = 6 losse items.",
+   "value": 6,
+   "abs": 0
+  },
+  {
+   "id": "p04",
+   "type": "jscode",
+   "skill": "fields",
+   "level": 2,
+   "prompt": "Code-node: Herschrijf de input alsof je een Edit Fields-node gebruikt met 'Keep Only Set'. Behoud per item alleen `id` en `status`, maar hernoem `status` naar `state`.",
+   "explain": "Geef een nieuwe `json` per item terug met enkel `id` en `state`.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().map(i => ({ json: { id: i.json.id, state: i.json.status } }));",
+   "cases": [
+    {
+     "items": [
+      {
+       "id": 1,
+       "status": "open",
+       "x": 9
+      },
+      {
+       "id": 2,
+       "status": "closed",
+       "y": 0
+      }
+     ],
+     "expected": [
+      {
+       "id": 1,
+       "state": "open"
+      },
+      {
+       "id": 2,
+       "state": "closed"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p05",
+   "type": "jscode",
+   "skill": "split-agg",
+   "level": 3,
+   "prompt": "Code-node: Doe hetzelfde als een **Split Out**. De input bevat in elk item een veld `invoices` (een array). Geef exact één n8n-item per factuur terug.",
+   "explain": "Je loopt over de input-items, en daarbinnen over de array `invoices`, en je pusht elk object in de output.",
+   "mode": "all",
+   "starter": "const out = [];\nfor (const item of $input.all()) {\n  // TODO\n}\nreturn out;",
+   "solution": "const out = [];\nfor (const item of $input.all()) {\n  for (const inv of item.json.invoices) {\n    out.push({ json: inv });\n  }\n}\nreturn out;",
+   "cases": [
+    {
+     "items": [
+      {
+       "invoices": [
+        {
+         "i": 1
+        },
+        {
+         "i": 2
+        }
+       ]
+      }
+     ],
+     "expected": [
+      {
+       "i": 1
+      },
+      {
+       "i": 2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p06",
+   "type": "mcq",
+   "skill": "merge",
+   "level": 1,
+   "prompt": "Wat doet de Merge-modus **Append**?",
+   "explain": "Append (toevoegen) plaatst de volledige lijst van de ene stroom achter de andere.",
+   "options": [
+    "Plakt alle items uit Tak 2 simpelweg achteraan de items van Tak 1",
+    "Koppelt items aan elkaar op basis van een gedeelde ID",
+    "Wacht tot Tak 2 klaar is zonder de data te veranderen",
+    "Telt velden bij elkaar op tot een totaal"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p07",
+   "type": "numeric",
+   "skill": "merge",
+   "level": 2,
+   "prompt": "Tak A heeft 50 items. Tak B heeft 20 items. Je gebruikt een Merge-node op de modus **Append**. Hoeveel items komen eruit?",
+   "explain": "50 + 20 = 70.",
+   "value": 70,
+   "abs": 0
+  },
+  {
+   "id": "p08",
+   "type": "cloze",
+   "skill": "merge",
+   "level": 2,
+   "prompt": "Vul de juiste Merge-modus in.",
+   "explain": "Combine by Fields fungeert als een JOIN-operatie uit SQL.",
+   "text": "Om klantprofielen (Tak 1) en hun recente betalingen (Tak 2) betrouwbaar te koppelen op basis van hun e-mailadres, gebruik je in de Merge-node de modus Combine by {{Fields}} (Match)."
+  },
+  {
+   "id": "p09",
+   "type": "jscode",
+   "skill": "split-agg",
+   "level": 2,
+   "prompt": "Code-node: Bundel alle input-items tot één item, vergelijkbaar met **Aggregate**. De input bevat het veld `email`. Output: exact 1 item met in het veld `emails` de array van alle adressen.",
+   "explain": "De returnwaarde moet een array zijn met 1 element: `[{ json: { emails: [...] } }]`.",
+   "mode": "all",
+   "starter": "return [{ json: { emails: [] } }];",
+   "solution": "return [{ json: { emails: $input.all().map(i => i.json.email) } }];",
+   "cases": [
+    {
+     "items": [
+      {
+       "email": "a@x.be"
+      },
+      {
+       "email": "b@y.be"
+      }
+     ],
+     "expected": [
+      {
+       "emails": [
+        "a@x.be",
+        "b@y.be"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p10",
+   "type": "numeric",
+   "skill": "clean",
+   "level": 2,
+   "prompt": "Je ontvangt 8 leads in n8n. Twee van die leads hebben exact hetzelfde e-mailadres, de rest is uniek. Je gebruikt **Remove Duplicates** op het e-mailveld. Hoeveel items hou je over?",
+   "explain": "De tweede iteratie van het dubbele adres wordt weggegooid. 8 - 1 = 7.",
+   "value": 7,
+   "abs": 0
+  },
+  {
+   "id": "p11",
+   "type": "mcq",
+   "skill": "clean",
+   "level": 1,
+   "prompt": "Welke node gebruik je om te garanderen dat een HTTP-request hoogstens 5 keer draait, ook al komen er 100 items binnen?",
+   "explain": "Limit verkleint de lijst items tot een ingesteld maximum.",
+   "options": [
+    "Limit",
+    "Remove Duplicates",
+    "Filter",
+    "Split Out"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p12",
+   "type": "cloze",
+   "skill": "split-agg",
+   "level": 2,
+   "prompt": "Welke krachtige variant van Aggregate zoek je?",
+   "explain": "Summarize combineert bundelen met groeperen (GROUP BY) en berekeningen (som, gemiddelde).",
+   "text": "Als je niet zomaar een array wilt maken, maar meteen wilt groeperen per afdeling en de omzet wilt optellen, dan is de {{Summarize}} node de beste no-code oplossing."
+  },
+  {
+   "id": "p13",
+   "type": "match",
+   "skill": "merge",
+   "level": 1,
+   "prompt": "Koppel de Merge-modi aan hun gedrag.",
+   "explain": "Begrijp goed het verschil tussen Append (plakken) en Combine by Fields (koppelen/JOIN).",
+   "pairs": [
+    [
+     "Append",
+     "Plakt de twee lijsten achter elkaar"
+    ],
+    [
+     "Combine by Position",
+     "Ritst items aan elkaar op basis van hun volgorde (index)"
+    ],
+    [
+     "Combine by Fields",
+     "Koppelt items aan elkaar op basis van een gedeeld veld (als een SQL JOIN)"
+    ],
+    [
+     "Wait",
+     "Pauzeert de ene tak totdat de andere tak klaar is"
+    ]
+   ]
+  },
+  {
+   "id": "p14",
+   "type": "jsexpr",
+   "skill": "split-agg",
+   "level": 2,
+   "prompt": "Er is net een **Aggregate** uitgevoerd op een grote dataset. Je krijgt 1 item binnen met daarin het veld `data` (een array). Schrijf de expressie die het **aantal elementen** in die array telt.",
+   "explain": "`` `{{ $json.data.length }}` `` telt elementen in JavaScript-arrays.",
+   "input": {
+    "data": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   "expected": 5,
+   "solution": "{{ $json.data.length }}"
+  },
+  {
+   "id": "p15",
+   "type": "jscode",
+   "skill": "clean",
+   "level": 3,
+   "prompt": "Code-node: Verwijder duplicaten (zoals de node **Remove Duplicates** dat doet) op basis van het veld `company`. Behoud alleen het eerste item per bedrijf.",
+   "explain": "Gebruik een `Set` om efficiënt bij te houden welke bedrijven je al verwerkt hebt.",
+   "mode": "all",
+   "starter": "const seen = new Set();\nreturn $input.all().filter(i => {\n  // TODO\n  return true;\n});",
+   "solution": "const seen = new Set();\nreturn $input.all().filter(i => {\n  if (seen.has(i.json.company)) return false;\n  seen.add(i.json.company);\n  return true;\n});",
+   "cases": [
+    {
+     "items": [
+      {
+       "company": "Acme"
+      },
+      {
+       "company": "Acme"
+      },
+      {
+       "company": "Beta"
+      },
+      {
+       "company": "Acme"
+      }
+     ],
+     "expected": [
+      {
+       "company": "Acme"
+      },
+      {
+       "company": "Beta"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p16",
+   "type": "explain",
+   "skill": "merge",
+   "level": 3,
+   "prompt": "Klantvraag: *“We vangen twee webhooks op: de ene met profielen uit ons CRM (e-mail, naam), de andere met betalingen uit Stripe (e-mail, bedrag). Hoe krijgen we die in n8n betrouwbaar per klant samen in één gecombineerd blokje data?”* Leg de oplossing helder uit aan de klant (max 3 zinnen).",
+   "explain": "Leg de technische oplossing uit in termen die een klant begrijpt.",
+   "model": "We sturen beide datastromen naar een 'Merge'-stap in n8n. Die stellen we in op de modus 'Combine by Fields' met het e-mailadres als koppelveld. Net als bij een ritssluiting zoekt het systeem voor elk CRM-profiel de betaling met precies datzelfde e-mailadres en voegt ze netjes samen tot één verrijkt profiel.",
+   "rubric": [
+    "Benoemt de Merge-node",
+    "Benoemt de modus 'Combine by Fields' (of 'Match')",
+    "Noemt het e-mailadres expliciet als sleutel/koppelveld"
+   ]
+  },
+  {
+   "id": "p17",
+   "type": "cloze",
+   "skill": "fields",
+   "level": 2,
+   "prompt": "Hoe gooi je overbodige velden weg?",
+   "explain": "Keep Only Set wist alles behalve wat je expliciet instelt.",
+   "text": "Wil je een gigantische API-response inkrimpen tot enkel de velden die je nodig hebt, dan vink je in de Edit Fields-node de optie 'Keep Only {{Set}}' aan, of je kiest voor 'Fields to Remove'."
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "cloze",
+   "skill": "fields",
+   "level": 1,
+   "prompt": "Vul de correcte node in.",
+   "explain": "Set is de oude naam voor Edit Fields.",
+   "text": "De node die vroeger Set heette en waarmee je properties toevoegt, verwijdert of hernoemt, heet nu de {{Edit Fields|Edit fields}} node."
+  },
+  {
+   "id": "m02",
+   "type": "mcq",
+   "skill": "fields",
+   "level": 2,
+   "prompt": "Je haalt data op uit Shopify en 95% van de velden heb je niet nodig in de rest van de flow. Waarom zet je een Edit Fields (met Keep Only Set) direct na de Shopify-node?",
+   "explain": "Grote ongebruikte JSON-objecten vertragen n8n en vullen je harde schijf via de execution logs.",
+   "options": [
+    "Om geheugen te besparen en je execution logs werkbaar te houden",
+    "Om een 429 Too Many Requests-fout bij de externe API te vermijden",
+    "Om te voorkomen dat een Split Out-node verderop in de flow faalt",
+    "Om het succes-antwoord (HTTP 200) sneller terug te kunnen sturen"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m03",
+   "type": "jscode",
+   "skill": "fields",
+   "level": 2,
+   "prompt": "Code-node: Voeg aan elk item de property `processed` met waarde `true` toe, en verwijder de property `temp_data` (als die bestaat).",
+   "explain": "Gebruik destructuring (spread) en de `delete`-operator op de eigenschap.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().map(i => {\n  const json = { ...i.json, processed: true };\n  delete json.temp_data;\n  return { json };\n});",
+   "cases": [
+    {
+     "items": [
+      {
+       "id": 1,
+       "temp_data": "x"
+      },
+      {
+       "id": 2,
+       "name": "B"
+      }
+     ],
+     "expected": [
+      {
+       "id": 1,
+       "processed": true
+      },
+      {
+       "id": 2,
+       "name": "B",
+       "processed": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m04",
+   "type": "numeric",
+   "skill": "split-agg",
+   "level": 2,
+   "prompt": "Een webhook brengt 1 item binnen. In het veld `lines` zit een array met 50 orderlijnen. De stroom gaat naar **Split Out** (op `lines`) en daarna naar **Edit Fields**. Hoeveel keer draait de Edit Fields-node in de achtergrond?",
+   "explain": "Split Out maakt er 50 items van; nodes draaien één keer per item (tenzij Execute Once aan staat). Dus 50 keer.",
+   "value": 50,
+   "abs": 0
+  },
+  {
+   "id": "m05",
+   "type": "mcq",
+   "skill": "split-agg",
+   "level": 2,
+   "prompt": "Wat is het belangrijkste verschil tussen **Aggregate** en **Summarize**?",
+   "explain": "Aggregate stopt alles simpel in een lijst. Summarize is veel geavanceerder.",
+   "options": [
+    "Aggregate bundelt items plat in een simpele array; Summarize kan de data ook groeperen en totalen berekenen",
+    "Summarize is alleen voor getallen; Aggregate werkt alleen op tekst",
+    "Aggregate splitst arrays op; Summarize bundelt ze weer",
+    "Er is geen verschil, ze zijn 100% identiek"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m06",
+   "type": "jsexpr",
+   "skill": "split-agg",
+   "level": 2,
+   "prompt": "Na een **Aggregate** krijg je 1 item met het veld `leads` (een array). Schrijf de expressie die telt hoeveel elementen in `leads` zitten.",
+   "explain": "Gebruik `.length` op de array.",
+   "input": {
+    "leads": [
+     "x",
+     "y",
+     "z"
+    ]
+   },
+   "expected": 3,
+   "solution": "{{ $json.leads.length }}"
+  },
+  {
+   "id": "m07",
+   "type": "cloze",
+   "skill": "merge",
+   "level": 1,
+   "prompt": "Hoe heet deze Merge-modus?",
+   "explain": "Append = toevoegen achteraan.",
+   "text": "De Merge-modus die de items uit tak 2 simpelweg toevoegt achteraan de items van tak 1, heet {{Append}}."
+  },
+  {
+   "id": "m08",
+   "type": "order",
+   "skill": "merge",
+   "level": 2,
+   "prompt": "Zet de stappen in de juiste volgorde om twee datastromen aan elkaar te matchen (JOIN).",
+   "explain": "Zonder gedeelde ID weet Combine by Fields niet hoe hij moet matchen.",
+   "tiles": [
+    "Zorg dat beide takken een gedeelde ID hebben (bv. email)",
+    "Verbind beide takken met de inputs van een Merge-node",
+    "Stel de Merge in op modus 'Combine by Fields'",
+    "Kies de gedeelde ID als het Field to Match op beide takken"
+   ]
+  },
+  {
+   "id": "m09",
+   "type": "cloze",
+   "skill": "clean",
+   "level": 1,
+   "prompt": "Dubbele items weggooien.",
+   "explain": "Remove Duplicates is robuuster dan het zelf schrijven.",
+   "text": "Om dubbele contacten eruit te filteren op basis van hun e-mailadres (als ze 2 keer voorkomen in je lijst), gebruik je de speciale node {{Remove Duplicates}}."
+  },
+  {
+   "id": "m10",
+   "type": "numeric",
+   "skill": "clean",
+   "level": 2,
+   "prompt": "Je hebt 10 input-items. Je gebruikt een **Limit**-node ingesteld op 3. Hoeveel items hou je over?",
+   "explain": "Limit blokkeert de stroom nadat het maximum bereikt is.",
+   "value": 3,
+   "abs": 0
+  },
+  {
+   "id": "m11",
+   "type": "mcq",
+   "skill": "clean",
+   "level": 1,
+   "prompt": "Wat is een bekende best practice (use case) voor de **Limit**-node?",
+   "explain": "Tijdens ontwikkeling minimaliseert dit wachttijden en rate-limit risico's.",
+   "options": [
+    "Voorkomen dat je per ongeluk een zware API 1000 keer aanroept tijdens het testen en bouwen",
+    "Ervoor zorgen dat een array nooit meer dan 10 elementen bevat bij een Split Out",
+    "Controleren hoeveel tekens er maximaal in een veld staan",
+    "Voorkomen dat workflows te lang duren en een timeout fout geven"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m12",
+   "type": "jscode",
+   "skill": "split-agg",
+   "level": 2,
+   "prompt": "Code-node: Aggregate. Geef **exact 1 item** terug met in het veld `ids` een array van alle `id`'s uit de input-items.",
+   "explain": "`.map` haalt de id's op, en je geeft een array met 1 JSON-object terug.",
+   "mode": "all",
+   "starter": "return [{ json: { ids: [] } }];",
+   "solution": "return [{ json: { ids: $input.all().map(i => i.json.id) } }];",
+   "cases": [
+    {
+     "items": [
+      {
+       "id": 10
+      },
+      {
+       "id": 15
+      },
+      {
+       "id": 99
+      }
+     ],
+     "expected": [
+      {
+       "ids": [
+        10,
+        15,
+        99
+       ]
+      }
+     ]
+    },
+    {
+     "items": [],
+     "expected": [
+      {
+       "ids": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m13",
+   "type": "numeric",
+   "skill": "merge",
+   "level": 2,
+   "prompt": "Tak A heeft 4 items. Tak B heeft 6 items. Een Merge-node in **Append**-modus combineert ze. Hoeveel items zijn de output?",
+   "explain": "Append = 4 + 6 = 10 items.",
+   "value": 10,
+   "abs": 0
+  },
+  {
+   "id": "m14",
+   "type": "type",
+   "skill": "fields",
+   "level": 1,
+   "prompt": "Welke n8n-node gebruik je idealiter om snel 1 property te hernoemen zonder code te schrijven? (Twee woorden, Engelse term)",
+   "explain": "Edit Fields is daarvoor ontworpen.",
+   "answers": [
+    "Edit Fields",
+    "Edit fields",
+    "edit fields",
+    "Set",
+    "set"
+   ]
+  },
+  {
+   "id": "m15",
+   "type": "cloze",
+   "skill": "split-agg",
+   "level": 2,
+   "prompt": "Van 10 naar 1.",
+   "explain": "Aggregate verzamelt alles en geeft je 1 item met één grote array erin.",
+   "text": "Om van een stroom van 10 n8n-items één enkel item met een array te maken, gebruik je de {{Aggregate}} node."
+  },
+  {
+   "id": "m16",
+   "type": "jscode",
+   "skill": "clean",
+   "level": 2,
+   "prompt": "Code-node: Simuleer een **Limit**-node ingesteld op maximaal 2. Geef de eerste 2 items door (of minder, als de input kleiner is).",
+   "explain": "Gebruik `.slice(0, 2)` op `$input.all()`.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().slice(0, 2);",
+   "cases": [
+    {
+     "items": [
+      {
+       "v": 1
+      },
+      {
+       "v": 2
+      },
+      {
+       "v": 3
+      }
+     ],
+     "expected": [
+      {
+       "v": 1
+      },
+      {
+       "v": 2
+      }
+     ]
+    },
+    {
+     "items": [
+      {
+       "v": 1
+      }
+     ],
+     "expected": [
+      {
+       "v": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m17",
+   "type": "jscode",
+   "skill": "merge",
+   "level": 3,
+   "prompt": "Code-node: Simuleer de Merge-modus **Append**. Tak A (deze node) heeft items. In Tak B (naam: `Tak B`) staan ook items. Geef in code alle items uit Tak A terug, gevolgd door alle items uit Tak B.",
+   "explain": "In n8n levert `$('Tak B').all()` ook een array met `{ json: ... }` objecten. Je combineert ze met de spread-operator `...`.",
+   "mode": "all",
+   "starter": "return [];",
+   "solution": "return [...$input.all(), ...$('Tak B').all()];",
+   "cases": [
+    {
+     "items": [
+      {
+       "a": 1
+      }
+     ],
+     "nodes": {
+      "Tak B": [
+       {
+        "b": 2
+       }
+      ]
+     },
+     "expected": [
+      {
+       "a": 1
+      },
+      {
+       "b": 2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m18",
+   "type": "jscode",
+   "skill": "clean",
+   "level": 2,
+   "prompt": "Code-node: Simuleer een Sort-node. Sorteer de items **aflopend** op het veld `score` (hoogste score eerst).",
+   "explain": "Array.sort() kan een custom compare-functie aannemen. B - A geeft aflopend.",
+   "mode": "all",
+   "starter": "const items = $input.all();\n// TODO: sorteer aflopend op score\nreturn items;",
+   "solution": "const items = $input.all();\nitems.sort((a, b) => b.json.score - a.json.score);\nreturn items;",
+   "cases": [
+    {
+     "items": [
+      {
+       "score": 10
+      },
+      {
+       "score": 50
+      },
+      {
+       "score": 20
+      }
+     ],
+     "expected": [
+      {
+       "score": 50
+      },
+      {
+       "score": 20
+      },
+      {
+       "score": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m19",
+   "type": "numeric",
+   "skill": "split-agg",
+   "level": 3,
+   "prompt": "Je webhook krijgt een array van 2 facturen. In élke factuur zit een array van 3 orderlijnen. De stroom loopt door een Split Out (facturen), en direct daarna nóg een Split Out (orderlijnen). Hoeveel items houd je over?",
+   "explain": "De eerste split maakt er 2 items van. Elk item heeft 3 orderlijnen. De tweede split maakt van die 2 items in totaal 6 items.",
+   "value": 6,
+   "abs": 0
+  },
+  {
+   "id": "m20",
+   "type": "mcq",
+   "skill": "merge",
+   "level": 3,
+   "prompt": "Je hebt 1 klant (Tak A) en 5 taken (Tak B) die bij die klant horen. Waarom lukt het **NIET** direct met Merge (Combine by Fields) om het klantitem als output te krijgen met een array `tasks: [...]` erin?",
+   "explain": "Merge (Combine) levert M items op en zet niet automatisch data netjes in een array. Daarvoor moet je na de Merge een Summarize gebruiken of complexe expressies schrijven.",
+   "options": [
+    "De node levert 5 aparte items op (met de klantdata gekopieerd), geen geneste array.",
+    "De Combine by Fields-modus vereist dat Tak A en Tak B exact evenveel items hebben.",
+    "De Merge-node negeert automatisch array-waarden om geheugenlekken te voorkomen.",
+    "De inputs moeten eerst door een Split Out-node voordat je ze kunt samenvoegen."
+   ],
+   "answer": 0
+  }
+ ],
+ "production": {
+  "type": "jscode",
+  "mode": "all",
+  "prompt": "**Klantopdracht.** Een webhook levert losse declaraties (items) van medewerkers aan. De manager wil aan het eind van de workflow per medewerker één totaal. Bouw een Code-node (Run Once for All Items) die de declaraties groepeert. Bereken per `employee_id` de som van `amount` (zorg met conversie dat het zeker een getal is). Geef de output als **één item per medewerker** terug met de velden `{ employee_id, total }`.",
+  "model": "Uitleg van de Code-oplossing: We gebruiken een dictionary/object (`groups`) om de bedragen per `employee_id` op te tellen. We zetten `item.json.amount` veilig om naar een Number. Tot slot lopen we via `for...in` over die groepen en bouwen we de correcte n8n array met `{ json: { ... } }` objecten op.",
+  "rubric": [
+   "Gebruikt reduce of een iteratie met een dictionary/object",
+   "Zet `amount` om naar een Number met `Number()` of `parseFloat()`",
+   "Telt bedragen correct op per medewerker",
+   "Geeft een array van n8n-items (`{ json: ... }`) terug"
+  ],
+  "starter": "// Groepeer declaraties per employee_id en bereken het totaal.\n// Output: 1 item per medewerker met { employee_id, total }\nconst groups = {};\nfor (const item of $input.all()) {\n  const emp = item.json.employee_id;\n  const amt = Number(item.json.amount);\n  // TODO: groepeer in 'groups' \n}\n\nconst out = [];\n// TODO: vul 'out' met nieuwe n8n-items\nreturn out;",
+  "solution": "const groups = {};\nfor (const item of $input.all()) {\n  const emp = item.json.employee_id;\n  const amt = Number(item.json.amount);\n  if (!groups[emp]) groups[emp] = 0;\n  groups[emp] += amt;\n}\n\nconst out = [];\nfor (const emp in groups) {\n  out.push({ json: { employee_id: emp, total: groups[emp] } });\n}\nreturn out;",
+  "cases": [
+   {
+    "name": "meerdere declaraties per medewerker",
+    "items": [
+     {
+      "employee_id": "EMP1",
+      "amount": 50
+     },
+     {
+      "employee_id": "EMP2",
+      "amount": "10.5"
+     },
+     {
+      "employee_id": "EMP1",
+      "amount": 25
+     }
+    ],
+    "expected": [
+     {
+      "employee_id": "EMP1",
+      "total": 75
+     },
+     {
+      "employee_id": "EMP2",
+      "total": 10.5
+     }
+    ]
+   },
+   {
+    "name": "lege input array",
+    "items": [],
+    "expected": []
+   }
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-edit-fields",
+   "front": "Welke node gebruik je in n8n om snel velden te hernoemen, overschrijven of toe te voegen (zonder code)?",
+   "back": "**Edit Fields** (vroeger: Set)",
+   "answers": [
+    "Edit Fields",
+    "Edit fields",
+    "Set"
+   ],
+   "lang": "nl",
+   "skill": "fields"
+  },
+  {
+   "id": "c-split",
+   "front": "Welke node neemt een array in één item en splitst deze op in losse items?",
+   "back": "**Split Out**",
+   "answers": [
+    "Split Out"
+   ],
+   "lang": "nl",
+   "skill": "split-agg"
+  },
+  {
+   "id": "c-agg",
+   "front": "Welke node bundelt alle binnenkomende items samen tot één item dat een array bevat?",
+   "back": "**Aggregate** (of Summarize)",
+   "answers": [
+    "Aggregate",
+    "Summarize"
+   ],
+   "lang": "nl",
+   "skill": "split-agg"
+  },
+  {
+   "id": "c-merge-append",
+   "front": "Welke Merge-modus plakt de items uit twee takken blind achter elkaar (lijst wordt langer)?",
+   "back": "**Append**",
+   "answers": [
+    "Append"
+   ],
+   "lang": "en",
+   "skill": "merge"
+  },
+  {
+   "id": "c-merge-fields",
+   "front": "Welke Merge-modus werkt zoals een SQL JOIN (koppelt items uit takken aan elkaar op basis van een ID)?",
+   "back": "**Combine by Fields** (of Match)",
+   "answers": [
+    "Combine by Fields",
+    "Match"
+   ],
+   "lang": "en",
+   "skill": "merge"
+  },
+  {
+   "id": "c-limit",
+   "front": "Welke node gebruik je om tijdens het bouwen maximaal N items door te laten om zware testen te vermijden?",
+   "back": "**Limit**",
+   "answers": [
+    "Limit"
+   ],
+   "lang": "nl",
+   "skill": "clean"
+  },
+  {
+   "id": "c-dedup",
+   "front": "Welke node filtert dubbele elementen (op basis van bv. een e-mailveld) efficiënt uit de datastroom?",
+   "back": "**Remove Duplicates**",
+   "answers": [
+    "Remove Duplicates"
+   ],
+   "lang": "en",
+   "skill": "clean"
+  }
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-26",
+  "adaptedFor": "Tempo ligt momenteel laag; de theorie is compact gehouden en via de oefeningen direct verbonden aan veelgebruikte B2B praktijkscenario's om snel hands-on resultaat te zien."
+ }
+}
