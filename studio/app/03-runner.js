@@ -25,7 +25,7 @@ PS.items.flip = {
   correctText(v) { return v.item.back; },
   answerText() { return ''; },
 };
-function langAttrC(lang) { return lang === 'el' || lang === 'fr' ? ` lang="${lang}"` : ''; }
+function langAttrC(lang) { return lang === 'el' || lang === 'fr' || lang === 'es' ? ` lang="${lang}"` : ''; }
 
 PS.Runner = class {
   /**

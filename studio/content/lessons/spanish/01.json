@@ -1,0 +1,1068 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "spanish",
+ "id": 1,
+ "roadmap": "es-a1-01-sonidos",
+ "title": "Klanken, klemtoon en je eerste gesprek",
+ "subtitle": "Vijf zuivere klinkers, medeklinkers met een eigen regel, de klemtoonregels en de tilde — en je eerste gesprek",
+ "level": "A1",
+ "minutes": 40,
+ "summary": "Spaans lees je zoals je het schrijft — als je drie dingen beheerst: de klanken, de klemtoon en de tilde. Daarmee spreek je elk nieuw woord meteen goed uit en schrijf je het foutloos. Je sluit af met je eerste gesprek: begroeten en jezelf voorstellen.",
+ "objectives": [
+  {
+   "id": "klanken",
+   "text": "Je spreekt de vijf klinkers en de lastige medeklinkers (c/z, g/j, ll/y, ñ, r/rr, h) correct uit en herkent ze als je ze hoort."
+  },
+  {
+   "id": "klemtoon",
+   "text": "Je bepaalt waar de klemtoon valt met de twee regels (llana en aguda) en herkent de esdrújulas."
+  },
+  {
+   "id": "tilde",
+   "text": "Je weet wanneer een woord een geschreven tilde krijgt, ook in het meervoud en bij de tilde diacrítica (tú/tu, sí/si …)."
+  },
+  {
+   "id": "leestekens",
+   "text": "Je schrijft vraag- en uitroepzinnen met ¿ en ¡ en met de tilde op het vraagwoord."
+  },
+  {
+   "id": "begroeten",
+   "text": "Je begroet, stelt je voor en vraagt naar naam en herkomst, informeel (tú) en formeel (usted)."
+  }
+ ],
+ "vocab": [
+  {
+   "term": "hola",
+   "meaning": "hallo"
+  },
+  {
+   "term": "buenos días",
+   "meaning": "goedemorgen"
+  },
+  {
+   "term": "buenas tardes",
+   "meaning": "goedemiddag (tot het donker wordt)"
+  },
+  {
+   "term": "buenas noches",
+   "meaning": "goedenavond; goedenacht"
+  },
+  {
+   "term": "¿qué tal?",
+   "meaning": "hoe gaat het?"
+  },
+  {
+   "term": "me llamo",
+   "meaning": "ik heet"
+  },
+  {
+   "term": "soy de",
+   "meaning": "ik kom uit"
+  },
+  {
+   "term": "encantado / encantada",
+   "meaning": "aangenaam (man / vrouw)"
+  },
+  {
+   "term": "mucho gusto",
+   "meaning": "aangenaam"
+  },
+  {
+   "term": "hasta luego",
+   "meaning": "tot straks"
+  }
+ ],
+ "diagnostic": {
+  "intro": "Heb je al wat Spaans gehad, of nog helemaal niet? Deze test gaat van A1 tot B2. Met je Frans kan je veel raden — doe dat gerust, maar kies ‘Weet ik niet’ als je echt geen idee hebt. Zo schat je coach je niveau eerlijk in en begint hij morgen op de juiste plek.",
+  "bands": [
+   "A1",
+   "A2",
+   "B1",
+   "B2"
+  ],
+  "items": [
+   {
+    "id": "d01",
+    "type": "cloze",
+    "skill": "ser",
+    "level": 1,
+    "prompt": "Vul de juiste vorm van **ser** in.",
+    "explain": "*ser* voor herkomst: *yo soy*.",
+    "text": "Yo {{soy}} de Bélgica.",
+    "lang": "es",
+    "band": "A1"
+   },
+   {
+    "id": "d02",
+    "type": "mcq",
+    "skill": "pronombres",
+    "level": 1,
+    "prompt": "¿Cómo ___ llamas?",
+    "explain": "*llamarse*: tú → *te llamas*.",
+    "options": [
+     "te",
+     "se",
+     "me",
+     "le"
+    ],
+    "answer": 0,
+    "band": "A1"
+   },
+   {
+    "id": "d03",
+    "type": "type",
+    "skill": "saludos",
+    "level": 1,
+    "prompt": "Vertaal: **goedemorgen**.",
+    "explain": "*Buenos días* — met een tilde op *días*.",
+    "answers": [
+     "buenos días"
+    ],
+    "lang": "es",
+    "band": "A1",
+    "errors": [
+     {
+      "match": "buenos dias",
+      "feedback": "Bijna: *días* heeft een tilde (dí-as).",
+      "tag": "tilde"
+     }
+    ]
+   },
+   {
+    "id": "d04",
+    "type": "cloze",
+    "skill": "indefinido",
+    "level": 2,
+    "prompt": "Vul de verleden tijd van **ir** in (ik).",
+    "explain": "*ir* → *fui* (indefinido), zonder tilde.",
+    "text": "Ayer {{fui}} al cine con mis amigos.",
+    "lang": "es",
+    "band": "A2"
+   },
+   {
+    "id": "d05",
+    "type": "mcq",
+    "skill": "gustar",
+    "level": 2,
+    "prompt": "Me ___ mucho el chocolate.",
+    "explain": "Het onderwerp is *el chocolate* (enkelvoud) → *gusta*.",
+    "options": [
+     "gusta",
+     "gustan",
+     "gusto",
+     "gustas"
+    ],
+    "answer": 0,
+    "band": "A2"
+   },
+   {
+    "id": "d06",
+    "type": "cloze",
+    "skill": "imperfecto",
+    "level": 2,
+    "prompt": "Vul het imperfecto van **vivir** in (ik).",
+    "explain": "Gewoonte in het verleden → imperfecto *vivía*.",
+    "text": "Cuando era niño, {{vivía}} en Madrid.",
+    "lang": "es",
+    "band": "A2"
+   },
+   {
+    "id": "d07",
+    "type": "cloze",
+    "skill": "subjuntivo",
+    "level": 3,
+    "prompt": "Vul de juiste vorm van **tener** in.",
+    "explain": "*Esperar que* + subjuntivo: *tengas*.",
+    "text": "Espero que {{tengas}} un buen viaje.",
+    "lang": "es",
+    "band": "B1"
+   },
+   {
+    "id": "d08",
+    "type": "mcq",
+    "skill": "condicional",
+    "level": 3,
+    "prompt": "Si tuviera dinero, ___ una casa.",
+    "explain": "Si + imperfecto de subjuntivo → condicional.",
+    "options": [
+     "compraría",
+     "compraré",
+     "compro",
+     "comprara"
+    ],
+    "answer": 0,
+    "band": "B1"
+   },
+   {
+    "id": "d09",
+    "type": "mcq",
+    "skill": "por-para",
+    "level": 2,
+    "prompt": "Trabajo ___ ganar dinero.",
+    "explain": "Doel → *para*.",
+    "options": [
+     "para",
+     "por",
+     "de",
+     "a"
+    ],
+    "answer": 0,
+    "band": "B1"
+   },
+   {
+    "id": "d10",
+    "type": "cloze",
+    "skill": "condicional-pasado",
+    "level": 3,
+    "prompt": "Vul de juiste vorm van **haber** in.",
+    "explain": "Irreëel verleden: si + pluscuamperfecto de subjuntivo.",
+    "text": "Si lo {{hubiera|hubiese}} sabido, te lo habría dicho.",
+    "lang": "es",
+    "band": "B2"
+   },
+   {
+    "id": "d11",
+    "type": "mcq",
+    "skill": "concordancia",
+    "level": 3,
+    "prompt": "Me pidió que le ___ el informe antes del viernes.",
+    "explain": "Hoofdzin in het verleden → imperfecto de subjuntivo.",
+    "options": [
+     "enviara",
+     "envíe",
+     "envío",
+     "enviaré"
+    ],
+    "answer": 0,
+    "band": "B2"
+   },
+   {
+    "id": "d12",
+    "type": "cloze",
+    "skill": "relativos",
+    "level": 3,
+    "prompt": "Vul het betrekkelijk voornaamwoord in.",
+    "explain": "*cuyo* stemt overeen met *director* (m. enk.).",
+    "text": "La empresa, {{cuyo}} director es belga, abre una sede en Gante.",
+    "lang": "es",
+    "band": "B2"
+   },
+   {
+    "id": "d13",
+    "type": "mcq",
+    "skill": "falsos-amigos",
+    "level": 2,
+    "prompt": "Wat betekent **embarazada**?",
+    "explain": "Valse vriend: *embarazada* = zwanger (≠ *embarrassée*).",
+    "options": [
+     "zwanger",
+     "beschaamd",
+     "in verlegenheid",
+     "verrast"
+    ],
+    "answer": 0,
+    "band": "B1"
+   }
+  ]
+ },
+ "sections": [
+  {
+   "id": "klinkers",
+   "title": "Vijf zuivere klinkers — en alles wordt uitgesproken",
+   "md": "Spaans is een van de makkelijkste talen om uit te spreken: je zegt (bijna) wat je schrijft en je schrijft wat je zegt. Met je Frans heb je een voorsprong, maar let op drie verschillen die Franstaligen hun hele leven verraden.\n\n| | Frans | Spaans |\n|---|---|---|\n| Klinkers | veel klinkers, ook nasale (*un, on, an*) | **vijf** heldere klinkers — nooit nasaal: [[es:con]] klinkt als *kon*, niet als *con* |\n| Eindletters | vaak stom (*petit, ils parlent*) | **alles** wordt uitgesproken: [[es:hablan]], [[es:Madrid]], [[es:reloj]] |\n| Klemtoon | altijd op de laatste lettergreep | volgt **regels** en valt meestal op de voorlaatste: [[es:palabra]] |\n\nDe vijf klinkers zijn **kort en zuiver**, zonder het ‘naglijden’ van de Nederlandse *ee* of *oo*:\n\n| Klinker | Klinkt als | Voorbeeld |\n|---|---|---|\n| a | *a* in *kat*, maar helderder | [[es:casa]] |\n| e | *e* in *pet* | [[es:mesa]] |\n| i | *ie* in *niet* | [[es:vino]] |\n| o | *o* in *pot* | [[es:todo]] |\n| u | *oe* in *boek* | [[es:mucho]] |\n\nStaan twee klinkers naast elkaar, dan hoor je ze **allebei**: [[es:bueno]] is *boe-é-no* in één vloeiende beweging, [[es:euro]] is *é-oe-ro* — niet de Nederlandse *eu*.\n\n> [!tip] Tik op elk Spaans woord\n> Woorden met een stippellijn kan je aantikken om ze te horen. Zeg ze meteen hardop na: uitspraak leer je met je mond, niet met je ogen.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "klanken",
+     "level": 1,
+     "prompt": "Hoeveel klinkerklanken heeft het Spaans?",
+     "explain": "Vijf: a, e, i, o, u — zuiver en nooit nasaal.",
+     "options": [
+      "vijf",
+      "zeven",
+      "tien",
+      "twaalf"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "medeklinkers",
+   "title": "Medeklinkers met een eigen regel",
+   "md": "De meeste medeklinkers klinken zoals je verwacht. Deze hebben een eigen regel — en precies die maken het verschil tussen ‘verstaanbaar’ en ‘goed’.\n\n| Spelling | Klank | Voorbeelden |\n|---|---|---|\n| **c** + e/i, **z** | in Spanje als Engelse *th* in *think*; in Latijns-Amerika als *s* (*seseo*) | [[es:cena]], [[es:cinco]], [[es:zapato]] |\n| **c** + a/o/u, **qu** | *k* (de u na q hoor je niet) | [[es:casa]], [[es:queso]], [[es:quince]] |\n| **j**, **g** + e/i | harde *ch* zoals in *lachen* | [[es:jamón]], [[es:gente]], [[es:joven]] |\n| **g** + a/o/u, **gu** + e/i | *g* zoals in het Franse *gare* | [[es:gato]], [[es:guerra]], [[es:guitarra]] |\n| **gü** + e/i | de u hoor je wél | [[es:pingüino]], [[es:bilingüe]] |\n| **h** | altijd **stom** | [[es:hola]], [[es:hablar]], [[es:hotel]] |\n| **ll**, **y** | meestal als *j* in *ja* (*yeísmo*) | [[es:llamar]], [[es:calle]], [[es:yo]] |\n| **ñ** | *nj* zoals in het Franse *campagne* | [[es:España]], [[es:mañana]], [[es:año]] |\n| **r** tussen klinkers | één tik van de tong | [[es:pero]], [[es:caro]] |\n| **rr**, **r** vooraan | gerold | [[es:perro]], [[es:carro]], [[es:rojo]] |\n| **b**, **v** | klinken **hetzelfde** (*b*, zacht tussen klinkers) | [[es:vino]], [[es:Bélgica]] |\n| **ch** | *tsj* | [[es:mucho]], [[es:chocolate]] |\n\nDe **x** klinkt meestal als *ks* ([[es:taxi]]), maar in *México* en *Texas* als de Spaanse *j*.\n\n> [!pitfall] Eén letter, een ander woord\n> *pero* (maar) ≠ *perro* (hond) · *caro* (duur) ≠ *carro* (kar; in Latijns-Amerika: auto) · *año* (jaar) ≠ *ano* (anus). De ñ is een aparte letter en de rr een aparte klank: sla ze nooit over.",
+   "checks": [
+    {
+     "id": "c2",
+     "type": "type",
+     "skill": "klanken",
+     "level": 1,
+     "prompt": "Schrijf het Spaanse woord voor **Spanje**.",
+     "explain": "*España* — met ñ.",
+     "answers": [
+      "España"
+     ],
+     "lang": "es",
+     "errors": [
+      {
+       "match": "espana",
+       "feedback": "Bijna: Spanje schrijf je met ñ: *España*.",
+       "tag": "enye"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "klemtoon",
+   "title": "Waar valt de klemtoon?",
+   "md": "Waar de klemtoon valt, lees je af aan het woord zelf. Er zijn maar **twee regels**:\n\n1. Eindigt het woord op een **klinker, -n of -s**, dan valt de klemtoon op de **voorlaatste** lettergreep (*palabra llana*): [[es:ca-sa]], [[es:ha-blan]], [[es:li-bros]], [[es:e-xa-men]].\n2. Eindigt het woord op **een andere medeklinker**, dan valt de klemtoon op de **laatste** lettergreep (*palabra aguda*): [[es:pa-pel]], [[es:ha-blar]], [[es:ciu-dad]], [[es:re-loj]].\n\nWijkt een woord af van die twee regels, dan krijgt de beklemtoonde klinker een **tilde** (´). De tilde vertelt je dus precies: ‘hier niet volgens de regel’.\n\n| Woord | Klemtoon | Waarom (geen) tilde? |\n|---|---|---|\n| [[es:café]] | laatste | eindigt op een klinker, maar de klemtoon valt op de laatste → tilde |\n| [[es:canción]] | laatste | eindigt op -n, klemtoon op de laatste → tilde |\n| [[es:inglés]] | laatste | eindigt op -s, klemtoon op de laatste → tilde |\n| [[es:árbol]] | voorlaatste | eindigt op -l, klemtoon op de voorlaatste → tilde |\n| [[es:fácil]] | voorlaatste | eindigt op -l → tilde |\n| [[es:lápiz]] | voorlaatste | eindigt op -z → tilde |\n| [[es:música]] | derde van achter | *esdrújula*: **altijd** een tilde |\n| [[es:teléfono]] | derde van achter | esdrújula → tilde |\n\n> [!rule] Let op het meervoud\n> De klemtoon blijft op dezelfde lettergreep, maar de regel kan veranderen. *canción* → **canciones** (eindigt nu op -s met de klemtoon op de voorlaatste: geen tilde meer). *examen* → **exámenes** (de klemtoon valt nu op de derde van achter: wél een tilde). *joven* → **jóvenes**.\n\nEen tilde op **i** of **u** naast een andere klinker breekt de tweeklank: [[es:día]] is *dí-a*, [[es:país]] is *pa-ís*.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "mcq",
+     "skill": "klemtoon",
+     "level": 1,
+     "prompt": "Waar valt de klemtoon in **libros**?",
+     "explain": "Eindigt op -s → voorlaatste lettergreep: LI-bros.",
+     "options": [
+      "op *li*",
+      "op *bros*",
+      "op beide even sterk"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c3b",
+     "type": "type",
+     "skill": "tilde",
+     "level": 2,
+     "prompt": "Schrijf met de juiste tilde: **arbol** (boom).",
+     "explain": "Eindigt op -l maar de klemtoon valt op de voorlaatste → *árbol*.",
+     "answers": [
+      "árbol"
+     ],
+     "lang": "es"
+    }
+   ]
+  },
+  {
+   "id": "diacritica",
+   "title": "Tildes die betekenis veranderen, en ¿ ¡",
+   "md": "Woorden van één lettergreep krijgen geen tilde: *fue, fui, vio, dio, pie, sol*. Behalve als de tilde twee woorden van elkaar onderscheidt — de **tilde diacrítica**:\n\n| Met tilde | Zonder tilde |\n|---|---|\n| **tú** — jij | **tu** — jouw |\n| **él** — hij | **el** — de |\n| **mí** — mij (na een voorzetsel) | **mi** — mijn |\n| **sí** — ja; zich | **si** — als, indien |\n| **té** — thee | **te** — je, jou |\n| **sé** — ik weet; wees! | **se** — zich |\n| **más** — meer | **mas** — maar (literair) |\n\nOok de **vraag- en uitroepwoorden** krijgen een tilde, in rechtstreekse én onrechtstreekse vragen: *qué, quién, cómo, dónde, cuándo, cuánto, cuál*. Vergelijk [[es:¿Dónde vives?]] met [[es:la ciudad donde vivo]], en [[es:No sé qué hacer.]] met [[es:Creo que sí.]].\n\n**¿** en **¡** openen de vraag of uitroep — ook midden in een zin: [[es:¡Qué bien!]], [[es:Si vienes mañana, ¿me llamas?]].\n\n> [!note] Volgens de RAE\n> *solo* en *este, ese, aquel* schrijf je sinds 2010 zonder tilde. Bij *solo* is de tilde alleen nog toegestaan als de zin echt dubbelzinnig is.",
+   "checks": [
+    {
+     "id": "c4",
+     "type": "cloze",
+     "skill": "tilde",
+     "level": 2,
+     "prompt": "Vul **tú** of **tu** in.",
+     "explain": "*tú* = jij (onderwerp).",
+     "text": "¿{{Tú}} hablas francés?",
+     "lang": "es"
+    },
+    {
+     "id": "c5",
+     "type": "mcq",
+     "skill": "leestekens",
+     "level": 1,
+     "prompt": "Welke uitroep is correct geschreven?",
+     "explain": "¡ vooraan, ! achteraan, en *qué* met tilde.",
+     "options": [
+      "¡Qué bien!",
+      "Qué bien!",
+      "¡Que bien!",
+      "!Qué bien¡"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "saludos",
+   "title": "Je eerste gesprek",
+   "md": "Met een handvol vaste zinnen voer je al je eerste gesprek.\n\n| Spaans | Nederlands |\n|---|---|\n| [[es:¡Hola! ¿Qué tal?]] | Hallo! Hoe gaat het? |\n| [[es:Buenos días.]] / [[es:Buenas tardes.]] / [[es:Buenas noches.]] | Goedemorgen. / Goedemiddag (tot het donker wordt). / Goedenavond, goedenacht. |\n| [[es:¿Cómo te llamas?]] — [[es:Me llamo Thibaud.]] | Hoe heet je? — Ik heet Thibaud. |\n| [[es:¿Cómo se llama usted?]] | Hoe heet u? |\n| [[es:¿De dónde eres?]] — [[es:Soy de Bélgica. Soy belga.]] | Waar kom je vandaan? — Ik kom uit België. Ik ben Belg. |\n| [[es:¿De dónde es usted?]] | Waar komt u vandaan? |\n| [[es:Hablo neerlandés, francés e inglés.]] | Ik spreek Nederlands, Frans en Engels. |\n| [[es:Encantado.]] / [[es:Encantada.]] | Aangenaam. (man / vrouw die spreekt) |\n| [[es:Mucho gusto.]] | Aangenaam. (voor iedereen) |\n| [[es:Hasta luego.]] / [[es:Hasta mañana.]] | Tot straks. / Tot morgen. |\n\nTwee details: nationaliteiten en talen schrijf je **zonder hoofdletter** (*belga, francés*), en *y* (en) wordt **e** vóór een woord dat met de klank *i* begint: *francés e inglés*.\n\n> [!rule] Tú of usted?\n> In Spanje tutoyeer je snel, ook collega's; *usted* gebruik je voor klanten, oudere mensen en formele situaties. In Latijns-Amerika hoor je *usted* vaker. *Vosotros* (jullie, informeel) bestaat alleen in Spanje: in Latijns-Amerika zegt men altijd *ustedes*.",
+   "checks": [
+    {
+     "id": "c6",
+     "type": "type",
+     "skill": "begroeten",
+     "level": 1,
+     "prompt": "Vertaal (informeel): **Waar kom je vandaan?**",
+     "explain": "*¿De dónde eres?* — vraagwoord met tilde.",
+     "answers": [
+      "¿De dónde eres?"
+     ],
+     "lang": "es",
+     "errors": [
+      {
+       "match": "de donde eres",
+       "feedback": "Bijna: *dónde* is een vraagwoord en krijgt een tilde.",
+       "tag": "tilde"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "klanken",
+   "level": 1,
+   "prompt": "Hoe spreek je de **h** in *hola* uit?",
+   "explain": "De h is in het Spaans altijd stom.",
+   "options": [
+    "niet: ze is stom",
+    "als de Nederlandse h",
+    "als ch in lachen",
+    "als j in ja"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "mcq",
+   "skill": "klanken",
+   "level": 2,
+   "prompt": "In welk woord hoor je de *ch* van *lachen*?",
+   "explain": "g + e/i klinkt als de Spaanse j: *gente*. In *chico* hoor je *tsj*.",
+   "options": [
+    "gente",
+    "guerra",
+    "gato",
+    "chico"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p03",
+   "type": "match",
+   "skill": "klanken",
+   "level": 1,
+   "prompt": "Koppel de spelling aan de klank.",
+   "explain": "Vier klanken die je vanaf dag één goed moet doen.",
+   "pairs": [
+    [
+     "ñ",
+     "nj zoals in campagne"
+    ],
+    [
+     "ll",
+     "j zoals in ja"
+    ],
+    [
+     "rr",
+     "gerolde r"
+    ],
+    [
+     "qu",
+     "k"
+    ]
+   ]
+  },
+  {
+   "id": "p04",
+   "type": "dictation",
+   "skill": "klanken",
+   "level": 1,
+   "prompt": "Luister en schrijf wat je hoort.",
+   "explain": "*mañana* — met ñ.",
+   "text": "Hasta mañana.",
+   "lang": "es"
+  },
+  {
+   "id": "p05",
+   "type": "mcq",
+   "skill": "klemtoon",
+   "level": 1,
+   "prompt": "Waar valt de klemtoon in **hablan**?",
+   "explain": "Eindigt op -n → voorlaatste lettergreep: HA-blan.",
+   "options": [
+    "op *ha*",
+    "op *blan*",
+    "op beide even sterk"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p06",
+   "type": "mcq",
+   "skill": "klemtoon",
+   "level": 2,
+   "prompt": "Waarom heeft **papel** geen tilde?",
+   "explain": "Andere medeklinker dan n of s → laatste lettergreep: zoals verwacht, dus geen tilde.",
+   "options": [
+    "Eindigt op -l, klemtoon op de laatste: regel.",
+    "Het is een leenwoord uit het Frans.",
+    "Korte woorden krijgen nooit een tilde.",
+    "De klemtoon valt op de voorlaatste."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p07",
+   "type": "type",
+   "skill": "tilde",
+   "level": 2,
+   "prompt": "Schrijf met de juiste tilde: **cancion** (lied).",
+   "explain": "Eindigt op -n maar de klemtoon valt op de laatste → *canción*.",
+   "answers": [
+    "canción"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p08",
+   "type": "type",
+   "skill": "tilde",
+   "level": 2,
+   "prompt": "Schrijf met de juiste tilde: **musica**.",
+   "explain": "Klemtoon op de derde lettergreep van achter: esdrújula, altijd een tilde.",
+   "answers": [
+    "música"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "tilde",
+   "level": 3,
+   "prompt": "Schrijf het meervoud van **canción**.",
+   "explain": "*can-CIO-nes*: eindigt op -s met de klemtoon op de voorlaatste → geen tilde.",
+   "answers": [
+    "canciones"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "canciónes",
+     "feedback": "In het meervoud volgt het woord de regel: eindigt op -s, klemtoon op de voorlaatste → geen tilde.",
+     "tag": "tilde-meervoud"
+    }
+   ]
+  },
+  {
+   "id": "p10",
+   "type": "multi",
+   "skill": "tilde",
+   "level": 2,
+   "prompt": "Welke woorden zijn **correct** geschreven?",
+   "explain": "*árbol* en *lápiz* missen hun tilde; *examen* volgt de regel (eindigt op -n, klemtoon op de voorlaatste).",
+   "options": [
+    "café",
+    "arbol",
+    "fácil",
+    "examen",
+    "lapiz"
+   ],
+   "answers": [
+    0,
+    2,
+    3
+   ]
+  },
+  {
+   "id": "p11",
+   "type": "cloze",
+   "skill": "tilde",
+   "level": 2,
+   "prompt": "Vul **tú** of **tu** in.",
+   "explain": "*tú* = jij, *tu* = jouw.",
+   "text": "¿{{Tú}} vienes con {{tu}} hermana?",
+   "lang": "es"
+  },
+  {
+   "id": "p12",
+   "type": "mcq",
+   "skill": "tilde",
+   "level": 1,
+   "prompt": "«___, claro, mañana vengo.» Welk woord past?",
+   "explain": "*sí* = ja (met tilde); *si* = als.",
+   "options": [
+    "Sí",
+    "Si",
+    "Se",
+    "Sé"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p13",
+   "type": "mcq",
+   "skill": "leestekens",
+   "level": 1,
+   "prompt": "Welke vraag is correct geschreven?",
+   "explain": "¿ vooraan, ? achteraan, en *dónde* als vraagwoord met tilde.",
+   "options": [
+    "¿Dónde vives?",
+    "Dónde vives?",
+    "¿Donde vives?",
+    "¿Dónde vives¿"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p13b",
+   "type": "type",
+   "skill": "leestekens",
+   "level": 2,
+   "prompt": "Schrijf correct, met leestekens en tildes: **como estas** (hoe gaat het met je?).",
+   "explain": "Twee tildes: *cómo* (vraagwoord) en *estás* (eindigt op -s, klemtoon op de laatste).",
+   "answers": [
+    "¿Cómo estás?"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "como estas",
+     "feedback": "Bijna: *cómo* (vraagwoord) én *estás* (es-TÁS) krijgen een tilde.",
+     "tag": "tilde"
+    }
+   ]
+  },
+  {
+   "id": "p14",
+   "type": "type",
+   "skill": "begroeten",
+   "level": 1,
+   "prompt": "Vertaal (informeel): **Hoe heet je?**",
+   "explain": "*¿Cómo te llamas?*",
+   "answers": [
+    "¿Cómo te llamas?"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "como te llamas",
+     "feedback": "Bijna: *cómo* is een vraagwoord en krijgt een tilde.",
+     "tag": "tilde"
+    }
+   ]
+  },
+  {
+   "id": "p15",
+   "type": "type",
+   "skill": "begroeten",
+   "level": 2,
+   "prompt": "Vertaal: **Ik kom uit België.**",
+   "explain": "*Soy de Bélgica* — herkomst met *ser*.",
+   "answers": [
+    "Soy de Bélgica.",
+    "Vengo de Bélgica."
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "soy de belgica",
+     "feedback": "Bijna: *Bélgica* heeft een tilde (BÉL-gi-ca, esdrújula).",
+     "tag": "tilde"
+    }
+   ]
+  },
+  {
+   "id": "p16",
+   "type": "order",
+   "skill": "begroeten",
+   "level": 2,
+   "prompt": "Bouw de formele vraag.",
+   "explain": "*¿Cómo se llama usted?*",
+   "tiles": [
+    "¿Cómo",
+    "se",
+    "llama",
+    "usted?"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p17",
+   "type": "speak",
+   "skill": "klanken",
+   "level": 2,
+   "prompt": "Spreek deze zin vlot uit.",
+   "explain": "Let op de zuivere klinkers en de zachte c van *conocerte* (th in Spanje).",
+   "text": "Encantado de conocerte.",
+   "lang": "es"
+  },
+  {
+   "id": "p18",
+   "type": "explain",
+   "skill": "tilde",
+   "level": 3,
+   "prompt": "Leg in je eigen woorden uit waarom **inglés** een tilde heeft en **ingleses** niet.",
+   "explain": "Vergelijk jouw uitleg met het model.",
+   "model": "*Inglés* eindigt op -s, dus volgens de regel zou de klemtoon op de voorlaatste lettergreep vallen. Hij valt echter op de laatste (*in-GLÉS*): een afwijking, dus een tilde. In *ingleses* valt de klemtoon op de voorlaatste (*in-GLE-ses*) en het woord eindigt op -s: dat volgt de regel, dus geen tilde.",
+   "rubric": [
+    "regel: eindigt op klinker, -n of -s → klemtoon op de voorlaatste",
+    "*inglés* wijkt af (klemtoon op de laatste) → tilde",
+    "*ingleses* volgt de regel → geen tilde"
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "mcq",
+   "skill": "klanken",
+   "level": 1,
+   "prompt": "In welk woord hoor je de **u niet**?",
+   "explain": "Na q is de u stom: *queso* = *keso*.",
+   "options": [
+    "queso",
+    "pingüino",
+    "bueno",
+    "mucho"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m02",
+   "type": "type",
+   "skill": "klanken",
+   "level": 1,
+   "prompt": "Schrijf het Spaanse woord voor **jaar**.",
+   "explain": "*año* — met ñ. Zonder ñ betekent het iets heel anders.",
+   "answers": [
+    "año"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "ano",
+     "feedback": "Let op: zonder ñ is het een ander woord. *Jaar* = *año*.",
+     "tag": "enye"
+    }
+   ]
+  },
+  {
+   "id": "m03",
+   "type": "dictation",
+   "skill": "klanken",
+   "level": 2,
+   "prompt": "Luister en schrijf wat je hoort.",
+   "explain": "*pero* (één tik) ≠ *perro* (gerold).",
+   "text": "Pero el perro es muy caro.",
+   "lang": "es"
+  },
+  {
+   "id": "m04",
+   "type": "mcq",
+   "skill": "klanken",
+   "level": 2,
+   "prompt": "Hoe klinkt de **z** van *zapato* in Madrid?",
+   "explain": "In Spanje: *distinción* (th); in Latijns-Amerika: *s* (*seseo*).",
+   "options": [
+    "als th in think",
+    "als een Nederlandse z",
+    "als ts in tsaar",
+    "als ch in lachen"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m05",
+   "type": "type",
+   "skill": "tilde",
+   "level": 2,
+   "prompt": "Schrijf met de juiste tilde: **telefono**.",
+   "explain": "te-LÉ-fo-no: esdrújula → altijd een tilde.",
+   "answers": [
+    "teléfono"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m06",
+   "type": "type",
+   "skill": "tilde",
+   "level": 2,
+   "prompt": "Schrijf met de juiste tilde: **ingles** (Engels).",
+   "explain": "Eindigt op -s, klemtoon op de laatste → *inglés*.",
+   "answers": [
+    "inglés"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m07",
+   "type": "type",
+   "skill": "klemtoon",
+   "level": 3,
+   "prompt": "Schrijf het meervoud van **examen**.",
+   "explain": "e-XÁ-me-nes: de klemtoon valt nu op de derde van achter → tilde.",
+   "answers": [
+    "exámenes"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "examenes",
+     "feedback": "Tel de lettergrepen: e-XA-me-nes. Klemtoon op de derde van achter = esdrújula → altijd een tilde.",
+     "tag": "tilde-meervoud"
+    }
+   ]
+  },
+  {
+   "id": "m08",
+   "type": "type",
+   "skill": "klemtoon",
+   "level": 2,
+   "prompt": "Schrijf **ciudad** (stad) correct: met of zonder tilde?",
+   "explain": "Eindigt op -d, klemtoon op de laatste: zoals de regel voorspelt, dus geen tilde.",
+   "answers": [
+    "ciudad"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "ciudád",
+     "feedback": "Geen tilde nodig: eindigt op -d en de klemtoon valt op de laatste lettergreep, precies zoals de regel zegt.",
+     "tag": "tilde"
+    }
+   ]
+  },
+  {
+   "id": "m09",
+   "type": "multi",
+   "skill": "tilde",
+   "level": 2,
+   "prompt": "Welke woorden **moeten** een tilde krijgen?",
+   "explain": "*rápido, fácil, café*. *joven* (eindigt op -n, klemtoon voorlaatste) en *reloj* (eindigt op -j, klemtoon laatste) volgen de regel.",
+   "options": [
+    "rapido",
+    "joven",
+    "facil",
+    "reloj",
+    "cafe"
+   ],
+   "answers": [
+    0,
+    2,
+    4
+   ]
+  },
+  {
+   "id": "m10",
+   "type": "cloze",
+   "skill": "tilde",
+   "level": 2,
+   "prompt": "Vul **el** of **él** in.",
+   "explain": "*él* = hij, *el* = de.",
+   "text": "{{Él}} trabaja en {{el}} banco.",
+   "lang": "es"
+  },
+  {
+   "id": "m11",
+   "type": "cloze",
+   "skill": "tilde",
+   "level": 3,
+   "prompt": "Vul **mi** of **mí** in.",
+   "explain": "Na een voorzetsel: *mí*; bezittelijk: *mi*.",
+   "text": "Este regalo es para {{mí}}; {{mi}} hermano ya tiene uno.",
+   "lang": "es"
+  },
+  {
+   "id": "m12",
+   "type": "mcq",
+   "skill": "tilde",
+   "level": 1,
+   "prompt": "Wat betekent **té** (met tilde)?",
+   "explain": "*té* = thee; *te* = je, jou.",
+   "options": [
+    "thee",
+    "jou",
+    "jij",
+    "wees"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m13",
+   "type": "cloze",
+   "skill": "leestekens",
+   "level": 1,
+   "prompt": "Vul het vraagwoord **waar** in.",
+   "explain": "Vraagwoorden krijgen een tilde: *dónde*.",
+   "text": "¿{{Dónde}} vives?",
+   "lang": "es"
+  },
+  {
+   "id": "m14",
+   "type": "type",
+   "skill": "leestekens",
+   "level": 2,
+   "prompt": "Schrijf correct, met leestekens en tilde: **que bien** (wat fijn).",
+   "explain": "Uitroepwoord met tilde: *¡Qué bien!*",
+   "answers": [
+    "¡Qué bien!"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m15",
+   "type": "type",
+   "skill": "begroeten",
+   "level": 2,
+   "prompt": "Vertaal (formeel): **Waar komt u vandaan?**",
+   "explain": "*¿De dónde es usted?*",
+   "answers": [
+    "¿De dónde es usted?",
+    "¿De dónde viene usted?"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "de donde es usted",
+     "feedback": "Bijna: *dónde* krijgt als vraagwoord een tilde.",
+     "tag": "tilde"
+    }
+   ]
+  },
+  {
+   "id": "m16",
+   "type": "type",
+   "skill": "begroeten",
+   "level": 2,
+   "prompt": "Je bent een **vrouw**. Zeg: **Aangenaam.**",
+   "explain": "*Encantada* (vrouw) of *Mucho gusto* (iedereen).",
+   "answers": [
+    "Encantada.",
+    "Mucho gusto."
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "encantado",
+     "feedback": "Als vrouw zeg je *encantada*: het woord stemt overeen met wie spreekt.",
+     "tag": "overeenkomst"
+    }
+   ]
+  },
+  {
+   "id": "m17",
+   "type": "order",
+   "skill": "begroeten",
+   "level": 2,
+   "prompt": "Bouw de zin.",
+   "explain": "*Me llamo Ana y soy de Sevilla.*",
+   "tiles": [
+    "Me",
+    "llamo",
+    "Ana",
+    "y",
+    "soy",
+    "de",
+    "Sevilla."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m18",
+   "type": "mcq",
+   "skill": "begroeten",
+   "level": 2,
+   "prompt": "Je stelt je voor aan de directeur van een Spaans bedrijf. Welke vraag past?",
+   "explain": "Formeel en tegen één persoon: *usted*.",
+   "options": [
+    "¿Cómo se llama usted?",
+    "¿Cómo te llamas?",
+    "¿Qué tal, tío?",
+    "¿Cómo os llamáis?"
+   ],
+   "answer": 0
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "es",
+  "minWords": 40,
+  "prompt": "**Stel jezelf voor** in een korte e-mail aan je nieuwe Spaanse collega's (40–70 woorden). Vertel hoe je heet, waar je vandaan komt, wat je studeert en welke talen je spreekt, en sluit vriendelijk af. Gebruik **tú/vosotros** en let op elke tilde.",
+  "model": "¡Hola a todos!\n\nMe llamo Thibaud y soy de Bélgica, de Flandes. Estudio Ingeniería Comercial. Hablo neerlandés, francés e inglés, y ahora estoy aprendiendo español. Me encanta viajar y conocer gente nueva.\n\n¡Encantado de conoceros! Hasta pronto.\n\nThibaud",
+  "rubric": [
+   "Begroeting en afsluiting (*¡Hola…!*, *Hasta pronto* of *Un saludo*)",
+   "Naam met *Me llamo…* en herkomst met *Soy de…*",
+   "Alle tildes correct (*Bélgica, francés, inglés, español* …)",
+   "¡ en ¿ aan het begin van uitroepen en vragen",
+   "Talen en nationaliteiten zonder hoofdletter; *e* vóór *inglés*"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-h",
+   "front": "Hoe spreek je de **h** uit?",
+   "back": "Niet: de h is altijd stom (*hola* = *ola*).",
+   "skill": "klanken"
+  },
+  {
+   "id": "c-j",
+   "front": "Welke spellingen klinken als de *ch* van *lachen*?",
+   "back": "**j** en **g + e/i**: *jamón, gente*.",
+   "skill": "klanken"
+  },
+  {
+   "id": "c-regels",
+   "front": "De twee klemtoonregels?",
+   "back": "Eindigt op **klinker, -n, -s** → voorlaatste lettergreep. Anders → laatste. Afwijking → **tilde**.",
+   "skill": "klemtoon"
+  },
+  {
+   "id": "c-esdr",
+   "front": "Wanneer **altijd** een tilde?",
+   "back": "Als de klemtoon op de derde lettergreep van achter valt (*esdrújula*): *música, teléfono*.",
+   "skill": "tilde"
+  },
+  {
+   "id": "c-tu",
+   "front": "**tú** of **tu**?",
+   "back": "*tú* = jij · *tu* = jouw",
+   "skill": "tilde"
+  },
+  {
+   "id": "c-si",
+   "front": "**sí** of **si**?",
+   "back": "*sí* = ja (of: zich) · *si* = als, indien",
+   "skill": "tilde"
+  },
+  {
+   "id": "c-abrir",
+   "front": "Waar staan **¿** en **¡**?",
+   "back": "Aan het **begin** van de vraag of uitroep, ook midden in een zin: *Si vienes, ¿me llamas?*",
+   "skill": "leestekens"
+  },
+  {
+   "id": "c-llamas",
+   "front": "Informeel: **Hoe heet je?**",
+   "back": "¿Cómo te llamas?",
+   "answers": [
+    "¿Cómo te llamas?"
+   ],
+   "lang": "es",
+   "skill": "begroeten"
+  },
+  {
+   "id": "c-usted",
+   "front": "Formeel: **Waar komt u vandaan?**",
+   "back": "¿De dónde es usted?",
+   "answers": [
+    "¿De dónde es usted?",
+    "¿De dónde viene usted?"
+   ],
+   "lang": "es",
+   "skill": "begroeten"
+  }
+ ],
+ "sources": [
+  "RAE y ASALE — *Ortografía de la lengua española* (2010)",
+  "RAE — *Diccionario panhispánico de dudas*",
+  "Instituto Cervantes — *Plan curricular* (niveaus A1–B2)"
+ ],
+ "kind": "core",
+ "meta": {
+  "author": "claude",
+  "created": "2026-09-26"
+ }
+}

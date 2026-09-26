@@ -134,7 +134,7 @@ PS.speech = {
     const load = () => { this.voices = speechSynthesis.getVoices() || []; };
     load(); speechSynthesis.onvoiceschanged = load;
   },
-  full(lang) { return { el: 'el-GR', fr: 'fr-FR', nl: 'nl-BE', en: 'en-US' }[lang] || lang || 'el-GR'; },
+  full(lang) { return { el: 'el-GR', fr: 'fr-FR', es: 'es-ES', nl: 'nl-BE', en: 'en-US' }[lang] || lang || 'el-GR'; },
   voice(lang) {
     const base = this.full(lang).slice(0, 2);
     const vs = this.voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith(base));

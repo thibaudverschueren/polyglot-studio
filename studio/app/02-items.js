@@ -9,7 +9,7 @@ PS.TYPE_LABEL = {
 PS.PRODUCTION = new Set(['type', 'cloze', 'order', 'numeric', 'dictation', 'code', 'explain', 'handwrite', 'card']);
 PS.SELF_GRADED = new Set(['explain', 'handwrite']);
 
-const langAttr = (lang) => (lang === 'el' || lang === 'fr' ? ` lang="${lang}"` : '');
+const langAttr = (lang) => (lang === 'el' || lang === 'fr' || lang === 'es' ? ` lang="${lang}"` : '');
 const kbToggle = (lang) => (lang === 'el' ? `<button type="button" class="kb-toggle" data-kb-toggle>${PS.icon('keyboard', 'icon-s')}<span>ΑΒΓ</span></button>` : '');
 const penTestNote = (v, lang) => (lang === 'el' && PS.pen.active() && PS.pen.test(v) ? `<div class="tiny muted pen-note" style="margin-top:6px">${PS.icon('keyboard', 'icon-s')} In toetsen typ je Grieks: je iPad leest geen Grieks handschrift.</div>` : '');
 

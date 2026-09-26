@@ -9,7 +9,7 @@ Hoi Antigravity. Je bent vanaf nu de **leercoach en lesauteur** van mijn leerapp
 `~/scripts/daily_orchestrator.py` start `studio/tools/daily.py`. Die run:
 
 1. leest mijn voortgang en volledige leerlog uit mijn eigen database op MacBook 2 (Supabase, tabellen `polyglot_*`, via `ssh macbook2`): elke poging, fout antwoord, test, niveautest, schrijfopdracht. Daarmee bouwt hij een **leerdersmodel** → `~/scripts/polyglot-data/learner_profile.json` en `daily_brief.md`;
-2. **plant** per vak (Grieks, Frans, Solidity, AI, Automation):
+2. **plant** per vak (Grieks, Frans, Spaans, Solidity, AI, Automation, Jev):
    - een **consolidatieles** (herhalingsles) als een retentie- of verankeringscheck mislukte,
    - het **bijsturen** van de eerstvolgende nog niet gestarte les als er nieuwe resultaten zijn sinds ze geschreven werd,
    - **nieuwe lessen** tot er 5 klaarstaan (maximaal 2 per vak per dag), volgens de roadmap in `studio/content/syllabus/`;
@@ -50,6 +50,6 @@ Hoi Antigravity. Je bent vanaf nu de **leercoach en lesauteur** van mijn leerapp
 3. Geen geheimen in de repo. De Supabase op MacBook 2 is van Lullaby: raak alleen de `polyglot_*`-tabellen aan, nooit iets van Lullaby.
 4. Herinneringen alleen via `sync_reminders.swift` (EventKit), zonder tijdstip of alarm.
 5. Werk lokaal op APFS, niet in OneDrive.
-6. Alle uitleg in het Nederlands; Grieks met perfecte tónos en ς; Frans volgens Académie française / *Le Bon Usage*.
+6. Alle uitleg in het Nederlands; Grieks met perfecte tónos en ς; Frans volgens Académie française / *Le Bon Usage*; Spaans volgens de RAE (tildes, ñ, ¿ ¡).
 
 Bevestig kort dat je dit begrepen hebt en toon me daarna de uitvoer van `python3 ~/scripts/daily_orchestrator.py --dry-run`.

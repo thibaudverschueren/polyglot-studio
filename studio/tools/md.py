@@ -92,8 +92,8 @@ def inline(text, greek_say=True):
     def say(m):
         lang, body = m.group(1), m.group(2)
         return keep(f'<span class="say" lang="{lang}" data-lang="{lang}">{_html.escape(body, quote=False)}</span>')
-    t = re.sub(r"\[\[(el|fr)[:|]([^\]]+)\]\]", say, t)
-    t = re.sub(r"\[\[say:(el|fr)\|([^\]]+)\]\]", say, t)
+    t = re.sub(r"\[\[(el|fr|es)[:|]([^\]]+)\]\]", say, t)
+    t = re.sub(r"\[\[say:(el|fr|es)\|([^\]]+)\]\]", say, t)
     # whitelisted raw tags
     t = ALLOWED_TAGS.sub(lambda m: keep(m.group(0).lower().replace(" ", "")), t)
     # escape the rest

@@ -153,7 +153,7 @@ def _check_item(it, where, obj_ids, track, errs, warns, drill=False):
     loc = f"{where}:{iid}"
     skill = it.get("skill", "")
     if drill:
-        if not re.match(r"^(greek|french|solidity|ai|automation|jev):\d+/[a-z0-9-]+$", skill):
+        if not re.match(r"^(greek|french|spanish|solidity|ai|automation|jev):\d+/[a-z0-9-]+$", skill):
             errs.append(f"{loc}: drill skill must look like 'greek:5/objective-id'")
     elif skill not in obj_ids:
         errs.append(f"{loc}: skill '{skill}' is not an objective id ({sorted(obj_ids)})")
@@ -187,8 +187,8 @@ def _check_item(it, where, obj_ids, track, errs, warns, drill=False):
         if any(GREEK.search(a) for a in ans if isinstance(a, str)) and lang not in ("el", "code"):
             it["lang"] = "el"
             warns.append(f"{loc}: answers are Greek → lang set to 'el'")
-        if track == "french" and not lang:
-            warns.append(f"{loc}: French track type-item without lang (defaults to nl)")
+        if track in ("french", "spanish") and not lang:
+            warns.append(f"{loc}: {track} type-item without lang (defaults to nl)")
     elif t == "cloze":
         text = it.get("text", "")
         blanks = re.findall(r"\{\{(.+?)\}\}", text)
@@ -219,8 +219,8 @@ def _check_item(it, where, obj_ids, track, errs, warns, drill=False):
     elif t in ("dictation", "speak"):
         if not it.get("text"):
             errs.append(f"{loc}: {t} needs 'text'")
-        if lang not in ("el", "fr"):
-            errs.append(f"{loc}: {t} needs lang el|fr")
+        if lang not in ("el", "fr", "es"):
+            errs.append(f"{loc}: {t} needs lang el|fr|es")
     elif t == "code":
         for k in ("starter", "solution", "tests", "contract"):
             if not it.get(k):
@@ -343,7 +343,7 @@ def validate_lesson(L, schema, fname=""):
         warns.append(f"theory is short ({words} words) — aim for 900–2500")
     if L["id"] == 1 and not L.get("diagnostic"):
         warns.append("lesson 1 should include a diagnostic (niveautest)")
-    if track in ("greek", "french") and len(L.get("vocab", [])) < 6:
+    if track in ("greek", "french", "spanish") and len(L.get("vocab", [])) < 6:
         warns.append("language lesson with < 6 vocab entries")
     if track == "greek":
         for v in L.get("vocab", []):
@@ -378,7 +378,7 @@ def validate_daily(D, schema=None):
         if not isinstance(d, dict) or not isinstance(d.get("items", []), list):
             errs.append(f"drills[{di}]: must be {{track, focus, items: [...]}}")
             continue
-        if d.get("track") not in ("greek", "french", "solidity", "ai", "automation", "jev"):
+        if d.get("track") not in ("greek", "french", "spanish", "solidity", "ai", "automation", "jev"):
             errs.append(f"drill track invalid: {d.get('track')}")
         for ii, it in enumerate(d.get("items", [])):
             se = schema_errors(it, schema["$defs"]["item"], schema, f"$.drills[{di}].items[{ii}]")

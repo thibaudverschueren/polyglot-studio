@@ -1,6 +1,6 @@
 # AGENTS.md — Polyglot Studio
 
-Persoonlijke leerapp van Thibaud: **Nieuwgrieks, Frans C1–C2, Solidity, AI/LLM, Workflow Automation (n8n) en Jev & Decision AI**. Statische single-page app op GitHub Pages; voortgang in de eigen Supabase op MacBook 2 (tabellen `polyglot_*`); elke ochtend om 07:30 stuurt Antigravity de lessen bij.
+Persoonlijke leerapp van Thibaud: **Nieuwgrieks, Frans C1–C2, Spaans A0–B2, Solidity, AI/LLM, Workflow Automation (n8n) en Jev & Decision AI**. Statische single-page app op GitHub Pages; voortgang in de eigen Supabase op MacBook 2 (tabellen `polyglot_*`); elke ochtend om 07:30 stuurt Antigravity de lessen bij.
 
 ## Structuur
 
@@ -35,5 +35,5 @@ python3 ~/scripts/daily_orchestrator.py --dry-run      # toont het plan van de o
 4. Geen geheimen in de repo. De anon key in `studio/cloud/config.json` is publiek en veilig (rijbeveiliging). De ochtendrun leest de database via SSH (`ssh macbook2`, container `supabase-db`), zonder sleutels.
 5. **De Supabase op MacBook 2 is van Lullaby.** Raak enkel de `polyglot_*`-tabellen aan; nooit Lullaby-tabellen, -instellingen, containers of de Lullaby-crontab.
 6. Apple Herinneringen: exact één algemene herinnering `Polyglot` (met als doelstelling minstens 1 les per dag), datum vandaag, **geen uur en geen alarm**. Alleen via EventKit (`sync_reminders.swift`), nooit AppleScript.
-7. Taal van de interface en uitleg: Nederlands. Griekse accenten en Franse spelling zijn niet onderhandelbaar.
+7. Taal van de interface en uitleg: Nederlands. Griekse accenten, Franse spelling en Spaanse tildes (RAE) zijn niet onderhandelbaar.
 8. Werk op de lokale APFS-schijf; niets in OneDrive.

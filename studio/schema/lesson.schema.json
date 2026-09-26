@@ -32,6 +32,7 @@
       "enum": [
         "greek",
         "french",
+        "spanish",
         "solidity",
         "ai",
         "automation",
@@ -102,7 +103,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "pattern": "^(greek|french|solidity|ai|automation|jev):[0-9]+$"
+        "pattern": "^(greek|french|spanish|solidity|ai|automation|jev):[0-9]+$"
       }
     },
     "vocab": {
@@ -310,7 +311,7 @@
         "lang": {
           "enum": [
             "el",
-            "fr",
+            "fr", "es",
             "nl",
             "en",
             "code",
@@ -585,7 +586,7 @@
         "lang": {
           "enum": [
             "el",
-            "fr",
+            "fr", "es",
             "nl",
             "en"
           ]
@@ -700,7 +701,7 @@
         "lang": {
           "enum": [
             "el",
-            "fr",
+            "fr", "es",
             "nl",
             "en",
             "code",

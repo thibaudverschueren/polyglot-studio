@@ -17,6 +17,15 @@
     "levels": "C1 → C2",
     "goal": "Doel: foutloos en genuanceerd Frans op C2-niveau (DALF): synthese, argumentatie, correspondentie en debat — ook in economische en juridische context."
   },
+  "spanish": {
+    "title": "Español",
+    "short": "Spaans",
+    "subtitle": "Van klanken en klemtoon tot zelfverzekerd B2 — in het dagelijks leven én op het werk, met je Frans als springplank.",
+    "glyph": "Ñ",
+    "lang": "es-ES",
+    "levels": "A0 → B2",
+    "goal": "Doel: vlot en correct Spaans op B2-niveau (DELE B2): gesprekken, vergaderingen en e-mails met Spanjaarden en Latijns-Amerikanen — met je Frans als hefboom en zonder de valkuilen die daarbij horen."
+  },
   "solidity": {
     "title": "Solidity & de EVM",
     "short": "Solidity",

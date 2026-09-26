@@ -1,0 +1,640 @@
+{
+ "track": "spanish",
+ "goal": "Vlot en correct Spaans op B2-niveau (DELE B2): gesprekken, vergaderingen en e-mails met Spanjaarden en Latijns-Amerikanen — met het Frans als hefboom en zonder de valkuilen die daarbij horen.",
+ "principles": [
+  "Frans als hefboom: benoem in elke les wat hetzelfde werkt, wat anders is en welke valse vrienden er loeren.",
+  "Tildes, ñ en ¿ ¡ zijn geen versiering: een ontbrekende tilde is een fout (halve score), dus leer de regels in plaats van woordbeelden te gokken.",
+  "Elke les: luisteren, hardop nazeggen en zelf schrijven — pas wat je produceert, telt als bewijs.",
+  "Spanje als norm (vosotros, RAE), met de Latijns-Amerikaanse varianten telkens erbij waar ze in de praktijk tellen."
+ ],
+ "modules": [
+  {
+   "id": "A1",
+   "title": "A1 — Klank, basis en eerste gesprekken",
+   "topics": [
+    "es-a1-01-sonidos",
+    "es-a1-02-ser-articulos",
+    "es-a1-03-presente",
+    "es-a1-04-estar-hay",
+    "es-a1-05-irregulares",
+    "es-a1-06-rutina",
+    "es-a1-07-gustar",
+    "es-a1-08-restaurante"
+   ]
+  },
+  {
+   "id": "A2",
+   "title": "A2 — Verleden, voornaamwoorden en dagelijks leven",
+   "topics": [
+    "es-a2-09-pronombres",
+    "es-a2-10-indefinido",
+    "es-a2-11-imperfecto",
+    "es-a2-12-perfecto",
+    "es-a2-13-futuro",
+    "es-a2-14-comparar",
+    "es-a2-15-imperativo",
+    "es-a2-16-preposiciones"
+   ]
+  },
+  {
+   "id": "B1",
+   "title": "B1 — Subjuntivo, nuance en zelfstandig communiceren",
+   "topics": [
+    "es-b1-17-subjuntivo",
+    "es-b1-18-subjuntivo-duda",
+    "es-b1-19-condicional",
+    "es-b1-20-relativos",
+    "es-b1-21-ser-estar",
+    "es-b1-22-perifrasis",
+    "es-b1-23-estilo-indirecto",
+    "es-b1-24-falsos-amigos"
+   ]
+  },
+  {
+   "id": "B2",
+   "title": "B2 — Zakelijk Spaans, argumenteren en register",
+   "topics": [
+    "es-b2-25-condicionales",
+    "es-b2-26-conectores",
+    "es-b2-27-correo",
+    "es-b2-28-reuniones",
+    "es-b2-29-pasiva-se",
+    "es-b2-30-registro"
+   ]
+  }
+ ],
+ "topics": [
+  {
+   "id": "es-a1-01-sonidos",
+   "title": "Klanken, klemtoon en tildes — je eerste gesprek",
+   "level": "A1",
+   "objectives": [
+    "de vijf klinkers en de lastige medeklinkers (c/z, g/j, ll/y, ñ, r/rr, h) uitspreken",
+    "de klemtoon bepalen (llana, aguda, esdrújula) en de tilde correct plaatsen",
+    "de tilde diacrítica (tú/tu, sí/si …) en ¿ ¡ gebruiken",
+    "begroeten en jezelf voorstellen, met tú en usted"
+   ],
+   "theory": [
+    "vijf zuivere klinkers, geen nasalen, alles uitspreken behalve h (verschillen met het Frans)",
+    "c/z (distinción vs. seseo), g/j, gu/gü, qu, ll/y (yeísmo), ñ, r/rr, b = v",
+    "twee klemtoonregels + tilde bij afwijking; esdrújulas altijd; tilde in het meervoud",
+    "tilde diacrítica en vraagwoorden; ¿ ¡ aan het begin",
+    "Hola, Me llamo…, Soy de…, Encantado/a, tú vs. usted"
+   ],
+   "example": "Je stelt je voor in een videocall met een Spaans team.",
+   "exercise": "Hardop lezen met klemtoon, tildes plaatsen, korte voorstelling schrijven.",
+   "test": "Uitspraakregels, klemtoon en tilde, dictee, voorstelzinnen."
+  },
+  {
+   "id": "es-a1-02-ser-articulos",
+   "title": "Ser, lidwoorden en geslacht: wie ben je, wat doe je?",
+   "level": "A1",
+   "objectives": [
+    "ser vervoegen en gebruiken voor identiteit, herkomst, nationaliteit en beroep",
+    "bepaalde en onbepaalde lidwoorden en het geslacht van zelfstandige naamwoorden kiezen",
+    "meervoud en overeenkomst van bijvoeglijke naamwoorden"
+   ],
+   "theory": [
+    "soy, eres, es, somos, sois, son",
+    "el/la/los/las, un/una/unos/unas; -o/-a, -ción/-dad (v.), -ma (m.: el problema)",
+    "nationaliteiten (belga, francés/francesa) zonder hoofdletter",
+    "beroepen zonder lidwoord: Soy ingeniero"
+   ],
+   "example": "Je vertelt wie je bent en wat je collega's doen.",
+   "exercise": "Profielkaartjes invullen; zinnen met de juiste lidwoorden.",
+   "test": "Vervoegingen, lidwoorden, overeenkomst, korte beschrijving."
+  },
+  {
+   "id": "es-a1-03-presente",
+   "title": "Presente van regelmatige werkwoorden en vragen stellen",
+   "level": "A1",
+   "objectives": [
+    "regelmatige -ar, -er, -ir-werkwoorden vervoegen in de presente",
+    "ja/nee-vragen en vragen met vraagwoorden vormen",
+    "ontkennen met no"
+   ],
+   "theory": [
+    "hablar, comer, vivir: uitgangen per persoon",
+    "onderwerp meestal weggelaten (hablo = ik spreek)",
+    "¿Qué? ¿Dónde? ¿Cuándo? ¿Cómo? ¿Por qué? ¿Cuánto/a/os/as?",
+    "Frans vs. Spaans: geen verplicht onderwerp, geen est-ce que"
+   ],
+   "example": "Je stelt een nieuwe collega vragen over werk en woonplaats.",
+   "exercise": "Vervoegingsdrills; vragen bij antwoorden bedenken.",
+   "test": "Vervoegingen, vraagvorming, dictee."
+  },
+  {
+   "id": "es-a1-04-estar-hay",
+   "title": "Estar en hay: waar iets is en hoe het gaat",
+   "level": "A1",
+   "objectives": [
+    "estar gebruiken voor plaats en toestand",
+    "hay (er is/zijn) onderscheiden van estar",
+    "ser en estar in basiscontexten kiezen"
+   ],
+   "theory": [
+    "estoy, estás, está, estamos, estáis, están",
+    "hay + onbepaald / estar + bepaald: Hay un banco. El banco está en la plaza.",
+    "ser = wat iets is; estar = waar/hoe het is",
+    "voorzetsels van plaats: cerca de, lejos de, al lado de, enfrente de"
+   ],
+   "example": "Je beschrijft je kantoor en vraagt de weg.",
+   "exercise": "Plattegrond beschrijven; ser/estar/hay-keuzes.",
+   "test": "Keuze ser/estar/hay, plaatsbepalingen, luisteroefening."
+  },
+  {
+   "id": "es-a1-05-irregulares",
+   "title": "Onregelmatige presente: tener, ir, hacer, poder, querer en klinkerwisseling",
+   "level": "A1",
+   "objectives": [
+    "de meest frequente onregelmatige werkwoorden vervoegen",
+    "klinkerwisselende werkwoorden (e→ie, o→ue, e→i) herkennen en vervoegen",
+    "tener que + infinitief en ir a + infinitief gebruiken"
+   ],
+   "theory": [
+    "tengo, voy, hago, puedo, quiero, salgo, conozco",
+    "e→ie (querer), o→ue (poder, volver), e→i (pedir); nosotros/vosotros veranderen niet",
+    "tener que (moeten), ir a (gaan)",
+    "tener hambre/sed/frío/X años"
+   ],
+   "example": "Je plant een week met afspraken.",
+   "exercise": "Vervoegingen in context; agenda in het Spaans.",
+   "test": "Onregelmatige vormen, klinkerwissel, tener que/ir a."
+  },
+  {
+   "id": "es-a1-06-rutina",
+   "title": "Getallen, tijd en je dagelijkse routine",
+   "level": "A1",
+   "objectives": [
+    "getallen tot 1000, prijzen en data correct lezen en schrijven",
+    "het uur vragen en zeggen",
+    "wederkerende werkwoorden in de routine gebruiken"
+   ],
+   "theory": [
+    "uno … mil; y alleen tussen tientallen en eenheden (treinta y dos)",
+    "¿Qué hora es? Es la una / Son las tres y cuarto / menos cuarto",
+    "levantarse, ducharse, acostarse: me levanto a las siete",
+    "dagen en maanden zonder hoofdletter"
+   ],
+   "example": "Je vertelt een Spaanse collega hoe jouw werkdag eruitziet.",
+   "exercise": "Dagschema beschrijven; getallen- en uurdictee.",
+   "test": "Getallen, uur, wederkerende werkwoorden."
+  },
+  {
+   "id": "es-a1-07-gustar",
+   "title": "Gustar en verwante werkwoorden: zeggen wat je leuk vindt",
+   "level": "A1",
+   "objectives": [
+    "gustar, encantar en interesar correct construeren (me gusta/me gustan)",
+    "voorkeur uitdrukken en reageren (a mí también / a mí tampoco)",
+    "meewerkende voornaamwoorden me, te, le, nos, os, les"
+   ],
+   "theory": [
+    "gustar: het onderwerp is wat bevalt (me gustan los libros)",
+    "a mí me gusta: nadruk; a mí también / tampoco / sí / no",
+    "doler, parecer, faltar volgen hetzelfde patroon",
+    "valkuil voor Franstaligen: *yo gusto ≠ j'aime"
+   ],
+   "example": "Je praat over hobby's en eten tijdens een lunch.",
+   "exercise": "Voorkeuren formuleren en reageren.",
+   "test": "Gustar-constructies, reacties, meewerkende voornaamwoorden."
+  },
+  {
+   "id": "es-a1-08-restaurante",
+   "title": "Bestellen, winkelen en beleefd vragen",
+   "level": "A1",
+   "objectives": [
+    "in een restaurant en winkel bestellen en betalen",
+    "beleefd vragen met quería, ¿me pone…?, ¿podría…?",
+    "demonstratieven (este, ese, aquel) gebruiken"
+   ],
+   "theory": [
+    "quería (beleefde verleden tijd), me pone, para mí",
+    "¿Cuánto cuesta/cuestan? La cuenta, por favor.",
+    "este/ese/aquel en esto/eso/aquello (zonder tilde volgens de RAE)",
+    "tapas-, menú del día- en fooiencultuur in Spanje"
+   ],
+   "example": "Je bestelt een menú del día en rekent af.",
+   "exercise": "Rollenspel restaurant; prijsdictee.",
+   "test": "Bestelzinnen, demonstratieven, beleefdheidsvormen."
+  },
+  {
+   "id": "es-a2-09-pronombres",
+   "title": "Lijdend en meewerkend voorwerp: lo, la, le, se lo",
+   "level": "A2",
+   "objectives": [
+    "lijdende (lo, la, los, las) en meewerkende (le, les) voornaamwoorden kiezen",
+    "twee voornaamwoorden combineren (se lo, me lo)",
+    "de plaats bepalen: vóór het vervoegde werkwoord of achter infinitief/gerundio/imperativo"
+   ],
+   "theory": [
+    "lo/la/los/las vs. le/les; leísmo in Spanje (le voor een mannelijke persoon) aanvaard",
+    "le/les + lo → se lo",
+    "Lo quiero comprar = Quiero comprarlo",
+    "tildes bij aanhechting: dándoselo, cómpralo"
+   ],
+   "example": "Je regelt de overdracht van documenten aan collega's.",
+   "exercise": "Zinnen herschrijven met voornaamwoorden.",
+   "test": "Keuze en plaats van voornaamwoorden, se lo, tildes bij aanhechting."
+  },
+  {
+   "id": "es-a2-10-indefinido",
+   "title": "Pretérito indefinido: afgeronde gebeurtenissen",
+   "level": "A2",
+   "objectives": [
+    "de regelmatige vormen van het indefinido vormen",
+    "de belangrijkste onregelmatige vormen kennen (ser/ir, tener, hacer, estar, poder, decir)",
+    "tijdsbepalingen die het indefinido oproepen gebruiken"
+   ],
+   "theory": [
+    "-é, -aste, -ó, -amos, -asteis, -aron / -í, -iste, -ió …",
+    "fui (ser en ir), tuve, hice, estuve, pude, dije; geen tildes bij onregelmatige stammen",
+    "ayer, el año pasado, en 2020, hace dos días",
+    "tilde op de 1e en 3e persoon: hablé, habló (≠ hablo)"
+   ],
+   "example": "Je vertelt over je vorige vakantie of zakenreis.",
+   "exercise": "Reisverslag schrijven in het indefinido.",
+   "test": "Vormen, onregelmatige stammen, tildes, tijdsbepalingen."
+  },
+  {
+   "id": "es-a2-11-imperfecto",
+   "title": "Imperfecto en het contrast met het indefinido",
+   "level": "A2",
+   "objectives": [
+    "het imperfecto vormen (slechts drie onregelmatige werkwoorden)",
+    "beschrijving/gewoonte (imperfecto) onderscheiden van afgeronde handeling (indefinido)",
+    "een verhaal met achtergrond en gebeurtenissen vertellen"
+   ],
+   "theory": [
+    "-aba / -ía; ser (era), ir (iba), ver (veía)",
+    "decor en gewoonte vs. gebeurtenis: Llovía cuando llegué.",
+    "parallel met imparfait/passé composé in het Frans",
+    "signaalwoorden: siempre, todos los días vs. un día, de repente"
+   ],
+   "example": "Je vertelt hoe je jeugd was en wat er op een dag gebeurde.",
+   "exercise": "Verhaal met twee tijden; tijden kiezen in een tekst.",
+   "test": "Vormen, keuze imperfecto/indefinido, verteltekst."
+  },
+  {
+   "id": "es-a2-12-perfecto",
+   "title": "Pretérito perfecto en het verschil Spanje – Latijns-Amerika",
+   "level": "A2",
+   "objectives": [
+    "het pretérito perfecto vormen met haber en onregelmatige participios",
+    "perfecto gebruiken voor het verleden dat nog tot het nu behoort",
+    "het verschil in gebruik tussen Spanje en Latijns-Amerika kennen"
+   ],
+   "theory": [
+    "he, has, ha, hemos, habéis, han + -ado/-ido",
+    "hecho, dicho, escrito, visto, puesto, vuelto, abierto, roto",
+    "hoy, esta semana, ya, todavía no, alguna vez → perfecto (Spanje)",
+    "Latijns-Amerika gebruikt vaker het indefinido"
+   ],
+   "example": "Je rapporteert wat er deze week al gedaan is in een project.",
+   "exercise": "Takenlijst omzetten naar een statusupdate.",
+   "test": "Vormen, participios, keuze perfecto/indefinido."
+  },
+  {
+   "id": "es-a2-13-futuro",
+   "title": "De toekomst: ir a, futuro simple en waarschijnlijkheid",
+   "level": "A2",
+   "objectives": [
+    "plannen uitdrukken met ir a + infinitief",
+    "het futuro simple vormen, ook onregelmatig (tendré, haré, podré)",
+    "het futuro gebruiken voor vermoeden (Serán las ocho)"
+   ],
+   "theory": [
+    "-é, -ás, -á, -emos, -éis, -án op de hele infinitief",
+    "onregelmatig: tener→tendré, salir→saldré, hacer→haré, decir→diré, poder→podré",
+    "futuro de probabilidad",
+    "cuando + subjuntivo voor de toekomst (vooruitblik op B1)"
+   ],
+   "example": "Je presenteert de planning van een project.",
+   "exercise": "Planning schrijven; vermoedens formuleren.",
+   "test": "Vormen, gebruik, onregelmatige stammen."
+  },
+  {
+   "id": "es-a2-14-comparar",
+   "title": "Vergelijken, superlatief en muy/mucho",
+   "level": "A2",
+   "objectives": [
+    "vergelijkingen maken (más/menos … que, tan … como, tanto … como)",
+    "onregelmatige vergelijkingen (mejor, peor, mayor, menor) gebruiken",
+    "muy en mucho correct kiezen"
+   ],
+   "theory": [
+    "más caro que, menos rápido que, tan grande como, tanto dinero como",
+    "el más …, -ísimo (carísimo)",
+    "muy + bijvoeglijk/bijwoord; mucho + zelfstandig/werkwoord",
+    "más de + getal"
+   ],
+   "example": "Je vergelijkt twee offertes van leveranciers.",
+   "exercise": "Productvergelijking schrijven.",
+   "test": "Vergelijkingsvormen, muy/mucho, onregelmatige vormen."
+  },
+  {
+   "id": "es-a2-15-imperativo",
+   "title": "De gebiedende wijs: instructies en advies",
+   "level": "A2",
+   "objectives": [
+    "de bevestigende imperativo vormen voor tú, usted, vosotros en ustedes",
+    "voornaamwoorden aanhechten en de tilde plaatsen (dímelo, siéntese)",
+    "de ontkennende imperativo herkennen (no + subjuntivo)"
+   ],
+   "theory": [
+    "habla/hable/hablad/hablen; onregelmatig: di, haz, ve, pon, sal, sé, ten, ven",
+    "aanhechting + tilde: dámelo, cómpralo",
+    "no hables, no digas (vooruitblik op het subjuntivo)",
+    "beleefd advies in zakelijke context"
+   ],
+   "example": "Je geeft instructies om een tool te gebruiken.",
+   "exercise": "Stappenplan schrijven in de imperativo.",
+   "test": "Vormen, aanhechting en tilde, ontkenning."
+  },
+  {
+   "id": "es-a2-16-preposiciones",
+   "title": "Por en para (basis) en de belangrijkste voorzetsels",
+   "level": "A2",
+   "objectives": [
+    "para gebruiken voor doel, bestemming en deadline",
+    "por gebruiken voor oorzaak, middel, route en ruil",
+    "a, en, de, con correct gebruiken (ook de persoonlijke a)"
+   ],
+   "theory": [
+    "para: Trabajo para ganar dinero; para el lunes",
+    "por: por la lluvia, por teléfono, por el parque, gracias por",
+    "persoonlijke a: Veo a mi jefe",
+    "a + el = al, de + el = del"
+   ],
+   "example": "Je plant een reis en licht de redenen toe.",
+   "exercise": "Por/para-keuzes in zinnen en een korte mail.",
+   "test": "Keuze por/para, voorzetsels, persoonlijke a."
+  },
+  {
+   "id": "es-b1-17-subjuntivo",
+   "title": "Presente de subjuntivo: wensen, advies en verzoeken",
+   "level": "B1",
+   "objectives": [
+    "het presente de subjuntivo vormen (regelmatig en onregelmatig)",
+    "het subjuntivo gebruiken na wens, advies en verzoek (quiero que, te aconsejo que)",
+    "ojalá, que + subjuntivo als wens (¡Que te vaya bien!)"
+   ],
+   "theory": [
+    "klinkerwissel -ar→e, -er/-ir→a op basis van de yo-vorm (tengo→tenga)",
+    "onregelmatig: sea, vaya, haya, sepa, esté, dé",
+    "twee onderwerpen → subjuntivo; één onderwerp → infinitief",
+    "parallel met het Franse subjonctif"
+   ],
+   "example": "Je formuleert verwachtingen voor een nieuwe medewerker.",
+   "exercise": "Wensen en adviezen schrijven.",
+   "test": "Vormen, triggers, infinitief vs. subjuntivo."
+  },
+  {
+   "id": "es-b1-18-subjuntivo-duda",
+   "title": "Subjuntivo na twijfel, emotie en waardeoordeel",
+   "level": "B1",
+   "objectives": [
+    "no creo que / dudo que + subjuntivo vs. creo que + indicativo",
+    "emotie en waardeoordeel uitdrukken (me alegra que, es importante que)",
+    "es verdad que vs. no es verdad que"
+   ],
+   "theory": [
+    "zekerheid → indicativo; twijfel/ontkenning → subjuntivo",
+    "me molesta que, me sorprende que, es lógico que",
+    "es cierto/evidente que + indicativo",
+    "valkuil: creo que + indicativo (anders dan intuïtief)"
+   ],
+   "example": "Je reageert genuanceerd op een voorstel in een vergadering.",
+   "exercise": "Standpunten formuleren met nuance.",
+   "test": "Indicativo/subjuntivo-keuze in context."
+  },
+  {
+   "id": "es-b1-19-condicional",
+   "title": "Condicional: beleefdheid, advies en hypothesen",
+   "level": "B1",
+   "objectives": [
+    "het condicional vormen (zelfde onregelmatige stammen als het futuro)",
+    "beleefde verzoeken en advies formuleren (¿Podría…?, Yo que tú…)",
+    "hypothesen maken met si + imperfecto de subjuntivo"
+   ],
+   "theory": [
+    "-ía, -ías, -ía, -íamos, -íais, -ían",
+    "Me gustaría, ¿Te importaría…?, Deberías…",
+    "Si tuviera tiempo, viajaría más (vorm van het imperfecto de subjuntivo: -ra/-se)",
+    "nooit condicional na si"
+   ],
+   "example": "Je onderhandelt beleefd over een deadline.",
+   "exercise": "Verzoeken en hypothesen schrijven.",
+   "test": "Vormen, beleefdheid, si-zinnen type 2."
+  },
+  {
+   "id": "es-b1-20-relativos",
+   "title": "Betrekkelijke zinnen: que, quien, lo que, donde, cuyo",
+   "level": "B1",
+   "objectives": [
+    "que, quien(es), el/la que, lo que en donde correct gebruiken",
+    "cuyo/a/os/as laten overeenkomen met het bezit",
+    "indicativo of subjuntivo kiezen in de relatieve zin (bestaand vs. gezocht)"
+   ],
+   "theory": [
+    "que als standaard; quien na voorzetsel voor personen",
+    "lo que = wat (ce que)",
+    "cuyo stemt overeen met wat volgt: la empresa cuyos clientes…",
+    "Busco un piso que tenga terraza (subjuntivo) vs. Tengo un piso que tiene terraza"
+   ],
+   "example": "Je beschrijft de ideale kandidaat voor een vacature.",
+   "exercise": "Zinnen samenvoegen met relatieven.",
+   "test": "Keuze van relatief, cuyo, modus."
+  },
+  {
+   "id": "es-b1-21-ser-estar",
+   "title": "Ser en estar: bijvoeglijke naamwoorden die van betekenis veranderen",
+   "level": "B1",
+   "objectives": [
+    "ser en estar kiezen bij bijvoeglijke naamwoorden (kenmerk vs. toestand)",
+    "betekenisverschillen kennen (ser listo/estar listo, ser malo/estar malo …)",
+    "estar + participio (resultaat) vs. ser + participio (passief)"
+   ],
+   "theory": [
+    "ser aburrido (saai) / estar aburrido (zich vervelen)",
+    "ser listo (slim) / estar listo (klaar); ser rico / estar rico (lekker)",
+    "La puerta está cerrada vs. La puerta fue cerrada",
+    "evenementen: La reunión es en la sala 3"
+   ],
+   "example": "Je beschrijft collega's en de stand van een project.",
+   "exercise": "Betekenisparen in context.",
+   "test": "Ser/estar-keuze met betekenisverschil."
+  },
+  {
+   "id": "es-b1-22-perifrasis",
+   "title": "Perífrasis: seguir, llevar, acabar de, volver a, dejar de",
+   "level": "B1",
+   "objectives": [
+    "duur en voortgang uitdrukken (llevar + tijd + gerundio, seguir + gerundio)",
+    "net gebeurd, herhaling en stoppen uitdrukken (acabar de, volver a, dejar de)",
+    "estar + gerundio correct gebruiken"
+   ],
+   "theory": [
+    "Llevo tres años estudiando español",
+    "Acabo de llegar = je viens d'arriver",
+    "volver a llamar = opnieuw bellen; dejar de fumar",
+    "gerundio: -ando/-iendo; onregelmatig: leyendo, durmiendo, diciendo"
+   ],
+   "example": "Je vertelt hoe lang je al aan een project werkt en wat er net gebeurde.",
+   "exercise": "Zinnen herschrijven met perífrasis.",
+   "test": "Vormen en betekenis van perífrasis."
+  },
+  {
+   "id": "es-b1-23-estilo-indirecto",
+   "title": "Indirecte rede en tijdsverschuiving",
+   "level": "B1",
+   "objectives": [
+    "uitspraken, vragen en bevelen indirect weergeven",
+    "de tijden verschuiven (dice que / dijo que)",
+    "tijds- en plaatsbepalingen aanpassen (mañana → al día siguiente)"
+   ],
+   "theory": [
+    "presente → imperfecto, indefinido → pluscuamperfecto, futuro → condicional",
+    "vragen: me preguntó si…, qué…",
+    "bevelen: me pidió que + subjuntivo",
+    "verba dicendi: explicar, comentar, asegurar, advertir"
+   ],
+   "example": "Je vat voor je team samen wat een klant zei.",
+   "exercise": "Een dialoog omzetten naar een verslag.",
+   "test": "Tijdsverschuiving en structuur van de indirecte rede."
+  },
+  {
+   "id": "es-b1-24-falsos-amigos",
+   "title": "Valse vrienden NL/FR ↔ ES en typische interferentiefouten",
+   "level": "B1",
+   "objectives": [
+    "de belangrijkste valse vrienden met het Frans en Nederlands herkennen",
+    "typische interferentiefouten van Franstaligen vermijden",
+    "de juiste Spaanse alternatieven gebruiken"
+   ],
+   "theory": [
+    "embarazada (zwanger ≠ embarrassée), constipado (verkouden), éxito (succes ≠ exit)",
+    "largo (lang ≠ large), salir (vertrekken ≠ salir 'vuil maken'), molestar",
+    "realizar (uitvoeren) vs. darse cuenta (beseffen)",
+    "carpeta (map), exquisito (heerlijk)"
+   ],
+   "example": "Je vermijdt gênante fouten in een gesprek met een klant.",
+   "exercise": "Fouten opsporen en verbeteren in een tekst.",
+   "test": "Betekenis van valse vrienden, correcties."
+  },
+  {
+   "id": "es-b2-25-condicionales",
+   "title": "Alle voorwaardelijke zinnen, ook de irreële",
+   "level": "B2",
+   "objectives": [
+    "realistische, onwaarschijnlijke en irreële voorwaarden correct vormen",
+    "het pluscuamperfecto de subjuntivo gebruiken (si hubiera/hubiese sabido)",
+    "gemengde voorwaardelijke zinnen en alternatieven (de + infinitief, en caso de que)"
+   ],
+   "theory": [
+    "si + presente → futuro/imperativo",
+    "si + imperfecto de subjuntivo → condicional",
+    "si + pluscuamperfecto de subjuntivo → condicional compuesto (habría) of pluscuamperfecto de subjuntivo",
+    "en caso de que, a no ser que, siempre que + subjuntivo"
+   ],
+   "example": "Je analyseert achteraf een mislukte onderhandeling.",
+   "exercise": "Scenario's formuleren met drie types.",
+   "test": "Vormen, combinaties, connectoren."
+  },
+  {
+   "id": "es-b2-26-conectores",
+   "title": "Argumenteren: tekstverbanden en nuance",
+   "level": "B2",
+   "objectives": [
+    "tegenstelling, oorzaak, gevolg en toegeving correct verbinden",
+    "aunque met indicativo of subjuntivo kiezen",
+    "een betoog structureren (en primer lugar, por un lado, en definitiva)"
+   ],
+   "theory": [
+    "sin embargo, no obstante, en cambio; por lo tanto, así que, de ahí que (+ subj.)",
+    "ya que, puesto que, dado que",
+    "aunque + indicativo (feit) / + subjuntivo (hypothese of niet relevant)",
+    "registerverschillen tussen spreek- en schrijftaal"
+   ],
+   "example": "Je schrijft een onderbouwd advies voor een directie.",
+   "exercise": "Een betoog met connectoren schrijven.",
+   "test": "Keuze van connectoren, modus na aunque."
+  },
+  {
+   "id": "es-b2-27-correo",
+   "title": "Formele e-mails en zakelijke correspondentie",
+   "level": "B2",
+   "objectives": [
+    "een formele e-mail correct opbouwen (aanhef, kern, slot)",
+    "beleefde verzoeken, klachten en bevestigingen formuleren",
+    "vaste formules in het juiste register gebruiken"
+   ],
+   "theory": [
+    "Estimado/a Sr./Sra. …: (dubbelepunt!), Muy señores míos",
+    "Le escribo para…, Le agradecería que + subjuntivo, Quedo a la espera de su respuesta",
+    "Un cordial saludo, Atentamente",
+    "usted/ustedes consequent; geen anglicismen"
+   ],
+   "example": "Je klaagt formeel over een te late levering.",
+   "exercise": "E-mails schrijven in drie situaties.",
+   "test": "Structuur, formules, register, spelling."
+  },
+  {
+   "id": "es-b2-28-reuniones",
+   "title": "Vergaderen, presenteren en onderhandelen",
+   "level": "B2",
+   "objectives": [
+    "een standpunt innemen, nuanceren en onderbreken",
+    "voorstellen doen, weigeren en akkoord bereiken",
+    "cijfers en trends presenteren"
+   ],
+   "theory": [
+    "Desde mi punto de vista…, Estoy de acuerdo en parte, pero…",
+    "¿Qué le parecería si…?, Lo siento, pero no podemos aceptar…",
+    "aumentar, disminuir, mantenerse estable; un 15 % (con el artículo)",
+    "Latijns-Amerikaanse zakelijke beleefdheid vs. Spaanse directheid"
+   ],
+   "example": "Je onderhandelt over prijs en levertermijn.",
+   "exercise": "Onderhandelingsrollenspel; presentatie van cijfers.",
+   "test": "Functionele formules, register, cijfertaal."
+  },
+  {
+   "id": "es-b2-29-pasiva-se",
+   "title": "Passief, se impersonal en pasiva refleja",
+   "level": "B2",
+   "objectives": [
+    "de passieve zin met ser + participio vormen",
+    "pasiva refleja (se venden pisos) en se impersonal (se trabaja mucho) onderscheiden",
+    "onpersoonlijke en genominaliseerde zinnen in zakelijke taal gebruiken"
+   ],
+   "theory": [
+    "ser + participio vooral in formele/journalistieke taal",
+    "se + werkwoord stemt overeen met het onderwerp: se alquilan oficinas",
+    "se impersonal zonder onderwerp: se vive bien aquí",
+    "nominalisering: la implementación de…, la reducción de…"
+   ],
+   "example": "Je schrijft een formeel verslag over de resultaten van een afdeling.",
+   "exercise": "Actieve zinnen omzetten naar onpersoonlijke constructies.",
+   "test": "Keuze passief/se, overeenkomst, registergevoel."
+  },
+  {
+   "id": "es-b2-30-registro",
+   "title": "Register en variatie; de DELE B2-schrijftaak",
+   "level": "B2",
+   "objectives": [
+    "register bewust kiezen (coloquial, estándar, formal)",
+    "de grote verschillen tussen Spanje en Latijns-Amerika herkennen (vosotros/ustedes, voseo, woordenschat)",
+    "een opinietekst van 180–220 woorden schrijven volgens DELE B2"
+   ],
+   "theory": [
+    "tú/usted per land en context; voseo in Argentinië en Uruguay",
+    "coger, carro/coche, ordenador/computadora, móvil/celular",
+    "structuur opinietekst: inleiding, argumenten, tegenargument, besluit",
+    "evaluatiecriteria DELE B2: coherentie, correctheid, bereik"
+   ],
+   "example": "Je schrijft een opiniestuk voor een Spaanstalig vakblad.",
+   "exercise": "DELE B2-schrijftaak onder tijdsdruk.",
+   "test": "Registerkeuze, variatie, schrijftaak met rubric."
+  }
+ ]
+}

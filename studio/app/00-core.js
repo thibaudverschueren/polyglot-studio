@@ -139,7 +139,7 @@ PS.norm = (s, lang = 'nl', o = {}) => {
   if (lang === 'num') return t.replace(/\s/g, '').replace(',', '.');
   t = t.replace(/[,.!?;:«»"…¿¡·]/g, ' ').replace(/\s+/g, ' ').trim();
   t = t.replace(/^'+|'+$/g, '');
-  if (!o.caseSensitive) t = t.toLocaleLowerCase(lang === 'el' ? 'el' : lang === 'fr' ? 'fr' : undefined);
+  if (!o.caseSensitive) t = t.toLocaleLowerCase(lang === 'el' || lang === 'fr' || lang === 'es' ? lang : undefined);
   return t;
 };
 
