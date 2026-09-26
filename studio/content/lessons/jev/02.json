@@ -1,0 +1,555 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "jev",
+ "id": 2,
+ "roadmap": "jev-05-openrouter-integration",
+ "kind": "core",
+ "title": "Jev via OpenRouter en Lokale Alternatieven",
+ "subtitle": "Van OpenRouter API-integratie (typesafe/jev-1.13) tot zero-cost lokale classifiers met ModernBERT, SLM's en constrained decoding",
+ "level": "praktijk",
+ "minutes": 50,
+ "summary": "Hoe roep je Jev aan in de praktijk, en wat doe je als je data vertrouwelijk is of als je nul API-kosten wilt? In deze les leer je de OpenRouter API voor typesafe/jev-1.13 implementeren en ontdek je de krachtigste lokale alternatieven: ModernBERT voor 15ms inferentie op CPU en compacte SLM's met constrained decoding (Outlines/GBNF grammars).",
+ "objectives": [
+  {
+   "id": "openrouter-api",
+   "text": "De OpenRouter API voor Jev (typesafe/jev-1.13) aanroepen met de juiste headers, payload en getypeerde question definitions."
+  },
+  {
+   "id": "why-local-privacy",
+   "text": "De 4 doorslaggevende argumenten voor lokale modellen benoemen: privacy (GDPR), offline werking, netwerklatentie en nul API-kosten."
+  },
+  {
+   "id": "modernbert-encoder",
+   "text": "Begrijpen waarom encoder-only modellen (ModernBERT / DeBERTa) 100x sneller zijn voor beslissingen dan generatieve decoders."
+  },
+  {
+   "id": "slm-constrained",
+   "text": "Small Language Models (Qwen2.5-0.5B / Llama-3.2-1B) inzetten met constrained decoding (Outlines / GBNF grammars) voor 100% syntaxisgarantie."
+  },
+  {
+   "id": "cost-latency-tradeoff",
+   "text": "Een kwantitatieve trade-off matrix opstellen tussen Cloud Jev, lokale ModernBERT en Frontier LLM's."
+  }
+ ],
+ "sections": [
+  {
+   "id": "sec-01",
+   "title": "1. Jev Aanspreken via de OpenRouter API",
+   "md": "Om Jev in je eigen applicaties, Python-scripts of n8n-workflows te gebruiken, hoef je geen aparte SDK te installeren. TypeSafe stelt Jev rechtstreeks beschikbaar via de **OpenRouter** API onder model-identificatie `typesafe/jev-1.13` (of de dynamische alias `typesafe/jev-latest`).\n\nOmdat OpenRouter compatibel is met de OpenAI REST-standaard, stuur je een eenvoudige HTTP `POST`-request naar `https://openrouter.ai/api/v1/chat/completions` met de standaard authenticatie-headers:\n\n```bash\ncurl https://openrouter.ai/api/v1/chat/completions \\\n  -H \"Authorization: Bearer $OPENROUTER_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"model\": \"typesafe/jev-1.13\",\n    \"messages\": [\n      {\"role\": \"user\", \"content\": \"Klantmail: Mijn factuur klopt niet, er staat €49 te veel op.\"}\n    ],\n    \"decision\": {\n      \"type\": \"choice\",\n      \"question\": \"Naar welk team moet dit bericht gerouteerd worden?\",\n      \"options\": [\"Facturatie\", \"Technische Helpdesk\", \"Sales\", \"Overig\"]\n    }\n  }'\n```\n\nHet cruciale verschil met een generatieve LLM zit in het antwoord. Je krijgt **geen tekstuele markdown** terug die met regex gestript moet worden, maar direct een getypeerd payload-object met de gekalibreerde kansverdeling:\n\n```json\n{\n  \"decision\": {\n    \"type\": \"choice\",\n    \"winner\": \"Facturatie\",\n    \"probabilities\": {\n      \"Facturatie\": 0.942,\n      \"Technische Helpdesk\": 0.031,\n      \"Sales\": 0.012,\n      \"Overig\": 0.015\n    }\n  },\n  \"usage\": {\n    \"prompt_tokens\": 38,\n    \"completion_tokens\": 0,\n    \"total_cost\": 0.0000016\n  }\n}\n```\n\nMerk op: `completion_tokens` is exact **0**. Je betaalt uitsluitend voor de inkomende tokens ($0.042 per 1 miljoen tokens)."
+  },
+  {
+   "id": "sec-02",
+   "title": "2. Waarom Lokaal? De Vier Drijfveren",
+   "md": "Hoewel Jev via OpenRouter extreem goedkoop en snel is, zijn er scenario's waarin cloud-API's niet wenselijk of zelfs strikt verboden zijn. Er zijn **vier doorslaggevende redenen** om te kiezen voor een lokaal beslissingsmodel:\n\n1. **Data Privacy en Compliance (GDPR / HIPAA):** Financiële transacties, patiëntendossiers of interne bedrijfsgeheimen mogen in veel B2B-sectoren de lokale server of het datacenter contractueel niet verlaten. Met een lokaal model blijft 100% van de data op je eigen machine (zoals een lokale Mac mini, MacBook 2 of on-premise VPS).\n2. **Netwerklatentie (Egress / Ingress):** Een cloud API call heeft altijd te maken met een round-trip time (RTT): DNS lookup, TLS handshake en netwerkafstand naar het datacenter. Zelfs als Jev in 70 ms rekent, kost de netwerkoverdracht vaak 100 ms tot 250 ms. Een lokaal model op een Apple Silicon M-chip reageert in **10 tot 25 ms**.\n3. **Nul Marginale Kosten ($0.00):** Als je honderdduizenden records per nacht batch-verwerkt (bijvoorbeeld voor data-cleaning of archivering), telt elke micro-cent. Een lokaal model draait op hardware die je al bezit, met nul variabele API-kosten.\n4. **Offline Beschikbaarheid:** Lokale scripts, command-line tools en embedded systemen functioneren foutloos zonder internetverbinding of wanneer externe API-gateways storingen ondervinden."
+  },
+  {
+   "id": "sec-03",
+   "title": "3. Het Wapen van de Architect: ModernBERT en Encoder-Only Modellen",
+   "md": "Wanneer ingenieurs denken aan 'lokale AI', grijpen ze vaak automatisch naar een gekwantiseerd LLM (zoals Llama of Mistral). Dat is een fundamentele vergissing voor beslissingstaken!\n\nLLM's zijn **decoder-only** architecturen: ze gebruiken een causaal aandachtsmasker (causal attention mask) waardoor elk token alleen naar eerdere tokens kan kijken, en genereren daarna token per token. Voor classificatie en scoring is een **encoder-only** model ordes van grootte superieur:\n\n- **Bidirectionele Attention:** Een encoder ziet de volledige context in beide richtingen tegelijkertijd. Woord 5 kan direct interageren met woord 500.\n- **Één Enkele Forward Pass:** De invoer passeert eenmaal door de lagen; de classificatiekop (linear layer + softmax) berekent de logit-vector in één rekenstap.\n\nEind 2024 lanceerde Answer.AI in samenwerking met LightOn **ModernBERT**. ModernBERT moderniseert de klassieke BERT-architectuur met de nieuwste innovaties:\n- **Flash Attention & Rotary Position Embeddings (RoPE)**\n- Native contextvenster van **8.192 tokens** (in plaats van de verouderde 512 tokens van klassieke BERT)\n- Ongelofelijke snelheid: ModernBERT-base (149M parameters) verwerkt teksten in **15 tot 20 milliseconden** op een gewone laptop CPU of Mac M-chip!\n\nDoor een kleine classificatiekop te trainen of een zero-shot NLI-kop (Natural Language Inference) te gebruiken, functioneert ModernBERT als een volwaardige lokale Jev-vervanger met nul API-kosten."
+  },
+  {
+   "id": "sec-04",
+   "title": "4. Small Language Models (SLMs) en Constrained Decoding",
+   "md": "Wat als je toch een generatief taalmodel wilt inzetten voor beslissingen (bijvoorbeeld omdat je flexibele redeneerstappen of meertalige semantiek nodig hebt)? Dan kies je voor een **Small Language Model (SLM)** gecombineerd met **constrained decoding**.\n\nModerne SLM's zoals **Qwen2.5-0.5B**, **Qwen2.5-1.5B** of **Llama-3.2-1B** zijn zo compact dat ze bij 4-bit kwantisatie (Q4_K_M) slechts 400 MB tot 900 MB RAM innemen. Ze draaien met 80 tot 150 tokens per seconde op een standaard Mac.\n\nOm te voorkomen dat een SLM syntaxfouten maakt, gebruiken we **constrained decoding** via frameworks zoals **Outlines**, **Guidance** of **GBNF grammars** in llama.cpp:\n\n```\n┌──────────────────────────────────────────────┐\n│ neuraal netwerk berekent logits (ongefilterd)│\n└──────────────────────┬───────────────────────┘\n                       ▼\n┌──────────────────────────────────────────────┐\n│ Logit Masking: tokens buiten BNF-grammatica  │\n│ krijgen logit = -infinity                    │\n└──────────────────────┬───────────────────────┘\n                       ▼\n┌──────────────────────────────────────────────┐\n│ Softmax kiest 100% gegarandeerd geldig token │\n└──────────────────────────────────────────────┘\n```\n\nDoor logits van ongeldige tokens op $-\\infty$ te zetten, is het wiskundig **onmogelijk** dat het model iets anders genereert dan het opgegeven schema. Geen retries, geen regex-fouten!"
+  },
+  {
+   "id": "sec-05",
+   "title": "5. De Kwantitatieve Vergelijkingstabel",
+   "md": "Hieronder staat de strategische vergelijking die elke software-architect moet beheersen bij het selecteren van de beslissingslaag:\n\n| Eigenschap | TypeSafe Jev (Cloud) | Lokaal ModernBERT | Lokaal SLM (Qwen 0.5B + Outlines) | Frontier LLM (Claude 3.5 Sonnet) |\n| :--- | :--- | :--- | :--- | :--- |\n| **Architectuur** | Non-autoregressief RLCD | Encoder-only (FlashAttn) | Decoder-only met BNF-mask | Decoder-only autoregressief |\n| **Latentie (P50)** | 70 – 120 ms | **15 – 25 ms** | 45 – 90 ms | 1.800 – 3.500 ms |\n| **Kosten per 1M calls** | \\$0.042 (input only) | **\\$0.00 (gratis)** | **\\$0.00 (gratis)** | \\$12.50 – \\$25.00 |\n| **Geheugen / VRAM** | 0 MB (cloud) | ~300 MB | ~500 MB (Q4) | 0 MB (cloud) |\n| **Privacy (GDPR)** | Cloud dataverkeer | **100% On-Device** | **100% On-Device** | Cloud dataverkeer |\n| **Syntaxisgarantie** | 100% getypeerd | 100% getypeerd | 100% via logit masking | Kwetsbaar voor formatfouten |\n\n> **Gouden Regel:** Gebruik **ModernBERT of een lokaal SLM** wanneer privacy en nul kosten primair zijn; gebruik **Jev via OpenRouter** wanneer je maximale zero-shot accuraatheid wilt zonder servers te beheren; gebruik **Claude 3.5 Sonnet** uitsluitend wanneer diepe synthese of creatief proza noodzakelijk is."
+  }
+ ],
+ "practice": [
+  {
+   "id": "p02-01",
+   "type": "mcq",
+   "skill": "openrouter-api",
+   "level": 1,
+   "prompt": "Onder welke modelnaam roep je TypeSafe Jev aan via de OpenRouter API?",
+   "explain": "De modelnaam op OpenRouter is typesafe/jev-1.13 of typesafe/jev-latest.",
+   "options": [
+    "typesafe/jev-1.13",
+    "openai/gpt-jev-v1",
+    "anthropic/claude-decision",
+    "meta/llama-decision-70b"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02-02",
+   "type": "type",
+   "skill": "openrouter-api",
+   "level": 2,
+   "prompt": "Hoeveel completion (output) tokens brengt OpenRouter in rekening bij een aanroep naar Jev? Typ het getal.",
+   "explain": "Omdat Jev geen tekst genereert maar direct types retourneert, is het aantal completion tokens exact 0.",
+   "answers": [
+    "0",
+    "nul",
+    "zero"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p02-03",
+   "type": "mcq",
+   "skill": "why-local-privacy",
+   "level": 1,
+   "prompt": "Wat is een doorslaggevende reden voor banken en zorginstellingen om een lokaal beslissingsmodel te verkiezen boven cloud API's?",
+   "explain": "Strikte privacyregels (GDPR, medische geheimhouding) verbieden vaak het versturen van gevoelige data naar externe servers.",
+   "options": [
+    "Strikte privacywetgeving en confidential data die de interne server niet mag verlaten.",
+    "Omdat lokale modellen altijd meer stroom verbruiken dan datacenters.",
+    "Omdat cloud-API's niet kunnen werken met getallen onder de nul.",
+    "Omdat lokale computers geen besturingssysteem nodig hebben."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02-04",
+   "type": "type",
+   "skill": "why-local-privacy",
+   "level": 2,
+   "prompt": "Typ de afkorting van de Europese privacywetgeving die strenge eisen stelt aan het exporteren van persoonsgegevens naar cloud API's.",
+   "explain": "GDPR (General Data Protection Regulation) / AVG.",
+   "answers": [
+    "GDPR",
+    "gdpr",
+    "AVG",
+    "avg"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "p02-05",
+   "type": "mcq",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Waarom is een encoder-only model (zoals ModernBERT) architecturaal geschikter voor classificatie dan een autoregressieve decoder?",
+   "explain": "Een encoder gebruikt bidirectionele attention om de hele context in één keer te overzien en voert de classificatie uit in één enkele rekenstap.",
+   "options": [
+    "Het gebruikt bidirectionele attention en berekent de uitkomst in één enkele forward pass.",
+    "Het kan uitsluitend binaire bestanden lezen zonder tekst te converteren.",
+    "Het heeft geen weights of matrices nodig in het geheugen.",
+    "Het genereert automatisch HTML-pagina's voor de gebruiker."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02-06",
+   "type": "numeric",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "ModernBERT ondersteunt een native contextvenster van 8 192 tokens. Klassieke BERT ondersteunde slechts 512 tokens. Hoeveel keer groter is het contextvenster van ModernBERT?",
+   "explain": "8192 / 512 = 16.",
+   "value": 16,
+   "tolerance": 0.01,
+   "unit": "×"
+  },
+  {
+   "id": "p02-07",
+   "type": "mcq",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Hoe voorkomt 'constrained decoding' (zoals in Outlines of llama.cpp grammars) dat een lokaal SLM ongeldige JSON uitspuugt?",
+   "explain": "Bij elke stap worden de logits van alle tokens die de grammatica zouden schenden op -oneindig gezet, zodat ze onmogelijk gesampled kunnen worden.",
+   "options": [
+    "Logit masking zet de logits van tokens die de grammatica schenden op -oneindig.",
+    "Het model start automatisch opnieuw op totdat de output toevallig klopt.",
+    "Het model wist de harde schijf bij een syntaxfout.",
+    "De computer controleert de spelling met een traditioneel woordenboek."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02-08",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Typ de naam van de populaire open-source Python library van .txt die structured generation garandeert via logit masking.",
+   "explain": "Outlines is de toonaangevende library voor structured generation via FSMs.",
+   "answers": [
+    "Outlines",
+    "outlines"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p02-09",
+   "type": "numeric",
+   "skill": "cost-latency-tradeoff",
+   "level": 2,
+   "prompt": "Een bedrijf voert 200.000 categorisaties per maand uit. Met Claude 3.5 kost dit \\$0.015 per call. Met een lokaal ModernBERT model zijn de marginale API-kosten \\$0.00. Hoeveel dollar bespaart het bedrijf per maand?",
+   "explain": "200.000 * 0.015 = 3.000 dollar besparing per maand.",
+   "value": 3000,
+   "tolerance": 1,
+   "unit": "$"
+  },
+  {
+   "id": "p02-10",
+   "type": "mcq",
+   "skill": "cost-latency-tradeoff",
+   "level": 2,
+   "prompt": "In welke situatie is het economisch en technisch verstandig om Jev via OpenRouter te gebruiken in plaats van een lokaal model?",
+   "explain": "Wanneer je geen eigen servers wilt beheren, zero-shot accuraatheid over uiteenlopende domeinen nodig hebt en direct wilt schalen zonder VRAM-investeringen.",
+   "options": [
+    "Wanneer je geen eigen GPU-infrastructuur wilt beheren en direct wilt schalen in de cloud.",
+    "Wanneer de internetverbinding op de server permanent is uitgeschakeld.",
+    "Wanneer je verplicht bent om data uitsluitend binnen een lokaal LAN te bewaren.",
+    "Wanneer je applicatie minder dan 1 transactie per jaar verwerkt."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02-11",
+   "type": "type",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Welke moderne attention-optimalisatie (geïntroduceerd door Tri Dao) stelt ModernBERT in staat om 8k contexten razendsnel te verwerken?",
+   "explain": "Flash Attention (of FlashAttention).",
+   "answers": [
+    "Flash Attention",
+    "FlashAttention",
+    "flash attention",
+    "flashattention"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "p02-12",
+   "type": "numeric",
+   "skill": "cost-latency-tradeoff",
+   "level": 2,
+   "prompt": "Als een lokale ModernBERT classifier 18 ms nodig heeft en een cloud LLM 2 700 ms, hoeveel milliseconden wachttijd bespaar je per aanroep?",
+   "explain": "2700 - 18 = 2682 ms.",
+   "value": 2682,
+   "tolerance": 1,
+   "unit": "ms"
+  },
+  {
+   "id": "p02-13",
+   "type": "mcq",
+   "skill": "why-local-privacy",
+   "level": 2,
+   "prompt": "Wat gebeurt er met de netwerklatentie (round-trip time) wanneer je overstapt van een cloud API naar een lokaal model op dezelfde server?",
+   "explain": "De netwerklatentie daalt naar 0 milliseconden (inter-process communicatie via localhost of Unix domain socket).",
+   "options": [
+    "De netwerklatentie verdwijnt vrijwel volledig (inter-process communicatie op localhost).",
+    "De netwerklatentie verdubbelt wegens interne firewall checks.",
+    "De netwerklatentie wordt gelijk aan de lichtsnelheid in glasvezel naar New York.",
+    "De netwerklatentie kan niet meer gemeten worden met ping."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02-14",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Typ de naam van het compacte 0.5B model van Alibaba dat ideaal is voor lokale besluitvorming: 'Qwen2.5-0.5B' of 'Claude-3.5'.",
+   "explain": "Qwen2.5-0.5B is een toonaangevend compact SLM.",
+   "answers": [
+    "Qwen2.5-0.5B",
+    "qwen2.5-0.5b",
+    "Qwen",
+    "qwen"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p02-15",
+   "type": "mcq",
+   "skill": "openrouter-api",
+   "level": 2,
+   "prompt": "Welke parameter in het OpenRouter JSON payload definieert bij Jev de te evalueren beslissingsvraag?",
+   "explain": "De 'decision' parameter bevat de specificatie van het type (choice, noul, score), de vraag en optionele opties.",
+   "options": [
+    "decision",
+    "temperature",
+    "stream_options",
+    "presence_penalty"
+   ],
+   "answer": 0
+  }
+ ],
+ "production": {
+  "id": "prod-02",
+  "type": "explain",
+  "title": "Migratieplan: Van Dure Cloud-LLM naar Lokale Privacy Stack",
+  "prompt": "Een medische start-up verwerkt dagelijks 10.000 inkomende patiëntberichten. Momenteel stuurt hun backend elk bericht naar GPT-4o om te bepalen of het bericht over een spoedgeval gaat (Spoed: Ja/Nee). De juridische afdeling meldt dat dit in strijd is met de privacywetgeving omdat patiëntdata niet geanonimiseerd naar US-cloudservers mag worden verzonden. Bovendien klaagt de directie over de maandelijkse factuur van \\$900 en de wachttijd van 3 seconden in de app.\n\nSchrijf een concreet migratieplan:\n1. Welke lokale modelarchitectuur (ModernBERT vs SLM) beveel je aan en waarom?\n2. Hoe waarborg je dat de output 100% syntactisch betrouwbaar is (geen format crashes)?\n3. Wat is de nieuwe verwachte latentie en de maandelijkse API-kost?\n4. Hoe richt je een nood-fallback in als het lokale model overbelast raakt?",
+  "model": "1. Architectuur: Een lokaal ModernBERT-model (of DeBERTa-v3 fine-tune) met een binaire classificatiekop. Dit garandeert dat alle patiëntdata 100% op de lokale server blijft (volledige GDPR/HIPAA compliance) en contexten tot 8k tokens aankan.\n2. Betrouwbaarheid: Een classificatiekop berekent direct logits voor twee klassen [spoed, geen_spoed]; er is geen sprake van tekstgeneratie of regex parsing, dus syntaxfouten zijn wiskundig uitgesloten.\n3. Latentie & Kosten: Inferentietijd daalt van 3.000 ms naar 15-25 ms (meer dan 100x sneller). De variabele API-kosten dalen van $900/maand naar exact $0.00/maand.\n4. Fallback: Bij tijdelijke piekbelasting buffert een Redis queue de verzoeken, of draait een secundaire container met Qwen2.5-0.5B via llama.cpp op de standby-node.",
+  "rubric": [
+   "Gegronde keuze voor een lokaal encoder-model (ModernBERT) met oog op GDPR/privacy en snelheid.",
+   "Uitleg over syntaxisgarantie (geen generatieve parsing nodig bij een classificatiekop of logit masking).",
+   "Realistische berekening van latentie (<30ms) en kosten ($0.00 marginale API-kosten).",
+   "Praktische fallback- en bufferingstrategie (Redis queue of lokale standby container)."
+  ]
+ },
+ "mastery": [
+  {
+   "id": "m02-01",
+   "type": "type",
+   "skill": "openrouter-api",
+   "level": 2,
+   "prompt": "Typ de naam van de modelprovider op OpenRouter die het model 'typesafe/jev-1.13' publiceert.",
+   "explain": "TypeSafe (of typesafe) is de provider.",
+   "answers": [
+    "typesafe",
+    "TypeSafe",
+    "TypeSafe AI"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m02-02",
+   "type": "mcq",
+   "skill": "openrouter-api",
+   "level": 2,
+   "prompt": "Waarom is de integratie van Jev via OpenRouter eenvoudiger voor backend developers dan traditionele function calling met LLM's?",
+   "explain": "Omdat er geen prompt engineering, schema reparatie of retry-loops nodig zijn; het model retourneert direct getypeerde JSON met gekalibreerde kansen.",
+   "options": [
+    "Het retourneert direct getypeerde velden zonder prompt engineering of JSON-reparatielussen.",
+    "Het vereist geen internetverbinding of API-sleutel.",
+    "Het converteert de code automatisch naar assembly taal.",
+    "Het werkt alleen met onversleutelde HTTP-verbindingen."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m02-03",
+   "type": "type",
+   "skill": "why-local-privacy",
+   "level": 2,
+   "prompt": "Welk type netwerklatentie elimineer je volledig door een model lokaal op 'localhost' te draaien in plaats van in de cloud? Typ 'RTT' of 'Round-Trip Time'.",
+   "explain": "De Round-Trip Time (RTT) over het internet verdwijnt.",
+   "answers": [
+    "RTT",
+    "rtt",
+    "Round-Trip Time",
+    "round trip time"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m02-04",
+   "type": "mcq",
+   "skill": "why-local-privacy",
+   "level": 2,
+   "prompt": "Wat is het belangrijkste voordeel van een lokaal model tijdens een storing van een grote cloud-provider (zoals AWS of Cloudflare)?",
+   "explain": "Omdat het model lokaal op je eigen machine draait, blijft je applicatie ononderbroken functioneren zonder afhankelijkheid van externe netwerken.",
+   "options": [
+    "Je applicatie blijft 100% operationeel omdat er geen externe netwerkafhankelijkheid is.",
+    "Je krijgt automatisch een schadevergoeding uitgekeerd van de cloudprovider.",
+    "De processor van je laptop verdubbelt automatisch zijn kloksnelheid.",
+    "Alle eerdere beslissingen worden automatisch overschreven met nullen."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m02-05",
+   "type": "type",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Is ModernBERT een 'encoder-only' of een 'decoder-only' model? Typ exact.",
+   "explain": "ModernBERT is een encoder-only architectuur.",
+   "answers": [
+    "encoder-only",
+    "encoder only",
+    "encoder"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m02-06",
+   "type": "mcq",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Wat is het effect van bidirectionele attention in ModernBERT ten opzichte van causale attention in GPT?",
+   "explain": "Bij bidirectionele attention kan elk token informatie uitwisselen met zowel eerdere als latere tokens in de zin, wat rijke representaties oplevert.",
+   "options": [
+    "Elk token kan gelijktijdig interageren met eerdere én latere tokens in de hele tekst.",
+    "Het model kan uitsluitend van rechts naar links lezen.",
+    "Het model heeft dubbel zoveel stroom nodig om te functioneren.",
+    "Het verhindert dat het model getallen kan herkennen."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m02-07",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Welke techniek zet logits van tokens die niet binnen een grammatica passen op $-\\infty$? Typ 'logit masking'.",
+   "explain": "Logit masking filtert ongeldige tokens vóór de softmax berekening.",
+   "answers": [
+    "logit masking",
+    "Logit masking",
+    "Logit Masking",
+    "masking"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "m02-08",
+   "type": "mcq",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Waarom is een 4-bit gekwantiseerd model zoals Qwen2.5-0.5B-Q4_K_M zo aantrekkelijk voor achtergrondtaken op een Mac?",
+   "explain": "Omdat het slechts ~400 MB werkgeheugen verbruikt en vrijwel onmerkbaar op de achtergrond draait zonder ventilatoren te activeren.",
+   "options": [
+    "Het gebruikt slechts enkele honderden megabytes RAM en draait stil op de achtergrond.",
+    "Het kan de processor van de computer overklokken tot boven de 10 GHz.",
+    "Het verwijdert automatisch virussen van het besturingssysteem.",
+    "Het garandeert dat alle internetverbindingen sneller worden."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m02-09",
+   "type": "numeric",
+   "skill": "cost-latency-tradeoff",
+   "level": 2,
+   "prompt": "Een API draait 1.000.000 beslissingen per maand. Met Claude Sonnet kost dit \\$15.000 per maand. Met Jev kost dit \\$42 per maand. Hoeveel dollar bespaar je met Jev per maand?",
+   "explain": "15.000 - 42 = 14.958 dollar besparing per maand.",
+   "value": 14958,
+   "tolerance": 1,
+   "unit": "$"
+  },
+  {
+   "id": "m02-10",
+   "type": "mcq",
+   "skill": "cost-latency-tradeoff",
+   "level": 2,
+   "prompt": "Wanneer kies je in een enterprise architectuur voor een 'tweetrapsraket' (hybride aanpak)?",
+   "explain": "Een snel lokaal model of Jev handelt 80-90% van de routinetaken direct af; alleen bij twijfel of diepe synthesebehoefte wordt de dure frontier LLM ingeschakeld.",
+   "options": [
+    "System 1 filtert en routeert 85% van het verkeer; System 2 lost complexe uitzonderingen op.",
+    "Alle verkeer wordt altijd door beide modellen tegelijk uitgevoerd en vergeleken.",
+    "Het eerste model gooit een dobbelsteen en het tweede model betaalt de rekening.",
+    "Het is alleen nuttig wanneer de database volledig leeg is."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m02-11",
+   "type": "type",
+   "skill": "openrouter-api",
+   "level": 2,
+   "prompt": "Welk HTTP-request type (GET, POST, PUT of DELETE) gebruik je om een completion of decision request naar OpenRouter te sturen?",
+   "explain": "API completions vereisen een POST request met JSON body.",
+   "answers": [
+    "POST",
+    "post"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m02-12",
+   "type": "numeric",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "ModernBERT-base heeft circa 149 miljoen parameters. Hoeveel miljard parameters is dat? (Geef als decimaal getal, bv. 0.149)",
+   "explain": "149M = 0.149 miljard.",
+   "value": 0.149,
+   "tolerance": 0.005,
+   "unit": "B"
+  },
+  {
+   "id": "m02-13",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Typ de afkorting voor de formele grammatica-standaard (Backus-Naur Form) die gebruikt wordt om geldige syntaxbomen te definiëren.",
+   "explain": "BNF (of EBNF / GBNF).",
+   "answers": [
+    "BNF",
+    "bnf",
+    "GBNF",
+    "gbnf",
+    "EBNF"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m02-14",
+   "type": "numeric",
+   "skill": "cost-latency-tradeoff",
+   "level": 2,
+   "prompt": "Als een lokaal script op je Mac 15 ms per beslissing nodig heeft, hoeveel beslissingen kan één core theoretisch sequentieel per seconde verwerken? (1000 ms / 15 ms, rond af op geheel getal)",
+   "explain": "1000 / 15 = 66.666... dus circa 67 beslissingen per seconde.",
+   "value": 67,
+   "tolerance": 1,
+   "unit": "calls/s"
+  },
+  {
+   "id": "m02-15",
+   "type": "type",
+   "skill": "why-local-privacy",
+   "level": 2,
+   "prompt": "Als een server geen actieve internetverbinding heeft maar lokaal draait, welke term beschrijft deze netwerkstatus? Typ 'offline' of 'airgapped'.",
+   "explain": "Offline of airgapped.",
+   "answers": [
+    "offline",
+    "Offline",
+    "airgapped",
+    "air-gapped"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "m02-16",
+   "type": "mcq",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Wat is het voordeel van ModernBERT ten opzichte van klassieke RoBERTa of DeBERTa modellen?",
+   "explain": "ModernBERT combineert Flash Attention, RoPE, GeGLU en een 8k contextvenster met moderne GPU-optimalisaties.",
+   "options": [
+    "Het heeft een 8k contextvenster, Flash Attention en draait ordes van grootte sneller.",
+    "Het kan rechtstreeks gesproken audio versturen naar WhatsApp.",
+    "Het genereert fotorealistische afbeeldingen van documenten.",
+    "Het werkt uitsluitend op analoge telefoontoestellen."
+   ],
+   "answer": 0
+  }
+ ],
+ "cards": [
+  {
+   "id": "c-openrouter-model",
+   "skill": "openrouter-api",
+   "front": "Hoe roep je Jev aan via OpenRouter?",
+   "back": "Via de standaard /v1/chat/completions API met model `typesafe/jev-1.13` en een specifieke `decision`-parameter (Noul, Choice of Score)."
+  },
+  {
+   "id": "c-why-local-4",
+   "skill": "why-local-privacy",
+   "front": "Wat zijn de 4 redenen om een lokaal beslissingsmodel te gebruiken?",
+   "back": "1. Privacy & compliance (GDPR)\n2. Nul netwerklatentie (inter-process op localhost)\n3. Nul variabele API-kosten ($0.00)\n4. Volledige offline beschikbaarheid"
+  },
+  {
+   "id": "c-modernbert",
+   "skill": "modernbert-encoder",
+   "front": "Waarom is ModernBERT ideaal voor beslissingen?",
+   "back": "Het is een encoder-only model met bidirectionele Flash Attention en 8.192 tokens context. Het berekent de classificatie in 15–20 ms op een gewone CPU."
+  },
+  {
+   "id": "c-constrained-dec",
+   "skill": "slm-constrained",
+   "front": "Hoe werkt constrained decoding via logit masking?",
+   "back": "Tokens die niet voldoen aan de BNF-grammatica of het JSON Schema krijgen logit = -infinity, waardoor syntaxfouten wiskundig onmogelijk zijn."
+  },
+  {
+   "id": "c-slm-size",
+   "skill": "slm-constrained",
+   "front": "Hoeveel RAM verbruikt een 4-bit Qwen2.5-0.5B model?",
+   "back": "Slechts circa 400 MB! Het draait ongemerkt op de achtergrond van een laptop of kleine server."
+  },
+  {
+   "id": "c-hybrid-rule",
+   "skill": "cost-latency-tradeoff",
+   "front": "Wat is de 'Gouden Regel' van de hybride AI-architectuur?",
+   "back": "System 1 (Lokaal/Jev) voor 85% van de filters, routeringen en checks; System 2 (Claude/GPT-4o) uitsluitend voor creatie en diepe synthese."
+  }
+ ],
+ "meta": {
+  "created": "2026-09-26",
+  "author": "Antigravity"
+ }
+}

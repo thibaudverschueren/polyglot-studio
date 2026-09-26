@@ -34,7 +34,8 @@
         "french",
         "solidity",
         "ai",
-        "automation"
+        "automation",
+        "jev"
       ]
     },
     "id": {
@@ -101,7 +102,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "pattern": "^(greek|french|solidity|ai|automation):[0-9]+$"
+        "pattern": "^(greek|french|solidity|ai|automation|jev):[0-9]+$"
       }
     },
     "vocab": {

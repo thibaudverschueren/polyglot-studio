@@ -1,0 +1,666 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "jev",
+ "id": 1,
+ "roadmap": "jev-01-system-1-vs-2",
+ "kind": "core",
+ "title": "Het System 1 Paradigma: Jev en Beslissingsmodellen",
+ "subtitle": "Waarom generatieve LLM's te traag en duur zijn voor softwarebeslissingen, en hoe TypeSafe Jev besluiten getypeerd en gekalibreerd berekent",
+ "level": "fundament",
+ "minutes": 45,
+ "summary": "Software heeft geen proza nodig wanneer het een beslissing moet nemen. Traditionele LLM's die token voor token genereren zijn traag, duur en onvoorspelbaar voor if/else-logica. Diogo Almeida (co-inventor van RLHF bij OpenAI) bouwde met TypeSafe Jev een fundamenteel nieuw System 1 AI-model: non-autoregressief, ultrasnel (70ms) en getraind op gekalibreerde beslissingen in plaats van menselijke vleierij.",
+ "objectives": [
+  {
+   "id": "sys1-vs-sys2",
+   "text": "Kahneman's System 1 (snel, heuristisch) vs System 2 (deliberatief, redenerend) toepassen op AI-architectuur."
+  },
+  {
+   "id": "decoder-failure",
+   "text": "Inzien waarom generatieve LLM's met autoregressieve decoders falen voor binaire en categorische beslissingen."
+  },
+  {
+   "id": "diogo-typesafe",
+   "text": "De achtergrond van TypeSafe AI, Diogo Almeida en de nood aan non-generatieve software-AI begrijpen."
+  },
+  {
+   "id": "three-primitives",
+   "text": "De drie primitieven definiëren en toepassen: Noul (boolean), Choice (categorisch), Score (ordinaal)."
+  },
+  {
+   "id": "rlcd-mechanics",
+   "text": "RLCD (Reinforcement Learning for Calibrated Decisions) en Brier-score onderscheiden van RLHF."
+  }
+ ],
+ "diagnostic": {
+  "intro": "Deze diagnostische test peilt naar je basisinzichten in AI-architecturen, decoders, probabilistische kalibratie en beslissingslogica. Zo stemt Polyglot Studio het tempo direct op je af.",
+  "bands": [
+   "basis",
+   "gevorderd",
+   "expert"
+  ],
+  "items": [
+   {
+    "id": "d01",
+    "type": "mcq",
+    "skill": "sys1-vs-sys2",
+    "level": 1,
+    "prompt": "Wat is het kernverschil tussen System 1 en System 2 cognitie volgens Daniel Kahneman, vertaald naar AI?",
+    "explain": "System 1 werkt snel, parallel en intuïtief (patroonherkenning/classificatie); System 2 werkt traag, serieel en deliberatief (redeneren over meerdere denkstappen).",
+    "options": [
+     "System 1 is snel en intuïtief; System 2 is traag en deliberatief.",
+     "System 1 genereert lange teksten; System 2 berekent getallen.",
+     "System 1 draait altijd lokaal; System 2 draait altijd in de cloud.",
+     "System 1 vereist GPU clusters; System 2 draait op een CPU."
+    ],
+    "answer": 0,
+    "band": "basis"
+   },
+   {
+    "id": "d02",
+    "type": "mcq",
+    "skill": "decoder-failure",
+    "level": 1,
+    "prompt": "Waarom is een autoregressieve LLM (zoals GPT-4o of Claude) fundamenteel inefficiënt om te beslissen of een email spam is?",
+    "explain": "Een decoder genereert tokens sequentieel stap voor stap via causale maskers. Voor een simpele binaire keuze is één enkele classificatie-pas voldoende.",
+    "options": [
+     "Decoders voeren sequentiële generatiestappen uit met hoge latentie en geheugenbandbreedte.",
+     "Decoders kunnen principieel geen binaire getallen verwerken in hun embeddingruimte.",
+     "Decoders zijn niet in staat om contexten van meer dan 512 tekens in te lezen.",
+     "Decoders werken uitsluitend met ongesuperviseerde k-means clustering."
+    ],
+    "answer": 0,
+    "band": "basis"
+   },
+   {
+    "id": "d03",
+    "type": "mcq",
+    "skill": "three-primitives",
+    "level": 2,
+    "prompt": "Welke primitief in Jev levert een gekalibreerde boolean kansverdeling $P(\\text{true} \\mid x)$ op?",
+    "explain": "Noul is de boolean primitief in Jev; Choice is voor categorische selectie; Score is voor ordinale rubrieken.",
+    "options": [
+     "Noul",
+     "Choice",
+     "Score",
+     "Tensor"
+    ],
+    "answer": 0,
+    "band": "gevorderd"
+   },
+   {
+    "id": "d04",
+    "type": "mcq",
+    "skill": "rlcd-mechanics",
+    "level": 2,
+    "prompt": "Wat is het voornaamste nadeel van standaard RLHF (Reinforcement Learning from Human Feedback) bij beslissingstaken?",
+    "explain": "RLHF leidt vaak tot overconfidence en sycophancy (het model zegt wat mensen graag horen) in plaats van statistisch betrouwbare, gekalibreerde kansen.",
+    "options": [
+     "RLHF optimaliseert voor menselijke voorkeur, wat leidt tot overconfidence en slechte kalibratie.",
+     "RLHF verlaagt de wiskundige rekenkracht van de achterliggende GPU drivers.",
+     "RLHF verwijdert alle gewichten in de attention layers van het neurale netwerk.",
+     "RLHF kan uitsluitend worden getraind op afbeeldingen en audiofragmenten."
+    ],
+    "answer": 0,
+    "band": "gevorderd"
+   },
+   {
+    "id": "d05",
+    "type": "numeric",
+    "skill": "decoder-failure",
+    "level": 2,
+    "prompt": "Als een LLM 25 tokens genereert om '{\"spam\": true}' uit te spugen bij 40 ms per token, wat is de minimale decodeertijd in milliseconden?",
+    "explain": "25 tokens vermenigvuldigd met 40 ms per token is 1000 ms.",
+    "value": 1000,
+    "tolerance": 0.01,
+    "unit": "ms",
+    "band": "gevorderd"
+   },
+   {
+    "id": "d06",
+    "type": "mcq",
+    "skill": "diogo-typesafe",
+    "level": 2,
+    "prompt": "Waarom richtte voormalig OpenAI-onderzoeker Diogo Almeida TypeSafe AI op?",
+    "explain": "Almeida zag dat ontwikkelaars trage, dure generatieve LLM's forceerden om als programmastructuren te fungeren, terwijl betrouwbare beslissingsmodellen ontbraken.",
+    "options": [
+     "Om snelle, getypeerde beslissingsmodellen te bouwen voor programmatische software.",
+     "Om een nieuwe programmeertaal te ontwerpen die TypeScript vervangt.",
+     "Om een open-source zoekmachine te lanceren tegen Google.",
+     "Om autonome drones te besturen met computervisie."
+    ],
+    "answer": 0,
+    "band": "gevorderd"
+   },
+   {
+    "id": "d07",
+    "type": "mcq",
+    "skill": "three-primitives",
+    "level": 3,
+    "prompt": "Een n8n-workflow moet leads indelen op een geordende rubriek van 1 tot 10 op basis van omzet en bedrijfsgrootte. Welke Jev primitief is wiskundig het meest geschikt?",
+    "explain": "De Score primitief evalueert geordende drempels op een rubriek en berekent een continue verwachtingswaarde $\\mathbb{E}[S]$.",
+    "options": [
+     "Score",
+     "Choice",
+     "Noul",
+     "Embedding"
+    ],
+    "answer": 0,
+    "band": "expert"
+   },
+   {
+    "id": "d08",
+    "type": "numeric",
+    "skill": "rlcd-mechanics",
+    "level": 3,
+    "prompt": "Bereken de Brier-score voor één voorspelling waarbij het model $P(\\text{fraude}) = 0.80$ toekent en er daadwerkelijk fraude plaatsvindt ($y = 1$). Bereken $(0.80 - 1.0)^2$.",
+    "explain": "$(0.80 - 1.0)^2 = (-0.20)^2 = 0.04$.",
+    "value": 0.04,
+    "tolerance": 0.001,
+    "band": "expert"
+   }
+  ]
+ },
+ "sections": [
+  {
+   "id": "sec-01",
+   "title": "1. Het System 1 vs System 2 Dilemma in Software",
+   "md": "In zijn baanbrekende werk *Thinking, Fast and Slow* formuleerde Nobelprijswinnaar Daniel Kahneman een fundamentele scheiding in menselijke cognitie:\n\n- **System 1 (Snel, Associatief en Parallel):** Werkt reflexmatig en zonder noemenswaardige cognitieve inspanning. Het herkent onmiddellijk gevaar, identificeert een bekende stem in een rumoerige menigte of stuurt je stuurwiel bij wanneer een auto plots remt. In wiskundige termen voert het een directe mapping uit van input naar beslissing.\n- **System 2 (Traag, Sequentieel en Deliberatief):** Werkt stap voor stap met hoge mentale concentratie. Het lost wiskundige integralen op, evalueert schaakzetten vier beurten vooruit of schrijft een juridisch contract.\n\nIn de AI-ontwikkeling van de afgelopen vijf jaar heeft de industrie bijna al haar miljarden geïnvesteerd in **System 2**: gigantische autoregressieve Large Language Models (LLM's) zoals Claude 3.5 Sonnet, GPT-4o en OpenAI o1. Deze neurale netwerken blinken uit in literaire compositie, creatieve brainstorming en diepgaande redeneerstappen.\n\nMaar zodra we kijken naar de werkelijke vereisten van enterprise backend software, API gateways, n8n-workflows en microservices, stuiten we op een gigantische mismatch:\n\n> Productiesoftware heeft zelden een prozaïsch essay van vijfhonderd woorden nodig. Software heeft een ondubbelzinnige, getypeerde **beslissing** nodig. Moet dit support-ticket naar Facturatie of naar Technisch Onderhoud? Bevat deze webhook een prompt injection aanval? Krijgt deze lead prioriteit A of prioriteit B? Ja of nee? Optie 1, 2 of 3?\n\nWie een traditionele frontier LLM dwingt om een eenvoudige routeringsbeslissing te nemen, betaalt een torenhoge prijs op drie fronten:\n1. **Onacceptabele Latentie:** Een autoregressief model moet tokens één voor één genereren. Zelfs voor een klein JSON-bericht wacht je 1.500 ms tot 4.000 ms. Voor synchrone webapps en API's is dat een eeuwigheid.\n2. **Hoge Reken- en Tokenkosten:** Je betaalt voor honderden input tokens en output tokens, oplopend tot \\$10 tot \\$15 per 1.000 requests.\n3. **Fragiele Interfaces:** Zelfs met prompt instructies kan het model onverwacht markdown code fences (` ```json `), inleidende beleefdheidsfrases of syntactisch ongeldige sluitaccolades produceren, waardoor downstream JSON parsers onherroepelijk crashen."
+  },
+  {
+   "id": "sec-02",
+   "title": "2. De Oorsprong van Jev: Diogo Almeida en TypeSafe AI",
+   "md": "Deze structurele frustratie vormde het vertrekpunt voor **TypeSafe AI**.\n\nDe leidende figuur achter TypeSafe en de creatie van **Jev** (in gesproken Nederlands vaak fonetisch gerefereerd als *Jef*) is **Diogo Almeida**. Almeida is geen buitenstaander: als toponderzoeker bij OpenAI speelde hij een directe sleutelrol in de moderne AI-revolutie als mede-uitvinder van **RLHF (Reinforcement Learning from Human Feedback)** en co-auteur van de fundamentele **InstructGPT** papers.\n\nTijdens zijn werk bij OpenAI zag Almeida hoe duizenden software-ingenieurs wereldwijd vochten met dezelfde contradictie:\n\n> *\"Ontwikkelaars gebruiken gigantische generatieve LLM's van honderden miljarden parameters als veredelde if/else-statements. Ze schrijven dertig regels complexe system prompts om het model te smeken om uitsluitend een JSON-boolean uit te spugen, en bouwen vervolgens foutgevoelige regex-reparatielussen om de antwoorden betrouwbaar te parsen.\"*\n\nIn september 2026 lanceerde TypeSafe AI (opgericht door Almeida samen met Erik Gafni en Sasha Sheng) na twee jaar intensief onderzoek een radicaal nieuw model: **Jev**.\n\nJev breekt radicaal met de autoregressieve traditie:\n- Het is **géén generatief taalmodel**: Jev kan en zal nooit een gedicht, e-mail of opiniestuk schrijven.\n- Het genereert geen tekst-tokens na elkaar: het is een **zuiver beslissingsmodel (decision engine)** dat in één enkele wiskundige pas getypeerde waarden met gekalibreerde probabiliteiten berekent.\n- Het is ontworpen om programmatisch te worden aangeroepen vanuit backend code, microservices en n8n workflows."
+  },
+  {
+   "id": "sec-03",
+   "title": "3. De Wiskunde van de Drie Primitieven",
+   "md": "In plaats van ongestructureerde prompts accepteert Jev applicatiestatus (een string, JSON payload of context) en evalueert het exact één van de drie wiskundige **beslissingsprimitieven**:\n\n### Primitief 1: Noul (Gekalibreerde Boolean)\nNoul beantwoordt binaire waarheidsvragen en levert een gekalibreerde kans op:\n\n$$P(\\text{true} \\mid x) \\in [0, 1], \\quad P(\\text{false} \\mid x) = 1 - P(\\text{true} \\mid x)$$\n\nToepassingen: Is dit bericht spam? Bevat de invoer een prompt injectie? Is de klant gefrustreerd? Heeft de gebruiker beheerdersrechten?\n\n### Primitief 2: Choice (Categorische Softmax)\nChoice kiest de meest waarschijnlijke categorie uit een gedefinieerde set van $K$ discrete opties met een genormaliseerde kansverdeling:\n\n$$\\mathbf{p} = \\text{softmax}(\\mathbf{z}) = \\left[ \\frac{e^{z_1}}{\\sum_{j=1}^K e^{z_j}}, \\frac{e^{z_2}}{\\sum_{j=1}^K e^{z_j}}, \\dots, \\frac{e^{z_K}}{\\sum_{j=1}^K e^{z_j}} \\right], \\quad \\sum_{k=1}^K p_k = 1$$\n\nToepassingen: Ticket-dispatching naar vakteams (Facturatie, Support, Sales, Directie), intentieherkenning en automatische tool selectie in AI agent loops.\n\n### Primitief 3: Score (Ordinale Rubriek)\nScore beoordeelt de invoer op een geordende rubriek met drempelwaarden (bijvoorbeeld een prioriteitsschaal van 1 tot 10 of een risicoscore). Het berekent de gekalibreerde verwachtingswaarde $\\mathbb{E}[S]$ over de ordinale klassen:\n\n$$\\mathbb{E}[S] = \\sum_{j=1}^M s_j \\cdot P(S = s_j)$$\n\nToepassingen: Kredietbeoordeling, lead kwalificatie, escalatieniveaus en fraude-risico indexering."
+  },
+  {
+   "id": "sec-04",
+   "title": "4. RLCD vs RLHF: Epistemische Kalibratie Boven Vleierij",
+   "md": "Waarom presteert Jev bij beslissingen ordes van grootte betrouwbaarder dan een gefinetuned generatief LLM? Het geheim schuilt in de fundamentele trainingsfilosofie: **RLCD** (*Reinforcement Learning for Calibrated Decisions*).\n\nKlassiek **RLHF** optimaliseert met reward models die getraind zijn op menselijke feedback. Menselijke beoordelaars belonen zelfverzekerde, beleefde en vlot geformuleerde antwoorden. Dit leidt tot twee beruchte degeneraties:\n- **Overconfidence:** Het model beweert met 99,9% stelligheid iets wat apert fout is.\n- **Sycophancy (vleierij):** Het model vertelt de gebruiker wat hij wil horen in plaats van de objectieve waarheid.\n\n**RLCD** verwerpt menselijke vleierij en optimaliseert direct op **epistemische kalibratie** via de **Brier-score**:\n\n$$B = \\frac{1}{N} \\sum_{i=1}^N (p_i - y_i)^2$$\n\nWaar $p_i$ de voorspelde kans is en $y_i \\in \\{0, 1\\}$ de werkelijke uitkomst.\n\n> Een beslissingsmodel is **perfect gekalibreerd** wanneer de geclaimde waarschijnlijkheid empirisch accuraat is. Als Jev voor 100 onafhankelijke transacties voorspelt dat $P(\\text{fraude}) = 0.80$, dan moeten in de werkelijkheid exact 80 van die 100 transacties daadwerkelijk fraude zijn.\n\nOmdat Jev niet autoregressief decodeert maar in één voorwaartse pas rekent, reageert het in **70 tot 500 milliseconden** en bedragen de kosten slechts **\\$0.042 per 1 miljoen input tokens** — met nul kosten voor output tokens omdat er geen tekst gegenereerd hoeft te worden!"
+  },
+  {
+   "id": "sec-05",
+   "title": "5. Interactieve Simulator: Test de Decision Engine",
+   "md": "In onderstaande simulator kun je live testen hoe TypeSafe Jev (System 1), een lokaal ModernBERT classificatiemodel en een traditionele Frontier LLM (System 2) presteren op realistische enterprise scenario's:\n\n:::sim decision-engine {}\n\nBestudeer nauwkeurig de metrics: merk op hoe het lokale model en Jev binnen 15 tot 80 milliseconden een zuivere, gekalibreerde kansverdeling opleveren, terwijl de generatieve LLM ruim 2,4 seconden nodig heeft en onvoorspelbare vrije tekst produceert."
+  }
+ ],
+ "practice": [
+  {
+   "id": "prac-01",
+   "type": "mcq",
+   "skill": "sys1-vs-sys2",
+   "level": 1,
+   "prompt": "Waarom classificeert Daniel Kahneman snelle heuristische oordelen onder 'System 1'?",
+   "explain": "System 1 werkt associatief en direct zonder stapsgewijs logisch redeneren; dat is exact hoe classificatiemodellen werken.",
+   "options": [
+    "Omdat het automatisch, instinctief en vrijwel zonder vertraging opereert.",
+    "Omdat het altijd gebruik maakt van externe rekenmachines.",
+    "Omdat het pas na enkele minuten intensief nadenken een antwoord formuleert.",
+    "Omdat het alleen in de kindertijd actief is en later verdwijnt."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "prac-02",
+   "type": "mcq",
+   "skill": "decoder-failure",
+   "level": 1,
+   "prompt": "Wat is computationeel gezien de grootste bottleneck van een autoregressieve decoder bij een binaire beslissing?",
+   "explain": "Decoders moeten tokens sequentieel uitsturen via de KV-cache en herhaalde GPU-geheugentransfers, wat $O(N)$ stappen vergt in plaats van een $O(1)$ classifier pass.",
+   "options": [
+    "De sequentiële autoregressieve lus (token-voor-token) met hoge geheugenbandbreedte.",
+    "Het feit dat de GPU niet warm genoeg wordt tijdens korte prompts.",
+    "De onmogelijkheid om strings om te zetten in UTF-8 bytes.",
+    "Het gebrek aan internetverbinding tijdens de forward pass."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "prac-03",
+   "type": "mcq",
+   "skill": "diogo-typesafe",
+   "level": 2,
+   "prompt": "Welke cruciale bijdrage leverde Diogo Almeida aan de AI-wereld vóór hij TypeSafe oprichtte?",
+   "explain": "Diogo Almeida was onderzoeker bij OpenAI en co-auteur van de fundamentele papers over InstructGPT en RLHF.",
+   "options": [
+    "Hij was co-inventor van RLHF en co-auteur van de InstructGPT papers bij OpenAI.",
+    "Hij ontwierp de eerste CUDA chip bij Nvidia in 2006.",
+    "Hij lanceerde het n8n open-source project in Berlijn.",
+    "Hij schreef de originele compiler voor Solidity op Ethereum."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "prac-04",
+   "type": "mcq",
+   "skill": "three-primitives",
+   "level": 2,
+   "prompt": "Een n8n-workflow moet bepalen of een klantmail moet worden doorgestuurd naar 'Support', 'Sales', 'Facturatie' of 'Directie'. Welke Jev primitief gebruik je?",
+   "explain": "Wanneer gekozen moet worden uit een discrete set van meerdere categorieën met een genormaliseerde kansverdeling, is Choice de aangewezen primitief.",
+   "options": [
+    "Choice",
+    "Noul",
+    "Score",
+    "Vector"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "prac-05",
+   "type": "mcq",
+   "skill": "rlcd-mechanics",
+   "level": 2,
+   "prompt": "Stel dat een model in 100 gevallen voorspelt dat $P(\\text{fraude}) = 0.90$. Wat moet er in de werkelijkheid gebeuren opdat het model 'perfect gekalibreerd' is?",
+   "explain": "Kalibratie betekent dat de geclaimde waarschijnlijkheid exact overeenkomt met de empirische frequentie: bij $90\\%$ moeten er exact 90 van de 100 gevallen fraude zijn.",
+   "options": [
+    "Exact 90 van die 100 gevallen moeten daadwerkelijk fraude zijn.",
+    "Alle 100 gevallen moeten foutloos fraude zijn zonder uitzondering.",
+    "Het model moet een Brier-score van exact 1.0 behalen.",
+    "Het model moet zijn excuses aanbieden aan de resterende 10 klanten."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "prac-06",
+   "type": "type",
+   "skill": "three-primitives",
+   "level": 2,
+   "prompt": "Typ de naam van de Jev-primitief die een gekalibreerde boolean waarheidswaarde $P(\\text{true} \\mid x)$ retourneert.",
+   "explain": "De boolean primitief in Jev heet Noul.",
+   "answers": [
+    "Noul",
+    "noul"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "prac-07",
+   "type": "type",
+   "skill": "three-primitives",
+   "level": 2,
+   "prompt": "Typ de naam van de Jev-primitief die een discrete categorie selecteert via een softmax kansverdeling.",
+   "explain": "De categorische primitief heet Choice.",
+   "answers": [
+    "Choice",
+    "choice"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "prac-08",
+   "type": "type",
+   "skill": "three-primitives",
+   "level": 2,
+   "prompt": "Typ de naam van de Jev-primitief die een continue verwachtingswaarde $\\mathbb{E}[S]$ berekent op een geordende rubriek.",
+   "explain": "De ordinale primitief heet Score.",
+   "answers": [
+    "Score",
+    "score"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "prac-09",
+   "type": "numeric",
+   "skill": "decoder-failure",
+   "level": 2,
+   "prompt": "Een API verwerkt 50.000 binaire checks per dag. Met GPT-4o kost elke check gemiddeld \\$0.003. Met Jev kost elke check \\$0.00003. Hoeveel dollar bespaar je per dag?",
+   "explain": "GPT-4o: 50.000 * 0.003 = 150 dollar. Jev: 50.000 * 0.00003 = 1.50 dollar. Besparing: 150 - 1.50 = 148.50 dollar.",
+   "value": 148.5,
+   "tolerance": 0.01,
+   "unit": "$"
+  },
+  {
+   "id": "prac-10",
+   "type": "numeric",
+   "skill": "rlcd-mechanics",
+   "level": 3,
+   "prompt": "Bereken de kwadratische fout $(p - y)^2$ voor een voorspelling waarbij $p = 0.90$ en de werkelijke uitkomst $y = 1$ is.",
+   "explain": "$(0.90 - 1.0)^2 = (-0.10)^2 = 0.01$.",
+   "value": 0.01,
+   "tolerance": 0.001
+  },
+  {
+   "id": "prac-11",
+   "type": "type",
+   "skill": "rlcd-mechanics",
+   "level": 2,
+   "prompt": "Welke statistische maatstaf $B = \\frac{1}{N} \\sum (p_i - y_i)^2$ meet de nauwkeurigheid van probabilistische voorspellingen?",
+   "explain": "Dit is de Brier-score (vernoemd naar Glenn W. Brier).",
+   "answers": [
+    "Brier",
+    "Brier-score",
+    "brier",
+    "Brier score"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "prac-12",
+   "type": "type",
+   "skill": "diogo-typesafe",
+   "level": 2,
+   "prompt": "Typ de achternaam van de voormalig OpenAI onderzoeker en co-inventor van RLHF die TypeSafe AI oprichtte.",
+   "explain": "Diogo Almeida is de oprichter van TypeSafe AI.",
+   "answers": [
+    "Almeida",
+    "almeida"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "prac-13",
+   "type": "type",
+   "skill": "sys1-vs-sys2",
+   "level": 1,
+   "prompt": "Volgens Daniel Kahneman: welk systeem is snel, instinctief en werkt met directe patroonherkenning? Typ 'System 1' of 'System 2'.",
+   "explain": "System 1 is het snelle, associatieve denksysteem.",
+   "answers": [
+    "System 1",
+    "system 1",
+    "1"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "prac-14",
+   "type": "numeric",
+   "skill": "decoder-failure",
+   "level": 2,
+   "prompt": "Stel dat een frontier LLM gemiddeld 2 500 ms nodig heeft voor een beslissing en Jev 100 ms. Hoeveel keer sneller is Jev in deze vergelijking?",
+   "explain": "2500 / 100 = 25 keer sneller.",
+   "value": 25,
+   "tolerance": 0.1,
+   "unit": "×"
+  },
+  {
+   "id": "prac-15",
+   "type": "type",
+   "skill": "sys1-vs-sys2",
+   "level": 2,
+   "prompt": "Typ de cognitieve term van Kahneman voor het trage, sequentiële en deliberatieve redeneersysteem: 'System 1' of 'System 2'.",
+   "explain": "System 2 is het trage, analytische systeem.",
+   "answers": [
+    "System 2",
+    "system 2",
+    "2"
+   ],
+   "lang": "code"
+  }
+ ],
+ "production": {
+  "id": "prod-01",
+  "type": "explain",
+  "title": "Architectuurontwerp: De High-Speed Decision Layer",
+  "prompt": "Je bouwt een B2B SaaS-platform dat 250.000 inkomende klantberichten per dag verwerkt. Momenteel stuurt de backend elk bericht rechtstreeks naar Claude 3.5 Sonnet met een JSON-schema prompt om (1) spam te filteren, (2) de taal te herkennen, en (3) het juiste agent-team te kiezen. Dit kost \\$1.875 per dag en veroorzaakt een gemiddelde wachttijd van 2,8 seconden voor de gebruiker.\n\nOntwerp een **System 1 beslissingsarchitectuur** met behulp van Jev (of een equivalent lokaal model). Beschrijf in je antwoord:\n1. Welke primitieven (Noul, Choice, Score) je inzet en waar in de keten.\n2. Hoeveel milliseconden de totale triage duurt.\n3. De verwachte dagelijkse kostenreductie in percentages en dollars.\n4. Hoe je omgaat met grensgevallen (low confidence probabiliteiten).",
+  "model": "1. Pipeline: Eerst een Noul-check voor spam en prompt injecties. Vervolgens een Choice-primitief met opties [Support, Sales, Facturatie, Partner]. Bij supportvragen een Score-primitief (1-10) voor prioriteit.\n2. Latentie: Non-autoregressieve inferentie duurt 70-90 ms per call, totaal circa 120 ms inclusief netwerktijd (vs 2.800 ms bij Claude).\n3. Kosten: Van 250.000 * $0,0075 ($1.875/dag) naar 250.000 * $0,000042 ($10,50/dag). Een besparing van ruim 99% ($1.864,50 per dag).\n4. Grensgevallen: Als max(P) bij Choice < 0.65, wordt het bericht geflagd voor een System 2 Claude-call of directe escalatie naar een medewerker.",
+  "rubric": [
+   "Juiste koppeling van primitieven: Noul voor spam/injectie guardrails, Choice voor afdeling/teamselectie.",
+   "Realistische latentie-analyse: System 1 beslist in 50-120ms vs 2800ms voor de frontier LLM.",
+   "Kostenberekening: Van $1.875/dag naar < $25/dag (meer dan 98% besparing).",
+   "Degelijke fallback strategie voor grensgevallen (bv. wanneer max(P) < 0.65, escaleer naar mens of System 2)."
+  ]
+ },
+ "mastery": [
+  {
+   "id": "mast-01",
+   "type": "type",
+   "skill": "sys1-vs-sys2",
+   "level": 2,
+   "prompt": "Welk cognitief systeem van Kahneman staat voor snelle, reflexmatige besluitvorming? Typ 'System 1' of 'System 2'.",
+   "explain": "System 1 is het snelle beslissingssysteem.",
+   "answers": [
+    "System 1",
+    "system 1",
+    "1"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "mast-02",
+   "type": "mcq",
+   "skill": "sys1-vs-sys2",
+   "level": 2,
+   "prompt": "Waarom leidt het inzetten van System 2 (autoregressieve redeneermodellen) voor micro-beslissingen in productiewebsites vaak tot slechte gebruikerservaringen?",
+   "explain": "Webgebruikers verwachten sub-seconde reactietijden (<200ms). Een autoregressieve LLM die 2 tot 4 seconden nadenkt blokkeert synchrone flows.",
+   "options": [
+    "De hoge latentie van meerdere seconden vertraagt de gebruikersinterface onaanvaardbaar.",
+    "System 2 modellen kunnen niet communiceren via HTTPS-protocollen.",
+    "System 2 modellen weigeren categorisch te draaien na zonsondergang.",
+    "De JSON-standaard verbiedt het gebruik van redeneermodellen in browsers."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "mast-03",
+   "type": "numeric",
+   "skill": "decoder-failure",
+   "level": 2,
+   "prompt": "Een API verwerkt 100.000 requests. Een generatief model heeft 200 ms per request nodig; een beslissingsmodel 20 ms. Hoeveel seconden rekentijd bespaar je in totaal op de server? (Bereken in seconden)",
+   "explain": "Besparing per call = 180 ms = 0.18 s. Voor 100.000 calls is dat 18.000 seconden.",
+   "value": 18000,
+   "tolerance": 10,
+   "unit": "s"
+  },
+  {
+   "id": "mast-04",
+   "type": "mcq",
+   "skill": "decoder-failure",
+   "level": 2,
+   "prompt": "Wat betekent de term 'non-autoregressief' bij een model zoals Jev?",
+   "explain": "Non-autoregressief betekent dat het model niet afhankelijk is van het iteratief voorspellen van het volgende token; alle outputs worden in één enkele voorwaartse berekening geproduceerd.",
+   "options": [
+    "Het model genereert niet token-voor-token, maar berekent de output in één enkele forward pass.",
+    "Het model kan niet getraind worden met gradient descent.",
+    "Het model heeft geen geheugen voor meer dan twee karakters.",
+    "Het model voert uitsluitend regressies uit op lineaire data."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "mast-05",
+   "type": "type",
+   "skill": "diogo-typesafe",
+   "level": 2,
+   "prompt": "Wat was de naam van het AI-onderzoekslab opgericht door Diogo Almeida dat Jev ontwikkelde?",
+   "explain": "TypeSafe AI is het lab achter Jev.",
+   "answers": [
+    "TypeSafe AI",
+    "TypeSafe",
+    "typesafe ai",
+    "typesafe"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "mast-06",
+   "type": "mcq",
+   "skill": "diogo-typesafe",
+   "level": 2,
+   "prompt": "Wat was de filosofische motivatie van TypeSafe AI om zich uitsluitend te richten op getypeerde beslissingen?",
+   "explain": "Software-systemen hebben deterministische types en stabiele interfaces nodig; generatieve proza tussen softwaremodules leidt tot onvoorspelbaarheid en bugs.",
+   "options": [
+    "Software heeft deterministische types en betrouwbare interfaces nodig, geen creatieve essays.",
+    "Omdat tekstgeneratie wereldwijd verboden zou worden door de EU AI Act.",
+    "Omdat Diogo Almeida geen toegang meer had tot Python compilers.",
+    "Omdat binaire beslissingen geen elektriciteit verbruiken."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "mast-07",
+   "type": "type",
+   "skill": "three-primitives",
+   "level": 2,
+   "prompt": "Welke primitief gebruik je in Jev om te kiezen uit een lijst van 5 klantcategorieën via softmax? Typ 'Noul', 'Choice' of 'Score'.",
+   "explain": "Choice kiest een categorische optie.",
+   "answers": [
+    "Choice",
+    "choice"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "mast-08",
+   "type": "type",
+   "skill": "three-primitives",
+   "level": 2,
+   "prompt": "Welke primitief gebruik je in Jev om te bepalen of een transactie legitiem is (true/false)? Typ 'Noul', 'Choice' of 'Score'.",
+   "explain": "Noul is de binaire boolean primitief.",
+   "answers": [
+    "Noul",
+    "noul"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "mast-09",
+   "type": "type",
+   "skill": "three-primitives",
+   "level": 2,
+   "prompt": "Welke primitief gebruik je in Jev om een klanturgentie te kwantificeren op een schaal van 1 tot 10? Typ 'Noul', 'Choice' of 'Score'.",
+   "explain": "Score evalueert ordinale rubrieken.",
+   "answers": [
+    "Score",
+    "score"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "mast-10",
+   "type": "mcq",
+   "skill": "three-primitives",
+   "level": 3,
+   "prompt": "Wat is het fundamentele verschil tussen de primitieven 'Choice' en 'Score' in Jev?",
+   "explain": "Choice kiest een ongeordende discrete categorie via softmax; Score plaatst een input op een geordende numerieke rubriek (bv. 1-10) en berekent een continue verwachtingswaarde.",
+   "options": [
+    "Choice selecteert een discrete categorie; Score berekent een gewogen verwachtingswaarde op een geordende rubriek.",
+    "Choice is alleen voor getallen; Score is alleen voor letters en woorden.",
+    "Choice kost geld via OpenRouter; Score is altijd gratis.",
+    "Choice vereist een GPU; Score draait op een analoge rekenliniaal."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "mast-11",
+   "type": "numeric",
+   "skill": "rlcd-mechanics",
+   "level": 3,
+   "prompt": "Een model voorspelt met $p = 0.70$ dat het gaat regenen. Het regent daadwerkelijk ($y = 1$). Wat is de kwadratische Brier-afwijking $(p - y)^2$?",
+   "explain": "$(0.70 - 1.0)^2 = (-0.30)^2 = 0.09$.",
+   "value": 0.09,
+   "tolerance": 0.001
+  },
+  {
+   "id": "mast-12",
+   "type": "type",
+   "skill": "rlcd-mechanics",
+   "level": 3,
+   "prompt": "Typ het acroniem van de trainingsmethode van TypeSafe AI (Reinforcement Learning for Calibrated Decisions).",
+   "explain": "RLCD staat voor Reinforcement Learning for Calibrated Decisions.",
+   "answers": [
+    "RLCD",
+    "rlcd"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "mast-13",
+   "type": "mcq",
+   "skill": "rlcd-mechanics",
+   "level": 3,
+   "prompt": "Als een classificatiemodel een Brier-score van 0.0 behaalt over een testset, wat betekent dit dan wiskundig?",
+   "explain": "De Brier-score $B = \\frac{1}{N} \\sum (p_i - y_i)^2$ is 0 als en slechts als voor elke sample $p_i = y_i$, wat betekent dat alle voorspellingen 100% zeker en 100% correct waren.",
+   "options": [
+    "Elke voorspelling was met 100% zekerheid gedaan en was 100% correct.",
+    "Het model heeft in alle gevallen een willekeurige munt opgegooid.",
+    "Het model heeft de hele dataset per ongeluk gewist.",
+    "De kalibratiefout is maximaal en het model is onbruikbaar."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "mast-14",
+   "type": "numeric",
+   "skill": "decoder-failure",
+   "level": 2,
+   "prompt": "Een bedrijf stuurt 1.000.000 tokens naar een classifier. Bij Jev kost 1M input tokens \\$0.042. Hoeveel dollar betaal je voor 1.000.000 tokens?",
+   "explain": "De prijs is exact $0.042 per 1 miljoen tokens.",
+   "value": 0.042,
+   "tolerance": 0.001,
+   "unit": "$"
+  },
+  {
+   "id": "mast-15",
+   "type": "type",
+   "skill": "sys1-vs-sys2",
+   "level": 2,
+   "prompt": "Als je een hybride AI-architectuur ontwerpt, welk systeem (typ 'System 1' of 'System 2') fungeert dan als de razendsnelle poortwachter?",
+   "explain": "System 1 fungeert als poortwachter en router.",
+   "answers": [
+    "System 1",
+    "system 1",
+    "1"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "mast-16",
+   "type": "type",
+   "skill": "diogo-typesafe",
+   "level": 2,
+   "prompt": "Wat was de voornaam van onderzoeker Almeida van TypeSafe AI?",
+   "explain": "Diogo Almeida.",
+   "answers": [
+    "Diogo",
+    "diogo"
+   ],
+   "lang": "nl"
+  }
+ ],
+ "cards": [
+  {
+   "id": "c-sys-diff",
+   "skill": "sys1-vs-sys2",
+   "front": "Wat is het verschil tussen System 1 en System 2 in AI?",
+   "back": "System 1 = snelle, intuïtieve, non-autoregressieve beslissingen (Jev, ModernBERT); System 2 = trage, deliberatieve, sequentiële redeneringen en teksten (Claude, GPT-4o)."
+  },
+  {
+   "id": "c-almeida",
+   "skill": "diogo-typesafe",
+   "front": "Wie is Diogo Almeida?",
+   "back": "Oprichter van TypeSafe AI (maker van Jev) en voormalig OpenAI onderzoeker die mede-uitvinder was van RLHF en co-auteur van de InstructGPT papers."
+  },
+  {
+   "id": "c-primitives",
+   "skill": "three-primitives",
+   "front": "Wat zijn de 3 primitieven van TypeSafe Jev?",
+   "back": "1. Noul (gekalibreerde boolean: P(true))\n2. Choice (categorische keuze met softmax kansverdeling)\n3. Score (ordinale rubric met continue verwachtingswaarde E[S])"
+  },
+  {
+   "id": "c-rlcd",
+   "skill": "rlcd-mechanics",
+   "front": "Wat is RLCD en hoe verschilt het van RLHF?",
+   "back": "Reinforcement Learning for Calibrated Decisions optimaliseert voor statistische betrouwbaarheid (Brier score / kalibratie) i.p.v. menselijke voorkeur en vleierij (RLHF)."
+  },
+  {
+   "id": "c-cost-zero",
+   "skill": "decoder-failure",
+   "front": "Waarom kost Jev geen geld voor output tokens?",
+   "back": "Omdat Jev geen tekst genereert! Het retourneert getypeerde numerieke kansen en beslissingen in één forward pass ($0.042 per 1M input tokens)."
+  },
+  {
+   "id": "c-brier-form",
+   "skill": "rlcd-mechanics",
+   "front": "Wat meet de Brier-score?",
+   "back": "De gemiddelde kwadratische afwijking tussen voorspelde kansen en werkelijke uitkomsten: B = 1/N sum (p_i - y_i)^2."
+  }
+ ],
+ "meta": {
+  "created": "2026-09-26",
+  "author": "Antigravity"
+ }
+}

@@ -36,7 +36,7 @@ DATA = os.path.expanduser("~/scripts/polyglot-data")
 SWIFT = os.path.expanduser("~/scripts/sync_reminders.swift")
 PROFILE = os.path.expanduser("~/scripts/student_profile.json")
 SITE = "https://thibaudverschueren.github.io/polyglot-studio/"
-PREFIX = {"greek": "🇬🇷 Grieks", "french": "🇫🇷 Frans", "solidity": "⛓️ Solidity", "ai": "🤖 AI", "automation": "⚡ Automation"}
+PREFIX = {"greek": "🇬🇷 Grieks", "french": "🇫🇷 Frans", "solidity": "⛓️ Solidity", "ai": "🤖 AI", "automation": "⚡ Automation", "jev": "⑂ Jev AI"}
 TRACKS = learner.TRACKS
 
 

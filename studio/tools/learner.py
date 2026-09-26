@@ -10,7 +10,7 @@ import os
 import re
 from collections import Counter, defaultdict
 
-TRACKS = ["greek", "french", "solidity", "ai", "automation"]
+TRACKS = ["greek", "french", "solidity", "ai", "automation", "jev"]
 RANK = ["new", "started", "legacy", "learned", "mastered", "anchored"]
 DONE = {"legacy", "learned", "mastered", "anchored"}
 DAY_MS = 86400000
@@ -186,7 +186,7 @@ def brief(model):
     """Short Dutch summary for Reminders and the log."""
     lines = [f"🔥 {model['streak_days']} dagen op rij · {model['minutes_last_7_days']} min deze week"]
     for t, tm in model["tracks"].items():
-        name = {"greek": "Grieks", "french": "Frans", "solidity": "Solidity", "ai": "AI", "automation": "Automation"}[t]
+        name = {"greek": "Grieks", "french": "Frans", "solidity": "Solidity", "ai": "AI", "automation": "Automation", "jev": "Jev AI"}[t]
         bits = [f"les {tm['active_lesson'] or '—'}"]
         if tm["diagnostic"]:
             bits.append(f"niveau {tm['diagnostic'].get('level')}")

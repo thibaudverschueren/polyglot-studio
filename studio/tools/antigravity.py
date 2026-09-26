@@ -25,7 +25,7 @@ from validate import validate_lesson, validate_daily  # noqa: E402
 PROMPTS = os.path.join(STUDIO, "prompts")
 SCHEMA_PATH = os.path.join(STUDIO, "schema", "lesson.schema.json")
 NODE = shutil.which("node") or "/opt/homebrew/bin/node"
-TRACK_NAMES = {"greek": "Nieuwgrieks", "french": "Frans (C1→C2)", "solidity": "Solidity & de EVM", "ai": "AI & LLM's", "automation": "Workflow Automation & API Engineering (n8n)"}
+TRACK_NAMES = {"greek": "Nieuwgrieks", "french": "Frans (C1→C2)", "solidity": "Solidity & de EVM", "ai": "AI & LLM's", "automation": "Workflow Automation & API Engineering (n8n)", "jev": "Jev & Decision AI"}
 
 
 def read(p):

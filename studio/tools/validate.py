@@ -153,7 +153,7 @@ def _check_item(it, where, obj_ids, track, errs, warns, drill=False):
     loc = f"{where}:{iid}"
     skill = it.get("skill", "")
     if drill:
-        if not re.match(r"^(greek|french|solidity|ai|automation):\d+/[a-z0-9-]+$", skill):
+        if not re.match(r"^(greek|french|solidity|ai|automation|jev):\d+/[a-z0-9-]+$", skill):
             errs.append(f"{loc}: drill skill must look like 'greek:5/objective-id'")
     elif skill not in obj_ids:
         errs.append(f"{loc}: skill '{skill}' is not an objective id ({sorted(obj_ids)})")
@@ -376,7 +376,7 @@ def validate_daily(D, schema=None):
         if not isinstance(d, dict) or not isinstance(d.get("items", []), list):
             errs.append(f"drills[{di}]: must be {{track, focus, items: [...]}}")
             continue
-        if d.get("track") not in ("greek", "french", "solidity", "ai", "automation"):
+        if d.get("track") not in ("greek", "french", "solidity", "ai", "automation", "jev"):
             errs.append(f"drill track invalid: {d.get('track')}")
         for ii, it in enumerate(d.get("items", [])):
             se = schema_errors(it, schema["$defs"]["item"], schema, f"$.drills[{di}].items[{ii}]")

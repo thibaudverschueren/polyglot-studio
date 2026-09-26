@@ -7,7 +7,7 @@ PS.C = {
   load() {
     const el = document.getElementById('ps-content');
     this.data = el ? JSON.parse(el.textContent) : { tracks: {}, lessons: {}, syllabus: {}, daily: [] };
-    this.data.order = ['greek', 'french', 'solidity', 'ai', 'automation'].filter((t) => this.data.tracks[t]);
+    this.data.order = ['greek', 'french', 'solidity', 'ai', 'automation', 'jev'].filter((t) => this.data.tracks[t]);
     return this.data;
   },
   tracks() { return this.data.order; },

@@ -1,0 +1,490 @@
+{
+ "track": "jev",
+ "goal": "Jev (System 1 beslissingsmodellen van TypeSafe AI) en snelle alternatieven (OpenRouter, lokale SLM's en constrained classifiers) doorgronden, implementeren, benchmarken en integreren in software en workflows — met de juiste balans tussen snelheid, kosten, privacy en determinisme.",
+ "principles": [
+  "System 1 voor beslissingen (snel, getypeerd, goedkoop, gekalibreerd); System 2 voor synthese (traag, autoregressief, redenerend).",
+  "Begrijp de drie wiskundige primitieven: Noul (boolean), Choice (categorisch) en Score (ordinaal).",
+  "Onderbouw keuzes altijd met harde cijfers: latentie (ms), VRAM/geheugen (GB), kosten per 1M calls ($) en epistemic calibration (Brier score).",
+  "Beheers zowel de cloud API (OpenRouter) als de lokale stack (ModernBERT, SLM's, Outlines/GBNF grammars) voor privacy en zero-cost werking."
+ ],
+ "modules": [
+  {
+   "id": "p1",
+   "title": "Pijler 1 — Het System 1 Paradigma: Jev vs Autoregressieve LLM's",
+   "topics": [
+    "jev-01-system-1-vs-2",
+    "jev-02-primitives-rlcd",
+    "jev-03-inference-economics",
+    "jev-04-epistemic-calibration"
+   ]
+  },
+  {
+   "id": "p2",
+   "title": "Pijler 2 — Jev in de Praktijk via OpenRouter & API's",
+   "topics": [
+    "jev-05-openrouter-integration",
+    "jev-06-routing-and-gating",
+    "jev-07-guardrails-moderation",
+    "jev-08-agent-tool-selection"
+   ]
+  },
+  {
+   "id": "p3",
+   "title": "Pijler 3 — Lokale & Goedkopere Alternatieven (Zero API-kosten & Privacy)",
+   "topics": [
+    "jev-09-why-local",
+    "jev-10-encoder-classifiers",
+    "jev-11-slm-decision",
+    "jev-12-setfit-fewshot"
+   ]
+  },
+  {
+   "id": "p4",
+   "title": "Pijler 4 — Constrained Decoding & Logit Masking",
+   "topics": [
+    "jev-13-logit-masking-theory",
+    "jev-14-outlines-guidance",
+    "jev-15-vllm-ollama-serving",
+    "jev-16-benchmarking-eval"
+   ]
+  },
+  {
+   "id": "p5",
+   "title": "Pijler 5 — Productie-Architectuur & Hybride Orchestratie",
+   "topics": [
+    "jev-17-hybrid-orchestration",
+    "jev-18-n8n-pipeline-integration",
+    "jev-19-production-monitoring",
+    "jev-20-capstone-decision-engine"
+   ]
+  }
+ ],
+ "topics": [
+  {
+   "id": "jev-01-system-1-vs-2",
+   "title": "Het System 1 Paradigma: Jev en Beslissingsmodellen",
+   "level": "fundament",
+   "objectives": [
+    "Kahneman's System 1 (snel, heuristisch) vs System 2 (deliberatief, redenerend) toepassen op AI-architectuur",
+    "Inzien waarom generatieve LLM's met autoregressieve decoders falen voor binaire en categorische beslissingen",
+    "De achtergrond van TypeSafe AI, Diogo Almeida (ex-OpenAI RLHF/InstructGPT) en de nood aan non-generatieve software-AI begrijpen",
+    "De drie primitieven definiëren: Noul (boolean), Choice (categorisch), Score (ordinaal)",
+    "RLCD (Reinforcement Learning for Calibrated Decisions) onderscheiden van RLHF"
+   ],
+   "theory": [
+    "Autoregressieve decoders voorspellen token per token O(N): duur, traag (1-5s) en vatbaar voor hallucinatie en syntaxfouten",
+    "Beslissingsmodellen (System 1) voeren één enkele voorwaartse pas O(1) uit en spugen direct getypeerde kansen uit",
+    "Diogo Almeida zag bij OpenAI dat softwareontwikkelaars LLM's misbruikten voor if/else-logica",
+    "Noul retourneert P(true|x), Choice retourneert een gekalibreerde softmaxverdeling over K opties, Score retourneert verwachtingswaarde op een rubriek",
+    "RLCD traint modellen op probabilistische waarachtigheid en Brier-scores in plaats van menselijke vleierij (sycophancy)"
+   ],
+   "example": "Een supportrouter moet bepalen of een klantmail over 'facturatie' gaat. Claude 3.5 Sonnet doet er 2,4s over en kost $0,005; Jev doet het in 72ms voor $0,000004.",
+   "exercise": "Vergelijk de theoretische latentie en kosten van 100.000 categorisaties tussen een frontier LLM en een System 1 decision model.",
+   "test": "Meerkeuzevragen over decoders vs classifiers, Kahneman's model, de 3 primitieven en RLCD-mechanica.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-02-primitives-rlcd",
+   "title": "De Drie Primitieven en RLCD Wiskunde",
+   "level": "fundament",
+   "objectives": [
+    "De wiskundige formulering van Noul, Choice en Score doorgronden",
+    "De Brier-score en Expected Calibration Error (ECE) berekenen",
+    "Begrijpen hoe RLCD verliesfuncties optimaliseert tegenover PPO/DPO in RLHF",
+    "Schema-definities opstellen voor softwarebeslissingen"
+   ],
+   "theory": [
+    "Noul: Brier score B = 1/N sum (p_i - y_i)^2",
+    "Choice: Cross-entropy met gekalibreerde temperatuur T",
+    "Score: Verwachtingswaarde E[S] = sum s_j * p_j op ordinale rubriek",
+    "RLCD beloont epistemische onzekerheid: durven twijfelen wanneer data ontbreekt"
+   ],
+   "example": "Een kredietbeoordelingsvraag met Score 1..10 waarbij p(fraude) met 99,4% zekerheid wordt berekend.",
+   "exercise": "Bereken de Brier-score van twee voorspellingsreeksen en bepaal welk model beter gekalibreerd is.",
+   "test": "Wiskundige berekeningen en conceptuele vragen.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-03-inference-economics",
+   "title": "Inferentie-Economie: Latentie, Compute en Kosten",
+   "level": "fundament",
+   "objectives": [
+    "Doorrekenen van TTFT (Time to First Token) vs Time to Decision",
+    "Kostenstructuur analyseren: $0.042/1M input tokens en 0 output tokens",
+    "Break-even analyse maken tussen frontier LLM, TypeSafe Jev en self-hosted inference"
+   ],
+   "theory": [
+    "Frontier LLM cost = (Tokens_in * C_in) + (Tokens_out * C_out) met dure decodeerfase",
+    "Decision model cost = Tokens_in * C_in met zero output tokens",
+    "GPU memory bandwidth bottleneck vs compute-bound batch classification"
+   ],
+   "example": "Een e-commerce platform met 500.000 productreviews per dag.",
+   "exercise": "Bereken de maandelijkse kostenbesparing bij de migratie van GPT-4o-mini naar Jev of ModernBERT.",
+   "test": "Rekenopdrachten over kosten, throughput en servercapaciteit.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-04-epistemic-calibration",
+   "title": "Epistemische Kalibratie en Onzekerheid",
+   "level": "gevorderd",
+   "objectives": [
+    "Betrouwbaarheidsdiagrammen (reliability diagrams) interpreteren",
+    "Overconfidence en underconfidence in LLM's herkennen",
+    "Gekalibreerde beslissingsdrempels (decision thresholds) instellen op basis van risico-asymmetrie"
+   ],
+   "theory": [
+    "Platt scaling en temperature scaling voor post-hoc kalibratie",
+    "Kostenmatrix voor asymmetrische fouten: False Positive vs False Negative",
+    "Bayesiaanse onzekerheid in software agents"
+   ],
+   "example": "Een medisch triagefilter waarbij een gemiste infectie (FN) 100x erger is dan een vals alarm (FP).",
+   "exercise": "Stel de optimale afkapwaarde vast voor een fraudefilter met ongelijke kosten per fouttype.",
+   "test": "Conceptuele en numerieke analysevragen.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-05-openrouter-integration",
+   "title": "Jev via OpenRouter: API en Integratie",
+   "level": "praktijk",
+   "objectives": [
+    "De OpenRouter API aanroepen met typesafe/jev-1.13",
+    "Getypeerde vraagdefinities structureren in het request payload",
+    "Foutafhandeling en fallback strategieën implementeren in Python/TypeScript"
+   ],
+   "theory": [
+    "OpenRouter OpenAI-compatible endpoint met vendor-specifieke parameters",
+    "Directe deserialisatie zonder JSON.parse() of regex fallback",
+    "API key beveiliging en rate limits op OpenRouter"
+   ],
+   "example": "Een Python FastAPI microservice die inkomende webhooks binnen 100ms classificeert.",
+   "exercise": "Schrijf een productieklare API-aanroep naar OpenRouter met Jev die categorische keuzes ophaalt.",
+   "test": "Code-analyses en payload verificatievragen.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-06-routing-and-gating",
+   "title": "Beslissingsroutering en Feature Gating",
+   "level": "praktijk",
+   "objectives": [
+    "Dynamische dispatching ontwerpen voor support, CRM en e-commerce",
+    "Feature gating implementeren op basis van continue gebruikerssentiment- of intentiescores",
+    "Latentie-budgetten van < 100ms garanderen in synchrone webapps"
+   ],
+   "theory": [
+    "Intent routing: Helpdesk, Sales, Facturatie, Fraude",
+    "Feature flags aangestuurd door AI evaluatie in plaats van statische regels",
+    "Caching van beslissingen via semantische hashes"
+   ],
+   "example": "Een live chat widget die binnen 80ms beslist of de bot antwoordt of direct escaleert naar een mens.",
+   "exercise": "Ontwerp een routeringsmatrix met fallback routes.",
+   "test": "Scenario-gebaseerde meerkeuzevragen en schema design.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-07-guardrails-moderation",
+   "title": "Microseconde Guardrails en Moderatie",
+   "level": "praktijk",
+   "objectives": [
+    "Prompt injecties en jailbreaks onderscheppen vóórdat ze de dure LLM bereiken",
+    "PII en vertrouwelijke bedrijfsdata filteren aan de ingang",
+    "Output validatie uitvoeren op basis van beleidsregels"
+   ],
+   "theory": [
+    "Pre-flight guardrails: lage latentie (<50ms) is essentieel",
+    "Jailbreak evaluatie en categorische schendingen",
+    "Post-flight validatie van gegenereerde antwoorden"
+   ],
+   "example": "Een agent die weigert SQL queries te draaien zodra de Noul guardrail injectie-intentie signaleert.",
+   "exercise": "Definieer een set van 3 guardrail regels met getypeerde Noul checks.",
+   "test": "Veiligheids- en architectuurvragen.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-08-agent-tool-selection",
+   "title": "Tool-Gating in Autonome Agentic Loops",
+   "level": "praktijk",
+   "objectives": [
+    "De vicieuze cirkel van trage tool calling in agent frameworks doorbreken",
+    "System 1 als snelle tool-selector inzetten vóór executie",
+    "Tokens en cyclustijd van de hoofdagent reduceren met 70%"
+   ],
+   "theory": [
+    "Waarom ReAct loops traag en duur zijn bij grote tool sets",
+    "Two-stage tool calling: System 1 selecteert 2 van de 50 tools, System 2 vult argumenten in",
+    "Preventie van onnodige API-kosten door overbodige zoekopdrachten af te kappen"
+   ],
+   "example": "Een agent met 40 tools die eerst Jev raadpleegt om direct de relevantie tot 2 opties te reduceren.",
+   "exercise": "Bouw een tool-gating filter voor een Python agent.",
+   "test": "Architectuur- en implementatievragen.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-09-why-local",
+   "title": "Lokale Alternatieven: Privacy, Latentie en Nul Kosten",
+   "level": "fundament",
+   "objectives": [
+    "De 4 drijfveren voor lokale modellen: privacy (GDPR), offline werking, netwerklatentie en zero token costs",
+    "Hardware-eisen analyseren: Apple Silicon Unified Memory vs x86 CPU vs VPS",
+    "De trade-off tussen hosted APIs (Jev) en self-hosted inference bepalen"
+   ],
+   "theory": [
+    "GDPR en confidential computing: waarom klantendata de server soms niet mag verlaten",
+    "Zero marginal cost per request bij eigen hardware",
+    "Netwerklatentie (50-200ms) overtreft vaak de inferentietijd van kleine lokale modellen (15ms)"
+   ],
+   "example": "Een lokale script-runner op MacBook 2 die 's nachts 200.000 records classificeert zonder 1 cent API-kosten.",
+   "exercise": "Bereken de TCO (Total Cost of Ownership) van een $10/maand VPS met lokaal model vs OpenRouter API.",
+   "test": "Kosten-baten en privacyvragen.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-10-encoder-classifiers",
+   "title": "ModernBERT en Encoder-Only Modellen",
+   "level": "praktijk",
+   "objectives": [
+    "Het fundamentele verschil tussen Encoder-only (BERT/ModernBERT) en Decoder-only (GPT) begrijpen",
+    "Inzien waarom ModernBERT met Flash Attention 8192 context en 100x hogere snelheid biedt",
+    "Een classificatiekop bovenop een encoder model plaatsen voor Noul/Choice taken"
+   ],
+   "theory": [
+    "Bidirectionele attention ziet de hele context in één stap zonder causale maskers",
+    "ModernBERT (december 2024): 149M (base) en 395M (large), native 8k context, RoPE, GeGLU en Flash Attention",
+    "Inference latency van 10-25ms op een gewone CPU of Apple Silicon M-serie chip"
+   ],
+   "example": "ModernBERT classificeert een 4000-woorden contract in 22ms op een Mac Mini.",
+   "exercise": "Configureer een Python script met Hugging Face pipeline voor ModernBERT tekstclassificatie.",
+   "test": "Architectuurvragen over bidirectionele attention en encoders.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-11-slm-decision",
+   "title": "Small Language Models (SLMs) voor Beslissingen",
+   "level": "praktijk",
+   "objectives": [
+    "Moderne compacte modellen (Qwen2.5-0.5B/1.5B, Llama-3.2-1B, Gemma-2-2B) evalueren",
+    "Prompt formatting voor betrouwbare zero-shot besluitvorming op SLMs",
+    "Kwantisatie (Q4_K_M, Q8_0) en VRAM-geheugengebruik doorrekenen"
+   ],
+   "theory": [
+    "Qwen2.5-0.5B: slechts ~400 MB in RAM met 4-bit kwantisatie, draait zelfs op een Raspberry Pi",
+    "Waarom SLMs hallucinaties vertonen bij generatieve taken maar uitblinken bij geforceerde keuzes",
+    "Temperature = 0.0 en deterministische sampling"
+   ],
+   "example": "Een 0.5B model dat draait in de background van een Mac app en elk bestand automatisch tagt.",
+   "exercise": "Bereken de VRAM voetafdruk en tokens per seconde voor Llama-3.2-1B op Apple Silicon.",
+   "test": "Vragen over kwantisatie, VRAM en SLM-capaciteiten.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-12-setfit-fewshot",
+   "title": "SetFit: Few-Shot Classifiers Zonder Prompting",
+   "level": "gevorderd",
+   "objectives": [
+    "Begrijpen hoe Sentence Transformer Fine-Tuning (SetFit) werkt via contrastive learning",
+    "Binnen 5 minuten een lokaal model trainen met slechts 8 voorbeelden per categorie",
+    "De nadelen van prompts (tokens, drift, formatting) elimineren met getrainde weights"
+   ],
+   "theory": [
+    "Fase 1: Contrastive sentence pair training op embeddings",
+    "Fase 2: Classificatiekop trainen (logistic regression) op vaste embeddings",
+    "Geen GPU cluster nodig: traint in 2 minuten op een laptop CPU"
+   ],
+   "example": "Met 24 voorbeelden een categorisatiemodel bouwen dat 1500 inputs per seconde verwerkt.",
+   "exercise": "Schrijf de Python SetFitTrainer configuratie voor een 3-klasse support router.",
+   "test": "Vragen over contrastief leren en few-shot classificatie.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-13-logit-masking-theory",
+   "title": "Constrained Decoding en Logit Masking",
+   "level": "gevorderd",
+   "objectives": [
+    "Het principe van logit masking begrijpen: tokens buiten de grammatica krijgen logit = -infinity",
+    "Context-free grammars (BNF/GBNF) en Finite State Machines (FSM) visualiseren",
+    "Waarom constrained decoding 100% syntactische garantie biedt zonder retries"
+   ],
+   "theory": [
+    "Softmax over gemaskeerde vocabulaire: P(ongeldig token) = 0",
+    "FSM transities per gegenereerd teken of token",
+    "Compute overhead van grammatica indexering vs bespaarde output tokens"
+   ],
+   "example": "Bij een boolean vraag worden alleen de tokens voor 'true' en 'false' toegestaan; elk ander token is onmogelijk.",
+   "exercise": "Schrijf een GBNF grammatica voor een JSON object met 2 verplichte velden.",
+   "test": "Theorievragen over token maskering, logits en automata.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-14-outlines-guidance",
+   "title": "Outlines, Guidance en SGLang",
+   "level": "praktijk",
+   "objectives": [
+    "Outlines integreren met open-source modellen voor JSON Schema enforcement",
+    "Pydantic modellen direct koppelen als sampling mask",
+    "SGLang en Guidance syntax vergelijken voor multi-step beslissingsbomen"
+   ],
+   "theory": [
+    "Outlines compileert regex en Pydantic schema's vooraf naar FSMs",
+    "SGLang: geoptimaliseerde KV-cache hergebruik bij vertakkende beslissingen",
+    "Zero regex errors: parsing faalt nooit in productie"
+   ],
+   "example": "Een FastAPI endpoint dat met Outlines en Qwen2.5-0.5B een gevalideerd Pydantic schema retourneert in 45ms.",
+   "exercise": "Definieer een Pydantic schema en roep Outlines generator aan.",
+   "test": "Code inspectie en configuratievragen.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-15-vllm-ollama-serving",
+   "title": "Lokale Serving: vLLM, Ollama en llama.cpp",
+   "level": "praktijk",
+   "objectives": [
+    "vLLM structured output engine configureren op een VPS",
+    "Ollama JSON mode en structured outputs testen via curl",
+    "llama.cpp server draaien met GBNF grammars voor maximale snelheid op Apple Silicon"
+   ],
+   "theory": [
+    "vLLM PagedAttention en continue batching voor honderden gelijktijdige beslissingen",
+    "Ollama API /api/chat met 'format': schema parameter",
+    "llama-server met --grammar optie voor microseconde edge inference"
+   ],
+   "example": "Een lokale server op MacBook 2 die via localhost:11434 gestructureerde antwoorden levert aan scripts.",
+   "exercise": "Schrijf een curl commando naar Ollama met een JSON schema restrictie.",
+   "test": "Server configuratie en deployment vragen.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-16-benchmarking-eval",
+   "title": "Benchmarking: Latentie, Throughput en VRAM",
+   "level": "praktijk",
+   "objectives": [
+    "Benchmarking harness bouwen voor beslissingsmodellen",
+    "P95 en P99 latentie meten onder concurrerende belasting",
+    "Nauwkeurigheid (F1-score) en kalibratiefout evalueren tegenover de meerkost"
+   ],
+   "theory": [
+    "Mean vs Median vs P99 latentie in synchrone webflows",
+    "Throughput in queries per second (QPS)",
+    "F1-score per dollar: de economische optimalisatiecurve"
+   ],
+   "example": "Een benchmark met 10.000 testcases die aantoont dat ModernBERT 98% van de nauwkeurigheid van GPT-4o haalt bij 0,5% van de kosten.",
+   "exercise": "Bereken de P95 latentie uit een dataset van meetresultaten.",
+   "test": "Statistische en benchmarkvragen.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-17-hybrid-orchestration",
+   "title": "Hybride Orchestratie: System 1 + System 2",
+   "level": "gevorderd",
+   "objectives": [
+    "De tweetrapsraket architectuur ontwerpen: System 1 (filter/router) + System 2 (synthese/redenering)",
+    "API-kosten reduceren met 80-90% door onnodige frontier LLM calls te elimineren",
+    "End-to-end traceerbaarheid en auditing inbouwen in agent pipelines"
+   ],
+   "theory": [
+    "Trap 1: Jev of lokaal model beslist of een call nodig is, welke tool relevant is, en valideert input",
+    "Trap 2: Claude 3.5 Sonnet of GPT-4o wordt uitsluitend aangeroepen wanneer creativiteit of diepe redenering vereist is",
+    "Failover chains: Lokaal -> Jev (OpenRouter) -> Frontier LLM"
+   ],
+   "example": "Van 100 inkomende klantenvragen worden er 75 direct beantwoord of gerouteerd door System 1; slechts 25 gaan naar Claude 3.5.",
+   "exercise": "Teken een stroomdiagram van een tweetraps hybride pipeline.",
+   "test": "Architectuur en beslissingsvragen.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-18-n8n-pipeline-integration",
+   "title": "Jev & Decision Nodes in n8n Workflows",
+   "level": "praktijk",
+   "objectives": [
+    "Een OpenRouter HTTP Request node inrichten voor typesafe/jev-1.13 in n8n",
+    "Koppeling maken met lokale Ollama of ModernBERT microservices via Docker bridge netwerk",
+    "Foutafhandeling en fallback takken configureren in n8n"
+   ],
+   "theory": [
+    "Webhook -> n8n -> Jev Decision Node -> If Node (Switch op basis van Choice)",
+    "Docker interne DNS: http://ollama:11434 of http://classifier:8000",
+    "Geheugen- en latentiewinst in n8n door compacte payloads"
+   ],
+   "example": "Een n8n lead router die leads binnen 200ms kwalificeert en in HubSpot plaatst.",
+   "exercise": "Configureer de JSON body van een n8n HTTP Request node naar OpenRouter voor een Jev Noul vraag.",
+   "test": "n8n workflow integratievragen.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-19-production-monitoring",
+   "title": "Monitoring, Drift en Feedback Loops",
+   "level": "expert",
+   "objectives": [
+    "Data drift en concept drift detecteren in beslissingsstromen",
+    "Logging van gekalibreerde probabiliteiten voor doorlopende kwaliteitsbewaking",
+    "Actief leren (active learning) opzetten voor moeilijke grensgevallen (low confidence)"
+   ],
+   "theory": [
+    "Wanneer p(keuze) rond 0.50 schommelt: automatische escalatie naar menselijke review",
+    "Brier score tracking in productie via Prometheus en Grafana",
+    "Feedback loops voor periodieke fine-tuning van lokale classifiers"
+   ],
+   "example": "Een dashboard dat waarschuwt zodra de gemiddelde modelonzekerheid over de week stijgt van 4% naar 18%.",
+   "exercise": "Ontwerp een query die alle transacties met confidence < 0.65 isoleert voor menselijke controle.",
+   "test": "Monitoring en drift analysevragen.",
+   "sims": [
+    "decision-engine"
+   ]
+  },
+  {
+   "id": "jev-20-capstone-decision-engine",
+   "title": "Capstone: Enterprise Decision Engine",
+   "level": "expert",
+   "objectives": [
+    "Een complete, schaalbare beslissingsarchitectuur bouwen",
+    "Hybride router met lokale ModernBERT/SLM en failover naar OpenRouter Jev",
+    "Live latency < 80ms, 99.9% uptime en gedocumenteerde kostenreductie"
+   ],
+   "theory": [
+    "Volledige integratie van alle 5 pijlers in één robuust productiesysteem",
+    "Resilience patterns: circuit breaker, retry met exponential backoff, lokale fallback cache",
+    "Rapportage aan stakeholders: latency winst, besparingen en auditlogs"
+   ],
+   "example": "Een bankapplicatie die miljoenen transacties in realtime classificeert met lokale privacy en cloud failover.",
+   "exercise": "Schrijf de complete specificatie en architectuurcode van de hybride engine.",
+   "test": "Uitgebreide capstone eindtoets over alle leerdomeinen.",
+   "sims": [
+    "decision-engine"
+   ]
+  }
+ ]
+}

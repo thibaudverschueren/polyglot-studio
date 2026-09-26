@@ -46,5 +46,16 @@
     "levels": "Praktijk → productie-expert",
     "icon": "zap",
     "goal": "Doel: betrouwbare n8n-automatiseringen en AI-workflows ontwerpen, beveiligen, hosten en onderhouden voor B2B-klanten — met onderbouwde inschattingen en retainers."
+  },
+  "jev": {
+    "title": "Jev & Decision AI",
+    "short": "Jev AI",
+    "subtitle": "System One beslissingsmodellen (TypeSafe Jev van Diogo Almeida), OpenRouter en razendsnelle lokale alternatieven (SLM's, ModernBERT, Outlines) voor routing, guardrails en agentic software.",
+    "glyph": "⑂",
+    "glyphMono": true,
+    "lang": "en",
+    "levels": "Fundament → Productie-architect",
+    "icon": "cpu",
+    "goal": "Doel: Jev en snelle beslissingsmodellen (OpenRouter, lokale SLM's en constrained classifiers) doorgronden, benchmarken en integreren in software en workflows — met de juiste balans tussen snelheid, kosten, privacy en determinisme."
   }
 }

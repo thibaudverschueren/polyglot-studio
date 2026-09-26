@@ -32,6 +32,7 @@
   --solidity: #0a8a6a; --solidity-soft: #e3f4ee; --solidity-ink: #075e48;
   --ai: #6a3fd4;       --ai-soft: #efe9fc;       --ai-ink: #4a2596;
   --automation: #d9480f; --automation-soft: #fdeee4; --automation-ink: #9a3207;
+  --jev: #0891b2;      --jev-soft: #e0f2fe;      --jev-ink: #0369a1;
   --neutral: #1a1917;  --neutral-soft: #eceae4;  --neutral-ink: #1a1917;
 
   --accent: var(--neutral);
@@ -86,6 +87,7 @@
   --solidity: #3ddbb0; --solidity-soft: rgba(61, 219, 176, 0.12);  --solidity-ink: #9df0d7;
   --ai: #ab8dff;       --ai-soft: rgba(171, 141, 255, 0.14);       --ai-ink: #d3c4ff;
   --automation: #ff9a4d; --automation-soft: rgba(255, 154, 77, 0.14); --automation-ink: #ffc899;
+  --jev: #38bdf8;      --jev-soft: rgba(56, 189, 248, 0.14);       --jev-ink: #bae6fd;
   --neutral: #f2f1ed;  --neutral-soft: rgba(255, 255, 255, 0.08);  --neutral-ink: #f2f1ed;
   --on-accent: #0c0d10;
 }
@@ -95,6 +97,7 @@
 [data-track="solidity"] { --accent: var(--solidity); --accent-soft: var(--solidity-soft); --accent-ink: var(--solidity-ink); }
 [data-track="ai"]       { --accent: var(--ai);       --accent-soft: var(--ai-soft);       --accent-ink: var(--ai-ink); }
 [data-track="automation"] { --accent: var(--automation); --accent-soft: var(--automation-soft); --accent-ink: var(--automation-ink); }
+[data-track="jev"]      { --accent: var(--jev);      --accent-soft: var(--jev-soft);      --accent-ink: var(--jev-ink); }
 
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
@@ -818,6 +821,7 @@ textarea.answer-input { min-height: 120px; resize: vertical; font-size: 17px; li
 .gate-orbs span:nth-child(3) { background: var(--solidity); left: 8vmax; bottom: -20vmax; animation-delay: -8s; }
 .gate-orbs span:nth-child(4) { background: var(--ai); right: 4vmax; bottom: -10vmax; animation-delay: -12s; opacity: 0.28; }
 .gate-orbs span:nth-child(5) { background: var(--automation); left: 38vmax; top: 30vmax; width: 26vmax; height: 26vmax; animation-delay: -6s; opacity: 0.25; }
+.gate-orbs span:nth-child(6) { background: var(--jev); left: -6vmax; bottom: 10vmax; width: 30vmax; height: 30vmax; animation-delay: -10s; opacity: 0.25; }
 @keyframes orb { from { transform: translate(0, 0) scale(1); } to { transform: translate(4vmax, -3vmax) scale(1.08); } }
 .gate-card { position: relative; width: min(440px, 100%); padding: 30px 26px 22px; border-radius: 30px; background: color-mix(in srgb, var(--surface) 62%, transparent); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); box-shadow: var(--shadow-3); }
 .gate-glyphs { display: flex; justify-content: center; gap: 14px; font-family: var(--font-display); font-size: 30px; font-weight: 600; }

@@ -1,6 +1,6 @@
 # AGENTS.md — Polyglot Studio
 
-Persoonlijke leerapp van Thibaud: **Nieuwgrieks, Frans C1–C2, Solidity, AI/LLM en Workflow Automation (n8n)**. Statische single-page app op GitHub Pages; voortgang in de eigen Supabase op MacBook 2 (tabellen `polyglot_*`); elke ochtend om 07:30 stuurt Antigravity de lessen bij.
+Persoonlijke leerapp van Thibaud: **Nieuwgrieks, Frans C1–C2, Solidity, AI/LLM, Workflow Automation (n8n) en Jev & Decision AI**. Statische single-page app op GitHub Pages; voortgang in de eigen Supabase op MacBook 2 (tabellen `polyglot_*`); elke ochtend om 07:30 stuurt Antigravity de lessen bij.
 
 ## Structuur
 
