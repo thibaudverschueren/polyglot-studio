@@ -1,0 +1,903 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "greek",
+ "id": 2,
+ "roadmap": "gr-a1-02-digraphs",
+ "title": "Klankcombinaties: de geheime codes van de Griekse spelling",
+ "subtitle": "Tweeklanken, de kameleon-klinkers αυ/ευ en de ontbrekende b, d en g",
+ "level": "A1",
+ "minutes": 45,
+ "summary": "Het Griekse alfabet mist een paar klanken die we in het Nederlands wel hebben, zoals b, d en oe. De oplossing? Letters combineren! In deze les leer je de belangrijkste combinaties lezen en foutloos opschrijven.",
+ "objectives": [
+  {
+   "id": "vowels",
+   "text": "Je herkent en leest de klinkercombinaties (ου, αι, ει, οι, υι) als één klank."
+  },
+  {
+   "id": "av-ev",
+   "text": "Je past de uitspraak- en spellingregels voor αυ en ευ correct toe."
+  },
+  {
+   "id": "bdg",
+   "text": "Je schrijft en leest de klanken b, d en g met de combinaties μπ, ντ en γκ."
+  },
+  {
+   "id": "cons",
+   "text": "Je herkent en spelt de medeklinkercombinaties τσ, τζ en γγ."
+  },
+  {
+   "id": "reading-writing",
+   "text": "Je leest woorden met klankcombinaties correct en schrijft ze op het gehoor foutloos op."
+  }
+ ],
+ "vocab": [
+  {
+   "term": "το τσάι",
+   "translit": "tsái",
+   "meaning": "thee"
+  },
+  {
+   "term": "η μπύρα",
+   "translit": "bíra",
+   "meaning": "bier",
+   "alt": [
+    "μπίρα"
+   ]
+  },
+  {
+   "term": "η ντομάτα",
+   "translit": "domáta",
+   "meaning": "tomaat"
+  },
+  {
+   "term": "το αυγό",
+   "translit": "avgó",
+   "meaning": "ei",
+   "alt": [
+    "αβγό"
+   ]
+  },
+  {
+   "term": "το ούζο",
+   "translit": "oúzo",
+   "meaning": "ouzo (anijslikeur)"
+  },
+  {
+   "term": "το παιδί",
+   "translit": "peðí",
+   "meaning": "kind"
+  },
+  {
+   "term": "το τζατζίκι",
+   "translit": "dzadzíki",
+   "meaning": "tzatziki"
+  },
+  {
+   "term": "ευχαριστώ",
+   "translit": "efcharistó",
+   "meaning": "dank je(wel)"
+  },
+  {
+   "term": "συγγνώμη",
+   "translit": "singnómi",
+   "meaning": "sorry; pardon"
+  }
+ ],
+ "sections": [
+  {
+   "id": "vowels",
+   "title": "Klinkercombinaties (δίψηφα φωνήεντα)",
+   "md": "Het Nieuwgrieks klinkt heel vloeiend. Dat komt deels doordat het taal in de loop van duizenden jaren is geëvolueerd. In het Oudgrieks sprak men klinkercombinaties nog uit als twee aparte klanken die in elkaar overvloeiden (echte tweeklanken of diftongen, zoals *au* of *ei* in het Nederlands). Maar in het Nieuwgrieks zijn veel van die oude combinaties (δίψηφα φωνήεντα, letterlijk \"tweeletter-klinkers\") versmolten tot **één enkele, korte klank**.\n\nVoor Nederlandstaligen is dit concept eigenlijk heel logisch. Wij schrijven de klank *oe* ook met twee letters (o+e), en de *ie* met i+e. De Grieken doen precies hetzelfde, maar met andere combinaties. Omdat deze klinkercombinaties in vrijwel elke Griekse zin opduiken, is het cruciaal dat je ze meteen leert herkennen als één eenheid, en niet letter voor letter probeert te spellen.\n\n| Combinatie | Klank | Voorbeeld | Betekenis |\n|:---:|:---:|---|---|\n| **ου** | **oe** (als in *boek*) | το **ού**ζο | ouzo (de bekende anijsdrank) |\n| **αι** | **e** (als in *bed*) | το π**αι**δί | het kind |\n| **ει**, **οι**, **υι** | **ie** (als in *fiets*) | η **ει**κόνα | het beeld (denk aan *icoon*) |\n\nZoals je in les 1 al zag, heeft het Grieks een voorliefde voor de *ie*-klank (iotacisme). De \"ie-club\" (η, ι, υ) was al groot, maar krijgt er nu nog eens drie leden bij: ει, οι, en de zeer zeldzame υι (die je bijna alleen tegenkomt in het woord γιος, zoon, wat vroeger als υιός werd gespeld). Dat betekent dat als je een *ie*-klank hoort, die op zes verschillende manieren gespeld kan worden! Schrijven in het Grieks vereist dus echt dat je het woordbeeld memoriseert. Gelukkig zul je bij het lezen snel wennen aan deze combinaties. Het helpt om woorden veel te schrijven en in context te zien.\n\n> [!rule] Waar zet je de tónos bij een klinkercombinatie?\n> Het Grieks is heel precies over klemtonen. Als de klemtoon van een woord op een tweeklank (zoals ου of ει) valt, schrijf je de tónos (het accent) **altijd op de tweede letter** van die combinatie:\n> - ο**ύ**ζο (OEZ-o)\n> - π**αί**ζω (PE-zo, ik speel)\n> - εκ**εί** (e-KIE, daar)\n> \n> *Uitzondering*: Staat de tónos per ongeluk op de **eerste** letter van zo'n combinatie? Dan is het géén combinatie meer, maar spreek je beide klinkers apart uit, elk in hun eigen lettergreep! Vergelijk:\n> - π**αι**δί (pe-THI) → tónos staat achteraan het woord, dus αι vormt samen een *e*-klank.\n> - τσ**άι** (TSA-ie) → de tónos staat op de α. De regel wordt gebroken, dus de α en ι worden losgetrokken: *á* en *i* klinken los van elkaar.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "type",
+     "skill": "vowels",
+     "level": 1,
+     "prompt": "Typ de Griekse combinatie die klinkt als **oe**.",
+     "explain": "ου = oe.",
+     "answers": [
+      "ου"
+     ],
+     "lang": "el"
+    },
+    {
+     "id": "c2",
+     "type": "mcq",
+     "skill": "vowels",
+     "level": 2,
+     "prompt": "Je wil de klemtoon leggen op de combinatie **αι** (e-klank). Hoe schrijf je dat?",
+     "explain": "De tónos komt op de tweede klinker van de combinatie: αί. Als je hem op de eerste zet (άι), breek je de combinatie open.",
+     "options": [
+      "αί",
+      "άι",
+      "αϊ",
+      "άί"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "av-ev",
+   "title": "De kameleon-klinkers: αυ en ευ",
+   "md": "De combinaties **αυ** (alfa + ipsilon) en **ευ** (epsilon + ipsilon) zijn ware kameleons in de Griekse spelling. In tegenstelling tot de combinaties uit de vorige sectie (waar de letters simpelweg versmelten tot een nieuwe klinkerklank), verandert de υ hier plots in een **medeklinker**. Hij verliest zijn *ie*-klank volledig en klinkt opeens als een **v** of een **f**.\n\nOf het een zachte **v** of een harde **f** wordt, hangt volledig af van de letter die direct ná de combinatie volgt. Het is een prachtig voorbeeld van fonetische logica: je mond kiest automatisch de klank die het makkelijkst uit te spreken is in combinatie met de volgende letter. We noemen dit in de taalkunde 'assimilatie'.\n\n### 1. Als een zachte v (av / ev)\nWanneer de volgende letter een klinker is (α, ε, ι, ο, ω, η, υ) of een *stemhebbende* medeklinker (β, γ, δ, ζ, λ, μ, ν, ρ), trillen je stembanden al. De υ past zich aan die trilling aan en wordt een zachte, stemhebbende **v**.\n- το **αυ**γό (av-GÓ) – het ei (γ is stemhebbend)\n- η Παρ**ασ**κευή (Pa-ras-ke-VÍ) – de vrijdag (ή is een klinker)\n- το **Ευ**ρώ (ev-RÓ) – de euro (ρ is stemhebbend)\n- δουλέ**υ**ω (thou-LE-vo) – ik werk (ω is een klinker)\n\n### 2. Als een harde f (af / ef)\nWanneer de volgende letter een *stemloze* medeklinker is (κ, π, τ, χ, φ, θ, σ, ξ, ψ), produceren je stembanden geen trilling. Ze blazen alleen maar lucht. De υ voelt dit aankomen, stopt ook met trillen en verhardt tot een **f**.\n- **ευ**χαριστώ (ef-cha-ri-STÓ) – dank je (χ is stemloos)\n- **αυ**τός (af-TÓS) – hij (τ is stemloos)\n- η Παρ**ασ**κευή is dus Pa-ras-ke-VÍ, maar **Εύ**η (Evi, een naam) klinkt met een v, terwijl **Ευ**τυχία (Eftichia, geluk) met een f klinkt omdat de τ volgt!\n\n> [!tip] Makkelijk en analytisch onthouden\n> Leg je hand maar eens op je keel. Zeg een 'v' (zoals in *vlo*) en je voelt trilling. Zeg een 'f' (zoals in *fiets*) en je voelt niets, alleen luchtstroom. Volgt er een \"harde\" of blazende klank (p, t, k, s, ch), dan kiest je lichaam automatisch de makkelijkste weg: de υ wordt ook een blazende, trillingsvrije **f**. In alle andere gevallen, waarbij je keel toch al in actie moet komen, is het een **v**. Zodra je dit patroon doorziet, hoef je het nooit meer bewust te onthouden.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "mcq",
+     "skill": "av-ev",
+     "level": 2,
+     "prompt": "Hoe klinkt **ευ** in de naam Εύα?",
+     "explain": "Na de ευ volgt een klinker (α), dus de υ trilt mee als een **v**.",
+     "options": [
+      "ev",
+      "ef",
+      "e-oe",
+      "e-ie"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c4",
+     "type": "type",
+     "skill": "av-ev",
+     "level": 2,
+     "prompt": "Transcribeer in Latijnse letters: **αυτός** (hij).",
+     "explain": "De τ is stemloos, dus αυ wordt **af** (aftós).",
+     "answers": [
+      "aftos",
+      "aftós"
+     ],
+     "lang": "nl",
+     "accentsOptional": true
+    }
+   ]
+  },
+  {
+   "id": "bdg",
+   "title": "De ontbrekende letters: b, d en g",
+   "md": "Je herinnert je ongetwijfeld nog de 'valse vrienden' uit les 1. De Griekse letter β (bèta) klinkt niet als een b, maar als een **v**. De δ (delta) klinkt niet als een d, maar als een zachte **th** (zoals in het Engelse *this*). En de γ (gamma) klinkt niet als de g van *goal*, maar als een zachte, wrijvende keelklank of een *j*. \n\nDit creëerde echter een aanzienlijk probleem voor het moderne Grieks. Hoe spel je dan buitenlandse leenwoorden, internationale merknamen, of gewoon klanken die we in Europa constant gebruiken, zoals de harde **b**, **d** en **g**? Het Griekse alfabet kwam ineens tekort.\n\nDe oplossing was even inventief als pragmatisch: de Grieken begonnen gewoon bestaande medeklinkers aan elkaar te plakken om deze harde klanken te simuleren.\n\n| Combinatie | Formule | Klank (begin woord) | Klank (in het midden) | Voorbeeld | Betekenis |\n|:---:|:---:|:---:|:---:|---|---|\n| **μπ** | (μ + π) | **b** | mb (of b) | η **μπ**ύρα | het bier (leenwoord van *birra*) |\n| **ντ** | (ν + τ) | **d** | nd (of d) | η **ντ**ομάτα | de tomaat (leenwoord van *tomato*) |\n| **γκ** | (γ + κ) | **g** (als *goal*) | ng (of g) | το **γκ**αράζ | de garage |\n\nDit betekent dat als je in Griekenland een \"bar\" zoekt, je op de uithangborden moet speuren naar het woord **ΜΠΑΡ** (M-P-A-R, wat samen *BAR* vormt). Wil je op het menu een \"burger\" vinden? Dan zoek je naar **ΜΠΕΡΓΚΕΡ** (M-P-E-R-G-K-E-R).\n\n> [!note] In het midden van een woord: neusklank of niet?\n> Volgens de traditionele, officiële uitspraakregels van de Griekse school spreek je μπ en ντ in het *midden* van een woord uit met een lichte, voelbare neusklank. Je laat de m of n zachtjes horen voordat je de harde klank maakt: \n> - ντομάτα vooraan is gewoon *do-MÁ-ta*, maar \n> - κολυμπάω (ik zwem) klinkt als *ko-lim-BÁ-o*\n> - πέντε (vijf) klinkt als *pen-DE*\n>\n> In de praktijk van vandaag, en zeker onder jonge Grieken en in snelle spreektaal, vervaagt deze neusklank echter steeds vaker. Veel mensen zeggen nu gewoon *ko-li-BÁ-o* en *pe-DE*. Beide uitspraken worden in de hedendaagse maatschappij als volledig correct en geaccepteerd beschouwd. Als je twijfelt: de harde 'b' en 'd' zonder neusklank zijn altijd veilig.",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "mcq",
+     "skill": "bdg",
+     "level": 1,
+     "prompt": "Hoe klinkt **μπ** aan het begin van een woord?",
+     "explain": "μπ = b (zoals in *bar* of *bier*).",
+     "options": [
+      "b",
+      "v",
+      "p",
+      "mb"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c6",
+     "type": "type",
+     "skill": "bdg",
+     "level": 2,
+     "prompt": "Schrijf in het Grieks: **tomaat**.",
+     "explain": "De d-klank schrijf je als ντ: ντομάτα.",
+     "answers": [
+      "ντομάτα"
+     ],
+     "lang": "el",
+     "errors": [
+      {
+       "match": "δοματα",
+       "feedback": "δ klinkt als de Engelse zachte *th*. Voor een harde **d** schrijf je ντ.",
+       "tag": "delta-d"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cons",
+   "title": "Nog drie combinaties: τσ, τζ en γγ",
+   "md": "Naast de combinaties voor b, d en g, kom je in het Grieks nog drie andere zeer veelvoorkomende medeklinkercombinaties (samenstellingen) tegen. Ook deze moet je als één geheel leren lezen, omdat de losse letters samen een specifieke nieuwe klank vormen.\n\n**1. τσ = ts**\nDeze combinatie is simpel: een tau (τ) en een sigma (σ) vormen samen de *ts*-klank. We kennen deze klank goed in het Nederlands, bijvoorbeeld in het woord *tsaar* of *ketsen*. In het Grieks komt dit enorm veel voor.\n- το **τσ**άι (*TSA-ie*) – de thee\n- η **τσ**άντα (*TSAN-da*) – de tas\n- **τσ**έπη (*TSE-pi*) – de zak (van je broek of jas)\n\n**2. τζ = dz**\nDe tau (τ) gecombineerd met de zita (ζ) vormt een stemhebbende klank die je in het Nederlands niet vaak aan het begin van een woord ziet, maar wel kent uit het Engelse leenwoord *kids* (de 'ds') of het Italiaanse *pizza* (als je de dubbele z zacht uitspreekt). Je voelt je keel trillen bij deze klank.\n- το **τζ**α**τζ**ίκι (*dza-DZÍ-ki*) – de tzatziki (ja, we spellen het in het Nederlands met een tz, maar de Grieken gebruiken τζ)\n- το **τζ**άκι (*DZA-ki*) – de open haard\n- το παντελόνι **τζ**ιν (*dzin*) – de spijkerbroek (jeans)\n\n**3. γγ = ng**\nWanneer twee gamma's (γ) direct naast elkaar staan in een woord, ontstaat er een speciale regel die nog stamt uit het Oudgrieks. De eerste gamma wordt uitgesproken als een **n**-klank in de neus, vergelijkbaar met de *ng* in het Nederlandse woord *zanger* of *brengen*. \n- συ**γγ**νώμη (*sing-GNÓ-mi*) – sorry / pardon\n- Α**γγ**λία (*Ang-GLÍ-a*) – Engeland\n- α**γγ**ούρι (*ang-GOE-ri*) – komkommer\n\n*(Een klein voorproefje op latere lessen: de combinatie γι gevolgd door een andere klinker klinkt overigens als een **j**: **γι**αούρτι is yoghurt, en **γι**ατρός is dokter. Maar daar oefenen we later uitgebreider op als we het over palatalisatie hebben).*\n\nMet al deze combinaties – van de tweeklinkers en de kameleon-letters αυ/ευ tot de verborgen b, d, en g – ben je nu volledig uitgerust om letterlijk elk woord op de menukaart van een Atheense taverna of een straatbord in Thessaloniki te kunnen ontcijferen en foutloos uit te spreken!",
+   "checks": [
+    {
+     "id": "c7",
+     "type": "match",
+     "skill": "cons",
+     "level": 1,
+     "prompt": "Koppel de klank aan de juiste combinatie.",
+     "explain": "τσ = ts, τζ = dz, γγ = ng.",
+     "pairs": [
+      [
+       "τσ",
+       "ts"
+      ],
+      [
+       "τζ",
+       "dz"
+      ],
+      [
+       "γγ",
+       "ng"
+      ]
+     ]
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "match",
+   "skill": "vowels",
+   "level": 1,
+   "prompt": "Koppel de klinkercombinatie aan de klank.",
+   "explain": "ου = oe, αι = e, ει = ie.",
+   "pairs": [
+    [
+     "ου",
+     "oe (boek)"
+    ],
+    [
+     "αι",
+     "e (bed)"
+    ],
+    [
+     "ει",
+     "ie (fiets)"
+    ]
+   ]
+  },
+  {
+   "id": "p02",
+   "type": "type",
+   "skill": "vowels",
+   "level": 2,
+   "prompt": "Typ de twee Griekse letters voor de **oe**-klank.",
+   "explain": "ου klinkt als oe, bijvoorbeeld in ούζο.",
+   "answers": [
+    "ου"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p03",
+   "type": "mcq",
+   "skill": "vowels",
+   "level": 2,
+   "prompt": "Hoe lees je **παιδί** (kind)?",
+   "explain": "αι = e, δ = stemhebbende th: pe-THI.",
+   "options": [
+    "pe-THI",
+    "pai-THI",
+    "pe-DI",
+    "pai-DI"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p04",
+   "type": "type",
+   "skill": "vowels",
+   "level": 2,
+   "prompt": "Schrijf in het Grieks: **ouzo**.",
+   "explain": "ο + υ = oe, ζ = z, en de tónos komt op de tweede letter van de combinatie: ούζο.",
+   "answers": [
+    "ούζο"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p05",
+   "type": "cloze",
+   "skill": "vowels",
+   "level": 1,
+   "prompt": "Wat is de regel voor de klemtoon?",
+   "explain": "De tónos staat altijd op de tweede klinker van een combinatie.",
+   "text": "Als de klemtoon op een tweeklank valt (zoals -ου), zet je de tónos altijd op de {{tweede}} letter van de combinatie.",
+   "lang": "nl"
+  },
+  {
+   "id": "p06",
+   "type": "mcq",
+   "skill": "av-ev",
+   "level": 2,
+   "prompt": "Hoe klinkt de **αυ** in **αυγό** (ei)?",
+   "explain": "γ is een stemhebbende medeklinker, dus de υ trilt mee als een **v**: av-GÓ.",
+   "options": [
+    "als av",
+    "als af",
+    "als a-oe",
+    "als a-v-g-o"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p07",
+   "type": "mcq",
+   "skill": "av-ev",
+   "level": 2,
+   "prompt": "Hoe klinkt de **ευ** in **ευχαριστώ** (dank je)?",
+   "explain": "χ is een stemloze medeklinker (blazende klank), dus de υ wordt een **f**: ef-cha-ri-STÓ.",
+   "options": [
+    "als ef",
+    "als ev",
+    "als e-oe",
+    "als e-ch"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p08",
+   "type": "type",
+   "skill": "av-ev",
+   "level": 2,
+   "prompt": "Transcribeer in Latijnse letters: **αυτός** (hij).",
+   "explain": "De τ is stemloos, dus αυ wordt **af** (aftós).",
+   "answers": [
+    "aftos",
+    "aftós"
+   ],
+   "lang": "nl",
+   "accentsOptional": true
+  },
+  {
+   "id": "p09",
+   "type": "match",
+   "skill": "bdg",
+   "level": 1,
+   "prompt": "Koppel de Griekse combinatie aan de harde medeklinker.",
+   "explain": "μπ = b, ντ = d, γκ = g.",
+   "pairs": [
+    [
+     "μπ",
+     "b"
+    ],
+    [
+     "ντ",
+     "d"
+    ],
+    [
+     "γκ",
+     "g (goal)"
+    ]
+   ]
+  },
+  {
+   "id": "p10",
+   "type": "type",
+   "skill": "bdg",
+   "level": 2,
+   "prompt": "Typ de Griekse combinatie voor de **b**-klank (zoals in bier).",
+   "explain": "De b-klank schrijf je met μπ.",
+   "answers": [
+    "μπ"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "β",
+     "feedback": "β klinkt als v. Voor de harde b gebruik je μπ.",
+     "tag": "beta-b"
+    }
+   ]
+  },
+  {
+   "id": "p11",
+   "type": "type",
+   "skill": "bdg",
+   "level": 2,
+   "prompt": "Schrijf in het Grieks: **tomaat**.",
+   "explain": "De d-klank = ντ: ντομάτα.",
+   "answers": [
+    "ντομάτα"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "δοματα",
+     "feedback": "δ klinkt als *th*. Gebruik ντ voor de d-klank.",
+     "tag": "delta-d"
+    }
+   ]
+  },
+  {
+   "id": "p12",
+   "type": "dictation",
+   "skill": "reading-writing",
+   "level": 2,
+   "prompt": "Luister en schrijf het woord.",
+   "explain": "b = μπ, ie = υ, r = ρ, a = α. Tónos op de ύ: μπύρα.",
+   "text": "μπύρα",
+   "lang": "el"
+  },
+  {
+   "id": "p13",
+   "type": "match",
+   "skill": "cons",
+   "level": 1,
+   "prompt": "Koppel de medeklinkercombinatie aan de klank.",
+   "explain": "τσ = ts, τζ = dz, γγ = ng.",
+   "pairs": [
+    [
+     "τσ",
+     "ts"
+    ],
+    [
+     "τζ",
+     "dz"
+    ],
+    [
+     "γγ",
+     "ng"
+    ]
+   ]
+  },
+  {
+   "id": "p14",
+   "type": "type",
+   "skill": "cons",
+   "level": 3,
+   "prompt": "Schrijf in het Grieks: **tzatziki**.",
+   "explain": "dz = τζ, ie = ι. De tónos valt op de eerste ι: τζατζίκι.",
+   "answers": [
+    "τζατζίκι"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p15",
+   "type": "dictation",
+   "skill": "reading-writing",
+   "level": 3,
+   "prompt": "Luister en schrijf het woord.",
+   "explain": "ts = τσ. De tónos ligt hier op de á, waardoor het apart klinkt: τσάι.",
+   "text": "τσάι",
+   "lang": "el"
+  },
+  {
+   "id": "p16",
+   "type": "mcq",
+   "skill": "cons",
+   "level": 2,
+   "prompt": "Hoe spreek je de twee gamma's (γγ) uit in **συγγνώμη** (sorry)?",
+   "explain": "γγ klinkt als ng in het Nederlandse woord *zanger*.",
+   "options": [
+    "als ng",
+    "als g",
+    "als j",
+    "als ch"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p17",
+   "type": "speak",
+   "skill": "reading-writing",
+   "level": 2,
+   "prompt": "Spreek uit en vergelijk met het voorbeeld: **dank je**.",
+   "explain": "ef-cha-ri-STÓ. Omdat χ stemloos is, klinkt de υ als f.",
+   "text": "ευχαριστώ",
+   "lang": "el",
+   "translit": "efcharistó"
+  },
+  {
+   "id": "p18",
+   "type": "cloze",
+   "skill": "bdg",
+   "level": 2,
+   "prompt": "Vul de juiste ontbrekende letters in.",
+   "explain": "d = ντ (ντομάτα); b = μπ (μπύρα).",
+   "text": "{{ντ}}ομάτα (tomaat) · {{μπ}}ύρα (bier)",
+   "lang": "el"
+  },
+  {
+   "id": "p19",
+   "type": "dictation",
+   "skill": "reading-writing",
+   "level": 2,
+   "prompt": "Luister en schrijf het woord.",
+   "explain": "av = αυ, g = γ, o = ό: αυγό.",
+   "text": "αυγό",
+   "lang": "el"
+  },
+  {
+   "id": "p20",
+   "type": "handwrite",
+   "skill": "reading-writing",
+   "level": 2,
+   "prompt": "Schrijf met de hand (Apple Pencil of vinger): **ούζο** — eerst overtrekken, dan uit het hoofd.",
+   "explain": "Let op dat je de tónos op de tweede letter van de combinatie zet: ύ.",
+   "target": "ούζο"
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "mcq",
+   "skill": "vowels",
+   "level": 2,
+   "prompt": "Welke twee spellingen klinken allebei als een korte **e** (zoals in *bed*)?",
+   "explain": "Zowel ε (épsilon) als de combinatie αι klinken als e.",
+   "options": [
+    "ε en αι",
+    "ε en ει",
+    "αι en ει",
+    "ου en ε"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m02",
+   "type": "type",
+   "skill": "vowels",
+   "level": 2,
+   "prompt": "Transcribeer in Latijnse letters: **παιδί** (kind).",
+   "explain": "αι = e, δ = stemhebbende th (pe-THI of pe-DI, beide worden hier goedgekeurd).",
+   "answers": [
+    "pethi",
+    "pedi",
+    "pedhi",
+    "peði"
+   ],
+   "lang": "nl",
+   "accentsOptional": true
+  },
+  {
+   "id": "m03",
+   "type": "dictation",
+   "skill": "reading-writing",
+   "level": 3,
+   "prompt": "Luister en schrijf het woord.",
+   "explain": "p = π, e = αι, d = δ, i = ί. παιδί (kind).",
+   "text": "παιδί",
+   "lang": "el"
+  },
+  {
+   "id": "m04",
+   "type": "order",
+   "skill": "vowels",
+   "level": 2,
+   "prompt": "Bouw het woord voor **ouzo** met de letters.",
+   "explain": "ο + υ = oe, ζ = z, en de tónos op de tweede letter: ούζο.",
+   "tiles": [
+    "ο",
+    "ύ",
+    "ζ",
+    "ο"
+   ],
+   "lang": "el",
+   "distractors": [
+    "ό",
+    "υ"
+   ],
+   "join": ""
+  },
+  {
+   "id": "m05",
+   "type": "cloze",
+   "skill": "av-ev",
+   "level": 2,
+   "prompt": "Kies hoe je de combinaties uitspreekt op basis van de letter die volgt.",
+   "explain": "Stemloos volgt stemloos (f); stemhebbend volgt stemhebbend (v).",
+   "text": "Vóór een stemloze medeklinker (zoals τ of χ) klinkt ευ als {{ef}}. Vóór een klinker of stemhebbende medeklinker (zoals γ) klinkt αυ als {{av}}.",
+   "lang": "nl"
+  },
+  {
+   "id": "m06",
+   "type": "type",
+   "skill": "av-ev",
+   "level": 3,
+   "prompt": "Transcribeer de uitspraak van **Παρασκευή** (vrijdag).",
+   "explain": "Na de ευ komt de klinker ή. Daarom trilt de υ mee als een **v**: paraskeví.",
+   "answers": [
+    "paraskevi",
+    "paraskeví"
+   ],
+   "lang": "nl",
+   "accentsOptional": true
+  },
+  {
+   "id": "m07",
+   "type": "type",
+   "skill": "av-ev",
+   "level": 3,
+   "prompt": "Schrijf in Latijnse letters hoe je dit uitspreekt: **αυτοκίνητο** (auto).",
+   "explain": "De τ is stemloos, dus de υ klinkt als **f**: aftokínito.",
+   "answers": [
+    "aftokinito",
+    "aftokínito"
+   ],
+   "lang": "nl",
+   "accentsOptional": true
+  },
+  {
+   "id": "m08",
+   "type": "dictation",
+   "skill": "reading-writing",
+   "level": 3,
+   "prompt": "Luister en schrijf het woord.",
+   "explain": "ευχαριστώ. De υ klinkt als f, omdat de χ stemloos is.",
+   "text": "ευχαριστώ",
+   "lang": "el"
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "bdg",
+   "level": 3,
+   "prompt": "Schrijf in het Grieks: **bier**.",
+   "explain": "De b-klank is μπ, en de klemtoon valt op de υ: μπύρα (of μπίρα).",
+   "answers": [
+    "μπύρα",
+    "μπίρα"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "βυρα",
+     "feedback": "β klinkt als v (*vyra*). Voor een harde **b** schrijf je μπ.",
+     "tag": "beta-b"
+    }
+   ]
+  },
+  {
+   "id": "m10",
+   "type": "type",
+   "skill": "bdg",
+   "level": 2,
+   "prompt": "Typ de twee Griekse letters voor de harde **d**-klank (zoals in tomaat).",
+   "explain": "ν + τ = ντ.",
+   "answers": [
+    "ντ"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m11",
+   "type": "dictation",
+   "skill": "reading-writing",
+   "level": 2,
+   "prompt": "Luister en schrijf het woord.",
+   "explain": "d = ντ: ντομάτα.",
+   "text": "ντομάτα",
+   "lang": "el"
+  },
+  {
+   "id": "m12",
+   "type": "mcq",
+   "skill": "bdg",
+   "level": 2,
+   "prompt": "Je hoort de klank **b** aan het begin van een Grieks woord. Hoe schrijf je dat bijna altijd?",
+   "explain": "β = v, π = p. De b-klank schrijf je met de combinatie μπ.",
+   "options": [
+    "μπ",
+    "β",
+    "π",
+    "ντ"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m13",
+   "type": "dictation",
+   "skill": "reading-writing",
+   "level": 3,
+   "prompt": "Luister en schrijf het woord.",
+   "explain": "b = μπ. μπύρα (bier).",
+   "text": "μπύρα",
+   "lang": "el"
+  },
+  {
+   "id": "m14",
+   "type": "mcq",
+   "skill": "bdg",
+   "level": 2,
+   "prompt": "Hoe lees je **γκαράζ**?",
+   "explain": "γκ aan het begin is g (als in *goal*). r = ρ, z = ζ. ga-RAZ.",
+   "options": [
+    "ga-RAZ",
+    "ka-RAZ",
+    "zga-RAZ",
+    "nga-RAZ"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m15",
+   "type": "dictation",
+   "skill": "cons",
+   "level": 3,
+   "prompt": "Luister en schrijf het woord.",
+   "explain": "dz = τζ, de tónos valt op de eerste ι: τζατζίκι.",
+   "text": "τζατζίκι",
+   "lang": "el"
+  },
+  {
+   "id": "m16",
+   "type": "dictation",
+   "skill": "reading-writing",
+   "level": 3,
+   "prompt": "Luister en schrijf het woord.",
+   "explain": "ts = τσ, tónos op á: τσάι.",
+   "text": "τσάι",
+   "lang": "el"
+  },
+  {
+   "id": "m17",
+   "type": "type",
+   "skill": "cons",
+   "level": 3,
+   "prompt": "Schrijf in het Grieks: **thee**.",
+   "explain": "τσάι. De tónos valt op de ά. Daardoor klinken α en ι los van elkaar (á-i), in plaats van samen e.",
+   "answers": [
+    "τσάι"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "τσαί",
+     "feedback": "Als de tónos op de ι (τσαί) stond, zou je het als *tse* lezen (αι=e). Bij τσάι vallen ze uit elkaar: tsá-i.",
+     "tag": "tonos-break"
+    }
+   ]
+  },
+  {
+   "id": "m18",
+   "type": "dictation",
+   "skill": "reading-writing",
+   "level": 3,
+   "prompt": "Luister en schrijf het woord (sorry / pardon).",
+   "explain": "ng = γγ, o = ω. συγγνώμη.",
+   "text": "συγγνώμη",
+   "lang": "el"
+  },
+  {
+   "id": "m19",
+   "type": "type",
+   "skill": "reading-writing",
+   "level": 2,
+   "prompt": "Herhaling uit les 1: schrijf in het Grieks **huis**.",
+   "explain": "σπίτι (twee keer de ι, tónos op de eerste).",
+   "answers": [
+    "σπίτι"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m20",
+   "type": "type",
+   "skill": "reading-writing",
+   "level": 2,
+   "prompt": "Herhaling uit les 1: schrijf in het Grieks **water**.",
+   "explain": "νερό (met tónos op de ό).",
+   "answers": [
+    "νερό"
+   ],
+   "lang": "el"
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "el",
+  "minWords": 6,
+  "prompt": "Stel je voor: je gaat naar een Griekse supermarkt om ingrediënten te halen en daarna naar een bar.\n\nSchrijf uit het hoofd de Griekse woorden voor: **ei, tomaat, tzatziki, thee, bier, ouzo**.\n\nLet goed op de spelling van de klankcombinaties en vergeet de tónos niet! Kijk pas daarna naar het model — en wees streng voor jezelf.",
+  "model": "αυγό · ντομάτα · τζατζίκι · τσάι · μπύρα · ούζο",
+  "rubric": [
+   "ei = αυγό (αυ klinkt hier als av)",
+   "tomaat = ντομάτα (met ντ voor de d-klank)",
+   "tzatziki = τζατζίκι (twee keer τζ en tónos op de eerste ι)",
+   "thee = τσάι (met τσ en tónos op de α)",
+   "bier = μπύρα (of μπίρα, met μπ voor de b-klank)",
+   "ouzo = ούζο (met ου en tónos op de υ)"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-ou",
+   "front": "Hoe klinkt de combinatie **ου**?",
+   "back": "als **oe** (zoals in boek) — ούζο",
+   "answers": [
+    "oe"
+   ],
+   "lang": "nl",
+   "skill": "vowels"
+  },
+  {
+   "id": "c-ai",
+   "front": "Hoe klinkt de combinatie **αι**?",
+   "back": "als **e** (zoals in bed) — παιδί",
+   "answers": [
+    "e"
+   ],
+   "lang": "nl",
+   "skill": "vowels"
+  },
+  {
+   "id": "c-ieclub",
+   "front": "Welke drie klinkercombinaties klinken allemaal als **ie**?",
+   "back": "**ει**, **οι** en **υι** (uit de ie-club)",
+   "skill": "vowels"
+  },
+  {
+   "id": "c-av",
+   "front": "Hoe klinkt **αυ** vóór een klinker of stemhebbende medeklinker (zoals in αυγό)?",
+   "back": "als **av**",
+   "answers": [
+    "av"
+   ],
+   "lang": "nl",
+   "skill": "av-ev"
+  },
+  {
+   "id": "c-ef",
+   "front": "Hoe klinkt **ευ** vóór een stemloze medeklinker (zoals in ευχαριστώ)?",
+   "back": "als **ef**",
+   "answers": [
+    "ef"
+   ],
+   "lang": "nl",
+   "skill": "av-ev"
+  },
+  {
+   "id": "c-b",
+   "front": "Hoe schrijf je de **b**-klank (aan het begin van een woord)?",
+   "back": "**μπ** — μπύρα",
+   "answers": [
+    "μπ"
+   ],
+   "lang": "el",
+   "skill": "bdg"
+  },
+  {
+   "id": "c-d",
+   "front": "Hoe schrijf je de **d**-klank (aan het begin van een woord)?",
+   "back": "**ντ** — ντομάτα",
+   "answers": [
+    "ντ"
+   ],
+   "lang": "el",
+   "skill": "bdg"
+  },
+  {
+   "id": "c-g",
+   "front": "Hoe schrijf je de **g**-klank (zoals in *goal*, aan het begin van een woord)?",
+   "back": "**γκ** — γκαράζ",
+   "answers": [
+    "γκ"
+   ],
+   "lang": "el",
+   "skill": "bdg"
+  },
+  {
+   "id": "c-ts",
+   "front": "Welke combinatie klinkt als **ts** (zoals in thee)?",
+   "back": "**τσ** — τσάι",
+   "answers": [
+    "τσ"
+   ],
+   "lang": "el",
+   "skill": "cons"
+  },
+  {
+   "id": "c-dz",
+   "front": "Welke combination klinkt als **dz** (zoals in tzatziki)?",
+   "back": "**τζ** — τζατζίκι",
+   "answers": [
+    "τζ"
+   ],
+   "lang": "el",
+   "skill": "cons"
+  }
+ ],
+ "sources": [
+  "Holton, Mackridge & Philippaki-Warburton, *Greek: A Comprehensive Grammar* (Routledge)",
+  "Κέντρο Ελληνικής Γλώσσας — Πιστοποίηση Ελληνομάθειας, niveau A1"
+ ],
+ "kind": "core",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-26",
+  "adaptedFor": "Standaard opbouw A1 aangehouden wegens 0 recente oefenpogingen en 0 afgeronde lessen de afgelopen week."
+ }
+}

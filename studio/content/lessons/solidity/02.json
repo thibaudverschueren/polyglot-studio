@@ -1,0 +1,961 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "solidity",
+ "id": 2,
+ "roadmap": "sol-02-types-functions",
+ "title": "Types, functies, visibility en mutability",
+ "subtitle": "Integer-wiskunde, toegangscontrole en gas-efficiënte variabelen",
+ "level": "beginner",
+ "minutes": 45,
+ "summary": "Hoe je variabelen en functies definieert, bepaalt niet alleen de veiligheid van je contract, maar ook hoeveel gas je gebruikers betalen. Je leert de EVM-wiskunde begrijpen en functies correct afschermen.",
+ "objectives": [
+  {
+   "id": "obj-types",
+   "text": "Je verklaart het gedrag van integer-types en overflow-checks (Panic 0x11) in Solidity 0.8."
+  },
+  {
+   "id": "obj-visibility",
+   "text": "Je kiest correct tussen public, external, internal en private voor functies en state-variabelen."
+  },
+  {
+   "id": "obj-mutability",
+   "text": "Je onderscheidt view, pure en payable functies op basis van state-wijzigingen en Ether-ontvangst."
+  },
+  {
+   "id": "obj-immutable",
+   "text": "Je gebruikt constructors om state in te stellen en optimaliseert gaskosten met constant en immutable."
+  }
+ ],
+ "sections": [
+  {
+   "id": "s1-types",
+   "title": "Integers, EVM-woorden en overflow",
+   "md": "Solidity heeft getal-types van `uint8` (8 bits, maximaal 255) tot en met `uint256` (256 bits). Schrijf je in je code enkel `uint`, dan kiest de compiler automatisch voor `uint256`. Het is een best practice om altijd voluit `uint256` te schrijven voor de leesbaarheid. We werken in smart contracts voornamelijk met unsigned integers (getallen zonder minteken), omdat we vaak saldi of tellers bijhouden die niet negatief kunnen zijn. Signed integers zoals `int256` bestaan echter ook.\n\nSinds de grote update naar Solidity 0.8 is integer-wiskunde standaard **gecontroleerd** (checked arithmetic). Zakt een getal onder nul (underflow) of gaat het boven zijn maximum (overflow), dan doet de transactie direct een **revert met Panic 0x11**. Alle wijzigingen in de state worden dan teruggedraaid. Vroeger rolde een `uint8` van 0 stilletjes door naar 255 of andersom. Dit leidde in het verleden tot desastreuze hacks, zoals aanvallers die een token-saldo van 0 verlaagden en plots $2^{256}-1$ tokens bezaten. Tegenwoordig neemt de compiler deze beveiliging gratis voor zijn rekening.\n\nBen je 100% zeker dat een berekening veilig is (bijvoorbeeld omdat je het net daarvoor met een `require` hebt gecontroleerd, of omdat een teller onmogelijk zijn limiet bereikt)? Dan kan je deze check uitschakelen om een klein beetje gas te besparen via een zogenaamd `unchecked`-blok:\n\n```solidity\nuint256 a = 10;\nuint256 b = 5;\nunchecked {\n    uint256 c = a - b; // bespaart gas omdat de compiler de 0x11 check overslaat\n}\n```\n\nHet gebruik van `unchecked` is tegenwoordig standaard in sterk geoptimaliseerde code, zoals iteratoren in een `for`-loop, waarbij je zeker weet dat de index nooit zal overlopen.\n\n> [!pitfall] Gebruik geen uint8 om gas te besparen op de stack\n> De EVM (Ethereum Virtual Machine) is een 256-bit machine. Ze rekent en verwerkt data in 'woorden' van exact 32 bytes (256 bits). Gebruik je lokaal een `uint8` in een functie, dan vult de EVM dat getal niet zomaar aan. Ze moet continu extra maskeer-operaties (zoals `AND`-operaties met bitmasks) uitvoeren om ervoor te zorgen dat het getal inderdaad nooit groter wordt dan 8 bits. Dit rekenwerk kost **meer** gas dan wanneer je gewoon een native `uint256` had gebruikt.\n> Gebruik kleinere types zoals `uint8` of `uint128` uitsluitend als je meerdere variabelen samenvoegt in één storage-slot om opslagruimte te besparen (packing, dit komt in de volgende les aan bod). Voor lokale variabelen in het geheugen of op de stack, gebruik je altijd `uint256`.",
+   "checks": [
+    {
+     "id": "c1-types",
+     "type": "mcq",
+     "skill": "obj-types",
+     "level": 1,
+     "prompt": "Wat gebeurt er als `uint256 x = 0; x -= 1;` in Solidity 0.8?",
+     "explain": "Checked arithmetic beschermt standaard tegen underflow.",
+     "options": [
+      "De transactie revert met Panic 0x11",
+      "x wordt de maximale uint256 waarde",
+      "x wordt -1",
+      "De compiler geeft een waarschuwing maar compileert"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "s2-visibility",
+   "title": "Visibility: wie mag de functie aanroepen?",
+   "md": "Je moet in Solidity voor elke variabele en elke functie expliciet bepalen wie er toegang toe heeft. Dit noemt men visibility (zichtbaarheid) en het vormt de basislijn van je toegangscontrole en beveiliging. Er zijn vier modifiers:\n\n| Modifier | Toegang |\n|---|---|\n| `private` | **Enkel dit specifieke contract** (niet in afgeleide contracten). |\n| `internal` | Dit contract **en** contracten die hiervan erven (child contracts). |\n| `external` | **Enkel van buitenaf** (aangeroepen door EOA's of door andere contracten). |\n| `public` | Iedereen (kan zowel van binnenuit het contract als van buitenaf worden aangeroepen). |\n\nVoor **state-variabelen** is de standaardwaarde `internal` als je niets invult. Maak je een state-variabele expliciet `public`, dan is de compiler zo vriendelijk om automatisch een gratis getter-functie (een leesfunctie) voor je te genereren. Je hoeft dus zelf geen `getSaldo()` functie meer te schrijven als je variabele `uint256 public saldo;` heet. Let op: state-variabelen kunnen in tegenstelling tot functies *nooit* `external` zijn.\n\nVoor **functies** is de keuze tussen `public` en `external` belangrijk voor optimalisatie. Het aanroepen van een `public` functie kost in sommige gevallen (vooral bij arrays of grote structs als parameters) iets meer gas dan een `external` functie. Dat komt omdat `public` functies erop voorbereid moeten zijn dat ze door het eigen contract worden aangeroepen. Om dit mogelijk te maken, moet data soms gekopieerd worden naar het `memory` geheugen, in plaats van het direct en efficiënt in te lezen vanuit `calldata` (de onveranderlijke data die met een transactie wordt meegestuurd). Gebruik dus bij voorkeur `external` voor de publieke API van je contract, tenzij je de functie écht ook intern moet kunnen hergebruiken.\n\n> [!warning] Private is NIET geheim\n> De term `private` betekent enkel dat *andere smart contracts* de variabele niet direct kunnen uitlezen door hun code te gebruiken. De Ethereum-blockchain zelf is en blijft echter een volledig openbaar en transparant logboek. Werkelijk iedereen kan met een block explorer (zoals Etherscan) of via een eigen node de opslag-slots van jouw contract bit voor bit uitlezen.\n> De vuistregel is absoluut: sla **nooit** wachtwoorden, API-keys, onversleutelde PII (persoonsgegevens) of andere confidentiële bedrijfsgeheimen op in een smart contract! Wil je private data verwerken, dan moet je deze off-chain houden of gebruik maken van geavanceerde cryptografie zoals zero-knowledge proofs.",
+   "checks": [
+    {
+     "id": "c2-vis",
+     "type": "type",
+     "skill": "obj-visibility",
+     "level": 1,
+     "prompt": "Welke modifier gebruik je voor een functie die uitsluitend door een EOA of ander contract mag worden aangeroepen?",
+     "explain": "External = enkel buitenaf.",
+     "answers": [
+      "external"
+     ],
+     "lang": "code",
+     "errors": [
+      {
+       "match": "public",
+       "feedback": "Public mag óók van binnenuit worden aangeroepen. Welke is écht alleen voor buitenaf?",
+       "tag": "vis-public-external"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s3-mutability",
+   "title": "Mutability: wat doet de functie met de state?",
+   "md": "Smart contracts verwerken vaak grote bedragen en moeten daarom uiterst expliciet zijn over hun bedoelingen met de toestand (state) van de blockchain en met het ontvangen van native cryptocurrency zoals Ether (of MATIC op Polygon, enz.). We gebruiken hiervoor specifieke mutability-modifiers:\n\n1. **Geen modifier** (standaard): Als je niets specificeert, mag de functie naar hartenlust de state zowel lezen als wijzigen. Omdat er mogelijk data wordt gewijzigd, zal dit gas kosten zodra het via een transactie wordt aangeroepen door een gebruiker.\n2. **`view`**: De functie belooft dat ze de state uitsluitend zal **lezen**, en absoluut niet zal wijzigen. Een node kan deze functie lokaal uitvoeren zonder consensus nodig te hebben. Hierdoor is het aanroepen van een view-functie (bijvoorbeeld via `eth_call` in een frontend) volledig gratis en onmiddellijk, zolang het off-chain gebeurt.\n3. **`pure`**: De functie is nog strenger en belooft dat ze de state **niet zal lezen en niet zal wijzigen**. Denk aan pure wiskundige rekenfuncties of conversie-algoritmes, bijvoorbeeld: `function add(uint a, uint b) external pure returns (uint)`. Zelfs het uitlezen van blockchain-specifieke variabelen zoals `msg.sender` of `block.timestamp` is ten strengste verboden in een pure functie, omdat het resultaat volledig onafhankelijk moet zijn van de actuele context van de blockchain.\n4. **`payable`**: De functie staat uitdrukkelijk toe dat er **Ether** (`msg.value`) samen met de functieaanroep wordt meegestuurd. Voeg je deze modifier niet toe, dan zal een transactie die per ongeluk of expres Ether meestuurt onmiddellijk door de EVM worden verworpen en reverten. Dit is een ingebouwd veiligheidsmechanisme om te voorkomen dat er geld vast komt te zitten in contracten die daar geen logica voor hebben voorzien.\n\nNaast de directe gas-implicaties dwingen mutability-modifiers ook een strikte hiërarchie en veiligheidsnet af tijdens het compileren. Een functie die als `view` is gemarkeerd, mag intern alleen andere `view` of `pure` functies aanroepen; de compiler zal elke poging om een statuswijzigende functie aan te roepen genadeloos blokkeren. Een `pure` functie is het meest geïsoleerd en mag intern uitsluitend andere `pure` functies aanroepen. Door deze modifiers zo restrictief mogelijk in te zetten, bescherm je jezelf tegen logische fouten en creëer je garanties voor de gebruikers van je smart contract.",
+   "checks": [
+    {
+     "id": "c3-mut",
+     "type": "mcq",
+     "skill": "obj-mutability",
+     "level": 2,
+     "prompt": "Je schrijft een functie die een SaaS-abonnementstarief berekent op basis van een meegegeven parameter, zonder variabelen uit het contract op te slaan of uit te lezen. Welke modifier?",
+     "explain": "Geen state lezen, geen state schrijven = pure.",
+     "options": [
+      "pure",
+      "view",
+      "payable",
+      "geen modifier"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c4-mut",
+     "type": "type",
+     "skill": "obj-mutability",
+     "level": 1,
+     "prompt": "Welke modifier is verplicht als een functie ETH of native tokens moet kunnen ontvangen?",
+     "explain": "Payable maakt de ontvangst van msg.value mogelijk.",
+     "answers": [
+      "payable"
+     ],
+     "lang": "code"
+    }
+   ]
+  },
+  {
+   "id": "s4-immutable",
+   "title": "Constructor, constant en immutable",
+   "md": "In de eerste les heb je geleerd dat het schrijven naar de permanente opslag, de `storage` (via de `SSTORE` opcode), extreem duur is qua gas. Echter, zelfs het simpelweg lézen uit die storage (via de `SLOAD` opcode) kost relatief veel gas. Een eerste (koude) leesactie binnen een transactie kost je direct 2100 gas, en latere (warme) lezingen in hetzelfde slot nog eens 100 gas. In geavanceerde B2B-applicaties en DeFi-protocollen, waar soms honderden acties per transactie gebeuren, lopen deze ogenschijnlijk kleine kosten snel in de papieren.\n\nKunnen we dat uitlezen vermijden? Het antwoord is ja, mits we op voorhand weten dat de betreffende variabele na het deployen van het contract nooit meer zal veranderen. Hiervoor biedt Solidity twee krachtige modifiers:\n\n1. **`constant`**: Je gebruikt deze modifier voor waarden die al absoluut vaststaan op het moment dat je de code schrijft. Denk aan wiskundige constanten, of vaste systeemparameters zoals fee-limieten.\n   *Voorbeeld:* `uint256 public constant MAX_BPS = 10000;`\n2. **`immutable`**: Je gebruikt deze modifier voor waarden die je pas kent op het moment dat je het contract op de blockchain plaatst, maar die je daarna voor eeuwig wilt vastzetten. Een typisch voorbeeld is het adres van het ERC-20 token dat een beurs-contract mag verhandelen, of de originele eigenaar.\n   *Voorbeeld:* `address public immutable owner;`\n\nBeide modifiers delen een indrukwekkende eigenschap: ze zorgen ervoor dat de waarde **helemaal niet in de dure storage-database** terechtkomt. In de plaats daarvan bakken ze de waarde letterlijk vast (inline) in de binaire *bytecode* van het uiteindelijke contract. Als je de variabele later in je functies aanspreekt, leest de EVM deze rechtstreeks in vanuit de code, wat slechts een peulschil aan gas kost (bijvoorbeeld 3 gas voor een simpele `PUSH` operatie).\n\nHoe stel je een variabele in als deze pas bij deployment wordt vastgelegd? Hiervoor gebruik je de **`constructor`**. Dit is een speciale initialisatie-functie die exact één keer wordt uitgevoerd: namelijk op het moment dat het contract zijn weg naar de blockchain vindt. Na de deployment-transactie verdwijnt de constructor-code uit het uiteindelijke contract op de keten.\n\n```solidity\ncontract SaaSBilling {\n    // Deze variabele wordt ingesteld bij deployment en is daarna read-only\n    address public immutable owner;\n    // Een constante waarde die altijd 100 zal blijven\n    uint256 public constant BASE_FEE = 100;\n    \n    // De constructor kan parameters accepteren\n    constructor(address _initialOwner) {\n        // We stellen de immutable variabele eenmalig in\n        owner = _initialOwner;\n        // Bij de deployment wordt msg.sender gelijkgesteld aan degene die het contract aanmaakt\n    }\n}\n```\n\nDoor rigoureus gebruik te maken van `constant` en `immutable` voor data die toch nooit wijzigt, maak je je contracten niet alleen veiliger (er is geen setter-functie die per ongeluk gemanipuleerd kan worden), maar reduceer je ook drastisch de transactiekosten voor je eindgebruikers.",
+   "checks": [
+    {
+     "id": "c5-imm",
+     "type": "mcq",
+     "skill": "obj-immutable",
+     "level": 1,
+     "prompt": "Waarom is het uitlezen van een `immutable` variabele goedkoper dan een gewone state-variabele?",
+     "explain": "Immutable en constant variabelen leven in de bytecode, niet in storage.",
+     "options": [
+      "De waarde zit in de bytecode, waardoor dure SLOAD-operaties (uit storage) vermeden worden",
+      "Immutable variabelen gebruiken tx.origin in plaats van msg.sender",
+      "Immutable variabelen vereisen geen view modifier",
+      "De waarde wordt off-chain bewaard door de nodes"
+     ],
+     "answer": 0
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "obj-types",
+   "level": 1,
+   "prompt": "Als je een variabele declareert als `uint x;`, welk type kiest Solidity dan?",
+   "explain": "uint is een alias voor uint256.",
+   "options": [
+    "uint256",
+    "uint8",
+    "uint128",
+    "Het resulteert in een compiler-fout"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "type",
+   "skill": "obj-types",
+   "level": 2,
+   "prompt": "Welke hex-code voor een 'Panic' error wordt in Solidity 0.8 gegooid bij een overflow of underflow?",
+   "explain": "Panic 0x11.",
+   "answers": [
+    "0x11"
+   ],
+   "lang": "code",
+   "errors": [
+    {
+     "match": "11",
+     "feedback": "Vergeet de hexadecimale prefix niet (0x...).",
+     "tag": "hex-prefix"
+    }
+   ]
+  },
+  {
+   "id": "p03",
+   "type": "code",
+   "skill": "obj-types",
+   "level": 2,
+   "prompt": "Je weet zeker dat `a` altijd groter is dan `b`. Schrijf een functie `unsafeSubtract` die gas bespaart door de underflow-check over te slaan.",
+   "explain": "Een unchecked block bespaart gas als checks overbodig zijn.",
+   "contract": "MathHelper",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract MathHelper {\n    function unsafeSubtract(uint256 a, uint256 b) external pure returns (uint256) {\n        // TODO: retourneer a - b zónder de 0.8 overflow checks (bespaar gas)\n    }\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract MathHelper {\n    function unsafeSubtract(uint256 a, uint256 b) external pure returns (uint256) {\n        unchecked {\n            return a - b;\n        }\n    }\n}",
+   "tests": [
+    {
+     "name": "gebruikt unchecked",
+     "source": {
+      "contains": "unchecked"
+     }
+    },
+    {
+     "name": "berekent de juiste aftrekking",
+     "steps": [
+      {
+       "expect": {
+        "call": "unsafeSubtract",
+        "args": [
+         10,
+         4
+        ],
+        "eq": 6
+       }
+      }
+     ]
+    }
+   ],
+   "file": "MathHelper.sol"
+  },
+  {
+   "id": "p04",
+   "type": "mcq",
+   "skill": "obj-types",
+   "level": 3,
+   "prompt": "Je schrijft een functie met een kleine teller die maximaal 100 wordt. Je besluit hem lokaal te declareren als `uint8 teller = 0;` om gas te besparen. Is dit verstandig?",
+   "explain": "De EVM werkt in blokken van 256 bit. Downcasten op de stack kost exta gas.",
+   "options": [
+    "Nee, op de stack kosten kleinere types zoals uint8 méér gas door de maskeer-operaties van de 256-bit EVM",
+    "Ja, uint8 neemt minder plaats in op de stack en bespaart dus gas",
+    "Ja, maar alleen als je teller `memory` maakt",
+    "Nee, lokale variabelen moeten altijd in storage worden geplaatst"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p05",
+   "type": "match",
+   "skill": "obj-visibility",
+   "level": 1,
+   "prompt": "Koppel de visibility aan zijn betekenis.",
+   "explain": "Beheer toegang tot je functies en state.",
+   "pairs": [
+    [
+     "private",
+     "Alleen dit contract"
+    ],
+    [
+     "internal",
+     "Dit contract + afgeleiden"
+    ],
+    [
+     "external",
+     "Alleen van buitenaf"
+    ],
+    [
+     "public",
+     "Iedereen en genereert een getter"
+    ]
+   ]
+  },
+  {
+   "id": "p06",
+   "type": "type",
+   "skill": "obj-visibility",
+   "level": 2,
+   "prompt": "Je schrijft een `deposit` functie die door klanten via een frontend moet worden aangeroepen, maar nooit door andere functies binnen hetzelfde contract. Welke visibility kies je?",
+   "explain": "External is de strakste en veiligste keuze voor API-functies.",
+   "answers": [
+    "external"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p07",
+   "type": "type",
+   "skill": "obj-visibility",
+   "level": 2,
+   "prompt": "Welke visibility modifier voor een variabele zorgt ervoor dat de compiler automatisch een leesfunctie genereert?",
+   "explain": "Public state-variabelen krijgen automatisch een getter.",
+   "answers": [
+    "public"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p08",
+   "type": "mcq",
+   "skill": "obj-visibility",
+   "level": 2,
+   "prompt": "Kan een concurrent de API-keys inlezen die je als `private` state-variabele in je smart contract hebt opgeslagen?",
+   "explain": "Alles op de blockchain is openbaar uitleesbaar; private regelt enkel de toegang via de code van andere contracten.",
+   "options": [
+    "Ja, de state is openbaar; private weigert enkel aanroepen vanuit de code van andere contracten.",
+    "Nee, private state-variabelen worden door de Ethereum-nodes met sterke cryptografie versleuteld.",
+    "Nee, dankzij de private modifier kan uitsluitend de eigenaar van het contract de waarde inlezen.",
+    "Ja, maar uitsluitend wanneer de concurrent erin slaagt om de bytecode succesvol te decompileren."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "obj-mutability",
+   "level": 1,
+   "prompt": "Welke modifier gebruik je voor een functie die géén state-variabelen leest én géén state-variabelen schrijft?",
+   "explain": "Pure betekent dat de functie volledig onafhankelijk is van de block-state.",
+   "answers": [
+    "pure"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p10",
+   "type": "type",
+   "skill": "obj-mutability",
+   "level": 1,
+   "prompt": "Welke modifier laat een functie toe om native tokens (zoals ETH of MATIC) te ontvangen via `msg.value`?",
+   "explain": "Zonder payable zal een transactie met waarde reverten.",
+   "answers": [
+    "payable"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p11",
+   "type": "code",
+   "skill": "obj-mutability",
+   "level": 2,
+   "prompt": "De compiler geeft een waarschuwing omdat deze functie geen state raakt, maar we de modifier vergeten zijn. Voeg de juiste modifier toe.",
+   "explain": "Een functie die enkel met zijn parameters rekent is `pure`.",
+   "contract": "Calculator",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Calculator {\n    function add(uint256 a, uint256 b) external returns (uint256) {\n        return a + b;\n    }\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Calculator {\n    function add(uint256 a, uint256 b) external pure returns (uint256) {\n        return a + b;\n    }\n}",
+   "tests": [
+    {
+     "name": "gebruikt pure",
+     "source": {
+      "contains": "pure"
+     }
+    },
+    {
+     "name": "telt twee getallen op",
+     "steps": [
+      {
+       "expect": {
+        "call": "add",
+        "args": [
+         5,
+         7
+        ],
+        "eq": 12
+       }
+      }
+     ]
+    }
+   ],
+   "file": "Calculator.sol"
+  },
+  {
+   "id": "p12",
+   "type": "mcq",
+   "skill": "obj-mutability",
+   "level": 2,
+   "prompt": "Een functie berekent een prijs op basis van een formule én leest een opgeslagen `korting` uit storage. Welke modifier is van toepassing?",
+   "explain": "Lezen uit storage betekent dat het niet 'pure' is, maar 'view'.",
+   "options": [
+    "view",
+    "pure",
+    "payable",
+    "geen modifier"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p13",
+   "type": "mcq",
+   "skill": "obj-immutable",
+   "level": 2,
+   "prompt": "Wat is het fundamentele verschil tussen `constant` en `immutable`?",
+   "explain": "Constant moet hardcoded zijn in de broncode. Immutable wordt tijdens deployment vastgelegd.",
+   "options": [
+    "Constant is bekend bij het compileren; immutable wordt ingevuld tijdens de deployment",
+    "Constant wordt in storage opgeslagen; immutable in memory",
+    "Constant kost gas om te lezen; immutable is gratis",
+    "Constant is alleen voor strings; immutable voor getallen"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p14",
+   "type": "type",
+   "skill": "obj-immutable",
+   "level": 1,
+   "prompt": "Hoe heet de speciale functie die eenmalig wordt uitgevoerd wanneer een contract wordt gedeployed?",
+   "explain": "De constructor initialiseert het contract.",
+   "answers": [
+    "constructor"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p15",
+   "type": "code",
+   "skill": "obj-immutable",
+   "level": 2,
+   "prompt": "Maak de variabele `owner` zo goedkoop mogelijk in gas, aangezien ze na deployment nooit meer verandert.",
+   "explain": "Een variabele die in de constructor wordt ingesteld en nooit meer verandert, moet `immutable` zijn.",
+   "contract": "Ownable",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Ownable {\n    address public owner;\n\n    constructor() {\n        owner = msg.sender;\n    }\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Ownable {\n    address public immutable owner;\n\n    constructor() {\n        owner = msg.sender;\n    }\n}",
+   "tests": [
+    {
+     "name": "gebruikt immutable",
+     "source": {
+      "contains": "immutable"
+     }
+    },
+    {
+     "name": "owner wordt correct gezet",
+     "steps": [
+      {
+       "deploy": "Ownable",
+       "as": "alice"
+      },
+      {
+       "expect": {
+        "call": "owner",
+        "eq": "alice"
+       }
+      }
+     ]
+    }
+   ],
+   "file": "Ownable.sol"
+  },
+  {
+   "id": "p16",
+   "type": "explain",
+   "skill": "obj-immutable",
+   "level": 3,
+   "prompt": "Leg uit waarom het lezen van een `immutable` variabele aanzienlijk minder gas kost dan het lezen van een reguliere state-variabele.",
+   "explain": "Storage vs Bytecode.",
+   "model": "Een reguliere state-variabele wordt opgeslagen in de storage van de EVM, wat betekent dat de nodes een relatief dure SLOAD-operatie moeten uitvoeren om de waarde op te halen. Een immutable variabele wordt tijdens de deployment rechtstreeks in de contract-bytecode zelf 'gebrand'. De EVM kan deze waarde direct inlezen zonder de storage-database aan te spreken, wat heel goedkoop is.",
+   "rubric": [
+    "Storage (SLOAD) is duur",
+    "Immutable waarden worden in de bytecode vastgelegd",
+    "Direct inlezen uit bytecode bespaart gas"
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "type",
+   "skill": "obj-types",
+   "level": 1,
+   "prompt": "Welke specifieke foutcode werpt Solidity 0.8 bij een deling door nul of een wiskundige overflow? (typ als hex)",
+   "explain": "Panic 0x11 is the arithmetic error code.",
+   "answers": [
+    "0x11"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m02",
+   "type": "code",
+   "skill": "obj-types",
+   "level": 2,
+   "prompt": "Schrijf een functie `multiply` die gas bespaart door de 0.8 overflow-checks uit te schakelen (ga ervan uit dat we kleine getallen gebruiken).",
+   "explain": "Unchecked blocks omzeilen automatische veiligheidscontroles voor goedkopere uitvoering.",
+   "contract": "Multiplier",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Multiplier {\n    function multiply(uint256 a, uint256 b) external pure returns (uint256) {\n        // TODO\n    }\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Multiplier {\n    function multiply(uint256 a, uint256 b) external pure returns (uint256) {\n        unchecked {\n            return a * b;\n        }\n    }\n}",
+   "tests": [
+    {
+     "name": "gebruikt unchecked",
+     "source": {
+      "contains": "unchecked"
+     }
+    },
+    {
+     "name": "geeft juiste product",
+     "steps": [
+      {
+       "expect": {
+        "call": "multiply",
+        "args": [
+         5,
+         6
+        ],
+        "eq": 30
+       }
+      }
+     ]
+    }
+   ],
+   "file": "Multiplier.sol"
+  },
+  {
+   "id": "m03",
+   "type": "numeric",
+   "skill": "obj-types",
+   "level": 2,
+   "prompt": "Wat is het maximale getal dat in een `uint8` variabele past?",
+   "explain": "2^8 - 1 = 255.",
+   "value": 255,
+   "abs": 0
+  },
+  {
+   "id": "m04",
+   "type": "mcq",
+   "skill": "obj-types",
+   "level": 3,
+   "prompt": "Je hebt een enkele variabele `id` die nooit boven de 50 gaat. Waarom kost `uint8 id;` in storage (zonder andere variabelen eromheen) exact evenveel of méér gas dan `uint256 id;`?",
+   "explain": "Elke opslagplek (slot) op de EVM is 32 bytes breed. Enkel als je hem opvult met andere variabelen bespaar je gas (packing).",
+   "options": [
+    "Omdat storage slots altijd 256 bits groot zijn; de EVM moet de rest van het slot met nullen vullen",
+    "Omdat uint8 verboden is in storage",
+    "Omdat uint8 variabelen eerst naar een array moeten worden geconverteerd",
+    "Omdat het uitlezen van getallen onder de 100 extra gas kost"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m05",
+   "type": "type",
+   "skill": "obj-visibility",
+   "level": 1,
+   "prompt": "Welke visibility modifier verbergt een functie zelfs voor contracten die ervan erven?",
+   "explain": "Private = strictly internal to the current contract logic.",
+   "answers": [
+    "private"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m06",
+   "type": "type",
+   "skill": "obj-visibility",
+   "level": 1,
+   "prompt": "Wat is de modifier voor een functie die alleen bedoeld is voor aanroepen binnen het eigen contract (en eventuele afgeleide contracten)?",
+   "explain": "Internal is de standaard voor helpers.",
+   "answers": [
+    "internal"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m07",
+   "type": "order",
+   "skill": "obj-visibility",
+   "level": 2,
+   "prompt": "Zet de visibility modifiers op volgorde, van **meest toegankelijk** naar **meest afgeschermd**.",
+   "explain": "Public (iedereen) -> External (buiten) of Internal (binnen) -> Private (alleen hier).",
+   "tiles": [
+    "public",
+    "external",
+    "internal",
+    "private"
+   ]
+  },
+  {
+   "id": "m08",
+   "type": "code",
+   "skill": "obj-visibility",
+   "level": 3,
+   "prompt": "Beveilig het contract: de functie `_calculateTax` mag absoluut niet door buitenstaanders kunnen worden aangeroepen, maar mag wel door een intern proces worden gebruikt.",
+   "explain": "Functies die interne logica verbergen moeten internal of private zijn.",
+   "contract": "TaxAgent",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract TaxAgent {\n    function _calculateTax(uint256 amount) public pure returns (uint256) {\n        return (amount * 21) / 100;\n    }\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract TaxAgent {\n    function _calculateTax(uint256 amount) internal pure returns (uint256) {\n        return (amount * 21) / 100;\n    }\n}",
+   "tests": [
+    {
+     "name": "is niet meer public of external",
+     "source": {
+      "notContains": "public"
+     }
+    },
+    {
+     "name": "gebruikt correcte visibility",
+     "source": {
+      "matches": "internal|private"
+     }
+    }
+   ],
+   "file": "TaxAgent.sol"
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "obj-mutability",
+   "level": 1,
+   "prompt": "Welke mutability-modifier maakt `msg.value` beschikbaar zonder foutmelding?",
+   "explain": "Payable signaleert dat contractwaarde inkomt.",
+   "answers": [
+    "payable"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m10",
+   "type": "type",
+   "skill": "obj-mutability",
+   "level": 1,
+   "prompt": "Welke modifier gebruik je voor een functie die wel de state uitleest, maar ze ongemoeid laat?",
+   "explain": "View read-only operations.",
+   "answers": [
+    "view"
+   ],
+   "lang": "code",
+   "errors": [
+    {
+     "match": "pure",
+     "feedback": "Een pure functie mag helemáál niet lezen. Welke modifier staat lezen wel toe?",
+     "tag": "mut-view-pure"
+    }
+   ]
+  },
+  {
+   "id": "m11",
+   "type": "code",
+   "skill": "obj-mutability",
+   "level": 2,
+   "prompt": "Schrijf een `pure` functie genaamd `getSquare` die een `uint256 x` ontvangt en het kwadraat ervan teruggeeft.",
+   "explain": "Vermenigvuldigen van parameters kost geen state.",
+   "contract": "Math",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Math {\n    // TODO: implementeer getSquare(uint256 x)\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Math {\n    function getSquare(uint256 x) external pure returns (uint256) {\n        return x * x;\n    }\n}",
+   "tests": [
+    {
+     "name": "functie heet getSquare",
+     "source": {
+      "contains": "getSquare"
+     }
+    },
+    {
+     "name": "modifier is pure",
+     "source": {
+      "contains": "pure"
+     }
+    },
+    {
+     "name": "berekent kwadraat",
+     "steps": [
+      {
+       "expect": {
+        "call": "getSquare",
+        "args": [
+         5
+        ],
+        "eq": 25
+       }
+      }
+     ]
+    }
+   ],
+   "file": "Math.sol"
+  },
+  {
+   "id": "m12",
+   "type": "mcq",
+   "skill": "obj-mutability",
+   "level": 3,
+   "prompt": "Een `view` functie roept intern een andere functie `helper()` aan uit hetzelfde contract. Welke modifier(s) mag die `helper()` hebben?",
+   "explain": "Een keten van aanroepen mag nooit de veiligheid breken; een view functie mag nooit iets aanroepen dat wel schrijft.",
+   "options": [
+    "view of pure",
+    "enkel view",
+    "enkel pure",
+    "elke modifier, zolang de helper() maar geen state schrijft"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m13",
+   "type": "type",
+   "skill": "obj-immutable",
+   "level": 1,
+   "prompt": "Welke modifier gebruik je voor een waarde die bij het typen van de broncode al vaststaat (hardcoded)?",
+   "explain": "Constant voor hardcoded waarden.",
+   "answers": [
+    "constant"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m14",
+   "type": "type",
+   "skill": "obj-immutable",
+   "level": 2,
+   "prompt": "Welke modifier kies je voor een adres dat je doorgeeft aan de constructor bij deployment, en daarna nooit meer wil wijzigen, met minimale gaskosten?",
+   "explain": "Immutable wordt ingesteld in de constructor.",
+   "answers": [
+    "immutable"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m15",
+   "type": "code",
+   "skill": "obj-immutable",
+   "level": 2,
+   "prompt": "Schrijf de `FeeCollector`. Declareer een `public immutable` adres `treasury`. Gebruik de `constructor(address _treasury)` om deze in te stellen.",
+   "explain": "Constructors accepteren argumenten tijdens deployment.",
+   "contract": "FeeCollector",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract FeeCollector {\n    // TODO: treasury variabele en constructor\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract FeeCollector {\n    address public immutable treasury;\n    \n    constructor(address _treasury) {\n        treasury = _treasury;\n    }\n}",
+   "tests": [
+    {
+     "name": "gebruikt immutable",
+     "source": {
+      "contains": "immutable"
+     }
+    },
+    {
+     "name": "treasury wordt via constructor gezet",
+     "steps": [
+      {
+       "deploy": "FeeCollector",
+       "args": [
+        "0x1234567890123456789012345678901234567890"
+       ]
+      },
+      {
+       "expect": {
+        "call": "treasury",
+        "eq": "0x1234567890123456789012345678901234567890"
+       }
+      }
+     ]
+    }
+   ],
+   "file": "FeeCollector.sol"
+  },
+  {
+   "id": "m16",
+   "type": "match",
+   "skill": "obj-immutable",
+   "level": 1,
+   "prompt": "Waar leeft de waarde?",
+   "explain": "Storage vs Bytecode mechanica.",
+   "pairs": [
+    [
+     "Normale state variabele",
+     "In storage (duur)"
+    ],
+    [
+     "constant variabele",
+     "In bytecode (tijdens compile-tijd)"
+    ],
+    [
+     "immutable variabele",
+     "In bytecode (tijdens deploy-tijd)"
+    ]
+   ]
+  },
+  {
+   "id": "m17",
+   "type": "mcq",
+   "skill": "obj-visibility",
+   "level": 2,
+   "prompt": "Je vergeet een visibility in te vullen voor `uint256 count;`. Wat is de standaardwaarde die de compiler toekent?",
+   "explain": "State-variabelen zijn internal by default.",
+   "options": [
+    "internal",
+    "private",
+    "public",
+    "external"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m18",
+   "type": "cloze",
+   "skill": "obj-mutability",
+   "level": 2,
+   "prompt": "Vervolledig deze functie zodat een smart contract op een veilige manier fooien (ETH) in ontvangst kan nemen van buitenaf.",
+   "explain": "External om enkel buitenstaanders te accepteren; payable om geld te ontvangen.",
+   "text": "function tip() {{external}} {{payable}} { }",
+   "lang": "code"
+  }
+ ],
+ "production": {
+  "type": "code",
+  "contract": "TariffCalculator",
+  "file": "TariffCalculator.sol",
+  "prompt": "**Bouw een TariffCalculator voor SaaS-klanten (B2B)**.\n\nOntwerp een contract dat de facturatie-tarieven regelt en tegelijk gas optimaliseert.\n\n- Maak een `public constant` variabele `MAX_FEE` met waarde `10000` (100% in basispunten).\n- Maak een `public immutable` variabele `baseFee`.\n- Gebruik een `constructor` die één uint256 parameter ontvangt en `baseFee` eenmalig instelt.\n- Schrijf een functie `calculateTotal(uint256 amount, uint256 extraFee)` die `amount + baseFee + extraFee` teruggeeft aan externe lezers.\n- Schrijf een functie `getDiscountedFee(uint256 discount)` die `baseFee - discount` teruggeeft. Gebruik geen if-checks: vertrouw op de 0.8 wiskunde die dit blokkeert als de korting te groot is.\n- Voeg een lege `pay()` functie toe die door externe partijen aangeroepen kan worden om Ether te ontvangen.",
+  "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract TariffCalculator {\n    // TODO: constant MAX_FEE\n    \n    // TODO: immutable baseFee\n\n    // TODO: constructor\n\n    // TODO: calculateTotal (view)\n\n    // TODO: getDiscountedFee (view)\n\n    // TODO: pay (payable)\n}",
+  "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract TariffCalculator {\n    uint256 public constant MAX_FEE = 10000;\n    uint256 public immutable baseFee;\n\n    constructor(uint256 _baseFee) {\n        baseFee = _baseFee;\n    }\n\n    function calculateTotal(uint256 amount, uint256 extraFee) external view returns (uint256) {\n        return amount + baseFee + extraFee;\n    }\n\n    function getDiscountedFee(uint256 discount) external view returns (uint256) {\n        return baseFee - discount;\n    }\n\n    function pay() external payable {\n    }\n}",
+  "tests": [
+   {
+    "name": "deploy en check constant en immutable",
+    "steps": [
+     {
+      "deploy": "TariffCalculator",
+      "args": [
+       500
+      ]
+     },
+     {
+      "expect": {
+       "call": "baseFee",
+       "eq": 500
+      }
+     },
+     {
+      "expect": {
+       "call": "MAX_FEE",
+       "eq": 10000
+      }
+     }
+    ]
+   },
+   {
+    "name": "calculateTotal berekent de som",
+    "steps": [
+     {
+      "deploy": "TariffCalculator",
+      "args": [
+       500
+      ]
+     },
+     {
+      "expect": {
+       "call": "calculateTotal",
+       "args": [
+        1000,
+        250
+       ],
+       "eq": 1750
+      }
+     }
+    ]
+   },
+   {
+    "name": "getDiscountedFee werkt veilig",
+    "steps": [
+     {
+      "deploy": "TariffCalculator",
+      "args": [
+       500
+      ]
+     },
+     {
+      "expect": {
+       "call": "getDiscountedFee",
+       "args": [
+        200
+       ],
+       "eq": 300
+      }
+     }
+    ]
+   },
+   {
+    "name": "getDiscountedFee revert bij te hoge korting",
+    "steps": [
+     {
+      "deploy": "TariffCalculator",
+      "args": [
+       500
+      ]
+     },
+     {
+      "call": "getDiscountedFee",
+      "args": [
+       600
+      ],
+      "reverts": true
+     }
+    ]
+   },
+   {
+    "name": "pay accepteert Ether",
+    "steps": [
+     {
+      "deploy": "TariffCalculator",
+      "args": [
+       500
+      ]
+     },
+     {
+      "call": "pay",
+      "value": "1 ether"
+     },
+     {
+      "expect": {
+       "balance": "$TariffCalculator",
+       "eq": "1 ether"
+      }
+     }
+    ]
+   }
+  ],
+  "model": "Omdat `baseFee` en `MAX_FEE` respectievelijk immutable en constant zijn, leest `calculateTotal` deze waarden uit de bytecode (gratis) in plaats van uit de storage (duur). Een perfecte opstelling voor efficiënte bedrijfslogica.",
+  "rubric": [
+   "MAX_FEE is exact 10000 en constant",
+   "baseFee is immutable",
+   "De constructor wijst baseFee toe",
+   "calculateTotal en getDiscountedFee hebben de external en view modifiers",
+   "pay heeft external én payable"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-panic",
+   "front": "Met welke error code revert een wiskundige berekening die overloopt in Solidity 0.8?",
+   "back": "**Panic 0x11** (overflow/underflow)",
+   "skill": "obj-types"
+  },
+  {
+   "id": "c-private",
+   "front": "Is een `private` state-variabele onzichtbaar op de blockchain?",
+   "back": "**Nee.** De blockchain is publiek. `private` voorkomt enkel dat andere *smart contracts* de variabele via code aanroepen.",
+   "skill": "obj-visibility"
+  },
+  {
+   "id": "c-external",
+   "front": "Welke visibility modifier gebruik je voor een functie die uitsluitend van buitenaf mag worden aangeroepen?",
+   "back": "`external`",
+   "answers": [
+    "external"
+   ],
+   "lang": "code",
+   "skill": "obj-visibility"
+  },
+  {
+   "id": "c-pure",
+   "front": "Wat is het verschil tussen `view` en `pure`?",
+   "back": "**view**: mag state lezen (niet schrijven).\n**pure**: mag noch lezen, noch schrijven (bv. pure wiskunde).",
+   "skill": "obj-mutability"
+  },
+  {
+   "id": "c-payable",
+   "front": "Welke modifier laat toe dat een functie native tokens (ETH) ontvangt?",
+   "back": "`payable`",
+   "answers": [
+    "payable"
+   ],
+   "lang": "code",
+   "skill": "obj-mutability"
+  },
+  {
+   "id": "c-constant",
+   "front": "Verschil tussen `constant` en `immutable`?",
+   "back": "**constant**: Waarde moet hardcoded in de code staan (compile-time).\n**immutable**: Waarde wordt vastgelegd in de constructor (deploy-time). Beide belanden in de bytecode om gas te besparen.",
+   "skill": "obj-immutable"
+  },
+  {
+   "id": "c-unchecked",
+   "front": "Hoe schakel je in Solidity 0.8 de overflow-checks uit om gas te besparen (als je 100% zeker bent van je wiskunde)?",
+   "back": "Via een **`unchecked { }`** blok.",
+   "skill": "obj-types"
+  },
+  {
+   "id": "c-constructor",
+   "front": "Hoe heet de functie die exact één keer draait wanneer het contract op het netwerk wordt geplaatst?",
+   "back": "`constructor`",
+   "answers": [
+    "constructor"
+   ],
+   "lang": "code",
+   "skill": "obj-immutable"
+  }
+ ],
+ "sources": [
+  "Solidity v0.8.20 Documentation - Types & Checked Arithmetic",
+  "Solidity v0.8.20 Documentation - Contracts (Visibility, Constant & Immutable)"
+ ],
+ "kind": "core",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-26",
+  "adaptedFor": "Je tempo stond even stil; deze les pakt de draad rustig weer op met fundamentele types en toegangscontroles in logica, perfect passend bij de zakelijke logica voor je B2B opdrachten."
+ }
+}

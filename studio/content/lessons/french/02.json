@@ -1,0 +1,830 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "french",
+ "id": 2,
+ "roadmap": "fr-c1-02-pp-pronominaux",
+ "kind": "core",
+ "title": "L'accord du participe passé des verbes pronominaux",
+ "subtitle": "De moeilijkste regel van de Franse grammatica eindelijk ontcijferd: avoir binnen être, se succéder, s'absenter en se rendre compte.",
+ "level": "C1",
+ "minutes": 45,
+ "summary": "Het voltooid deelwoord van pronominale werkwoorden wordt door veel moedertaalsprekers gevreesd. In deze les breek je de regels af tot vier ijzersterke reflexen. Zo schrijf je formele verslagen zonder twijfel over *elles se sont succédé* of *elle s'est rendu compte*.",
+ "objectives": [
+  {
+   "id": "cod-analyse",
+   "text": "Je past de COD-regel toe op wederkerende werkwoorden: alleen akkoord als het lijdend voorwerp voorafgaat."
+  },
+  {
+   "id": "coi-invariables",
+   "text": "Je herkent werkwoorden met een meewerkend voorwerp (se succéder, se parler) en past geen akkoord toe."
+  },
+  {
+   "id": "essentiellement",
+   "text": "Je maakt altijd het akkoord bij werkwoorden die uitsluitend pronominaal zijn (zoals s'absenter)."
+  },
+  {
+   "id": "rendre-compte",
+   "text": "Je laat het voltooid deelwoord van 'se rendre compte' onveranderlijk in alle contexten."
+  }
+ ],
+ "vocab": [
+  {
+   "term": "s'absenter",
+   "meaning": "afwezig zijn, zich even verwijderen"
+  },
+  {
+   "term": "s'enfuir",
+   "meaning": "vluchten, weglopen"
+  },
+  {
+   "term": "s'évanouir",
+   "meaning": "flauwvallen; in het niets verdwijnen"
+  },
+  {
+   "term": "se rendre compte de",
+   "meaning": "beseffen, zich realiseren"
+  },
+  {
+   "term": "s'emparer de",
+   "meaning": "zich meester maken van, bemachtigen"
+  },
+  {
+   "term": "se succéder",
+   "meaning": "elkaar opvolgen"
+  },
+  {
+   "term": "engendrer",
+   "meaning": "veroorzaken, teweegbrengen"
+  },
+  {
+   "term": "mettre un terme à",
+   "meaning": "een einde maken aan"
+  }
+ ],
+ "sections": [
+  {
+   "id": "principe-avoir",
+   "title": "Le paradoxe : l'auxiliaire 'être' qui se comporte comme 'avoir'",
+   "md": "Pronominale werkwoorden (zoals *se laver*, *se parler*, *s'absenter*) vervoegen we in de verleden tijd altijd met het hulpwerkwoord **être** : [[fr:elle s'est lavée]].\n\nMaar let op de grote valkuil voor de **wederkerende werkwoorden** (waar *se* betekent: zichzelf of elkaar). Hiervoor geldt namelijk niét de simpele regel van *être* (waarbij je altijd het akkoord met het onderwerp zou maken). In plaats daarvan volgen deze werkwoorden paradoxaal genoeg **de regel van avoir**.\n\nWaarom gebeurt dit? Omdat het wederkerend voornaamwoord (*se*, *m'*, *t'*, *nous*, *vous*) functioneert als een zinsdeel, vaak een lijdend voorwerp (COD), dat vóór het werkwoord staat. Herinner je de klassieke regel van *avoir*:\n\n- [[fr:Elle a lavé la voiture.]] → geen akkoord, want het COD (*la voiture*) staat ná het werkwoord.\n- [[fr:La voiture qu'elle a lavée.]] → akkoord, want het COD (*qu'*) staat vóór het werkwoord.\n- [[fr:Elle s'est lavée.]] → akkoord, want *se* (zichzelf) is het COD en staat vóór het werkwoord. (Letterlijk : ze heeft *zichzelf* gewassen).\n\n> [!rule] De gouden regel voor wederkerende werkwoorden\n> Behandel ze in je hoofd alsof er *avoir* staat. Zoek het **COD (lijdend voorwerp)**. Staat het vóór het werkwoord? Dan pas je het voltooid deelwoord daaraan aan. Staat het erachter of is er geen COD? Dan verandert er niets.",
+   "checks": [
+    {
+     "id": "c01",
+     "type": "mcq",
+     "skill": "cod-analyse",
+     "level": 1,
+     "prompt": "Welke grammaticaregel pas je eigenlijk toe op wederkerende werkwoorden zoals 'se laver'?",
+     "explain": "Ondanks het gebruik van 'être', volgen ze logischerwijs de regel van 'avoir': akkoord met het lijdend voorwerp (COD) als dat voorafgaat.",
+     "options": [
+      "De regel van avoir: akkoord met het COD als dat voorafgaat.",
+      "De regel van être: altijd akkoord met het onderwerp.",
+      "Ze zijn altijd onveranderlijk.",
+      "Altijd akkoord, behalve bij het mannelijk meervoud."
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "cod-analyse",
+   "title": "La chasse au COD",
+   "md": "Hoe pas je dit principe nu concreet toe tijdens het schrijven van een formele tekst? Laten we de test doen met een veelvoorkomend werkwoord, zoals *s'écrire* of *s'envoyer*.\n\n**Geval 1: Het COD staat vóór het werkwoord**\n[[fr:Ils se sont rencontrés.]]\nWie hebben ze ontmoet? Elkaar (*se*). *se* is hier het lijdend voorwerp (COD) en staat vóór het werkwoord. We maken dus een akkoord met *se* (mannelijk meervoud).\n\n**Geval 2: Het COD staat ná het werkwoord**\n[[fr:Ils se sont envoyé des e-mails.]]\nWat hebben ze verstuurd? *des e-mails*. Dat is het COD, en het staat **ná** het werkwoord. Volgens de regel van avoir is er dan **geen akkoord**. Het wederkerend voornaamwoord *se* betekent hier 'aan elkaar' (meewerkend voorwerp / COI), en met een COI congrueert het voltooid deelwoord nooit.\n\n**Geval 3: Het COD is een relatief voornaamwoord vooraan**\n[[fr:Les e-mails qu'ils se sont envoyés.]]\nHier is het COD het relatief voornaamwoord *qu'* (dat verwijst naar *les e-mails*). Het staat vóór het werkwoord. Dus is er **wél een akkoord** met *les e-mails* (mannelijk meervoud).\n\n> [!tip] De truc van 'avoir'\n> Vervang in je hoofd *être* door *avoir* om de functie te vinden.\n> *Elles se sont vues* → Elles ont vu *qui* ? *se* (elkaar) → COD vooraan → akkoord.\n> *Elles se sont lavé les mains* → Elles ont lavé *quoi* ? *les mains* → COD achteraan → geen akkoord.",
+   "checks": [
+    {
+     "id": "c02",
+     "type": "cloze",
+     "skill": "cod-analyse",
+     "level": 2,
+     "prompt": "Vul het voltooid deelwoord van **envoyer** in.",
+     "explain": "Wat hebben ze gestuurd? 'des fleurs' (COD achteraan). Dus geen akkoord.",
+     "text": "Ils se sont {{envoyé}} des fleurs.",
+     "lang": "fr",
+     "errors": [
+      {
+       "match": "envoyés",
+       "feedback": "Kijk goed waar het COD staat! 'des fleurs' volgt ná het werkwoord.",
+       "tag": "accord-cod-apres"
+      }
+     ]
+    },
+    {
+     "id": "c03",
+     "type": "cloze",
+     "skill": "cod-analyse",
+     "level": 2,
+     "prompt": "Vul het voltooid deelwoord van **envoyer** in.",
+     "explain": "Wat hebben ze gestuurd? 'qu'' (verwijst naar les fleurs, COD vooraan). Dus akkoord met vrouwelijk meervoud.",
+     "text": "Les fleurs qu'ils se sont {{envoyées}} étaient magnifiques.",
+     "lang": "fr"
+    }
+   ]
+  },
+  {
+   "id": "coi-invariables",
+   "title": "Les verbes à COI : toujours invariables",
+   "md": "Bij bepaalde pronominale werkwoorden kan het voornaamwoord *se* **nooit** een lijdend voorwerp (COD) zijn, maar fungeert het uitsluitend als meewerkend voorwerp (COI). \n\nWaarom? Omdat het originele werkwoord in het Frans de prepositie *à* vereist: je zegt in het Frans *parler à quelqu'un*, *succéder à quelqu'un*, *plaire à quelqu'un*.\n\nAls er geen COD is (en dat is bij deze werkwoorden zo), past de regel van avoir ons toe geen akkoord te maken. Dit leidt tot een vaste lijst van werkwoorden die, als er geen uitzonderlijk ander COD vóór staat, **altijd onveranderlijk** blijven. Leer deze uit je hoofd, want ze komen in zakelijke contexten voortdurend voor:\n\n- **se parler** : [[fr:Les directrices se sont parlé.]] (Elles ont parlé *à* qui? → *à se* = COI)\n- **se succéder** : [[fr:Les réunions se sont succédé.]]\n- **se plaire** / **se déplaire** : [[fr:Ils se sont plu dans cette entreprise.]]\n- **se sourire** : [[fr:Elles se sont souri.]]\n- **se mentir** : [[fr:Les politiciens se sont menti.]]\n\n> [!pitfall] De meest hardnekkige fout: *succéder*\n> Een van de meest gemaakte fouten, zelfs in Franse kwaliteitskranten, is schrijven dat « *Les gouvernements se sont succédés* ». Dit is taalkundig onzin! Het is *succéder à quelqu'un*, dus *se* is een COI. Correct is altijd: [[fr:Les gouvernements se sont succédé]].",
+   "checks": [
+    {
+     "id": "c04",
+     "type": "mcq",
+     "skill": "coi-invariables",
+     "level": 1,
+     "prompt": "Waarom is 'elles se sont parlé' onveranderlijk?",
+     "explain": "Omdat 'parler' de prepositie 'à' vraagt (parler à). Daardoor is 'se' een meewerkend voorwerp (COI), waarmee we nooit accorderen.",
+     "options": [
+      "Omdat 'se' een meewerkend voorwerp (COI) is (parler à quelqu'un).",
+      "Omdat het werkwoord op -er eindigt.",
+      "Omdat 'elles' vrouwelijk meervoud is en we dat niet horen.",
+      "Omdat 'parler' uitsluitend pronominaal is."
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c05",
+     "type": "cloze",
+     "skill": "coi-invariables",
+     "level": 2,
+     "prompt": "Vul het voltooid deelwoord van **succéder** in.",
+     "explain": "Succéder à quelqu'un. 'Se' is COI, dus onveranderlijk.",
+     "text": "Les rois se sont {{succédé}} sur le trône de France.",
+     "lang": "fr"
+    }
+   ]
+  },
+  {
+   "id": "essentiellement",
+   "title": "Les verbes essentiellement pronominaux",
+   "md": "Tot nu toe hadden we het over werkwoorden die ook zónder *se* bestaan (*laver* vs *se laver*, *parler* vs *se parler*). We noemen ze 'accidentellement pronominaux'.\n\nEr is echter een tweede grote groep: de **verbes essentiellement pronominaux**. Dit zijn werkwoorden die **uitsluitend met 'se' bestaan**, of waarvan de betekenis compleet verandert zodra je *se* weghaalt.\n\nVeelvoorkomende voorbeelden in formele taal:\n- **s'absenter** (afwezig zijn)\n- **s'enfuir** (vluchten)\n- **s'évanouir** (flauwvallen; ook: in het niets verdwijnen)\n- **se souvenir de** (zich herinneren)\n- **s'emparer de** (zich meester maken van)\n- **se méfier de** (wantrouwen)\n\nVoor deze werkwoorden is de regel buitengewoon simpel en intuïtief: het voornaamwoord *se* heeft hier geen zelfstandige functie meer als COD of COI. Het maakt gewoon onlosmakelijk deel uit van het werkwoord. Daarom doen we **altijd het akkoord met het onderwerp** (alsof het een standaardwerkwoord met *être* is).\n\n- [[fr:La directrice s'est absentée.]] (akkoord met *la directrice*, vrouwelijk enkelvoud)\n- [[fr:Les fraudeurs se sont enfuis.]] (akkoord met *les fraudeurs*, mannelijk meervoud)\n- [[fr:Elles se sont souvenues des faits.]] (akkoord met *elles*, vrouwelijk meervoud)\n\n> [!rule] Essentieel = akkoord met onderwerp\n> Kun je het werkwoord onmogelijk gebruiken zonder *se* in deze specifieke betekenis? Dan congrueert het voltooid deelwoord rimpelloos met het onderwerp, net als bij *mourir* of *tomber*.",
+   "checks": [
+    {
+     "id": "c06",
+     "type": "cloze",
+     "skill": "essentiellement",
+     "level": 2,
+     "prompt": "Vul het voltooid deelwoord van **évanouir** in.",
+     "explain": "S'évanouir bestaat niet zonder 'se'. Het is essentieel, dus akkoord met het onderwerp 'La patiente' (vr. ev.).",
+     "text": "La patiente s'est {{évanouie}} dans la salle d'attente.",
+     "lang": "fr"
+    },
+    {
+     "id": "c07",
+     "type": "mcq",
+     "skill": "essentiellement",
+     "level": 1,
+     "prompt": "Welke regel geldt voor een werkwoord als 's'absenter'?",
+     "explain": "Het is een 'verbe essentiellement pronominal', waarbij we zonder nadenken akkoord maken met het onderwerp.",
+     "options": [
+      "Het congrueert altijd met het onderwerp.",
+      "Het is altijd onveranderlijk.",
+      "Het congrueert alleen als het COD volgt.",
+      "Het krijgt altijd een vrouwelijke uitgang."
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "rendre-compte",
+   "title": "L'exception qui confirme la règle : se rendre compte",
+   "md": "We sluiten de theorie af met een specifieke, extreem veelvoorkomende uitdrukking op C1/C2-niveau: **se rendre compte de** (beseffen, zich realiseren).\n\nLaten we de regels uit de eerdere secties rigoureus toepassen:\n[[fr:Elle s'est rendu compte de son erreur.]]\n\nWaarom staat hier absoluut geen *e* op *rendu*?\n1. *Se rendre* is niet uitsluitend pronominaal, dus we passen de regel van *avoir* toe.\n2. We zoeken het COD. Elle a rendu *quoi* ? Antwoord: *compte*.\n3. Het woord *compte* is hier het lijdend voorwerp (COD) en het staat steevast **ná** het werkwoord *rendu*.\n4. Gevolg: geen akkoord!\n\nHet voltooid deelwoord van *se rendre compte* is hierdoor **altijd en overal onveranderlijk**, ongeacht het geslacht of getal van het onderwerp.\n\n- [[fr:Elle s'est rendu compte.]]\n- [[fr:Ils se sont rendu compte.]]\n- [[fr:Nous nous sommes rendu compte de la gravité des faits.]]\n\n> [!note] Een automatisme kweken\n> Zie *se rendre compte* gewoon als een vaste grammaticale rots. Leer deze uitdrukking uit je hoofd als 'altijd onveranderlijk'. Er is werkelijk geen enkele context denkbaar waarin je in deze uitdrukking *rendus* of *rendue* schrijft met het woord *compte* er vlak achter.",
+   "checks": [
+    {
+     "id": "c08",
+     "type": "cloze",
+     "skill": "rendre-compte",
+     "level": 2,
+     "prompt": "Vul het voltooid deelwoord van **rendre** in.",
+     "explain": "In 'se rendre compte' is 'compte' het COD, dat altijd volgt. Daardoor is het voltooid deelwoord onveranderlijk.",
+     "text": "Les dirigeants se sont {{rendu}} compte de l'impact financier.",
+     "lang": "fr"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "cod-analyse",
+   "level": 1,
+   "prompt": "Waarom is er geen akkoord in de zin « Elle s'est lavé les mains » ?",
+   "explain": "Het COD 'les mains' staat achter het werkwoord. Dan pas je volgens de regel van avoir geen akkoord toe.",
+   "options": [
+    "Het COD (les mains) volgt ná het werkwoord.",
+    "Het werkwoord 'se laver' is altijd onveranderlijk.",
+    "Het pronom 'se' is het COD en staat erachter.",
+    "Het is een verbe essentiellement pronominal."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "cloze",
+   "skill": "cod-analyse",
+   "level": 2,
+   "prompt": "Vul het voltooid deelwoord van **laver** in.",
+   "explain": "Wie hebben ze gewassen? Zichzelf (se). 'Se' is COD en staat vooraan -> akkoord met elles (vrouwelijk meervoud).",
+   "text": "Après l'entraînement, elles se sont {{lavées}}.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "lavé",
+     "feedback": "Kijk goed: er staat geen ander lijdend voorwerp. 'Se' is hier het lijdend voorwerp en staat vooraan!",
+     "tag": "accord-cod-avant"
+    }
+   ]
+  },
+  {
+   "id": "p03",
+   "type": "cloze",
+   "skill": "cod-analyse",
+   "level": 2,
+   "prompt": "Vul het voltooid deelwoord van **laver** in.",
+   "explain": "Wat hebben ze gewassen? 'le visage'. Dit is het COD en staat erachter -> geen akkoord.",
+   "text": "Elles se sont {{lavé}} le visage.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "lavées",
+     "feedback": "Het COD is 'le visage' en dat staat ná het werkwoord. Geen akkoord dus!",
+     "tag": "accord-cod-apres"
+    }
+   ]
+  },
+  {
+   "id": "p04",
+   "type": "cloze",
+   "skill": "cod-analyse",
+   "level": 3,
+   "prompt": "Vul het voltooid deelwoord van **envoyer** in.",
+   "explain": "Het COD is 'qu'' (verwijst naar les lettres, vrouwelijk meervoud) en staat vooraan -> akkoord.",
+   "text": "As-tu reçu les lettres qu'ils se sont {{envoyées}} ?",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "envoyé",
+     "feedback": "Het COD is 'qu'' (les lettres, vr. mv.) en staat vóór het werkwoord. Je moet dus akkoord maken.",
+     "tag": "accord-cod-avant"
+    },
+    {
+     "match": "envoyés",
+     "feedback": "Les lettres is vrouwelijk meervoud, niet mannelijk.",
+     "tag": "accord-genre"
+    }
+   ]
+  },
+  {
+   "id": "p05",
+   "type": "mcq",
+   "skill": "coi-invariables",
+   "level": 1,
+   "prompt": "Welk pronominaal werkwoord krijgt NOOIT een akkoord, in geen enkele context?",
+   "explain": "Het is 'succéder à quelqu'un'. Het voornaamwoord 'se' kan hier enkel meewerkend voorwerp (COI) zijn, dus is er nooit een akkoord.",
+   "options": [
+    "se succéder",
+    "se regarder",
+    "se laver",
+    "se blesser"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p06",
+   "type": "cloze",
+   "skill": "coi-invariables",
+   "level": 2,
+   "prompt": "Vul het voltooid deelwoord van **succéder** in.",
+   "explain": "Succéder à quelqu'un. 'Se' is COI, dus nooit akkoord.",
+   "text": "Les mois difficiles se sont {{succédé}} rapidement.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "succédés",
+     "feedback": "Succéder à quelqu'un. 'Se' is hier een meewerkend voorwerp (COI), dus is er nooit een akkoord.",
+     "tag": "accord-coi"
+    }
+   ]
+  },
+  {
+   "id": "p07",
+   "type": "cloze",
+   "skill": "coi-invariables",
+   "level": 2,
+   "prompt": "Vul het voltooid deelwoord van **parler** in.",
+   "explain": "Parler à quelqu'un. 'Se' is COI, dus onveranderlijk.",
+   "text": "Les deux collègues se sont longuement {{parlé}} de ce projet.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "parlés",
+     "feedback": "Parler à quelqu'un. 'Se' is COI, dus nooit akkoord.",
+     "tag": "accord-coi"
+    },
+    {
+     "match": "parlées",
+     "feedback": "Parler à quelqu'un. 'Se' is COI, dus nooit akkoord.",
+     "tag": "accord-coi"
+    }
+   ]
+  },
+  {
+   "id": "p08",
+   "type": "cloze",
+   "skill": "coi-invariables",
+   "level": 3,
+   "prompt": "Vul het voltooid deelwoord van **plaire** in.",
+   "explain": "Plaire à quelqu'un. 'Se' is COI, dus onveranderlijk.",
+   "text": "Elles se sont tout de suite {{plu}} dans ce nouveau bureau.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "plues",
+     "feedback": "Plaire à quelqu'un. 'Se' is meewerkend voorwerp, dus het voltooid deelwoord is onveranderlijk.",
+     "tag": "accord-coi"
+    },
+    {
+     "match": "plus",
+     "feedback": "Het voltooid deelwoord van plaire is 'plu'. En omdat het 'plaire à' is, krijgt het hier geen uitgang.",
+     "tag": "accord-coi"
+    }
+   ]
+  },
+  {
+   "id": "p09",
+   "type": "mcq",
+   "skill": "essentiellement",
+   "level": 1,
+   "prompt": "Wat is de regel voor de 'verbes essentiellement pronominaux' (zoals s'absenter of s'enfuir)?",
+   "explain": "Omdat 'se' geen zelfstandige functie heeft (je kunt niet 'iemand absenteren'), volgt het werkwoord gewoon het onderwerp.",
+   "options": [
+    "Altijd akkoord met het onderwerp.",
+    "Altijd onveranderlijk.",
+    "Alleen akkoord als het COD volgt.",
+    "Ze krijgen altijd de uitgang -s."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p10",
+   "type": "cloze",
+   "skill": "essentiellement",
+   "level": 2,
+   "prompt": "Vul het voltooid deelwoord van **absenter** in.",
+   "explain": "S'absenter is essentiellement pronominal. Akkoord met het onderwerp (la directrice = vr. ev.).",
+   "text": "La directrice s'est {{absentée}} pour une urgence.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "absenté",
+     "feedback": "S'absenter is 'essentiellement pronominal'. Er is dus altijd akkoord met het onderwerp (la directrice = vr. ev.).",
+     "tag": "accord-essentiel"
+    }
+   ]
+  },
+  {
+   "id": "p11",
+   "type": "cloze",
+   "skill": "essentiellement",
+   "level": 2,
+   "prompt": "Vul het voltooid deelwoord van **enfuir** in.",
+   "explain": "S'enfuir is essentiellement pronominal. Akkoord met het onderwerp (les suspects = m. mv.).",
+   "text": "Dès qu'ils ont entendu la sirène, les suspects se sont {{enfuis}}.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "enfui",
+     "feedback": "S'enfuir is uitsluitend pronominaal. Maak dus het akkoord met 'les suspects' (m. mv.).",
+     "tag": "accord-essentiel"
+    }
+   ]
+  },
+  {
+   "id": "p12",
+   "type": "cloze",
+   "skill": "essentiellement",
+   "level": 3,
+   "prompt": "Vul het voltooid deelwoord van **évanouir** in.",
+   "explain": "S'évanouir is essentiellement pronominal. Akkoord met het relatief voornaamwoord 'qui' dat verwijst naar 'la femme'.",
+   "text": "La femme qui s'est {{évanouie}} va beaucoup mieux aujourd'hui.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "évanoui",
+     "feedback": "Essentieel pronominaal = akkoord met onderwerp. Hier is dat 'qui' (= la femme).",
+     "tag": "accord-essentiel"
+    }
+   ]
+  },
+  {
+   "id": "p13",
+   "type": "type",
+   "skill": "essentiellement",
+   "level": 2,
+   "prompt": "Herschrijf in de passé composé: *Elle s'absente.*",
+   "explain": "S'absenter is essentiellement pronominal, dus we maken akkoord met het onderwerp (elle).",
+   "answers": [
+    "elle s'est absentée"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "p14",
+   "type": "mcq",
+   "skill": "rendre-compte",
+   "level": 1,
+   "prompt": "Waarom blijft het voltooid deelwoord in 'se rendre compte' altijd onveranderlijk?",
+   "explain": "Je rends 'quoi' ? -> 'compte'. COD volgt na het werkwoord, dus nooit akkoord.",
+   "options": [
+    "Het woord 'compte' is het COD en staat altijd na het werkwoord.",
+    "Het is een verbe essentiellement pronominal.",
+    "Het woord 'se' is hier uitzonderlijk mannelijk.",
+    "Omdat het werkwoord 'rendre' eindigt op -re."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p15",
+   "type": "cloze",
+   "skill": "rendre-compte",
+   "level": 2,
+   "prompt": "Vul het voltooid deelwoord van **rendre** in.",
+   "explain": "'Compte' is het COD achteraan -> onveranderlijk.",
+   "text": "Elle s'est tout de suite {{rendu}} compte de son erreur.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "rendue",
+     "feedback": "Bij 'se rendre compte' is 'compte' het COD dat na het werkwoord staat. Het voltooid deelwoord is dus altijd onveranderlijk.",
+     "tag": "accord-rendre-compte"
+    }
+   ]
+  },
+  {
+   "id": "p16",
+   "type": "cloze",
+   "skill": "rendre-compte",
+   "level": 2,
+   "prompt": "Vul het voltooid deelwoord van **rendre** in.",
+   "explain": "Zelfs met het voornaamwoord 'en' ertussen blijft 'compte' het COD achteraan -> onveranderlijk.",
+   "text": "Les investisseurs s'en sont {{rendu}} compte trop tard.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "rendus",
+     "feedback": "Zelfs bij meervoud, en zelfs met 'en', is 'compte' het COD achteraan. Altijd onveranderlijk!",
+     "tag": "accord-rendre-compte"
+    }
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "cloze",
+   "skill": "cod-analyse",
+   "level": 2,
+   "prompt": "Vul het voltooid deelwoord van **faire** in.",
+   "explain": "COD is 'qu'' (verwijst naar la blessure, vr. ev.) en staat vooraan -> akkoord.",
+   "text": "La blessure qu'elle s'est {{faite}} est superficielle.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "fait",
+     "feedback": "Het COD is 'qu'' (verwijst naar la blessure, vr. ev.). Het staat vóór het werkwoord, dus we maken een akkoord!",
+     "tag": "accord-cod-avant"
+    }
+   ]
+  },
+  {
+   "id": "m02",
+   "type": "cloze",
+   "skill": "cod-analyse",
+   "level": 2,
+   "prompt": "Vul het voltooid deelwoord van **rencontrer** in.",
+   "explain": "COD is 'se' (ils) vooraan -> akkoord.",
+   "text": "Ils se sont {{rencontrés}} au sommet de Davos.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "rencontré",
+     "feedback": "Het COD is 'se' (ils). Dat staat er vóór, dus akkoord (mv.).",
+     "tag": "accord-cod-avant"
+    }
+   ]
+  },
+  {
+   "id": "m03",
+   "type": "type",
+   "skill": "cod-analyse",
+   "level": 2,
+   "prompt": "Vertaal: Ze (elles) hebben elkaar gezien.",
+   "explain": "COD is 'se' vooraan -> akkoord (vues).",
+   "answers": [
+    "elles se sont vues"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m04",
+   "type": "mcq",
+   "skill": "cod-analyse",
+   "level": 1,
+   "prompt": "« Ils se sont écrit des notes. » Moet er hier een akkoord komen op 'écrit'?",
+   "explain": "Het lijdend voorwerp (des notes) volgt, dus geen akkoord.",
+   "options": [
+    "Nee, het COD (des notes) staat erachter.",
+    "Ja, want 'se' is het COD vooraan.",
+    "Nee, want écrire is essentiellement pronominal.",
+    "Ja, want het onderwerp is mannelijk meervoud."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m05",
+   "type": "cloze",
+   "skill": "coi-invariables",
+   "level": 2,
+   "prompt": "Vul het voltooid deelwoord van **mentir** in.",
+   "explain": "Mentir à quelqu'un. COI -> geen akkoord.",
+   "text": "Les deux ministres se sont {{menti}} effrontément.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "mentis",
+     "feedback": "Mentir À quelqu'un. 'Se' is COI. Dus geen akkoord.",
+     "tag": "accord-coi"
+    }
+   ]
+  },
+  {
+   "id": "m06",
+   "type": "cloze",
+   "skill": "coi-invariables",
+   "level": 2,
+   "prompt": "Vul het voltooid deelwoord van **sourire** in.",
+   "explain": "Sourire à quelqu'un. COI -> geen akkoord.",
+   "text": "Après la négociation, elles se sont {{souri}}.",
+   "lang": "fr"
+  },
+  {
+   "id": "m07",
+   "type": "cloze",
+   "skill": "coi-invariables",
+   "level": 3,
+   "prompt": "Typ de juiste vorm van het voltooid deelwoord van **succéder**.",
+   "explain": "Succéder à. COI -> onveranderlijk. Zelfs met een vrouwelijk meervoud als onderwerp.",
+   "text": "Ces méthodes de management se sont {{succédé}} sans résultat.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "succédées",
+     "feedback": "Valkuil! Succéder À. 'Se' is een COI, het voltooid deelwoord verandert dus in geen enkel geval.",
+     "tag": "accord-coi"
+    }
+   ]
+  },
+  {
+   "id": "m08",
+   "type": "type",
+   "skill": "coi-invariables",
+   "level": 2,
+   "prompt": "Herschrijf in de passé composé: *Les directrices se parlent.*",
+   "explain": "Parler à. 'Se' is COI -> geen akkoord.",
+   "answers": [
+    "les directrices se sont parlé"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m09",
+   "type": "mcq",
+   "skill": "coi-invariables",
+   "level": 1,
+   "prompt": "Welke reeks werkwoorden is in de pronominale vorm **altijd onveranderlijk**?",
+   "explain": "Bij deze werkwoorden is 'se' altijd een meewerkend voorwerp (à quelqu'un).",
+   "options": [
+    "se succéder, se parler, se plaire",
+    "se laver, se blesser, se voir",
+    "s'absenter, s'enfuir, s'évanouir",
+    "se rencontrer, se dire, se rendre"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m10",
+   "type": "cloze",
+   "skill": "essentiellement",
+   "level": 2,
+   "prompt": "Vul het voltooid deelwoord van **souvenir** in.",
+   "explain": "Se souvenir de is essentiellement pronominal -> akkoord met onderwerp.",
+   "text": "Elle s'est parfaitement {{souvenue}} de l'incident.",
+   "lang": "fr"
+  },
+  {
+   "id": "m11",
+   "type": "cloze",
+   "skill": "essentiellement",
+   "level": 2,
+   "prompt": "Vul het voltooid deelwoord van **envoler** in.",
+   "explain": "S'envoler is essentieel -> akkoord met onderwerp.",
+   "text": "À notre approche, les oiseaux se sont {{envolés}}.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "envolé",
+     "feedback": "S'envoler is essentiellement pronominal. Akkoord met het onderwerp (les oiseaux = mannelijk meervoud).",
+     "tag": "accord-essentiel"
+    }
+   ]
+  },
+  {
+   "id": "m12",
+   "type": "cloze",
+   "skill": "essentiellement",
+   "level": 3,
+   "prompt": "Vul het voltooid deelwoord van **emparer** in.",
+   "explain": "S'emparer de = uitsluitend pronominaal -> akkoord met les armées (vr. mv.).",
+   "text": "Les armées se sont {{emparées}} des réserves d'or.",
+   "lang": "fr"
+  },
+  {
+   "id": "m13",
+   "type": "type",
+   "skill": "essentiellement",
+   "level": 2,
+   "prompt": "Herschrijf in de passé composé: *Elles s'absentent.*",
+   "explain": "Essentieel pronominaal -> akkoord met onderwerp.",
+   "answers": [
+    "elles se sont absentées"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m14",
+   "type": "cloze",
+   "skill": "rendre-compte",
+   "level": 2,
+   "prompt": "Typ het voltooid deelwoord van **rendre** in deze zin.",
+   "explain": "Altijd onveranderlijk omdat 'compte' achter het werkwoord staat.",
+   "text": "Nous nous sommes {{rendu}} compte de l'erreur bien trop tard.",
+   "lang": "fr"
+  },
+  {
+   "id": "m15",
+   "type": "cloze",
+   "skill": "rendre-compte",
+   "level": 3,
+   "prompt": "Vervoeg **rendre** correct in deze context.",
+   "explain": "Onveranderlijk, zelfs met een vrouwelijk onderwerp zoals 'La direction'.",
+   "text": "La direction s'est finalement {{rendu}} compte des risques financiers.",
+   "lang": "fr"
+  },
+  {
+   "id": "m16",
+   "type": "type",
+   "skill": "rendre-compte",
+   "level": 2,
+   "prompt": "Herschrijf in de passé composé: *Ils s'en rendent compte.*",
+   "explain": "Altijd onveranderlijk, zelfs met 'en'.",
+   "answers": [
+    "ils s'en sont rendu compte"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m17",
+   "type": "dictation",
+   "skill": "coi-invariables",
+   "level": 3,
+   "prompt": "Luister en schrijf de zin exact op.",
+   "explain": "Parler à -> geen akkoord.",
+   "text": "Elles ne se sont jamais parlé.",
+   "lang": "fr"
+  },
+  {
+   "id": "m18",
+   "type": "dictation",
+   "skill": "cod-analyse",
+   "level": 3,
+   "prompt": "Luister en schrijf de zin exact op.",
+   "explain": "COD 'qu'' vooraan -> akkoord met 'les lettres' (vr. mv.).",
+   "text": "Les lettres qu'ils se sont envoyées.",
+   "lang": "fr"
+  },
+  {
+   "id": "m19",
+   "type": "cloze",
+   "skill": "cod-analyse",
+   "level": 3,
+   "prompt": "Geef het voltooid deelwoord van **laver** in deze zin.",
+   "explain": "COD (les pieds) erachter -> geen akkoord.",
+   "text": "Après la randonnée, ils se sont {{lavé}} les pieds dans la rivière.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "lavés",
+     "feedback": "Wat hebben ze gewassen? 'les pieds'. Dit COD staat ná het werkwoord, dus is er geen akkoord met het onderwerp.",
+     "tag": "accord-cod-apres"
+    }
+   ]
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "fr",
+  "minWords": 50,
+  "prompt": "**Corrigez ce rapport de crise** en veillant particulièrement à l'accord des participes passés des verbes pronominaux (50–80 mots).\n\n> Les responsables se sont (succéder) à un rythme effréné. La directrice s'est (rendre) compte de la situation. Les équipes s'étaient (écrire) des notes, mais elles ne s'étaient jamais (parler). Finalement, elle s'est (absenter) pour réorganiser le service, et les nouvelles règles qu'elle s'est (imposer) seront appliquées dès demain.",
+  "model": "Les responsables se sont succédé à un rythme effréné. La directrice s'est rendu compte de la situation. Les équipes s'étaient écrit des notes, mais elles ne s'étaient jamais parlé. Finalement, elle s'est absentée pour réorganiser le service, et les nouvelles règles qu'elle s'est imposées seront appliquées dès demain.",
+  "rubric": [
+   "se sont succédé (geen akkoord, vaste COI)",
+   "s'est rendu compte (geen akkoord, COD 'compte' volgt altijd)",
+   "s'étaient écrit des notes (geen akkoord, COD 'des notes' volgt)",
+   "ne s'étaient jamais parlé (geen akkoord, vaste COI)",
+   "s'est absentée (akkoord met vr. ev. onderwerp, want 'essentiellement pronominal')",
+   "qu'elle s'est imposées (akkoord met voorafgaand COD 'qu'' / règles)"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-01",
+   "front": "Passé composé met **elles** (se parler) :<br>Elles...",
+   "back": "elles se sont **parlé**",
+   "answers": [
+    "elles se sont parlé",
+    "se sont parlé"
+   ],
+   "lang": "fr",
+   "skill": "coi-invariables"
+  },
+  {
+   "id": "c-02",
+   "front": "Passé composé met **ils** (se succéder) :<br>Ils...",
+   "back": "ils se sont **succédé**",
+   "answers": [
+    "ils se sont succédé",
+    "se sont succédé"
+   ],
+   "lang": "fr",
+   "skill": "coi-invariables"
+  },
+  {
+   "id": "c-03",
+   "front": "Passé composé met **elle** (s'absenter) :<br>Elle...",
+   "back": "elle s'est **absentée**",
+   "answers": [
+    "elle s'est absentée",
+    "s'est absentée"
+   ],
+   "lang": "fr",
+   "skill": "essentiellement"
+  },
+  {
+   "id": "c-04",
+   "front": "Passé composé met **elles** (se rendre compte) :<br>Elles...",
+   "back": "elles se sont **rendu compte**",
+   "answers": [
+    "elles se sont rendu compte",
+    "se sont rendu compte"
+   ],
+   "lang": "fr",
+   "skill": "rendre-compte"
+  },
+  {
+   "id": "c-05",
+   "front": "Passé composé met **elle** (se laver les mains) :<br>Elle...",
+   "back": "elle s'est **lavé** les mains",
+   "answers": [
+    "elle s'est lavé les mains",
+    "s'est lavé les mains"
+   ],
+   "lang": "fr",
+   "skill": "cod-analyse"
+  },
+  {
+   "id": "c-06",
+   "front": "Passé composé met **elle** (se laver) :<br>Elle...",
+   "back": "elle s'est **lavée**",
+   "answers": [
+    "elle s'est lavée",
+    "s'est lavée"
+   ],
+   "lang": "fr",
+   "skill": "cod-analyse"
+  },
+  {
+   "id": "c-07",
+   "front": "Welke 3 veelgebruikte pronominale werkwoorden krijgen **nooit** een akkoord omdat 'se' steevast een meewerkend voorwerp (COI) is?",
+   "back": "**se succéder**, **se parler**, **se plaire**",
+   "skill": "coi-invariables"
+  }
+ ],
+ "sources": [
+  "Académie française — *Dire, ne pas dire*",
+  "Grevisse & Goosse, *Le Bon Usage* (16e éd.)",
+  "Bescherelle — *L'Art de conjuguer*"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-26",
+  "adaptedFor": "Tempo was 0 lessen in de afgelopen week; de theorie is helder gestructureerd met veel directe toepassingen om er snel weer in te komen zonder theorie-overload."
+ }
+}

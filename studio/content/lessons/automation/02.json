@@ -1,0 +1,873 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "automation",
+ "id": 2,
+ "roadmap": "au-02-expressions",
+ "kind": "core",
+ "title": "Expressies en datamapping",
+ "subtitle": "Datamapping met `$input`, `$('Node')`, optionele chaining en Luxon-datums",
+ "level": "praktijk",
+ "minutes": 45,
+ "summary": "Expressies zijn de lijm tussen nodes. In deze les leer je data uit eerdere stappen feilloos ophalen, veilig omgaan met ontbrekende velden, en werken met de ingebouwde datumfuncties.",
+ "objectives": [
+  {
+   "id": "obj-syntax",
+   "text": "Je schrijft veilige expressies met optionele chaining (`?.`), defaults (`??`) en JavaScript-methodes."
+  },
+  {
+   "id": "obj-input",
+   "text": "Je haalt de juiste data op via `$input.item`, `$input.first()` en `$input.all()`."
+  },
+  {
+   "id": "obj-nodes",
+   "text": "Je combineert data over meerdere stappen met `$('Node')` en snapt de rol van pairedItem."
+  },
+  {
+   "id": "obj-luxon",
+   "text": "Je formatteert en berekent datums via `$now` en `$today` met Luxon-methodes."
+  }
+ ],
+ "sections": [
+  {
+   "id": "syntax",
+   "title": "Veilig navigeren en transformeren",
+   "md": "Als je data ophaalt uit externe API's of webhooks, is de structuur zelden perfect. Velden ontbreken, objecten zijn leeg, of data komt binnen in het verkeerde formaat. Vraag je `{{ $json.customer.address.city }}` op, maar `address` bestaat niet, dan crasht je workflow met *Cannot read properties of undefined*. In een B2B-omgeving betekent dit dat je automatisering stilvalt, wat kan leiden tot gemiste bestellingen of gefrustreerde klanten.\n\nDe moderne JavaScript-oplossing is **Optional Chaining (`?.`)**:\n`{{ $json.customer?.address?.city }}` stopt veilig en geeft `undefined` terug als een tussentijds veld ontbreekt. Door een vraagteken te plaatsen voor de punt, zeg je tegen n8n: \"Zoek naar dit veld, maar als het vorige deel niet bestaat, stop dan veilig\".\n\nDit combineer je vaak met de **Nullish Coalescing Operator (`??`)** om een standaardwaarde in te stellen:\n`{{ $json.customer?.address?.city ?? 'Onbekend' }}`. (Als de linkerkant `null` of `undefined` is, wordt de rechterkant gebruikt).\nLet op het verschil met de logische OR operator (`||`): `??` vervangt alleen `null` of `undefined`, terwijl `||` ook `0`, `false` en lege strings `\"\"` vervangt. Voor bedrijfsdata zoals een kortingsbedrag van `0` is `??` dus veel veiliger!\n\nDaarnaast gebruik je regelmatig standaard JavaScript-tekstfuncties in je expressies om data te 'sanitizen' (opschonen):\n- **`.toLowerCase()`**: Maakt alles kleine letters. Essentieel voor e-mailadressen om duplicaten te voorkomen. `{{ $json.email.toLowerCase() }}`\n- **`.trim()`**: Verwijdert spaties voor en achter. Een klassiek probleem bij handmatige data-invoer. `{{ $json.name.trim() }}`\n- **`.split()`**: Splitst een string op basis van een teken. Bijvoorbeeld de voornaam halen uit een volledige naam: `{{ $json.phone.split(' ')[0] }}`\n\n> [!pitfall] Niet alle velden zijn strings!\n> Roep je `.toLowerCase()` of `.trim()` aan op een veld dat per ongeluk een getal (number) of `null` is, dan krijg je alsnog een crash. Cast het eerst naar een string als je niet zeker bent: `{{ String($json.email ?? '').toLowerCase() }}`.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "jsexpr",
+     "skill": "obj-syntax",
+     "level": 1,
+     "prompt": "Haal de postcode (`address.zip`) veilig op. Als deze ontbreekt, geef `'Geen'` terug.",
+     "explain": "Gebruik `?.` en `??`: `{{ $json.address?.zip ?? 'Geen' }}`",
+     "input": {
+      "name": "Test"
+     },
+     "expected": "Geen",
+     "solution": "{{ $json.address?.zip ?? 'Geen' }}"
+    }
+   ]
+  },
+  {
+   "id": "input-context",
+   "title": "De $input-context",
+   "md": "Tot nu toe gebruikten we altijd `$json`. Achter de schermen is dit een snelle afkorting voor `$input.item.json`. Het begrijpen van dit `$input`-object is de sleutel tot het beheersen van geavanceerde n8n-workflows.\n\nWat is `$input`? Het is een helper die toegang geeft tot **alle** items die de huidige node binnenkomen, en hun metadata. n8n verwerkt items in batches. Als een Webhook 50 leads doorstuurt naar een HTTP Request-node, ontvangt die node een batch van 50 items.\n\nHier zijn de belangrijkste eigenschappen van `$input`:\n\n- **`$input.item`**: Het volledige huidige item. In een expressieveld op de node evalueert n8n dit voor élk item apart (Run Once for Each Item). Dus bij 50 items zal de expressie 50 keer geëvalueerd worden, waarbij `$input.item` telkens naar het volgende item wijst.\n- **`$input.first()`**: Het **allereerste** item in de lijst. Handig als je een array van 500 items hebt, maar je een veld nodig hebt dat voor allemaal gelijk is (bijv. een algemeen account-ID): `{{ $input.first().json.accountId }}`. In plaats van te riskeren dat het bij latere items ontbreekt of verandert, haal je het betrouwbaar uit de eerste.\n- **`$input.last()`**: Geeft het allerlaatste item in de batch. Handig om bijvoorbeeld de hoogste timestamp op te halen als je items chronologisch gesorteerd zijn.\n- **`$input.all()`**: Een array van álle items. Dit gebruik je voornamelijk in de *Code*-node om te loopen of om alles te aggregeren, maar je kunt er ook de lengte mee opvragen: `{{ $input.all().length }}`. Wil je bijvoorbeeld weten of je de API-limiet gaat overschrijden, dan bereken je de batchgrootte met `$input.all().length`.\n\n> [!example] Business use-case voor `$input.all()`\n> Stel, je stuurt een notificatie naar Slack per geïmporteerd contact. Je wilt de notificatie verrijken met de context van de totale import. Je gebruikt dan een expressie zoals: `Contact {{ $json.name }} geïmporteerd (Item uit een batch van {{ $input.all().length }}).`",
+   "checks": [
+    {
+     "id": "c2",
+     "type": "mcq",
+     "skill": "obj-input",
+     "level": 1,
+     "prompt": "Waarom zou je `$input.first().json.id` gebruiken in plaats van `$json.id`?",
+     "explain": "Omdat je expliciet de ID van het eerste inkomende item wilt, zelfs als de expressie momenteel voor het tiende item wordt uitgevoerd.",
+     "options": [
+      "Je wilt expliciet data van het eerste item, ongeacht welk item er nu verwerkt wordt",
+      "Het is korter om te schrijven",
+      "Omdat `$json` niet werkt in een Webhook-node",
+      "Het voorkomt errors als het veld `id` ontbreekt"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "nodes",
+   "title": "Data uit eerdere nodes halen",
+   "md": "Een workflow bestaat zelden uit slechts twee nodes. Soms heb je in node C (bijvoorbeeld het updaten van een database) data nodig die is aangemaakt in node A (de initiële Webhook), zoals een uniek `order_id` of het IP-adres van de klant. In plaats van die data in elke tussenliggende stap handmatig door te geven, kun je er direct naar verwijzen. Hiervoor gebruik je `$('Naam van Node')`.\n\n- `{{ $('Webhook').item.json.body.id }}` haalt de ID op uit de Webhook-node voor het *huidige* traject.\n\nHoe weet n8n welk Webhook-item hoort bij het huidige item in node C? Dat gebeurt via **item linking** (`pairedItem`). Elke node houdt onzichtbaar bij uit welk origineel input-item een output-item is ontstaan. Deze link vertelt n8n: \"Output-item #2 van Node B is het directe resultaat van Input-item #2 uit Node A\". Hierdoor weet de expressie `$('Node A').item` exact welk van de originele items hij moet pakken wanneer hij in stap C wordt geëvalueerd.\n\n> [!pitfall] Waarom `$('Node').item` soms crasht\n> Als je ergens onderweg een *Aggregate*, *Summarize* of een complexe handmatige *Code*-node gebruikt, kan deze link breken. Een *Aggregate*-node voegt immers vele items samen tot één item, waardoor de 1-op-1 relatie verdwijnt. n8n weet dan niet meer welk oud item bij het nieuwe hoort, en `.item` gooit de gevreesde fout: `No item paired with index...`.\n\n**De structurele oplossing?**\nAls je weet dat de eerdere node (bijv. een Webhook of een algemene configuratie-node) toch maar 1 item opleverde, hoef je niet op de fragiele `.item`-link te vertrouwen. Vraag dan expliciet het allereerste item op, onafhankelijk van het huidige verwerkte item: \n`{{ $('Webhook').first().json.body.id }}`.\nVervang `.item` dus door `.first()`. Dit werkt altijd en onafhankelijk van *Aggregate*- of *Split*-acties die ertussen hebben plaatsgevonden, omdat het de hele `pairedItem` logica overbrugt. Als de node meerdere items bevatte en je hebt ze allemaal nodig, gebruik dan `$('Node').all()`.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "jsexpr",
+     "skill": "obj-nodes",
+     "level": 2,
+     "prompt": "Haal de `event_type` uit het allereerste item van de node **Trigger**, om de `pairedItem`-error te vermijden.",
+     "explain": "Gebruik `.first()` in plaats van `.item`: `{{ $('Trigger').first().json.event_type }}`",
+     "nodes": {
+      "Trigger": [
+       {
+        "event_type": "invoice.created"
+       }
+      ]
+     },
+     "input": {
+      "status": "processing"
+     },
+     "expected": "invoice.created",
+     "solution": "{{ $('Trigger').first().json.event_type }}"
+    }
+   ]
+  },
+  {
+   "id": "luxon",
+   "title": "Tijdreizen met Luxon",
+   "md": "Bijna elke B2B-automatisering heeft op een bepaald moment te maken met datums. Facturen hebben vervaldata, abonnementen vernieuwingsdata, en rapporten worden gefilterd op de afgelopen 30 dagen. Datums en tijden zijn notoir lastig, vooral met tijdzones. n8n maakt het makkelijker met de ingebouwde helpers `$now` (exacte tijd nu) en `$today` (middernacht van vandaag).\n\nOnder de motorkap zijn dit **Luxon DateTime**-objecten. Je hoeft de documentatie van Luxon maar één keer te snappen om jarenlang probleemloos datums te manipuleren in expressies. Omdat deze variabelen Luxon-objecten zijn, kun je er direct de krachtige methodes van Luxon op loslaten.\n\n| Actie | Expressie | Voorbeeld |\n|---|---|---|\n| **Formatteren** | `{{ $now.toFormat('yyyy-MM-dd HH:mm') }}` | `2026-09-24 09:00` |\n| **Tijd optellen** | `{{ $today.plus({ days: 14 }).toFormat('dd/MM/yyyy') }}` | `08/10/2026` |\n| **Terug in de tijd** | `{{ $now.minus({ months: 1 }).toFormat('yyyy-MM-dd') }}` | `2026-08-24` |\n| **Tijdzone aanpassen** | `{{ $now.setZone('Europe/Brussels').toFormat('HH:mm') }}` | `11:00` |\n\n> [!tip] Formaatnotatie in Luxon\n> In Luxon schrijf je `yyyy` (4 letters) voor een 4-cijferig jaar, `MM` (hoofdletters) voor de maand als getal (01 tot 12), en `dd` voor de dag. Gebruik `HH` voor het 24-uurs formaat van het uur en `mm` voor de minuten. Verwar `MM` (maand) dus niet met `mm` (minuten)!\n\nAls je tijdzones moet beheren, gebruik dan `.setZone('Europe/Brussels')`. Dit zorgt voor de correcte lokale tijd, inclusief automatische verrekening van zomer- en wintertijd, wat cruciaal is bij het genereren van e-mails naar klanten.\n\n*Opmerking: in de testomgeving (sandbox) van deze cursus staat `$now` vastgezet op 2026-09-24T09:00Z en `$today` op middernacht van diezelfde dag (2026-09-24T00:00Z). Dit zorgt ervoor dat je expressies reproduceerbare resultaten opleveren bij het uitvoeren van code.*",
+   "checks": [
+    {
+     "id": "c4",
+     "type": "jsexpr",
+     "skill": "obj-luxon",
+     "level": 2,
+     "prompt": "Wat was gisteren de datum? (Trek 1 dag af van `$today` en formatteer als `yyyy-MM-dd`).",
+     "explain": "`{{ $today.minus({ days: 1 }).toFormat('yyyy-MM-dd') }}`",
+     "input": {},
+     "expected": "2026-09-23",
+     "solution": "{{ $today.minus({ days: 1 }).toFormat('yyyy-MM-dd') }}"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "jsexpr",
+   "skill": "obj-syntax",
+   "level": 2,
+   "prompt": "Haal de stad (`address.city`) van de klant op. Als deze ontbreekt (of address ontbreekt), geef de tekst **'Onbekend'** terug.",
+   "explain": "Gebruik optionele chaining `?.` en een fallback `??`: `{{ $json.customer?.address?.city ?? 'Onbekend' }}`.",
+   "input": {
+    "customer": {
+     "name": "Jan"
+    }
+   },
+   "expected": "Onbekend",
+   "solution": "{{ $json.customer?.address?.city ?? 'Onbekend' }}"
+  },
+  {
+   "id": "p02",
+   "type": "jsexpr",
+   "skill": "obj-syntax",
+   "level": 1,
+   "prompt": "Zet het `email`-veld om naar hoofdletters.",
+   "explain": "`{{ $json.email.toUpperCase() }}`",
+   "input": {
+    "email": "test@acme.be"
+   },
+   "expected": "TEST@ACME.BE",
+   "solution": "{{ $json.email.toUpperCase() }}"
+  },
+  {
+   "id": "p03",
+   "type": "mcq",
+   "skill": "obj-syntax",
+   "level": 2,
+   "prompt": "Wat is het resultaat van `{{ $json.score ?? 0 }}` als `score` exact `null` is in je data?",
+   "explain": "De operator `??` kijkt of de linkerkant `null` of `undefined` is. Zo ja, wordt de rechterkant gebruikt.",
+   "options": [
+    "0",
+    "null",
+    "undefined",
+    "Een errormelding"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p04",
+   "type": "mcq",
+   "skill": "obj-input",
+   "level": 1,
+   "prompt": "Waar is `$json` in een expressie een ingebouwde afkorting van?",
+   "explain": "`$json` is in feite `$input.item.json`.",
+   "options": [
+    "`$input.item.json`",
+    "`$input.all().json`",
+    "`$input.first().json`",
+    "`$('Node').json`"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p05",
+   "type": "jsexpr",
+   "skill": "obj-input",
+   "level": 2,
+   "prompt": "Bereken de **lengte** (aantal items) van de inkomende data in deze node.",
+   "explain": "`{{ $input.all().length }}` geeft de lengte van de array van inkomende items.",
+   "input": {
+    "test": "data"
+   },
+   "expected": 1,
+   "solution": "{{ $input.all().length }}"
+  },
+  {
+   "id": "p06",
+   "type": "jscode",
+   "skill": "obj-input",
+   "level": 2,
+   "prompt": "Code-node (Run Once for All Items): geef een array terug die **enkel het allereerste inkomende item** bevat.",
+   "explain": "Je pakt het eerste item uit `$input.all()` of gebruikt `$input.first()` en steekt dat in een nieuwe array.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return [$input.first()];",
+   "cases": [
+    {
+     "items": [
+      {
+       "id": 1
+      },
+      {
+       "id": 2
+      }
+     ],
+     "expected": [
+      {
+       "id": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p07",
+   "type": "jsexpr",
+   "skill": "obj-nodes",
+   "level": 2,
+   "prompt": "De node **Webhook** gaf een ID door in `params.id`. Haal dat ID veilig op via het allereerste Webhook-item (vermijd de pairedItem error).",
+   "explain": "`{{ $('Webhook').first().json.params.id }}`",
+   "nodes": {
+    "Webhook": [
+     {
+      "params": {
+       "id": 99
+      }
+     }
+    ]
+   },
+   "input": {},
+   "expected": 99,
+   "solution": "{{ $('Webhook').first().json.params.id }}"
+  },
+  {
+   "id": "p08",
+   "type": "mcq",
+   "skill": "obj-nodes",
+   "level": 2,
+   "prompt": "Je krijgt de fout `No item paired with index 0` bij het gebruik van `{{ $('CRM').item.json.id }}`. Hoe los je dit in 90% van de gevallen het snelst op als de CRM-node maar 1 hoofddocument opleverde?",
+   "explain": "Als er maar 1 item was, hoef je de items niet te linken. Gebruik gewoon `.first()`.",
+   "options": [
+    "Vervang `.item` door `.first()`",
+    "Vervang `.item` door `.all()`",
+    "Zet Execute Once aan op de huidige node",
+    "Verander de CRM-node zodat deze JSON strings teruggeeft"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p09",
+   "type": "jsexpr",
+   "skill": "obj-nodes",
+   "level": 2,
+   "prompt": "Haal de `name` uit de node genaamd **Trigger**, specifiek voor het *gekoppelde* (paired) item.",
+   "explain": "`{{ $('Trigger').item.json.name }}`",
+   "nodes": {
+    "Trigger": [
+     {
+      "name": "Factuur A"
+     }
+    ]
+   },
+   "input": {},
+   "expected": "Factuur A",
+   "solution": "{{ $('Trigger').item.json.name }}"
+  },
+  {
+   "id": "p10",
+   "type": "jsexpr",
+   "skill": "obj-luxon",
+   "level": 2,
+   "prompt": "Welke datum is het morgen? Gebruik `$today`, voeg 1 dag toe en formatteer als `yyyy-MM-dd`.",
+   "explain": "`{{ $today.plus({ days: 1 }).toFormat('yyyy-MM-dd') }}`",
+   "input": {},
+   "expected": "2026-09-25",
+   "solution": "{{ $today.plus({ days: 1 }).toFormat('yyyy-MM-dd') }}"
+  },
+  {
+   "id": "p11",
+   "type": "jsexpr",
+   "skill": "obj-luxon",
+   "level": 1,
+   "prompt": "Geef het huidige jaartal op basis van `$now`, geformatteerd als 4-cijferige string.",
+   "explain": "`{{ $now.toFormat('yyyy') }}`",
+   "input": {},
+   "expected": "2026",
+   "solution": "{{ $now.toFormat('yyyy') }}"
+  },
+  {
+   "id": "p12",
+   "type": "jsexpr",
+   "skill": "obj-luxon",
+   "level": 2,
+   "prompt": "Trek 2 dagen af van `$now` en formatteer de datum als `dd/MM/yyyy`.",
+   "explain": "`{{ $now.minus({ days: 2 }).toFormat('dd/MM/yyyy') }}`",
+   "input": {},
+   "expected": "22/09/2026",
+   "solution": "{{ $now.minus({ days: 2 }).toFormat('dd/MM/yyyy') }}"
+  },
+  {
+   "id": "p13",
+   "type": "explain",
+   "skill": "obj-syntax",
+   "level": 3,
+   "prompt": "Een klant meldt: *\"Onze facturatieworkflow crasht soms met de fout 'Cannot read properties of undefined'. Dit lijkt alleen te gebeuren bij klanten zonder adres!\"* Leg kort uit waarom de expressie crasht en hoe je dit oplost.",
+   "explain": "Klantcommunicatie is key. Leg het probleem begrijpelijk uit zonder te diep in code te duiken, en vertel de structurele oplossing.",
+   "model": "Wanneer n8n een ontbrekend veld probeert te lezen (zoals het adres van de klant), stopt de workflow uit veiligheid om foute data te voorkomen. Ik pas de configuratie aan met 'optional chaining' (een veilige manier om data op te halen) en een standaardwaarde (bijv. 'Geen adres opgegeven'). Zo loopt de workflow altijd vlekkeloos door.",
+   "rubric": [
+    "Benoemt dat de fout ontstaat door het proberen te lezen van een ontbrekend veld",
+    "Benoemt de technische oplossing (optional chaining of defaults) in behapbare taal",
+    "Bevestigt dat dit structureel wordt opgelost",
+    "Professionele en geruststellende toon"
+   ]
+  },
+  {
+   "id": "p14",
+   "type": "jsexpr",
+   "skill": "obj-syntax",
+   "level": 2,
+   "prompt": "Bouw de string: **Factuur [ID] - [Klant]**. Gebruik hiervoor `$json.id` en `$json.klant`.",
+   "explain": "Tekst buiten de accolades wordt direct aan de expressies geplakt: `Factuur {{ $json.id }} - {{ $json.klant }}`.",
+   "input": {
+    "id": 789,
+    "klant": "Acme"
+   },
+   "expected": "Factuur 789 - Acme",
+   "solution": "Factuur {{ $json.id }} - {{ $json.klant }}"
+  },
+  {
+   "id": "p15",
+   "type": "mcq",
+   "skill": "obj-input",
+   "level": 1,
+   "prompt": "Wat is het datatype van de waarde die `$input.all()` teruggeeft?",
+   "explain": "`$input.all()` geeft een lijst van alle items, dus een array van objecten.",
+   "options": [
+    "Een array van objecten",
+    "Een enkel JSON-object",
+    "Een string",
+    "Een getal (het aantal items)"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p16",
+   "type": "jscode",
+   "skill": "obj-input",
+   "level": 3,
+   "prompt": "Code-node (Run Once for All Items): Bereken de som van alle `price`-velden van alle inkomende items. Geef één item terug met `{ total: ... }`.",
+   "explain": "Je mapt of reduceert over `$input.all()`. Geef op het einde één item terug (`[{ json: { total } }]`).",
+   "mode": "all",
+   "starter": "return [{ json: { total: 0 } }];",
+   "solution": "const total = $input.all().reduce((sum, item) => sum + (Number(item.json.price) || 0), 0);\nreturn [{ json: { total } }];",
+   "cases": [
+    {
+     "items": [
+      {
+       "price": 10
+      },
+      {
+       "price": 25
+      },
+      {
+       "price": null
+      }
+     ],
+     "expected": [
+      {
+       "total": 35
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p17",
+   "type": "jsexpr",
+   "skill": "obj-luxon",
+   "level": 2,
+   "prompt": "Formatteer `$today` als `dd-MM-yyyy`.",
+   "explain": "`{{ $today.toFormat('dd-MM-yyyy') }}`",
+   "input": {},
+   "expected": "24-09-2026",
+   "solution": "{{ $today.toFormat('dd-MM-yyyy') }}"
+  },
+  {
+   "id": "p18",
+   "type": "mcq",
+   "skill": "obj-nodes",
+   "level": 2,
+   "prompt": "Wat is de functie van `pairedItem` in de item-structuur van n8n?",
+   "explain": "Hiermee kan n8n traceren welk origineel input-item leidde tot welk output-item.",
+   "options": [
+    "Het linkt een item aan zijn voorganger uit de vorige node",
+    "Het versleutelt gevoelige gegevens in de webhook",
+    "Het splitst arrays automatisch op in meerdere items",
+    "Het verwijdert dubbele items uit een lijst"
+   ],
+   "answer": 0
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "jsexpr",
+   "skill": "obj-syntax",
+   "level": 2,
+   "prompt": "Haal de straat (`address.street`) op. Als het adres of de straat ontbreekt, geef `'Onbekend'` terug.",
+   "explain": "`{{ $json.address?.street ?? 'Onbekend' }}`",
+   "input": {},
+   "expected": "Onbekend",
+   "solution": "{{ $json.address?.street ?? 'Onbekend' }}"
+  },
+  {
+   "id": "m02",
+   "type": "mcq",
+   "skill": "obj-syntax",
+   "level": 1,
+   "prompt": "Wat gebeurt er als je `{{ $json.company.name }}` probeert uit te voeren, maar `company` is exact `null`?",
+   "explain": "Omdat `company` leeg is, bestaat `.name` niet. Dit gooit een fout (Cannot read properties of null).",
+   "options": [
+    "De expressie crasht met een foutmelding",
+    "Het retourneert 'null'",
+    "Het retourneert een lege string",
+    "De workflow wacht tot het veld is ingevuld"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m03",
+   "type": "jsexpr",
+   "skill": "obj-syntax",
+   "level": 2,
+   "prompt": "Verwijder overtollige spaties aan de voor- en achterkant van `company_name`.",
+   "explain": "`{{ $json.company_name.trim() }}`",
+   "input": {
+    "company_name": "  Acme Corp  "
+   },
+   "expected": "Acme Corp",
+   "solution": "{{ $json.company_name.trim() }}"
+  },
+  {
+   "id": "m04",
+   "type": "jsexpr",
+   "skill": "obj-input",
+   "level": 2,
+   "prompt": "Wat is de waarde van het `status`-veld van het **laatste** input-item in de huidige batch?",
+   "explain": "`{{ $input.last().json.status }}`",
+   "input": {
+    "status": "done"
+   },
+   "expected": "done",
+   "solution": "{{ $input.last().json.status }}"
+  },
+  {
+   "id": "m05",
+   "type": "mcq",
+   "skill": "obj-input",
+   "level": 2,
+   "prompt": "Wanneer gebruik je `$input.first()` in plaats van `$input.item`?",
+   "explain": "Met `.first()` dwing je af dat je altijd het eerste item uit de inkomende array gebruikt, zelfs als de expressie iteratief voor het vijfde item wordt uitgevoerd.",
+   "options": [
+    "Als je in een loop zit, maar bewust velden van het allereerste item wilt uitlezen",
+    "Als je het oudste item in de n8n-database zoekt",
+    "Omdat `$input.item` niet in een Code-node gebruikt kan worden",
+    "Als je de velden van alle items wilt samenvoegen tot één string"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m06",
+   "type": "jscode",
+   "skill": "obj-input",
+   "level": 3,
+   "prompt": "Code-node (Run Once for All Items): Voeg aan **elk** item een veld `batch_size` toe dat de totale lengte van de inkomende array bevat.",
+   "explain": "Je mapt over de items en voegt de eigenschap toe: `$input.all().length`.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().map(i => ({ json: { ...i.json, batch_size: $input.all().length } }));",
+   "cases": [
+    {
+     "items": [
+      {
+       "id": 1
+      },
+      {
+       "id": 2
+      }
+     ],
+     "expected": [
+      {
+       "id": 1,
+       "batch_size": 2
+      },
+      {
+       "id": 2,
+       "batch_size": 2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m07",
+   "type": "jsexpr",
+   "skill": "obj-nodes",
+   "level": 2,
+   "prompt": "Haal `user_id` op uit de node genaamd **Auth**, door expliciet het allereerste Auth-item te kiezen.",
+   "explain": "`{{ $('Auth').first().json.user_id }}`",
+   "nodes": {
+    "Auth": [
+     {
+      "user_id": "U-55"
+     }
+    ]
+   },
+   "input": {},
+   "expected": "U-55",
+   "solution": "{{ $('Auth').first().json.user_id }}"
+  },
+  {
+   "id": "m08",
+   "type": "jsexpr",
+   "skill": "obj-nodes",
+   "level": 3,
+   "prompt": "Haal de array van items op die door de node **Split** is gegenereerd en bereken daarvan de totale lengte.",
+   "explain": "`{{ $('Split').all().length }}`",
+   "nodes": {
+    "Split": [
+     {
+      "a": 1
+     },
+     {
+      "b": 2
+     }
+    ]
+   },
+   "input": {},
+   "expected": 2,
+   "solution": "{{ $('Split').all().length }}"
+  },
+  {
+   "id": "m09",
+   "type": "jsexpr",
+   "skill": "obj-luxon",
+   "level": 2,
+   "prompt": "Formatteer `$today` als `yyyy/MM`.",
+   "explain": "`{{ $today.toFormat('yyyy/MM') }}`",
+   "input": {},
+   "expected": "2026/09",
+   "solution": "{{ $today.toFormat('yyyy/MM') }}"
+  },
+  {
+   "id": "m10",
+   "type": "jsexpr",
+   "skill": "obj-luxon",
+   "level": 2,
+   "prompt": "Trek 1 week af van `$now` en formatteer als `yyyy-MM-dd`.",
+   "explain": "`{{ $now.minus({ weeks: 1 }).toFormat('yyyy-MM-dd') }}`",
+   "input": {},
+   "expected": "2026-09-17",
+   "solution": "{{ $now.minus({ weeks: 1 }).toFormat('yyyy-MM-dd') }}"
+  },
+  {
+   "id": "m11",
+   "type": "numeric",
+   "skill": "obj-luxon",
+   "level": 3,
+   "prompt": "Welk uur (in UTC, in het formaat 0-23) zit er vastgezet in `$now` in onze testomgeving?",
+   "explain": "De sandbox staat vast op 2026-09-24T09:00Z, dus het is 9 uur.",
+   "value": 9,
+   "abs": 0
+  },
+  {
+   "id": "m12",
+   "type": "jsexpr",
+   "skill": "obj-syntax",
+   "level": 3,
+   "prompt": "Je hebt een lijst van e-mailadressen in `emails`. Haal de eerste op, maar navigeer er veilig heen via optionele chaining zodat het niet crasht als `emails` ontbreekt.",
+   "explain": "Bij arrays gebruik je de notatie `?.[0]`: `{{ $json.emails?.[0] }}`.",
+   "input": {
+    "emails": [
+     "test@test.be",
+     "admin@test.be"
+    ]
+   },
+   "expected": "test@test.be",
+   "solution": "{{ $json.emails?.[0] }}"
+  },
+  {
+   "id": "m13",
+   "type": "jsexpr",
+   "skill": "obj-input",
+   "level": 2,
+   "prompt": "Wat is het equivalent van `{{ $json.id }}` als je het via de `$input.item` syntax uitschrijft?",
+   "explain": "`{{ $input.item.json.id }}`",
+   "input": {
+    "id": 88
+   },
+   "expected": 88,
+   "solution": "{{ $input.item.json.id }}"
+  },
+  {
+   "id": "m14",
+   "type": "mcq",
+   "skill": "obj-nodes",
+   "level": 2,
+   "prompt": "Je voegt ergens halverwege de flow een **Aggregate**-node in. Wat gebeurt er typisch met de `pairedItem`-links van de originele individuele items?",
+   "explain": "Een Aggregate creëert een volledig nieuw item. Daardoor gaat de 1-op-1 relatie met items ervóór verloren.",
+   "options": [
+    "De originele links gaan verloren, wat resulteert in 'No item paired'-errors bij latere `.item`-aanroepen",
+    "Ze worden allemaal samengevoegd in een nieuw pairedItem-array dat perfect schaalt",
+    "Niets, de n8n engine lost dit onder water probleemloos op",
+    "De Aggregate-node crasht onmiddellijk op de links"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m15",
+   "type": "jsexpr",
+   "skill": "obj-nodes",
+   "level": 2,
+   "prompt": "Lees `session.token` van de allereerste uitkomst van de **Login**-node.",
+   "explain": "`{{ $('Login').first().json.session.token }}`",
+   "nodes": {
+    "Login": [
+     {
+      "session": {
+       "token": "abc"
+      }
+     }
+    ]
+   },
+   "input": {},
+   "expected": "abc",
+   "solution": "{{ $('Login').first().json.session.token }}"
+  },
+  {
+   "id": "m16",
+   "type": "mcq",
+   "skill": "obj-luxon",
+   "level": 1,
+   "prompt": "Op welke externe bibliotheek baseert n8n zich voor de `$now` en `$today` objecten?",
+   "explain": "n8n gebruikt Luxon DateTime objecten.",
+   "options": [
+    "Luxon",
+    "Moment.js",
+    "Date-fns",
+    "Day.js"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m17",
+   "type": "jscode",
+   "skill": "obj-syntax",
+   "level": 3,
+   "prompt": "Code-node (Run Once for All Items): Een API geeft soms `null` terug in de array `tags`. Verwijder deze null-waarden per item, en als `tags` ontbreekt (of null is), stel het in op een lege array `[]`.",
+   "explain": "Gebruik een fallback (`|| []`) en filter dan op `t !== null`.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().map(i => ({\n  json: { ...i.json, tags: (i.json.tags || []).filter(t => t !== null) }\n}));",
+   "cases": [
+    {
+     "items": [
+      {
+       "id": 1,
+       "tags": [
+        "A",
+        null,
+        "B"
+       ]
+      },
+      {
+       "id": 2,
+       "tags": null
+      },
+      {
+       "id": 3
+      }
+     ],
+     "expected": [
+      {
+       "id": 1,
+       "tags": [
+        "A",
+        "B"
+       ]
+      },
+      {
+       "id": 2,
+       "tags": []
+      },
+      {
+       "id": 3,
+       "tags": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m18",
+   "type": "jsexpr",
+   "skill": "obj-nodes",
+   "level": 3,
+   "prompt": "Combineer tekst met een variabele: schrijf exact de string `Start ID: ` gevolgd door de `id` uit het eerste item van de **Start**-node.",
+   "explain": "Plaats de tekst buiten de expressie-accolades: `Start ID: {{ $('Start').first().json.id }}`",
+   "nodes": {
+    "Start": [
+     {
+      "id": 901
+     }
+    ]
+   },
+   "input": {},
+   "expected": "Start ID: 901",
+   "solution": "Start ID: {{ $('Start').first().json.id }}"
+  },
+  {
+   "id": "m19",
+   "type": "jsexpr",
+   "skill": "obj-luxon",
+   "level": 2,
+   "prompt": "Je facturatieworkflow heeft een vervaldatum nodig die exact 30 dagen in de toekomst ligt. Gebruik `$today` en geef de datum terug in het formaat `dd/MM/yyyy`.",
+   "explain": "`{{ $today.plus({ days: 30 }).toFormat('dd/MM/yyyy') }}`",
+   "input": {},
+   "expected": "24/10/2026",
+   "solution": "{{ $today.plus({ days: 30 }).toFormat('dd/MM/yyyy') }}"
+  },
+  {
+   "id": "m20",
+   "type": "mcq",
+   "skill": "obj-luxon",
+   "level": 1,
+   "prompt": "Hoe schrijf je in Luxon het jaar in 4 cijfers in de `.toFormat()` functie?",
+   "explain": "Luxon gebruikt kleine letters `yyyy` voor een viercijferig jaar.",
+   "options": [
+    "yyyy",
+    "jjjj",
+    "jaar",
+    "YY"
+   ],
+   "answer": 0
+  }
+ ],
+ "production": {
+  "type": "jscode",
+  "mode": "all",
+  "prompt": "**Klantopdracht.** Je bouwt een facturatie-workflow. Aan het begin is er een `Webhook`-node die de algemene factuurgegevens levert. De huidige node ontvangt de individuele orderlijnen (bijv. na een Split Out). \n\nBouw een Code-node (modus *Run Once for All Items*) die elk inkomend item uitbreidt met:\n- `client_name`: gehaald uit het veld `client` van de allereerste Webhook-node (`$('Webhook')`).\n- `due_date`: 14 dagen na vandaag (`$today`), als `yyyy-MM-dd`.\n\nBehoud alle bestaande data van het item.",
+  "starter": "// Voeg 'client_name' (uit Webhook) en 'due_date' (14 dagen na vandaag) toe.\nreturn $input.all();",
+  "solution": "const client = $('Webhook').first().json.client;\nconst dueDate = $today.plus({ days: 14 }).toFormat('yyyy-MM-dd');\n\nreturn $input.all().map(item => ({\n  json: {\n    ...item.json,\n    client_name: client,\n    due_date: dueDate\n  }\n}));",
+  "cases": [
+   {
+    "name": "standaard",
+    "nodes": {
+     "Webhook": [
+      {
+       "client": "Acme Corp"
+      }
+     ]
+    },
+    "items": [
+     {
+      "product": "Hosting",
+      "amount": 100
+     },
+     {
+      "product": "Support",
+      "amount": 50
+     }
+    ],
+    "expected": [
+     {
+      "product": "Hosting",
+      "amount": 100,
+      "client_name": "Acme Corp",
+      "due_date": "2026-10-08"
+     },
+     {
+      "product": "Support",
+      "amount": 50,
+      "client_name": "Acme Corp",
+      "due_date": "2026-10-08"
+     }
+    ]
+   }
+  ],
+  "model": "Je leest de gedeelde context eenmalig in via `$('Webhook').first().json`. Je berekent `dueDate` eenmalig met `$today.plus({ days: 14 }).toFormat('yyyy-MM-dd')`. Daarna map je over `$input.all()` en voeg je de eigenschappen toe aan elk `json`-object.",
+  "rubric": [
+   "Leest `client` correct uit `$('Webhook').first().json`",
+   "Berekent de due_date correct met `$today.plus`",
+   "Mapt over de items met `$input.all().map`",
+   "Behoudt de bestaande properties van het inkomende item door de spread-operator `...item.json`"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-json-shorthand",
+   "front": "Waar is `$json` in een n8n-expressie de afkorting van?",
+   "back": "`$input.item.json`",
+   "skill": "obj-input",
+   "answers": [
+    "$input.item.json"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "c-optional-chaining",
+   "front": "Wat doet de operator `?.` (optional chaining)?",
+   "back": "Voorkomt een error als een onderliggend object `null` of `undefined` is.",
+   "skill": "obj-syntax"
+  },
+  {
+   "id": "c-nullish",
+   "front": "Wat doet de operator `??` (nullish coalescing)?",
+   "back": "Geeft de rechterwaarde als de linker `null` of `undefined` is.",
+   "skill": "obj-syntax"
+  },
+  {
+   "id": "c-node-first",
+   "front": "Hoe haal je de data van het eerste item op uit een eerdere node genaamd **CRM**?",
+   "back": "`$('CRM').first().json`",
+   "skill": "obj-nodes",
+   "answers": [
+    "$('CRM').first().json",
+    "{{ $('CRM').first().json }}"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "c-paired-item",
+   "front": "Waarom geeft `$('Node').item` soms een `No item paired`-error?",
+   "back": "Omdat de link (pairedItem) verloren is gegaan door bijvoorbeeld een Aggregate-node.",
+   "skill": "obj-nodes"
+  },
+  {
+   "id": "c-luxon",
+   "front": "Welke bibliotheek gebruikt n8n onder de motorkap voor `$now` en `$today`?",
+   "back": "Luxon",
+   "skill": "obj-luxon",
+   "answers": [
+    "Luxon"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "c-format-date",
+   "front": "Hoe formatteer je `$now` als Jaar-Maand-Dag in n8n?",
+   "back": "`$now.toFormat('yyyy-MM-dd')`",
+   "skill": "obj-luxon",
+   "answers": [
+    "$now.toFormat('yyyy-MM-dd')",
+    "{{ $now.toFormat('yyyy-MM-dd') }}"
+   ],
+   "lang": "code"
+  }
+ ],
+ "sources": [
+  "n8n Docs — Built-in methods and variables (docs.n8n.io)",
+  "Luxon Docs — Formatting (moment.github.io/luxon)"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-26",
+  "adaptedFor": "Geen specifieke foutpatronen gedetecteerd, regulier tempo (1 roadmap-item) aangehouden. Nadruk ligt op real-world robustness en debuggen."
+ }
+}
