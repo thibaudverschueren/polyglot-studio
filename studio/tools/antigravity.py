@@ -74,11 +74,38 @@ def extract_json(text):
     return obj
 
 
+CLOZE_HOLE = re.compile(r"_{3,}|\[\s*(?:blank|\d+)?\s*\]|\{\s*(?:blank|\d+)\s*\}")
+
+
+def _coerce_cloze(it):
+    """A cloze written with ___ / [ ] / {0} holes plus a blanks/answers list → {{answer|variant}} holes."""
+    text = it.get("text")
+    if not isinstance(text, str) or "{{" in text:
+        return
+    fills = it.get("blanks") if isinstance(it.get("blanks"), list) else it.get("answers")
+    holes = CLOZE_HOLE.findall(text)
+    if not isinstance(fills, list) or not holes or len(holes) != len(fills):
+        return
+    seq = iter(fills)
+
+    def fill(_m):
+        f = next(seq)
+        alts = [str(a).strip() for a in (f if isinstance(f, list) else [f]) if str(a).strip()]
+        return "{{" + "|".join(alts) + "}}"
+    it["text"] = CLOZE_HOLE.sub(fill, text)
+    it.pop("blanks", None)
+    if fills is it.get("answers"):
+        it.pop("answers", None)
+
+
 def _coerce(obj):
     """Fix harmless format slips before validation, so they don't cost a repair round:
-    numbers in `answers` become strings and duplicate answers are dropped."""
+    numbers in `answers` become strings, duplicate answers are dropped, and cloze holes
+    written as ___ / [ ] / {0} become {{answer}}."""
     if isinstance(obj, dict):
-        if isinstance(obj.get("answers"), list):
+        if obj.get("type") == "cloze":
+            _coerce_cloze(obj)
+        if isinstance(obj.get("answers"), list) and obj.get("type") != "multi":
             out = []
             for a in obj["answers"]:
                 if isinstance(a, (int, float)) and not isinstance(a, bool):
@@ -260,6 +287,13 @@ def author_lesson(track, lesson_id, topic, model, idx, syllabus, cfg, today, mod
                   "Lever de **volledige** gecorrigeerde les. Herstel alleen wat hierboven staat: behoud alle andere secties, items, "
                   "uitleg en voorbeelden woordelijk, en maak de les **niet korter**.")
     log(f"  ✗ {track} les {lesson_id}: na {attempt} pogingen nog ongeldig — overgeslagen")
+    if last is not None:  # keep the last candidate for diagnosis
+        try:
+            d = os.path.expanduser("~/scripts/polyglot-data/failed")
+            os.makedirs(d, exist_ok=True)
+            json.dump(last, open(os.path.join(d, f"{today}-{track}-{lesson_id:02d}.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        except OSError:
+            pass
     return None
 
 

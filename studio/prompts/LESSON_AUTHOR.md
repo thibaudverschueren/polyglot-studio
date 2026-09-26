@@ -48,6 +48,16 @@ Daarom:
 - **Eenduidig**: er is precies één verdedigbaar juist antwoord. Geef bij `type`/`cloze` **alle** aanvaardbare varianten in `answers` (of met `|` in een cloze-blank). De app normaliseert hoofdletters, spaties en leestekens; accenten tellen wél (accentfout = halve score).
 - **Afleiders** bij `mcq`/`multi` zijn plausibel, even lang en in dezelfde stijl als het juiste antwoord. Het juiste antwoord is **niet** systematisch het langste. Nooit ‘alle/geen van bovenstaande’.
 - **`explain`** is verplicht bij elk item: waarom is het antwoord juist, en wat is de valkuil.
+- **Vorm per itemtype** (al het andere wordt geweigerd):
+  - `mcq`: `options` (3–5, uniek) en `answer` = de index van de juiste optie.
+  - `multi`: `options` (≥ 4) en `answers` = lijst met de indexen van **alle** juiste opties (minstens 1, niet allemaal).
+  - `type`: `answers` = lijst met strings (alle aanvaardbare varianten); `lang` bij Grieks/Frans.
+  - `cloze`: `text` met elk invulgat als `{{antwoord}}` of `{{antwoord|variant}}`, bv. `"Il {{existe}} plusieurs solutions."`. Géén `___`, `[ ]` of apart `blanks`-veld. In `automation` nooit n8n-expressies in een cloze (hun `{{ }}` botst met de invulgaten): vraag dan één woord of gebruik `jsexpr`.
+  - `order`: `tiles` (≥ 3) in de juiste volgorde; optioneel `alts`, `distractors`, `join`.
+  - `match`: `pairs` = 3–6 paren `["links", "rechts"]`; links en rechts elk uniek.
+  - `numeric`: `value` (getal) plus `tolerance` of `abs`; optioneel `unit`.
+  - `dictation`: `text` en `lang` (`el`/`fr`) · `handwrite`: `target` · `explain`: `model` en `rubric` (≥ 2 criteria).
+  - `code`: `contract`, `file`, `starter`, `solution`, `tests` (≥ 2) · `jsexpr`: `expected`, `solution` en `input` of `items` · `jscode`: `mode`, `starter`, `solution`, `cases` (≥ 1).
 - **`errors`**: voorzie gerichte feedback voor voorspelbare foute antwoorden (`{"match": "τον φίλος", "feedback": "…", "tag": "acc-sigma"}`; regex mag als `"/…/"`). Gebruik consequente `tag`-namen: die worden foutpatronen in zijn leerdersmodel.
 - **`numeric`**: geef `value` en `tolerance` (relatief, bv. 0.01) of `abs`; vermeld `unit`.
 - **`order`**: `tiles` in de juiste volgorde; gebruik `"join": ""` voor letter-tegels; `alts` voor andere correcte volgordes; eventueel `distractors`.

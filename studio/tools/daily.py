@@ -342,7 +342,10 @@ def main(argv):
         return 0
     finally:
         report["finished"] = dt.datetime.now().isoformat(timespec="seconds")
-        json.dump(report, open(os.path.join(DATA, "runs", f"{today}.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        path = os.path.join(DATA, "runs", f"{today}.json")
+        if os.path.exists(path):  # a second run the same day must not overwrite the morning report
+            path = os.path.join(DATA, "runs", f"{today}-{dt.datetime.now():%H%M}.json")
+        json.dump(report, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
         try:
             os.remove(lock)
         except OSError:

@@ -161,7 +161,7 @@ def _check_item(it, where, obj_ids, track, errs, warns, drill=False):
     if t == "mcq":
         opts = it.get("options", [])
         if len(opts) < 3:
-            errs.append(f"{loc}: mcq needs ≥ 3 options")
+            errs.append(f"{loc}: mcq needs ≥ 3 options (options: 3–5 unieke keuzes, answer: index van de juiste)")
         if not isinstance(it.get("answer"), int) or not (0 <= it["answer"] < len(opts)):
             errs.append(f"{loc}: mcq answer index out of range")
         if len({norm(o) for o in opts}) != len(opts):
@@ -179,11 +179,11 @@ def _check_item(it, where, obj_ids, track, errs, warns, drill=False):
         if len(opts) < 4:
             errs.append(f"{loc}: multi needs ≥ 4 options")
         if not ans or not all(isinstance(a, int) and 0 <= a < len(opts) for a in ans) or len(ans) == len(opts):
-            errs.append(f"{loc}: multi answers must be valid indices (not all options)")
+            errs.append(f"{loc}: multi answers must be valid indices (not all options) — answers = lijst met indexen van de juiste opties, minstens 1 en niet allemaal; nu {it.get('answers')} bij {len(it.get('options') or [])} opties")
     elif t in ("type",):
         ans = it.get("answers", [])
         if not ans or not all(isinstance(a, str) and a.strip() for a in ans):
-            errs.append(f"{loc}: type needs non-empty string answers")
+            errs.append(f"{loc}: type needs non-empty string answers (answers = lijst met strings)")
         if any(GREEK.search(a) for a in ans if isinstance(a, str)) and lang not in ("el", "code"):
             it["lang"] = "el"
             warns.append(f"{loc}: answers are Greek → lang set to 'el'")
@@ -193,22 +193,24 @@ def _check_item(it, where, obj_ids, track, errs, warns, drill=False):
         text = it.get("text", "")
         blanks = re.findall(r"\{\{(.+?)\}\}", text)
         if not blanks:
-            errs.append(f"{loc}: cloze text has no {{{{blank}}}}")
+            errs.append(f"{loc}: cloze text has no {{{{blank}}}} — zet elk invulgat als {{{{antwoord}}}} of {{{{antwoord|variant}}}} in 'text', bv. \"Il {{{{existe}}}} plusieurs solutions.\" (geen ___ of blanks-veld); nu: \"{text[:90]}\"")
         if any(not b.strip() for b in blanks):
             errs.append(f"{loc}: empty blank")
+        if any(re.match(r"\s*\$|.*\$(json|input|node|now|today)\b|.*\$\(", b) for b in blanks):
+            errs.append(f"{loc}: cloze blank looks like an n8n expression — {{{{ }}}} is voor invulgaten; vraag één woord of gebruik jsexpr")
         if any(GREEK.search(b) for b in blanks) and lang != "el":
             it["lang"] = "el"
     elif t == "order":
         if len(it.get("tiles", [])) < 3:
-            errs.append(f"{loc}: order needs ≥ 3 tiles")
+            errs.append(f"{loc}: order needs ≥ 3 tiles (tiles in de juiste volgorde)")
         if any(GREEK.search(x) for x in it.get("tiles", [])) and lang != "el":
             it["lang"] = "el"
     elif t == "match":
         pairs = it.get("pairs", [])
         if len(pairs) < 3:
-            errs.append(f"{loc}: match needs ≥ 3 pairs")
+            errs.append(f"{loc}: match needs ≥ 3 pairs (pairs = 3–6 paren [\"links\", \"rechts\"])")
         if len({norm(p[0]) for p in pairs}) != len(pairs) or len({norm(p[1]) for p in pairs}) != len(pairs):
-            errs.append(f"{loc}: match sides must be unique")
+            errs.append(f"{loc}: match sides must be unique (elke linker- en elke rechterwaarde maar één keer)")
     elif t == "numeric":
         if not isinstance(it.get("value"), (int, float)):
             errs.append(f"{loc}: numeric needs a numeric 'value'")
@@ -224,7 +226,7 @@ def _check_item(it, where, obj_ids, track, errs, warns, drill=False):
             if not it.get(k):
                 errs.append(f"{loc}: code item needs '{k}'")
         if len(it.get("tests", [])) < 2:
-            errs.append(f"{loc}: code item needs ≥ 2 tests")
+            errs.append(f"{loc}: code item needs ≥ 2 tests (voeg testgevallen toe volgens de test-DSL)")
     elif t == "jsexpr":
         if "expected" not in it:
             errs.append(f"{loc}: jsexpr needs 'expected'")
