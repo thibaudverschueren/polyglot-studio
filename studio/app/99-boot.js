@@ -18,6 +18,7 @@ PS.boot = () => {
   PS.setTheme();
   PS.speech.init();
   PS.kb.init();
+  PS.pen.init();
 
   /* Deep links from Apple Reminders: ?track=greek&lesson=5 */
   const q = new URLSearchParams(location.search);

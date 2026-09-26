@@ -70,7 +70,7 @@ PS.S = {
       v: 2,
       device: `${kind}-${Math.random().toString(36).slice(2, 8)}`,
       created: Date.now(),
-      settings: { theme: 'auto', guided: true, greekKb: 'auto', ttsRate: 0.92, dailyGoal: 30, cloud: { url: '', key: '' }, sync: { last: 0, error: '', pulled: 0, pushed: 0 } },
+      settings: { theme: 'auto', guided: true, greekKb: 'auto', pen: 'auto', ttsRate: 0.92, dailyGoal: 30, cloud: { url: '', key: '' }, sync: { last: 0, error: '', pulled: 0, pushed: 0 } },
       lessons: {}, cards: {}, events: [], days: {}, updated: Date.now(),
     };
   },

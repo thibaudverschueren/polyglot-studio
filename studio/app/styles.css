@@ -721,6 +721,15 @@ textarea.answer-input { min-height: 120px; resize: vertical; font-size: 17px; li
 .pad-guide.overlay { opacity: 0.45; color: var(--good); }
 .pad-lines { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(transparent calc(62% - 1px), var(--line-2) calc(62% - 1px), var(--line-2) 62%, transparent 62%), linear-gradient(transparent calc(38% - 1px), var(--line) calc(38% - 1px), var(--line) 38%, transparent 38%); }
 .pad-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+
+/* ---------- Apple Pencil (class .pen-mode on <html>) ---------- */
+.pen-mode .answer-input:not(textarea) { min-height: 68px; font-size: 22px; padding: 16px 18px; }
+.pen-mode textarea.answer-input { min-height: 200px; font-size: 20px; line-height: 38px; padding: 8px 16px; background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 37px, var(--line-2) 37px, var(--line-2) 38px); background-attachment: local; background-position: 0 8px; }
+.pen-mode .cloze input { height: 48px; font-size: 21px; min-width: 4.5em; }
+.pad-answer canvas { height: 200px; }
+@media (min-width: 700px) { .pad-answer canvas { height: 240px; } }
+.pen-note { display: inline-flex; align-items: center; gap: 6px; }
+.hand-model { font-family: var(--font-display); font-size: 34px; line-height: 1.25; margin: 2px 0 8px; color: var(--ink); }
 .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--surface-2); gap: 2px; }
 .seg button { padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 650; color: var(--ink-3); }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }

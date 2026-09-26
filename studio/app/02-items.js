@@ -11,6 +11,22 @@ PS.SELF_GRADED = new Set(['explain', 'handwrite']);
 
 const langAttr = (lang) => (lang === 'el' || lang === 'fr' ? ` lang="${lang}"` : '');
 const kbToggle = (lang) => (lang === 'el' ? `<button type="button" class="kb-toggle" data-kb-toggle>${PS.icon('keyboard', 'icon-s')}<span>ΑΒΓ</span></button>` : '');
+const penTestNote = (v, lang) => (lang === 'el' && PS.pen.active() && PS.pen.test(v) ? `<div class="tiny muted pen-note" style="margin-top:6px">${PS.icon('keyboard', 'icon-s')} In toetsen typ je Grieks: je iPad leest geen Grieks handschrift.</div>` : '');
+
+/* Greek handwriting pad (Apple Pencil; practice only, you compare yourself afterwards) */
+PS.penPad = {
+  html() {
+    return `<div class="pad-wrap pad-answer" data-pad><div class="pad-lines"></div><canvas aria-label="Schrijfvak"></canvas></div>
+      <div class="pad-tools"><span class="tiny muted pen-note">${PS.icon('pen', 'icon-s')} Schrijf in het Grieks; daarna vergelijk je met het juiste antwoord.</span><span style="flex:1"></span><button type="button" class="icon-btn" data-undo title="Ongedaan maken">${PS.icon('undo')}</button><button type="button" class="icon-btn" data-clear title="Wissen">${PS.icon('trash')}</button><button type="button" class="kb-toggle" data-pen-type>${PS.icon('keyboard', 'icon-s')}<span>Typen</span></button></div>`;
+  },
+  mount(v) {
+    v.pad = new PS.Pad(PS.$('[data-pad] canvas', v.el));
+    v.pad.onStroke = () => v.ready(true);
+    PS.$('[data-undo]', v.el).addEventListener('click', () => { v.pad.undo(); v.ready(v.pad.strokes.length > 0); });
+    PS.$('[data-clear]', v.el).addEventListener('click', () => { v.pad.clear(); v.ready(false); });
+    PS.$('[data-pen-type]', v.el).addEventListener('click', () => { v.forceType = true; v.rerender(); });
+  },
+};
 
 PS.items = {};
 
@@ -78,26 +94,38 @@ PS.items.multi = {
 PS.items.type = {
   render(v) {
     const it = v.item; const lang = it.lang || 'nl';
+    v.selfHand = !it.long && PS.pen.greekHand(v, lang);
+    const hint = it.hint ? `<button type="button" class="kb-toggle" data-hint>${PS.icon('bulb', 'icon-s')}<span>Hint</span></button>` : '<span></span>';
+    if (v.selfHand) return `${PS.penPad.html()}${it.hint ? `<div class="row" style="margin-top:8px">${hint}</div>` : ''}<div class="hint-box small muted" hidden>${it.hint || ''}</div>`;
+    const ph = PS.attr(it.placeholder || (PS.pen.active() && lang !== 'el' ? 'Schrijf of typ je antwoord…' : 'Typ je antwoord…'));
     const input = it.long
-      ? `<textarea class="answer-input" data-ans${langAttr(lang)} autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${PS.attr(it.placeholder || 'Typ je antwoord…')}"></textarea>`
-      : `<input class="answer-input" data-ans${langAttr(lang)} ${lang === 'el' ? 'data-kb="el"' : ''} autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="${PS.attr(it.placeholder || 'Typ je antwoord…')}">`;
-    return `<div class="answer-row">${input}</div><div class="row" style="justify-content:space-between;margin-top:8px">${kbToggle(lang)}${it.hint ? `<button type="button" class="kb-toggle" data-hint>${PS.icon('bulb', 'icon-s')}<span>Hint</span></button>` : '<span></span>'}</div><div class="hint-box small muted" hidden>${it.hint || ''}</div>`;
+      ? `<textarea class="answer-input" data-ans${langAttr(lang)} autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${ph}"></textarea>`
+      : `<input class="answer-input" data-ans${langAttr(lang)} ${lang === 'el' ? 'data-kb="el"' : ''} autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="${ph}">`;
+    return `<div class="answer-row">${input}</div><div class="row" style="justify-content:space-between;margin-top:8px">${kbToggle(lang)}${hint}</div>${penTestNote(v, lang)}<div class="hint-box small muted" hidden>${it.hint || ''}</div>`;
   },
   mount(v) {
+    if (v.selfHand) {
+      PS.penPad.mount(v);
+      const h = PS.$('[data-hint]', v.el); if (h) h.addEventListener('click', () => { PS.$('.hint-box', v.el).hidden = false; v.usedHint = true; });
+      return;
+    }
     const inp = PS.$('[data-ans]', v.el);
     inp.addEventListener('input', () => v.ready(inp.value.trim().length > 0));
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !v.item.long && !v.done) { e.preventDefault(); v.submit(); } });
     const h = PS.$('[data-hint]', v.el); if (h) h.addEventListener('click', () => { PS.$('.hint-box', v.el).hidden = false; v.usedHint = true; });
     if (v.opts.autofocus !== false) setTimeout(() => inp.focus({ preventScroll: true }), 60);
   },
-  answer(v) { return PS.$('[data-ans]', v.el).value; },
+  answer(v) { return v.selfHand ? null : PS.$('[data-ans]', v.el).value; },
   check(v, a) {
     const it = v.item; const lang = it.lang || 'nl';
     const r = PS.compare(a, it.answers, { lang, errors: it.errors, caseSensitive: it.caseSensitive, accentsOptional: it.accentsOptional, typos: it.typos });
     if (v.usedHint && r.score === 1 && v.ctx.mode === 'mastery') r.score = 0.5;
     return r;
   },
-  reveal(v, r) { const inp = PS.$('[data-ans]', v.el); inp.readOnly = true; inp.classList.add(r.score === 1 ? 'correct' : r.score > 0 ? 'partial' : 'wrong'); },
+  reveal(v, r) {
+    if (v.selfHand) { if (v.pad) v.pad.locked = true; return; }
+    const inp = PS.$('[data-ans]', v.el); inp.readOnly = true; inp.classList.add(r.score === 1 ? 'correct' : r.score > 0 ? 'partial' : 'wrong');
+  },
   correctText(v, r) { return PS.esc((r && r.answer) || v.item.answers[0]); },
   answerText(v, a) { return a; },
 };
@@ -236,18 +264,21 @@ PS.fmtNum = (x) => {
 PS.items.dictation = {
   render(v) {
     const lang = v.item.lang || 'el';
-    return `<div class="row" style="gap:16px;margin:4px 0 18px"><button type="button" class="big-play" data-play aria-label="Afspelen">${PS.icon('volume')}</button><div class="stack" style="gap:6px"><button type="button" class="btn btn-line btn-sm" data-slow>${PS.icon('clock', 'icon-s')} Traag</button><span class="tiny muted">Luister en schrijf exact wat je hoort.</span></div></div>
-      <input class="answer-input" data-ans${langAttr(lang)} ${lang === 'el' ? 'data-kb="el"' : ''} autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Wat hoor je?"><div class="row" style="margin-top:8px">${kbToggle(lang)}</div>`;
+    v.selfHand = PS.pen.greekHand(v, lang);
+    const head = `<div class="row" style="gap:16px;margin:4px 0 18px"><button type="button" class="big-play" data-play aria-label="Afspelen">${PS.icon('volume')}</button><div class="stack" style="gap:6px"><button type="button" class="btn btn-line btn-sm" data-slow>${PS.icon('clock', 'icon-s')} Traag</button><span class="tiny muted">Luister en schrijf exact wat je hoort.</span></div></div>`;
+    if (v.selfHand) return head + PS.penPad.html();
+    return `${head}
+      <input class="answer-input" data-ans${langAttr(lang)} ${lang === 'el' ? 'data-kb="el"' : ''} autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Wat hoor je?"><div class="row" style="margin-top:8px">${kbToggle(lang)}</div>${penTestNote(v, lang)}`;
   },
   mount(v) {
     const lang = v.item.lang || 'el';
     const play = (rate) => PS.speech.say(v.item.text, lang, { rate, audio: v.item.audio });
     PS.$('[data-play]', v.el).addEventListener('click', () => play());
     PS.$('[data-slow]', v.el).addEventListener('click', () => play(0.62));
-    PS.items.type.mount(v);
-    setTimeout(() => play(), 350);
+    if (v.selfHand) PS.penPad.mount(v); else PS.items.type.mount(v);
+    if (!v.replayed) { v.replayed = true; setTimeout(() => play(), 350); }
   },
-  answer(v) { return PS.$('[data-ans]', v.el).value; },
+  answer(v) { return v.selfHand ? null : PS.$('[data-ans]', v.el).value; },
   check(v, a) { return PS.compare(a, [v.item.text].concat(v.item.answers || []), { lang: v.item.lang || 'el', errors: v.item.errors }); },
   reveal(v, r) { PS.items.type.reveal(v, r); },
   correctText(v) { return `<span${langAttr(v.item.lang)}>${PS.esc(v.item.text)}</span>`; },
@@ -370,32 +401,47 @@ PS.ItemView = class {
   kicker() {
     const lv = this.item.level || 1;
     const dots = `<span class="ladder" title="Niveau ${lv}">${[1, 2, 3].map((k) => `<i class="${k <= lv ? 'on' : ''}"></i>`).join('')}</span>`;
-    return `<div class="item-kicker">${PS.TYPE_LABEL[this.item.type] || this.item.type}${dots}${this.opts.kickerExtra || ''}</div>`;
+    const type = this.item.type;
+    const label = this.selfHand ? 'Schrijf het antwoord' : type === 'type' && PS.pen.active() && (this.item.lang || 'nl') !== 'el' ? 'Schrijf of typ het antwoord' : PS.TYPE_LABEL[type] || type;
+    return `<div class="item-kicker">${label}${dots}${this.opts.kickerExtra || ''}</div>`;
   }
   html() {
     if (!this.T) return `<div class="item-card"><p class="muted">Onbekend oefentype: ${PS.esc(this.item.type)}</p></div>`;
-    return `${this.kicker()}<div class="item-prompt">${this.item.prompt || ''}</div><div class="item-body">${this.T.render(this)}</div><div class="item-fb"></div>`;
+    const body = this.T.render(this); /* first: it decides whether this is a writing pad (selfHand) */
+    return `${this.kicker()}<div class="item-prompt">${this.item.prompt || ''}</div><div class="item-body">${body}</div><div class="item-fb"></div>`;
   }
   mount(el) {
     this.el = el; this.t0 = performance.now();
     if (this.T && this.T.mount) this.T.mount(this);
-    PS.$$('[data-kb-toggle]', el).forEach((b) => b.addEventListener('click', () => {
-      const inp = PS.$('[data-kb="el"], textarea[lang="el"], input[lang="el"]', el);
+    this.bindKbToggle(el);
+    PS.speech.bindSay(el);
+  }
+  bindKbToggle(root) {
+    PS.$$('[data-kb-toggle]', root).forEach((b) => b.addEventListener('click', () => {
+      const inp = PS.$('[data-kb="el"], textarea[lang="el"], input[lang="el"]', this.el);
       if (inp) PS.kb.toggleFor(inp);
     }));
-    PS.speech.bindSay(el);
+  }
+  /* re-render the answer area (e.g. from the Greek writing pad back to typing) */
+  rerender() {
+    const body = PS.$('.item-body', this.el); body.innerHTML = this.T.render(this);
+    const k = PS.$('.item-kicker', this.el); if (k) k.outerHTML = this.kicker();
+    this.ready(false);
+    if (this.T.mount) this.T.mount(this);
+    this.bindKbToggle(body); PS.speech.bindSay(body);
+    if (this.opts.onRerender) this.opts.onRerender();
   }
   ready(v) { this.isReady = v; if (this.opts.onReady) this.opts.onReady(v); }
   submit() { if (this.opts.onSubmit) this.opts.onSubmit(); }
   key(k) { if (this.T && this.T.key && !this.done) this.T.key(this, k); }
-  get selfGraded() { return !!(this.T && this.T.selfGrade) || this.selfFallback; }
+  get selfGraded() { return !!(this.T && this.T.selfGrade) || this.selfFallback || !!this.selfHand; }
 
   /* Auto-graded check. Self-graded types return {needsGrade:true}. */
   async check() {
     if (this.done) return this.result;
     const ans = await this.T.answer(this);
     this.ans = ans;
-    if (this.T.selfGrade) { this.T.reveal && this.T.reveal(this); return { needsGrade: true }; }
+    if (this.T.selfGrade || this.selfHand) { this.T.reveal && this.T.reveal(this); return { needsGrade: true }; }
     const res = await this.T.check(this, ans);
     return this.finish(res);
   }
@@ -418,6 +464,13 @@ PS.ItemView = class {
   }
   selfGradeHtml() {
     const it = this.item;
+    if (this.selfHand) {
+      const lang = it.lang || 'el';
+      const all = it.type === 'dictation' ? [it.text].concat(it.answers || []) : (it.answers && it.answers.length ? it.answers : [PS.plain(it.back || '')]);
+      const alts = [...new Set(all.slice(1))].slice(0, 3);
+      return `<div class="feedback"><div class="fb-title">${PS.icon('eye', 'icon-s')} Vergelijk met wat je schreef</div><div class="fb-body"><div class="hand-model"${langAttr(lang)}>${PS.esc(all[0])}</div>${alts.length ? `<div class="small muted">Ook goed: ${alts.map((a) => `<span${langAttr(lang)}>${PS.esc(a)}</span>`).join(' · ')}</div>` : ''}<div class="small muted" style="margin-top:6px">Controleer elke letter, de tónos en de slot-ς.</div></div>
+        <div class="row-wrap" style="margin-top:12px"><button type="button" class="btn btn-line btn-sm" data-grade="0">${PS.icon('x', 'icon-s')} Fout</button><button type="button" class="btn btn-line btn-sm" data-grade="0.5">Accent of ς fout</button><button type="button" class="btn btn-good btn-sm" data-grade="1">${PS.icon('check', 'icon-s')} Helemaal juist</button></div></div>`;
+    }
     const rub = (it.rubric || []).map((r, i) => `<label class="row" style="align-items:flex-start;gap:10px;margin:8px 0"><input type="checkbox" data-rub="${i}" style="margin-top:4px;width:18px;height:18px;accent-color:var(--good)"> <span>${r}</span></label>`).join('');
     return `<div class="feedback"><div class="fb-title">${PS.icon('eye', 'icon-s')} Vergelijk met het model</div><div class="fb-body">${this.T.correctText(this)}</div>${rub ? `<hr class="divider"><div class="small" style="font-weight:700">Vink aan wat in jouw antwoord zit:</div>${rub}` : ''}
       <div class="row-wrap" style="margin-top:12px"><button type="button" class="btn btn-line btn-sm" data-grade="0">${PS.icon('x', 'icon-s')} Niet gekend</button><button type="button" class="btn btn-line btn-sm" data-grade="0.5">Deels</button><button type="button" class="btn btn-good btn-sm" data-grade="1">${PS.icon('check', 'icon-s')} Goed</button></div></div>`;
@@ -476,7 +529,7 @@ PS.plain = (html) => { const d = document.createElement('div'); d.innerHTML = ht
 PS.inlineItem = (container, item, ctx) => {
   const v = new PS.ItemView(item, ctx, { autofocus: false, autoSubmitMcq: false });
   container.classList.add('card', 'item-card', 'inline-check');
-  container.innerHTML = `${v.html()}<div class="row" data-foot style="margin-top:14px;justify-content:flex-end;gap:8px"><button type="button" class="btn btn-ghost btn-sm" data-skip>Ik weet het niet</button>${PS.items[item.type] && PS.items[item.type].noCheckButton ? '' : `<button type="button" class="btn btn-primary btn-sm" data-check disabled>Controleer</button>`}</div>`;
+  container.innerHTML = `${v.html()}<div class="row" data-foot style="margin-top:14px;justify-content:flex-end;gap:8px"><button type="button" class="btn btn-ghost btn-sm" data-skip>Ik weet het niet</button>${PS.items[item.type] && PS.items[item.type].noCheckButton ? '' : `<button type="button" class="btn btn-primary btn-sm" data-check disabled>${v.selfHand ? 'Vergelijk' : 'Controleer'}</button>`}</div>`;
   const foot = PS.$('[data-foot]', container); const btn = PS.$('[data-check]', container);
   const show = (res) => { PS.$('.item-fb', container).innerHTML = v.feedbackHtml(res); foot.remove(); PS.haptic(res.score === 1 ? 'good' : 'bad'); if (ctx.onResult) ctx.onResult(res); };
   const go = async () => {
@@ -486,6 +539,7 @@ PS.inlineItem = (container, item, ctx) => {
   };
   v.opts.onReady = (x) => { if (btn) btn.disabled = !x; };
   v.opts.onSubmit = () => { if (!v.done && v.isReady) go(); };
+  v.opts.onRerender = () => { if (btn) { btn.textContent = v.selfHand ? 'Vergelijk' : 'Controleer'; btn.disabled = !v.isReady; } };
   v.mount(container);
   if (btn) btn.addEventListener('click', go);
   PS.$('[data-skip]', container).addEventListener('click', () => show(v.giveUp()));

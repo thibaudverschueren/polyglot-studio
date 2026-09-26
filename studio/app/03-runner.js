@@ -5,10 +5,12 @@
 PS.items.card = {
   render(v) {
     const lang = v.item.lang || 'nl';
-    return `<input class="answer-input" data-ans${langAttrC(lang)} ${lang === 'el' ? 'data-kb="el"' : ''} autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Typ het antwoord…"><div class="row" style="margin-top:8px">${lang === 'el' ? `<button type="button" class="kb-toggle" data-kb-toggle>${PS.icon('keyboard', 'icon-s')}<span>ΑΒΓ</span></button>` : ''}</div>`;
+    v.selfHand = PS.pen.greekHand(v, lang);
+    if (v.selfHand) return PS.penPad.html();
+    return `<input class="answer-input" data-ans${langAttrC(lang)} ${lang === 'el' ? 'data-kb="el"' : ''} autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="${PS.pen.active() && lang !== 'el' ? 'Schrijf of typ het antwoord…' : 'Typ het antwoord…'}"><div class="row" style="margin-top:8px">${lang === 'el' ? `<button type="button" class="kb-toggle" data-kb-toggle>${PS.icon('keyboard', 'icon-s')}<span>ΑΒΓ</span></button>` : ''}</div>`;
   },
-  mount(v) { PS.items.type.mount(v); },
-  answer(v) { return PS.$('[data-ans]', v.el).value; },
+  mount(v) { if (v.selfHand) PS.penPad.mount(v); else PS.items.type.mount(v); },
+  answer(v) { return v.selfHand ? null : PS.$('[data-ans]', v.el).value; },
   check(v, a) { return PS.compare(a, v.item.answers, { lang: v.item.lang || 'nl', typos: v.item.typos }); },
   reveal(v, r) { PS.items.type.reveal(v, r); },
   correctText(v) { return v.item.back; },
@@ -96,6 +98,7 @@ PS.Runner = class {
     this.renderFoot('answer');
     v.opts.onReady = (x) => { const b = PS.$('[data-act="check"]', this.foot); if (b) b.disabled = !x; };
     v.opts.onSubmit = () => { if (!v.done && v.isReady) this.check(); };
+    v.opts.onRerender = () => this.renderFoot('answer');
     v.mount(PS.$('.item-card', this.body));
   }
   renderFoot(stage) {
@@ -103,7 +106,7 @@ PS.Runner = class {
     if (stage === 'answer') {
       const flip = v.item.type === 'flip';
       const skip = `<button type="button" class="btn btn-ghost" data-act="skip">${flip ? '' : 'Weet ik niet'}</button>`;
-      const check = T && T.noCheckButton ? '' : `<button type="button" class="btn btn-primary btn-lg" data-act="check" data-primary ${flip || v.item.type === 'handwrite' || v.item.type === 'code' ? '' : 'disabled'}>${flip ? 'Toon antwoord' : T && T.selfGrade ? 'Toon model' : v.item.type === 'code' ? 'Run tests' : 'Controleer'}</button>`;
+      const check = T && T.noCheckButton ? '' : `<button type="button" class="btn btn-primary btn-lg" data-act="check" data-primary ${flip || v.item.type === 'handwrite' || v.item.type === 'code' ? '' : 'disabled'}>${flip ? 'Toon antwoord' : T && T.selfGrade ? 'Toon model' : v.selfHand ? 'Vergelijk' : v.item.type === 'code' ? 'Run tests' : 'Controleer'}</button>`;
       this.foot.innerHTML = (flip ? '' : skip) + check;
     } else if (stage === 'next') {
       const last = !this.o.next && this.queue.length === 0;

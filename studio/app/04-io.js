@@ -1,4 +1,4 @@
-/* Polyglot Studio v2 — Greek keyboard, speech, handwriting pad */
+/* Polyglot Studio v2 — Greek keyboard, speech, handwriting pad, Apple Pencil */
 'use strict';
 
 /* ======================= Greek keyboard ======================= */
@@ -208,9 +208,11 @@ PS.Pad = class {
   bind() {
     const c = this.c;
     c.addEventListener('pointerdown', (e) => {
-      if (e.pointerType === 'touch' && this.penSeen) return; /* palm rejection once a pencil was used */
+      if (this.locked) return;
+      if (e.pointerType === 'touch' && (this.penSeen || PS.pen.seen())) return; /* palm rejection once a pencil was used */
       if (e.pointerType === 'pen') this.penSeen = true;
       c.setPointerCapture(e.pointerId); this.cur = { pts: [this.pt(e)], col: this.color() }; this.strokes.push(this.cur); this.redraw();
+      if (this.onStroke) this.onStroke();
       e.preventDefault();
     });
     c.addEventListener('pointermove', (e) => {
@@ -239,4 +241,25 @@ PS.Pad = class {
   }
   undo() { this.strokes.pop(); this.redraw(); }
   clear() { this.strokes = []; this.redraw(); }
+};
+
+/* ======================= Apple Pencil =======================
+   iPadOS turns handwriting into text in normal fields (Scribble) for Dutch, French and English, so those
+   answers are still checked automatically. Greek is not supported by Scribble: in practice you write on a
+   pad and compare yourself; in tests (the proof) Greek is typed with the on-screen keyboard. */
+PS.pen = {
+  TESTS: new Set(['mastery', 'retention', 'anchor', 'placement', 'diagnostic']),
+  seen() { return !!PS.store.get('polyglot_pen_seen'); },
+  active() { const s = PS.S.s.settings.pen || 'auto'; return s === 'on' || (s === 'auto' && this.seen()); },
+  test(v) { return this.TESTS.has(v.ctx && v.ctx.mode); },
+  greekHand(v, lang) { return this.active() && lang === 'el' && !this.test(v) && !v.forceType; },
+  apply() { document.documentElement.classList.toggle('pen-mode', this.active()); },
+  init() {
+    this.apply();
+    document.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'pen' || this.seen()) return;
+      PS.store.set('polyglot_pen_seen', 1); this.apply();
+      if ((PS.S.s.settings.pen || 'auto') === 'auto') PS.toast(`${PS.icon('pen', 'icon-s')} Apple Pencil herkend — schrijf je antwoorden gewoon in de vakken.`, 4000);
+    }, { capture: true, passive: true });
+  },
 };
