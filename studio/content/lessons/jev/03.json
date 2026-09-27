@@ -1,0 +1,772 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "jev",
+ "id": 3,
+ "roadmap": "jev-02-primitives-rlcd",
+ "kind": "core",
+ "title": "De Drie Primitieven en RLCD Wiskunde",
+ "subtitle": "Wiskundige fundamenten van gekalibreerde AI, Brier-scores en TypeSafe schema's",
+ "level": "fundament",
+ "minutes": 45,
+ "summary": "In deze les kwantificeren we beslissingsmodellen. Je leert de exacte wiskunde achter Noul, Choice en Score, berekent zelf Brier-scores en Expected Calibration Error (ECE), en ontdekt hoe RLCD modellen traint om statistisch eerlijk te zijn in plaats van menselijk vleiend.",
+ "objectives": [
+  {
+   "id": "review-latency",
+   "text": "Latentie en relatieve snelheidsverhoudingen correct berekenen en interpreteren."
+  },
+  {
+   "id": "math-primitives",
+   "text": "De wiskundige formulering van Noul, Choice en Score doorgronden en toepassen."
+  },
+  {
+   "id": "brier-ece",
+   "text": "De Brier-score en Expected Calibration Error (ECE) berekenen als metrieken voor kalibratie."
+  },
+  {
+   "id": "rlcd-vs-ppo",
+   "text": "Begrijpen hoe RLCD verliesfuncties optimaliseert tegenover PPO/DPO in RLHF."
+  },
+  {
+   "id": "schema-design",
+   "text": "Schema-definities opstellen voor softwarebeslissingen."
+  }
+ ],
+ "sections": [
+  {
+   "id": "sec-01",
+   "title": "1. Herhaling: Absolute vs. Relatieve Snelheid",
+   "md": "In de vorige les zagen we dat decoders te traag zijn. Bij het benchmarken van een LLM tegenover Jev maken analisten vaak een hardnekkige denkfout: ze halen absolute en relatieve metrieken door elkaar.\n\nAls een frontier LLM 2.500 ms nodig heeft voor een beslissing en Jev 100 ms:\n- De **absolute tijdwinst** is het verschil: $2.500 - 100 = 2.400$ ms. Dit getal is cruciaal voor de UX (gebruikerservaring) en de timeout-instellingen van je API's.\n- De **relatieve snelheid** is de verhouding (quotiënt): $2.500 / 100 = 25\\times$. Jev is hier 25 *keer* sneller. \n\n> [!pitfall] Verhouding of Verschil?\n> Als je $2.500 - 100 = 2.400$ uitrekent wanneer er naar 'hoeveel keer sneller' wordt gevraagd, maak je een categoriefout. Dit beïnvloedt de architectuur: bij een factor $25\\times$ sneller kun je synchrone verwerking overwegen waar je anders asynchrone webhooks nodig had.\n\nAls handelsingenieur moet je deze abstracties zuiver houden. Zowel voor responstijd (ms) als voor tokenkosten (\\$) geldt: bereken het verschil voor je budget en UX, en de factor voor je vergelijkende architectuur.",
+   "checks": [
+    {
+     "id": "c1-1",
+     "type": "numeric",
+     "skill": "review-latency",
+     "level": 1,
+     "prompt": "Wat is de absolute tijdwinst in milliseconden als je overstapt van een LLM (500 ms) naar Jev (50 ms)?",
+     "explain": "De absolute tijdwinst is het verschil: 500 - 50 = 450 ms.",
+     "value": 450,
+     "tolerance": 0.1,
+     "unit": "ms"
+    },
+    {
+     "id": "c1-2",
+     "type": "numeric",
+     "skill": "review-latency",
+     "level": 1,
+     "prompt": "Hoeveel *keer* sneller is het Jev model van 50 ms dan de LLM van 500 ms?",
+     "explain": "De relatieve factor is de verhouding: 500 / 50 = 10.",
+     "value": 10,
+     "tolerance": 0.1,
+     "unit": "×",
+     "errors": [
+      {
+       "match": "450",
+       "feedback": "Je hebt de absolute tijdwinst (het verschil) berekend. Bereken de verhouding (500 / 50) voor 'hoeveel keer sneller'.",
+       "tag": "ratio-diff-mixup"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sec-02",
+   "title": "2. De Wiskunde van de Drie Primitieven",
+   "md": "In plaats van platte tekst, dwingt Jev de output in exact één van de drie getypeerde wiskundige structuren. Hiermee elimineert het de noodzaak om tekst te parsen.\n\n### 1. Noul (Boolean)\nVoorspelt een binaire klasse ($y \\in \\{0, 1\\}$). Het model genereert een interne ongekalibreerde *logit* ($z$) en haalt deze door de **Sigmoid**-functie om een kans $p$ tussen 0 en 1 te forceren:\n$$p = \\frac{1}{1 + e^{-z}}$$\n\n### 2. Choice (Categorisch)\nKiest de meest waarschijnlijke uit $K$ discrete categorieën. De logits $z_k$ worden genormaliseerd via een **Softmax**-functie, gecontroleerd door een temperatuur $T$. In tegenstelling tot creatieve LLM's, dient $T$ hier enkel om de kalibratie van de verdeling te finetunen:\n$$p_k = \\frac{e^{z_k / T}}{\\sum_{j=1}^K e^{z_j / T}}$$\n*Garantie: De som van alle $p_k$ is altijd exact 1.*\n\n### 3. Score (Ordinaal)\nBerekent de finale score op een geordende rubriek (bijv. niveaus $1, 2, 3$). De uitkomst is niet zomaar de 'hoogste' kans, maar de **verwachtingswaarde** $\\mathbb{E}[S]$ berekend over de ordinale ankers $s_j$:\n$$\\mathbb{E}[S] = \\sum_{j=1}^M s_j \\cdot p_j$$\n*Voorbeeld:* Is $p(1) = 0.20$, $p(2) = 0.50$ en $p(3) = 0.30$, dan is de verwachtingswaarde $(1 \\times 0.20) + (2 \\times 0.50) + (3 \\times 0.30) = 2.10$.",
+   "checks": [
+    {
+     "id": "c2-1",
+     "type": "type",
+     "skill": "math-primitives",
+     "level": 1,
+     "prompt": "Welke wiskundige functie normaliseert de output van de binaire primitief (Noul)?",
+     "explain": "De Sigmoid-functie wordt gebruikt om logits om te zetten naar een kans (0-1) in binaire classificaties.",
+     "answers": [
+      "Sigmoid",
+      "sigmoid",
+      "sigmoidfunctie"
+     ],
+     "lang": "nl"
+    },
+    {
+     "id": "c2-2",
+     "type": "mcq",
+     "skill": "math-primitives",
+     "level": 2,
+     "prompt": "Wat is het wezenlijke wiskundige verschil tussen de output van Choice en die van Score?",
+     "explain": "Choice kiest een categorische dimensie; Score berekent de gewogen verwachtingswaarde over een geordende schaal.",
+     "options": [
+      "Score berekent een continue gewogen verwachtingswaarde, terwijl Choice categorische softmax-dimensies verdeelt.",
+      "Choice is uitsluitend voor letters; Score is uitsluitend voor getallen boven de nul.",
+      "Score berekent altijd de Sigmoid van een enkele dimensie in plaats van een Softmax.",
+      "Choice telt alle logits op; Score trekt de kleinste logit van de grootste af."
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "sec-03",
+   "title": "3. Epistemische Kalibratie: Brier en ECE",
+   "md": "Een beslissingsmodel is onbruikbaar in productie als de waarschijnlijkheden statistisch onbetrouwbaar zijn. We kwantificeren kalibratie met twee metrieken:\n\n### 1. De Brier-score ($B$)\nMeet de zuiverheid van een waarschijnlijkheidsvoorspelling via de gemiddelde kwadratische fout (Mean Squared Error):\n$$B = \\frac{1}{N} \\sum_{i=1}^N (p_i - y_i)^2$$\n- $p_i$: de voorspelde kans (bijv. $0.80$)\n- $y_i$: de ground truth binaire uitkomst (1 of 0)\nEen score van $0.0$ betekent perfecte orakel-voorspellingen (altijd 100% accuraat). Een score van $0.25$ ontstaat als je altijd een willekeurige munt opgooit ($p=0.50$).\n\n### 2. Expected Calibration Error (ECE)\nWe verdelen voorspellingen in waarschijnlijkheidsgroepen of 'bins' (bijv. de groep waar $p \\approx 0.90$). De ECE kijkt per bin naar het verschil tussen de gemiddelde *geclaimde zekerheid* (conf) en de *empirische accuratesse* (acc):\n$$\\text{ECE} = \\sum_{m=1}^M \\frac{|B_m|}{N} \\left| \\text{acc}(B_m) - \\text{conf}(B_m) \\right|$$\n*Voorbeeld:* Als het model 1.000 keer stelt \"ik ben 90% zeker\", maar in die groep klopt de voorspelling slechts in 70% van de gevallen, is de afwijking in die bin $|0.70 - 0.90| = 0.20$. Het model is op dat punt structureel overmoedig (overconfident).",
+   "checks": [
+    {
+     "id": "c3-1",
+     "type": "numeric",
+     "skill": "brier-ece",
+     "level": 2,
+     "prompt": "Bereken handmatig de Brier-score voor één meting waarbij het model 50% zekerheid toont ($p = 0.50$) en de uitkomst toch *waar* is ($y = 1$).",
+     "explain": "$(0.50 - 1)^2 = (-0.50)^2 = 0.25$. Dit toont aan dat altijd 'in het midden zitten' systematisch een slechte (hoge) score oplevert in vergelijking met correcte overtuiging.",
+     "value": 0.25,
+     "tolerance": 0.001
+    },
+    {
+     "id": "c3-2",
+     "type": "numeric",
+     "skill": "brier-ece",
+     "level": 2,
+     "prompt": "Een model heeft in de '95% zeker'-bin een werkelijke accuratesse van 85%. Wat is de absolute afwijking $| \\text{acc} - \\text{conf} |$ voor deze bin?",
+     "explain": "$|0.85 - 0.95| = |-0.10| = 0.10$.",
+     "value": 0.1,
+     "tolerance": 0.001
+    }
+   ]
+  },
+  {
+   "id": "sec-04",
+   "title": "4. RLCD vs. PPO: Het Einde van Sycophancy",
+   "md": "Waarom zijn vrijwel alle generatieve frontier LLM's slecht gekalibreerd voor beslissingen? Het antwoord ligt bij **RLHF** (Reinforcement Learning from Human Feedback).\n\nTraditionele alignment algoritmes zoals **PPO** (Proximal Policy Optimization) en **DPO** (Direct Preference Optimization) worden getraind om *menselijke voorkeuren* te maximaliseren. Mensen vertonen een sterke bias: we belonen modellen die stellig, behulpzaam en beleefd klinken, zelfs als ze subjectief moeten gokken. \n\n> [!warning] Sycophancy & Overconfidence\n> PPO traint LLM's onbewust om te \"vleien\" (sycophancy) en onzekerheid te maskeren. Het model straft zichzelf intern af als het toegeeft dat $p=0.50$ (twijfel), omdat menselijke raters zulke aarzelende tekst als \"niet behulpzaam\" raten.\n\nTypeSafe AI brak hiermee via **RLCD** (*Reinforcement Learning for Calibrated Decisions*). \nIn RLCD worden menselijke labels vervangen door strenge, zuivere *proper scoring rules* (zoals de Brier-score) als beloningsfunctie. Hierdoor wordt het model **beloond** als het epistemische onzekerheid zuiver rapporteert: bij gebrekkige data moet het een bredere softmax-verdeling produceren, zonder de valse bravoure van System 2 proza.",
+   "checks": [
+    {
+     "id": "c4-1",
+     "type": "type",
+     "skill": "rlcd-vs-ppo",
+     "level": 1,
+     "prompt": "Typ de vier letters van de kalibratie-geörienteerde reinforcement learning methode die TypeSafe introduceerde ter vervanging van RLHF.",
+     "explain": "RLCD staat voor Reinforcement Learning for Calibrated Decisions.",
+     "answers": [
+      "RLCD",
+      "rlcd",
+      "Rlcd"
+     ],
+     "lang": "nl"
+    },
+    {
+     "id": "c4-2",
+     "type": "mcq",
+     "skill": "rlcd-vs-ppo",
+     "level": 2,
+     "prompt": "Hoe gaat een succesvol RLCD-model om met een dataset waarin belangrijke variabelen voor de voorspelling volledig ontbreken (ambigue data)?",
+     "explain": "RLCD beloont eerlijkheid over epistemische onzekerheid. Het model vlakt de kansverdeling af (bijv. p=0.50) in plaats van overmoedig 99% zekerheid te fingeren.",
+     "options": [
+      "Het model raakt onzeker en distribueert de kansen gelijkmatiger uit (bijv. p=0.50), wat statistisch eerlijk is.",
+      "Het model fingeert met 99% zekerheid een antwoord om straf via de Brier-score te ontlopen.",
+      "Het weigert te antwoorden en retourneert een HTTP 500 server error.",
+      "Het vraagt de gebruiker om meer data via een conversatie-interface."
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "sec-05",
+   "title": "5. Schema-definities (Question Definitions)",
+   "md": "Omdat Jev non-generatief is, kunnen we niet om JSON vragen via proza in een system prompt. We sturen een strakke **Question Definition** mee, die qua structuur doet denken aan TypeScript of OpenAPI schema's.\n\nDeze schema's binden de output afdwingend aan één van de primitieven en dicteren exact de dimensies van de activeringsfuncties.\n\n```json\n{\n  \"name\": \"SupportRouter\",\n  \"primitive\": \"Choice\",\n  \"options\": [\"facturatie\", \"technisch\", \"verkoop\"],\n  \"description\": \"Bepaal naar welk afdeling dit ticket moet.\"\n}\n```\nDoor in het schema `options` te definiëren als een array van 3 strings, compileert Jev intern direct een Softmax-laag van exact 3 dimensies. De latentie is $O(1)$ en garandeert dat er nimmer een onverwachte vierde optie (of markdown) wordt teruggestuurd.\n\n:::sim decision-engine {}\n:::",
+   "checks": [
+    {
+     "id": "c5-1",
+     "type": "type",
+     "skill": "schema-design",
+     "level": 1,
+     "prompt": "Welk JSON-sleutelveld specificeert of we wiskundig te maken hebben met Noul, Choice of Score?",
+     "explain": "De sleutel 'primitive' (met kleine letter in de JSON) vertelt de API exact welke wiskundige operatie verwacht wordt.",
+     "answers": [
+      "primitive",
+      "Primitive",
+      "PRIMITIVE"
+     ],
+     "lang": "code"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p-review-1",
+   "type": "numeric",
+   "skill": "review-latency",
+   "level": 2,
+   "prompt": "Een typische LLM API call kost 3.000 ms. TypeSafe Jev beslist in 150 ms. Hoeveel *keer* sneller is Jev in deze opstelling?",
+   "explain": "Je berekent de relatieve snelheidsfactor door de latenties te delen: 3000 / 150 = 20 keer sneller.",
+   "value": 20,
+   "tolerance": 0.1,
+   "unit": "×",
+   "errors": [
+    {
+     "match": "2850",
+     "feedback": "Je berekent het absolute verschil (3000 - 150). De vraag is 'hoeveel keer sneller', dus je moet delen: 3000 / 150.",
+     "tag": "ratio-diff-mixup"
+    }
+   ]
+  },
+  {
+   "id": "p-review-2",
+   "type": "numeric",
+   "skill": "review-latency",
+   "level": 2,
+   "prompt": "De API van Claude kost \\$0.60 per 1M tokens voor jouw taak. Jev kost \\$0.015 per 1M tokens. Hoeveel *keer* goedkoper is Jev?",
+   "explain": "Bereken de verhouding (relatieve factor): $0.60 / $0.015 = 40 keer goedkoper.",
+   "value": 40,
+   "tolerance": 0.1,
+   "unit": "×",
+   "errors": [
+    {
+     "match": "0.585",
+     "feedback": "Je trekt de bedragen van elkaar af (verschil). Deel ze op elkaar om de verhouding te berekenen.",
+     "tag": "ratio-diff-mixup"
+    }
+   ]
+  },
+  {
+   "id": "p-review-3",
+   "type": "numeric",
+   "skill": "review-latency",
+   "level": 2,
+   "prompt": "Wat is de absolute tijdwinst in milliseconden als je de uitvoeringstijd in n8n terugbrengt van 1.800 ms naar 60 ms?",
+   "explain": "De absolute tijdwinst is het verschil: 1800 - 60 = 1740 ms.",
+   "value": 1740,
+   "tolerance": 1,
+   "unit": "ms",
+   "errors": [
+    {
+     "match": "30",
+     "feedback": "30 is de relatieve verhouding (1800 / 60). Er wordt gevraagd naar de *absolute tijdwinst* (verschil).",
+     "tag": "ratio-diff-mixup"
+    }
+   ]
+  },
+  {
+   "id": "p-math-1",
+   "type": "type",
+   "skill": "math-primitives",
+   "level": 1,
+   "prompt": "Welke wiskundige operatie wordt gebruikt bij de Choice primitief om de logits om te zetten in een genormaliseerde kansverdeling?",
+   "explain": "Softmax deelt exponenten en verzekert dat de kansen samentellen tot 1.",
+   "answers": [
+    "Softmax",
+    "softmax"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "p-math-2",
+   "type": "mcq",
+   "skill": "math-primitives",
+   "level": 2,
+   "prompt": "Waarom bevat de softmax-functie in TypeSafe Jev een temperatuur-parameter ($T$)?",
+   "explain": "Omdat Jev beslissingskansen aflevert, wordt $T$ niet gebruikt voor creatieve randomisatie, maar uitsluitend wiskundig gestemd om de output kalibratie te garanderen.",
+   "options": [
+    "Om de statistische kalibratie van de gegenereerde waarschijnlijkheden fijn af te stellen.",
+    "Om creativiteit toe te voegen zodat de routeringsbeslissingen minder eentonig worden.",
+    "Om the voorkomen dat de GPU fysiek oververhit raakt tijdens asynchrone batches.",
+    "Om de Brier-score artificieel te verhogen wanneer data ontbreekt."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p-math-3",
+   "type": "numeric",
+   "skill": "math-primitives",
+   "level": 3,
+   "prompt": "Bereken de verwachtingswaarde $\\mathbb{E}[S]$ voor een Score primitief met drie ankers: $s_1=1$ ($p=0.50$), $s_2=2$ ($p=0.30$), en $s_3=3$ ($p=0.20$).",
+   "explain": "De verwachtingswaarde is de som van waarde × kans: $(1 \\times 0.50) + (2 \\times 0.30) + (3 \\times 0.20) = 0.50 + 0.60 + 0.60 = 1.70$.",
+   "value": 1.7,
+   "tolerance": 0.01
+  },
+  {
+   "id": "p-math-4",
+   "type": "type",
+   "skill": "math-primitives",
+   "level": 1,
+   "prompt": "Bij Noul zorgt een transformatie ervoor dat de output $p$ precies tussen 0 en 1 ligt. Welke functie is dit?",
+   "explain": "De Sigmoid (of logistische) functie wordt hier standaard voor gebruikt in neurale netwerken.",
+   "answers": [
+    "Sigmoid",
+    "sigmoid",
+    "sigmoidfunctie",
+    "Sigmoidfunctie"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "p-brier-1",
+   "type": "numeric",
+   "skill": "brier-ece",
+   "level": 2,
+   "prompt": "Bereken de kwadratische afwijking voor één predictie waarbij de voorspelde kans $p = 0.40$ is en de werkelijke label $y = 1$ is.",
+   "explain": "De afwijking is $p - y = -0.60$. Gekwadrateerd is dit $(-0.60)^2 = 0.36$.",
+   "value": 0.36,
+   "tolerance": 0.001
+  },
+  {
+   "id": "p-brier-2",
+   "type": "numeric",
+   "skill": "brier-ece",
+   "level": 2,
+   "prompt": "Bereken de Brier-score in een iteratie waar de berekende kans op spam 20% is ($p = 0.20$), en het bericht bleek werkelijk **geen** spam te zijn ($y = 0$).",
+   "explain": "De voorspelling zat er 20% naast. Kwadrateer dat verschil: $(0.20 - 0)^2 = 0.04$.",
+   "value": 0.04,
+   "tolerance": 0.001
+  },
+  {
+   "id": "p-brier-3",
+   "type": "mcq",
+   "skill": "brier-ece",
+   "level": 3,
+   "prompt": "Wat bekent het wiskundig als we zeggen dat een 'bin' bij de ECE (Expected Calibration Error) een grote fout vertoont rond $p=0.80$?",
+   "explain": "ECE vergelijkt de beloofde zekerheid in een bin met de harde realiteit. Een grote fout duidt op structurele over- of onder-confidence in die waarschijnlijkheidszone.",
+   "options": [
+    "Het absolute verschil tussen de gemiddelde 80% claim en de werkelijke accuratesse van de predicties in die groep is groot.",
+    "Het model was gemiddeld slechts 20% zeker over zijn eigen antwoorden.",
+    "De softmax temperatuur $T$ is per ongeluk ingesteld op 0.80 in plaats van 1.0.",
+    "De som van de logits overschrijdt de waarschijnlijkheid van 100%."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p-brier-4",
+   "type": "mcq",
+   "skill": "brier-ece",
+   "level": 2,
+   "prompt": "Een beslissingsmodel heeft over de hele testset een Brier-score van 0.0. Wat houdt dat statistisch in?",
+   "explain": "Een score van 0.0 vereist dat $\\sum(p - y)^2 = 0$. Dat is alleen mogelijk als het model uitsluitend $p=1$ gaf als $y=1$ en $p=0$ als $y=0$.",
+   "options": [
+    "Elke afzonderlijke voorspelling in de testset was perfect 100% zeker én accuraat.",
+    "Het model heeft intern een afrondingsfout naar beneden gemaakt voor alle logit waarden.",
+    "Het model heeft de uitkomsten willekeurig verdeeld met telkens $p=0.50$.",
+    "Het model faalde op de Noul primitief, maar excelleerde op de Score primitief."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p-rlcd-1",
+   "type": "mcq",
+   "skill": "rlcd-vs-ppo",
+   "level": 2,
+   "prompt": "Wat is het dieperliggende probleem van PPO (Proximal Policy Optimization) wanneer we het via menselijke feedback trainen voor formele binaire beslissingen?",
+   "explain": "Menselijke raters prefereren stelligheid en afgeronde besluiten. PPO kopieert dit, waardoor het model leert om ongepaste zekerheid (overconfidence) te fingeren.",
+   "options": [
+    "Menselijke beoordelaars straffen aarzeling af en belonen stellige antwoorden, wat de verliesfunctie aanzet tot structurele overconfidence.",
+    "PPO verbruikt onhoudbaar veel stroom omdat het intern steeds een Softmax en een Sigmoid met elkaar vermenigvuldigt.",
+    "Mensen genereren data trager dan het algoritme kan trainen, wat resulteert in onderbelichte trainingsdatasets.",
+    "PPO ondersteunt principieel geen JSON schema's en kan enkel pure Python syntax teruggeven."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p-rlcd-2",
+   "type": "type",
+   "skill": "rlcd-vs-ppo",
+   "level": 2,
+   "prompt": "Terwijl RLHF via menselijke beoordelaars uitlijnt op 'behulpzaamheid', wat optimaliseert RLCD direct als grondslag in de verliesfunctie?",
+   "explain": "RLCD minimaliseert direct een *proper scoring rule* (de Brier-score) in de cost functie en bereikt zo epistemische kalibratie.",
+   "answers": [
+    "Kalibratie",
+    "kalibratie",
+    "epistemische kalibratie",
+    "Brier-score",
+    "brier-score",
+    "brier score"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "p-rlcd-3",
+   "type": "mcq",
+   "skill": "rlcd-vs-ppo",
+   "level": 3,
+   "prompt": "Stel: er mist essentiële informatie in een kredietaanvraag om een betrouwbare Score te produceren. Hoe zal een goed RLCD-getraind Jev model reageren in theorie?",
+   "explain": "RLCD leert het model om epistemische twijfel onveranderd door te sturen, wat zich in Score uit door breed gespreide kansen.",
+   "options": [
+    "Het model zal een sterk afgevlakte kansverdeling produceren (grote epistemische onzekerheid), wat voorkomt dat je software er blind op vertrouwt.",
+    "Het model zal het JSON schema verbreken en direct om meer data vragen via de standaard output terminal.",
+    "Het model zal via PPO het gemiddelde uit de hele trainingsset teruggeven, los van de huidige request.",
+    "Het model zal de laagst mogelijke score invullen wegens een ingebouwde negatieve risicobias."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p-schema-1",
+   "type": "cloze",
+   "skill": "schema-design",
+   "level": 2,
+   "prompt": "Vul in:",
+   "text": "In Jev communiceer je via getypeerde schema's. Als je een support ticket moet routeren naar Exact 1 van de 4 afdelingen, stel je de sleutel `primitive` in op `{{Choice|choice}}`.",
+   "explain": "Routering naar ongeordende categorieën vergt de Choice primitief."
+  },
+  {
+   "id": "p-schema-2",
+   "type": "mcq",
+   "skill": "schema-design",
+   "level": 3,
+   "prompt": "Waarom eist TypeSafe's Choice-schema dat je vooraf een array van exacte strings (de `options`) meegeeft?",
+   "explain": "Het doorsturen van de `options` array instrueert het netwerk de Softmax uitvoerlaag direct in die specifieke $K$ dimensies te projecteren, wat de $O(1)$ garantie borgt.",
+   "options": [
+    "De strings configureren wiskundig de dimensies van de onderliggende Softmax-uitvoerlaag voor één snelle forward pass.",
+    "Het voorkomt dat de LLM onbedoeld in markdown of met inleidende beleefdheidszinnetjes gaat antwoorden.",
+    "De array wordt eerst naar het OpenAI datacenter gestuurd om vertaald te worden alvorens TypeSafe de logits genereert.",
+    "De `options` velden zijn verplicht in alle OpenAPI 3.0 standaarden en voorkomen parsing fouten in TypeScript."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p-schema-3",
+   "type": "type",
+   "skill": "schema-design",
+   "level": 1,
+   "prompt": "Welk JSON-veld instrueert het Jev-model om intern een Sigmoid (bij boolean) of Softmax (bij categorisch) te hanteren?",
+   "explain": "Het veld 'primitive' bepaalt de operatie (Noul, Choice, of Score).",
+   "answers": [
+    "primitive",
+    "Primitive",
+    "PRIMITIVE"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p-schema-4",
+   "type": "numeric",
+   "skill": "brier-ece",
+   "level": 2,
+   "prompt": "In een ECE evaluatie-bin waar de gemiddelde zekerheid 95% was, mat men een accuratesse van slechts 85%. Wat is de absolute kalibratiefout in deze specifieke bin?",
+   "explain": "De absolute fout is de geclaimde zekerheid (0.95) min de accuratesse (0.85), wat neerkomt op 0.10.",
+   "value": 0.1,
+   "tolerance": 0.001
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m-review-1",
+   "type": "numeric",
+   "skill": "review-latency",
+   "level": 2,
+   "prompt": "Een trage redeneer-API verwerkt je taak in 1.200 ms, terwijl de TypeSafe router er slechts 40 ms voor nodig heeft. Hoeveel *keer* sneller ben je af?",
+   "explain": "Bereken de factor (1200 / 40 = 30). Een typisch foutpatroon is hier 1160 (het verschil).",
+   "value": 30,
+   "tolerance": 0.1,
+   "unit": "×",
+   "errors": [
+    {
+     "match": "1160",
+     "feedback": "Je hebt de absolute tijdwinst berekend (verschil). Je moet de relatieve factor berekenen (LLM / Jev).",
+     "tag": "ratio-diff-mixup"
+    }
+   ]
+  },
+  {
+   "id": "m-review-2",
+   "type": "numeric",
+   "skill": "review-latency",
+   "level": 2,
+   "prompt": "Een verouderd AI-model in productie kost je \\$5.00 per batch. Een vervangende Jev beslissingsmodule rekent \\$0.05 per batch. Hoeveel *keer* goedkoper werk je nu?",
+   "explain": "Factor: 5.00 / 0.05 = 100 keer.",
+   "value": 100,
+   "tolerance": 0.1,
+   "unit": "×",
+   "errors": [
+    {
+     "match": "4.95",
+     "feedback": "Kijk uit, je trekt de bedragen af (verschil). De vraag is *hoeveel keer* goedkoper, bereken dus de verhouding.",
+     "tag": "ratio-diff-mixup"
+    }
+   ]
+  },
+  {
+   "id": "m-math-1",
+   "type": "numeric",
+   "skill": "math-primitives",
+   "level": 3,
+   "prompt": "Een lead kwalificatie Score primitief heeft drie rubrieken: 1 (koud), 2 (warm), en 3 (heet). Het model levert $p(1)=0.10$, $p(2)=0.70$, $p(3)=0.20$. Bereken de verwachtingswaarde $\\mathbb{E}[S]$.",
+   "explain": "$(1 \\times 0.10) + (2 \\times 0.70) + (3 \\times 0.20) = 0.10 + 1.40 + 0.60 = 2.10$.",
+   "value": 2.1,
+   "tolerance": 0.01
+  },
+  {
+   "id": "m-math-2",
+   "type": "type",
+   "skill": "math-primitives",
+   "level": 1,
+   "prompt": "Welke bekende functie deelt logits op hun som (na exponentiatie) in de Choice primitief?",
+   "explain": "De Softmax-functie drukt de waarden tussen 0 en 1 uit en zorgt dat ze netjes sommeren tot 1.",
+   "answers": [
+    "Softmax",
+    "softmax",
+    "Softmax-functie",
+    "softmax-functie"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "m-math-3",
+   "type": "type",
+   "skill": "math-primitives",
+   "level": 1,
+   "prompt": "Voor de binaire `Noul` boolean is Choice/Softmax overbodig. Welke functie converteert de logit daar direct naar één getal tussen 0 en 1?",
+   "explain": "De Sigmoid is standaard voor pure binaire $P(\\text{true})$.",
+   "answers": [
+    "Sigmoid",
+    "sigmoid",
+    "sigmoidfunctie",
+    "Sigmoidfunctie"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "m-math-4",
+   "type": "mcq",
+   "skill": "math-primitives",
+   "level": 3,
+   "prompt": "Een analist gebruikt per ongeluk 'Choice' met opties `[\"1\", \"2\", \"3\"]` in plaats van 'Score' `[1, 2, 3]`. Wat is het wiskundige gevolg hiervan bij het ophalen van de data?",
+   "explain": "Choice ziet categorieën zonder hiërarchie en levert onafhankelijke softkansen; Score neemt de weging $E[S]$ en behandelt de ankers kwantitatief en geordend.",
+   "options": [
+    "Het resulteert in onafhankelijke kansen zonder de mogelijkheid een continue verwachtingswaarde (E[S]) te interpoleren tussen categorieën.",
+    "Jev crasht onmiddellijk met een type-error omdat getallen niet mogen overlappen met arrays van strings.",
+    "Er is geen wiskundig verschil zolang de nummers in oplopende volgorde in de array staan.",
+    "Het systeem rekent automatisch een Brier-score uit op de achtergrond ter compensatie."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m-brier-1",
+   "type": "numeric",
+   "skill": "brier-ece",
+   "level": 2,
+   "prompt": "Bereken de kwadratische fout (Brier-score penalty) als een model $80\\%$ zeker is dat een lead hoogwaardig is ($p = 0.80$), terwijl de deal uiteindelijk mislukt ($y = 0$).",
+   "explain": "$(0.80 - 0)^2 = (0.80)^2 = 0.64$.",
+   "value": 0.64,
+   "tolerance": 0.001
+  },
+  {
+   "id": "m-brier-2",
+   "type": "numeric",
+   "skill": "brier-ece",
+   "level": 2,
+   "prompt": "Bereken de kwadratische fout als een AI stelt dat een SQL-injectie zeer onwaarschijnlijk is ($p = 0.10$), maar het blijkt een harde aanval te zijn ($y = 1$).",
+   "explain": "$(0.10 - 1)^2 = (-0.90)^2 = 0.81$. Hoge overconfidence wordt extreem zwaar bestraft via het kwadraat.",
+   "value": 0.81,
+   "tolerance": 0.001
+  },
+  {
+   "id": "m-brier-3",
+   "type": "mcq",
+   "skill": "brier-ece",
+   "level": 3,
+   "prompt": "Hoe evalueer je in een academische context een gemiddelde Brier-score van 0.25 bij een simpele binaire classificatietaak?",
+   "explain": "De score 0.25 krijg je exact als je elke keer $(0.5 - y)^2$ berekent; het model heeft letterlijk 0 voorspellende waarde en gokt structureel onbeslist of willekeurig.",
+   "options": [
+    "Het model presteert equivalent aan iemand die willekeurig een muntje opgooit of ongewogen alles op p=0.50 zet.",
+    "Het model presteert uitzonderlijk goed, want de ideale theorethische limiet ligt rond de 0.25 voor onoverkoombare ruis.",
+    "Het toont aan dat het model overfit is op de trainingsdata, en daarom straft de verliesfunctie het met een penalty.",
+    "Het toont dat de ground truth gelabels met 75% nauwkeurigheid zijn gecodeerd."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m-brier-4",
+   "type": "numeric",
+   "skill": "brier-ece",
+   "level": 2,
+   "prompt": "Als je ECE berekent voor een bin waar men een gemiddelde voorspelde conf van 70% vindt ($p = 0.70$), maar de ware accuratesse is slechts 55%, wat is dan de absolute fout voor die groep?",
+   "explain": "$|0.55 - 0.70| = 0.15$.",
+   "value": 0.15,
+   "tolerance": 0.001
+  },
+  {
+   "id": "m-rlcd-1",
+   "type": "type",
+   "skill": "rlcd-vs-ppo",
+   "level": 1,
+   "prompt": "Typ de afkorting voor Proximal Policy Optimization, het verliesfunctie-algoritme dat traditionele RLHF in generatieve modellen drijft.",
+   "explain": "PPO (net als DPO) wordt standaard ingezet om de voorkeur van mensen na te jagen, wat vaak stelligheid uitlokt.",
+   "answers": [
+    "PPO",
+    "ppo",
+    "Ppo"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "m-rlcd-2",
+   "type": "type",
+   "skill": "rlcd-vs-ppo",
+   "level": 1,
+   "prompt": "Typ het acroniem voor het Reinforcement Learning algoritme waarmee TypeSafe kalibratie-gedreven modellen traint.",
+   "explain": "Reinforcement Learning for Calibrated Decisions (RLCD).",
+   "answers": [
+    "RLCD",
+    "rlcd",
+    "Rlcd"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "m-rlcd-3",
+   "type": "mcq",
+   "skill": "rlcd-vs-ppo",
+   "level": 3,
+   "prompt": "Wat is het fundamentele verschil in hoe PPO en RLCD hun *reward function* structureren tijdens AI-training?",
+   "explain": "PPO leert van menselijke feedback; RLCD leert van mathematisch zuivere proper scoring rules zoals Brier.",
+   "options": [
+    "PPO optimaliseert een model dat streeft naar menselijke voorkeurslabels; RLCD gebruikt rigoureuze wiskundige scoring rules zoals Brier als objectief.",
+    "PPO vermindert het aantal logits via kwantisering; RLCD maximaliseert het verbruik van GPU geheugen in de reward layer.",
+    "PPO maakt gebruik van zuivere deterministische backpropagation; RLCD introduceert stochastische ruis met temperatuur T.",
+    "PPO berekent het verschil via Softmax; RLCD gebruikt een multi-dimensionale Sigmoid vector."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m-rlcd-4",
+   "type": "cloze",
+   "skill": "rlcd-vs-ppo",
+   "level": 2,
+   "prompt": "Vul in (één woord):",
+   "text": "Standaard RLHF leidt bijna altijd tot {{overconfidence|overmoed|overmoedigheid}} doordat menselijke raters twijfelende antwoorden onbewust afstraffen.",
+   "explain": "Modellen leren een overdreven zekerheid te pretenderen om hoog te scoren."
+  },
+  {
+   "id": "m-schema-1",
+   "type": "cloze",
+   "skill": "schema-design",
+   "level": 1,
+   "prompt": "Vul in (naam primitief):",
+   "text": "Als de TypeSafe definitie een fraudevraag stelt (waar/onwaar), stel je het `primitive` JSON-veld in op `{{Noul|noul}}`.",
+   "explain": "Noul is de binaire primitief."
+  },
+  {
+   "id": "m-schema-2",
+   "type": "cloze",
+   "skill": "schema-design",
+   "level": 1,
+   "prompt": "Vul in (naam primitief):",
+   "text": "Als je een 1-tot-10 risicoschaal hanteert die gewogen gemiddelden (E[S]) levert, gebruik je de primitive `{{Score|score}}`.",
+   "explain": "Score levert E[S] voor geordende rubrieken."
+  },
+  {
+   "id": "m-schema-3",
+   "type": "order",
+   "skill": "math-primitives",
+   "level": 2,
+   "prompt": "Plaats de wiskundige stappen van de Jev Choice-primitief in chronologische volgorde (van ruwe netwerk-output tot kans):",
+   "explain": "Logits worden gegenereerd -> gedeeld door T (temperatuur) -> genormaliseerd via exponentiële som (Softmax) -> Kansen $p_k$ resulteert.",
+   "tiles": [
+    "Model berekent interne ongekalibreerde logits ($z$)",
+    "Logits worden gedeeld door temperatuur $T$",
+    "Softmax-functie normaliseert de getallen tot de som 1",
+    "Genormaliseerde kansverdeling ($p$) is beschikbaar"
+   ]
+  },
+  {
+   "id": "m-schema-4",
+   "type": "mcq",
+   "skill": "schema-design",
+   "level": 3,
+   "prompt": "Bij een Choice-schema definieer je een array van `options`. Wat doet het model exact met deze array tijdens de forward pass?",
+   "explain": "De grootte van de array definieert het aantal dimensies K in de softmax classificatie head, wat $O(1)$ evaluatie mogelijk maakt.",
+   "options": [
+    "Het gebruikt de arraylengte direct als instelling voor de grootte van de Softmax uitvoerlaag in de dimensie $K$.",
+    "Het stuurt de strings als systeeminstructies door naar een traditionele autoregressieve LLM voor een dubbele check.",
+    "Het berekent de Brier-score voor de afzonderlijke array-elementen en gooit de laagst scorende weg.",
+    "Het telt het aantal karakters van elke optie om de latency te schatten."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m-schema-5",
+   "type": "order",
+   "skill": "brier-ece",
+   "level": 2,
+   "prompt": "Plaats de stappen voor de manuele berekening van de Brier-score bij één predictie in de juiste wiskundige volgorde:",
+   "explain": "Bepaal y -> Vind p -> Trek af -> Kwadrateer (p-y)^2.",
+   "tiles": [
+    "Bepaal de ground truth uitkomst ($y \\in \\{0, 1\\}$)",
+    "Lees de voorspelde kans ($p$) van het model uit",
+    "Trek $y$ af van $p$ om de ruwe afwijking te vinden",
+    "Kwadrateer deze afwijking om negatieve straffen positief en proportioneel te maken"
+   ]
+  },
+  {
+   "id": "m-schema-6",
+   "type": "type",
+   "skill": "math-primitives",
+   "level": 2,
+   "prompt": "Bij de Choice-primitief garandeert de wiskunde van de Softmax dat de som van alle individuele kansen $p_k$ altijd exact gelijk is aan welk getal?",
+   "explain": "De noemer van de softmax is de totale som, vandaar is het totaal exact 1.0 (of 100%).",
+   "answers": [
+    "1",
+    "1.0",
+    "een",
+    "één"
+   ],
+   "lang": "nl"
+  }
+ ],
+ "production": {
+  "type": "explain",
+  "prompt": "Je werkt als architect voor een Fintech startup. Een geautomatiseerde n8n workflow ontvangt dagelijks 10.000 kredietaanvragen. Elke aanvraag bevat gestructureerde data over kredietgeschiedenis en inkomsten.\n\nJe besluit TypeSafe Jev in te zetten om het risico in te schatten op een schaal van 1 (zeer laag risico) tot 4 (zeer hoog risico).\n\n1. Bedenk een Jev `Question Definition` in JSON die gebruik maakt van de juiste primitief voor deze geordende rubriek.\n2. Stel dat het model voor een aanvraag de volgende probabiliteiten teruggeeft: $p(1)=0.10$, $p(2)=0.40$, $p(3)=0.40$, $p(4)=0.10$. Bereken handmatig de verwachte risicoscore $\\mathbb{E}[S]$. Toon je berekening.\n3. Leg theoretisch uit waarom een traditionele LLM (met autoregressieve output en RLHF-training via PPO) dit wiskundig overmoedig verkeerd zou kunnen inschatten, in tegenstelling tot een RLCD-getraind model.",
+  "model": "1. Schema:\n```json\n{\n  \"name\": \"KredietRisico\",\n  \"primitive\": \"Score\",\n  \"options\": [1, 2, 3, 4],\n  \"description\": \"Beoordeel het kredietrisico van de aanvrager van 1 (laag) tot 4 (hoog).\"\n}\n```\n2. Berekening Verwachtingswaarde $\\mathbb{E}[S]$:\n$\\mathbb{E}[S] = (1 \\times 0.10) + (2 \\times 0.40) + (3 \\times 0.40) + (4 \\times 0.10)$\n$\\mathbb{E}[S] = 0.10 + 0.80 + 1.20 + 0.40 = 2.50$.\nDe finale verwachte risicoscore is 2.50.\n3. Waarom RLHF/PPO faalt: RLHF beloont stellige en 'behulpzame' antwoorden (menselijke preference bias). Een LLM zou hier waarschijnlijk ten onrechte 'Ik ben heel zeker dat het Score 2 is' beweren (overconfidence), omdat aarzeling tijdens RLHF werd afgestraft. RLCD daarentegen traint het netwerk direct op *proper scoring rules* (zoals Brier-scores), waardoor het model epistemische twijfel eerlijk weerspiegelt: de data is hier ambigu, de onzekerheid wordt correct en eerlijk gereflecteerd in een $p(2)=40\\%$ en $p(3)=40\\%$ split.",
+  "rubric": [
+   "Het JSON schema gebruikt correct de primitief 'Score' (en niet Choice of Noul) en definieert een numerieke anker array [1, 2, 3, 4].",
+   "De verwachtingswaarde (2.50) is correct berekend door de som te nemen van waarden maal kansen.",
+   "Er wordt benoemd dat RLHF of PPO menselijke voorkeuren maximaliseert en twijfel afstraft, wat leidt tot overconfidence.",
+   "Er wordt benoemd dat RLCD kalibratie of Brier-scores direct optimaliseert, waardoor epistemische twijfel gerespecteerd en eerlijk gerapporteerd wordt."
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-latency-ratio",
+   "skill": "review-latency",
+   "front": "Hoe bereken je de **relatieve snelheidsfactor** (x keer sneller) of kostenfactor tussen een trage LLM en Jev?",
+   "back": "Je deelt de latentie/kost van het tragere model door die van het snellere model. Trek de waarden nooit van elkaar af (dat is immers het absolute verschil, niet de verhouding)."
+  },
+  {
+   "id": "c-noul-math",
+   "skill": "math-primitives",
+   "front": "Welke activatiefunctie normaliseert de output van de Noul primitief (binaire waarheidsvragen)?",
+   "back": "De Sigmoid-functie ($p = \\frac{1}{1 + e^{-z}}$)."
+  },
+  {
+   "id": "c-choice-math",
+   "skill": "math-primitives",
+   "front": "Welke functie verdeelt en normaliseert de kansen over $K$ dimensies bij de Choice primitief?",
+   "back": "De Softmax-functie (met een temperatuur $T$ specifiek getuned voor wiskundige kalibratie)."
+  },
+  {
+   "id": "c-score-math",
+   "skill": "math-primitives",
+   "front": "Hoe wordt de finale output $\\mathbb{E}[S]$ wiskundig berekend bij een Score primitief?",
+   "back": "Als de verwachtingswaarde over de geordende categorieën: $\\sum s_j \\cdot p_j$."
+  },
+  {
+   "id": "c-brier",
+   "skill": "brier-ece",
+   "front": "Wat is de wiskundige definitie van de **Brier-score** en wat is de ideale theorethische waarde?",
+   "back": "De gemiddelde kwadratische afwijking tussen voorspelde kans $p$ en de werkelijke uitkomst $y$. De theorethisch ideale waarde is 0.0."
+  },
+  {
+   "id": "c-ece",
+   "skill": "brier-ece",
+   "front": "Wat meet de Expected Calibration Error (ECE) in bins?",
+   "back": "Het gewogen absolute verschil tussen de *geclaimde zekerheid* (conf) en de *werkelijke accuratesse* (acc) binnen gegroepeerde waarschijnlijkheids-bins."
+  },
+  {
+   "id": "c-rlcd-overconfidence",
+   "skill": "rlcd-vs-ppo",
+   "front": "Waarom leidt reguliere RLHF (met PPO of DPO) tot sycophancy en overconfidence bij besluitvorming?",
+   "back": "Omdat menselijke raters onbewust stelligheid belonen en 'wijifelende' probabilistische antwoorden afstraffen. Het model verleert zo om eerlijk te zijn over zijn epistemische onzekerheid."
+  }
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-27",
+  "adaptedFor": "Korte herhalingssectie en oefeningen rond absolute (verschil) vs. relatieve (verhouding) snelheidsfactoren toegevoegd, om het foutpatroon rond de aftrekkingsfout uit de vorige les te verhelpen. Uitleg over de drie primitieven compact gehouden (reeds 100% sterk in les 1). Aangepast aan het lichte leer-tempo (1 les/week)."
+ }
+}

@@ -1,0 +1,884 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "solidity",
+ "id": 4,
+ "roadmap": "sol-04-data-locations",
+ "kind": "core",
+ "title": "Datalocaties: storage, memory, calldata",
+ "subtitle": "Voorkom verdwijnende updates en bespaar gas met correcte pointers",
+ "level": "beginner",
+ "minutes": 40,
+ "summary": "Complexe datatypes zoals structs en strings kunnen op drie plaatsen leven: permanent op de blockchain, tijdelijk in het geheugen, of read-only in de transactie-input. De juiste keuze voorkomt bugs en bespaart aanzienlijk veel gas.",
+ "objectives": [
+  {
+   "id": "copy-vs-ref",
+   "text": "Je onderscheidt een memory-kopie van een storage-referentie en verklaart waarom een memory-update de blockchain niet wijzigt."
+  },
+  {
+   "id": "storage-pointers",
+   "text": "Je gebruikt storage-pointers om state-variabelen zoals structs in een mapping efficiënt bij te werken."
+  },
+  {
+   "id": "calldata-params",
+   "text": "Je gebruikt calldata in plaats van memory voor externe parameters om data read-only te maken en gas te besparen."
+  }
+ ],
+ "sections": [
+  {
+   "id": "intro",
+   "title": "Waar leeft je data?",
+   "md": "Voor simpele datatypes zoals `uint256`, `bool` of `address` regelt Solidity alles zelf. Deze zogenaamde *value types* passen perfect in één EVM-woord van 32 bytes. Ze worden op de stack geplaatst en altijd *by-value* gekopieerd. Maar zodra je met grotere, complexere structuren werkt — de zogenaamde **reference types** zoals arrays, structs, strings en mappings — wordt het ingewikkelder. Deze passen vaak niet op de stack, of hun grootte is vooraf niet bekend.\n\nDaarom dwingt Solidity je om voor deze reference types expliciet aan te geven *waar* de data moet leven wanneer je ze lokaal in een functie gebruikt. De EVM heeft een fundamenteel andere architectuur dan een klassieke computer en biedt drie specifieke datalocaties. De juiste keuze bepaalt of je code correct werkt, en of je transactie een paar cent of tientallen euro's aan gas kost.\n\nDe drie smaken zijn:\n\n1. **`storage` (De harde schijf van de blockchain)**: Dit is de permanente opslag. Alle state-variabelen die je bovenaan je contract declareert, leven hier. Elke wijziging in `storage` betekent dat duizenden nodes wereldwijd hun lokale database moeten updaten en deze data voor altijd moeten bewaren. Daarom is `storage` extreem duur. Een nieuwe variabele opslaan (een zogenaamde *koude* SSTORE van 0 naar een getal) kost maar liefst ~22 100 gas.\n2. **`memory` (Het tijdelijke RAM-geheugen)**: Dit is de werkruimte van de EVM voor de duur van de uitvoering. Wanneer een externe functie wordt aangeroepen, start de EVM met een leeg `memory`. Je kunt het dynamisch laten groeien, maar aan het einde van de transactie wordt het volledig gewist. Het wegschrijven en lezen is relatief goedkoop, al wordt het exponentieel duurder als je héél veel memory nodig hebt (de zogenaamde *quadratic memory expansion cost*).\n3. **`calldata` (De read-only transactie-input)**: Dit is een speciaal, onveranderlijk geheugengebied dat de ruwe inkomende data van de transactie bevat (de argumenten van een functie, verpakt volgens de ABI-specificatie). Omdat de gebruiker deze data heeft ondertekend, is deze cryptografisch gefixeerd. `calldata` is daarom strikt **read-only** en bijzonder goedkoop om uit te lezen.\n\n> [!rule] Waarom expliciet?\n> Bij een toewijzing zoals `a = b` moet de EVM weten wat de bedoeling is. Moet hij de data fysiek byte-voor-byte **kopiëren** (wat gas kost en de twee variabelen onafhankelijk maakt)? Of moet hij simpelweg een **pointer** (een wegwijzer of referentie) maken naar de originele locatie, wat snel is maar betekent dat een wijziging in `a` ook de originele `b` beïnvloedt? Zonder expliciete keywords zou de compiler moeten gokken naar je intentie, met catastrofale bugs tot gevolg.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "calldata-params",
+     "level": 1,
+     "prompt": "Welke datalocatie is **read-only** en wordt gewist na de transactie?",
+     "explain": "calldata bevat de onveranderlijke inkomende functie-argumenten.",
+     "options": [
+      "calldata",
+      "memory",
+      "storage",
+      "stack"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c2",
+     "type": "mcq",
+     "skill": "copy-vs-ref",
+     "level": 1,
+     "prompt": "Waarom moet je voor een `uint256` geen datalocatie opgeven?",
+     "explain": "Simpele types passen perfect in één EVM-woord (op de stack) en worden altijd by-value gekopieerd.",
+     "options": [
+      "Het is een simpel value-type, geen reference type",
+      "Het staat altijd in storage",
+      "Getallen worden automatisch calldata",
+      "Dat was een bug in oudere Solidity-versies"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "memory-bug",
+   "title": "De verdwijnende update (Memory kopie)",
+   "md": "Laten we kijken naar een klassieke fout die bijna elke beginnende Solidity-ontwikkelaar minstens één keer maakt. Stel, je bouwt een smart contract-dashboard voor je B2B-automatisatieklanten. Je hebt een mapping die voor elk klantadres een configuratie-struct bijhoudt:\n\n```solidity\nstruct Config {\n    string webhookUrl;\n    uint256 calls;\n}\n\nmapping(address => Config) public configs;\n```\n\nJe n8n-workflow moet bij elke uitgevoerde taak een log wegschrijven op de blockchain. Een junior developer schrijft de volgende functie om de API-call te registreren en de teller te verhogen:\n\n```solidity\nfunction logCall() external {\n    // Haal de configuratie van de afzender op\n    Config memory c = configs[msg.sender]; \n    \n    // Verhoog de teller met 1\n    c.calls += 1; \n}\n```\n\nAls je deze functie test, zul je zien dat de transactie succesvol is. Er zijn geen errors. Echter, als je daarna de `calls`-variabele van de klant uitleest via de automatische getter, staat deze nog steeds op 0! Wat is hier aan de hand? Waarom 'verdwijnt' onze update in het niets?\n\nDe boosdoener is het kleine keyword **`memory`**. Laten we stap voor stap analyseren wat de EVM precies doet wanneer hij deze regel uitvoert:\n\n1. De EVM berekent de locatie in `storage` waar de configuratie van `msg.sender` zich bevindt (via een `keccak256`-hash).\n2. Omdat je `memory` hebt getypt, krijgt de EVM de opdracht: *\"Maak een volledige, onafhankelijke kopie van deze data in het RAM-geheugen.\"*\n3. De EVM leest de struct uit `storage` (wat gas kost voor de `SLOAD`-operaties), reserveert ruimte in het tijdelijke `memory`, en kopieert de waarden byte voor byte.\n4. Vervolgens wordt de regel `c.calls += 1` uitgevoerd. De teller wordt inderdaad succesvol verhoogd... maar **uitsluitend in de lokale RAM-kopie**.\n5. De functie bereikt zijn einde. De executie stopt. Zoals we in de vorige sectie leerden, wordt het `memory` aan het einde van de transactie genadeloos gewist. De RAM-kopie is verdwenen. De blockchain-state (`storage`) is nooit aangeraakt.\n\n> [!pitfall] De blockchain wijzigt niet via een memory-kopie!\n> Het compileren van deze code geeft geen foutmelding (al kunnen moderne statische analyse-tools zoals Slither je wel waarschuwen). De syntax is namelijk perfect geldig Solidity. De EVM deed precies wat je vroeg: een tijdelijke kopie maken en die verhogen. Vergeet nooit: om de permanente toestand van je smart contract te wijzigen, moet je schrijven naar `storage`, niet naar een `memory`-kloon.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "mcq",
+     "skill": "copy-vs-ref",
+     "level": 2,
+     "prompt": "Wat gebeurt er precies bij `Config memory c = configs[msg.sender];`?",
+     "explain": "Van storage naar memory is altijd een kopieer-operatie.",
+     "options": [
+      "Alle data van de struct wordt uit storage gelezen en gekopieerd naar het tijdelijke geheugen.",
+      "Er wordt een referentie (pointer) naar de storage-slot gemaakt.",
+      "De variabele wordt weggeschreven naar de blockchain.",
+      "De transactie revert omdat een struct niet in memory past."
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "storage-pointers",
+   "title": "De oplossing: Storage Pointers",
+   "md": "Hoe lossen we de bug uit de vorige sectie op? Als we de originele data op de blockchain willen aanpassen, moeten we de EVM vertellen dat onze lokale variabele geen nieuwe kopie moet zijn, maar direct moet verwijzen naar de permanente opslag. Dit doen we met het keyword **`storage`**:\n\n```solidity\nfunction logCall() external {\n    // Creëer een referentie naar de struct in state\n    Config storage c = configs[msg.sender]; \n    \n    // Deze update wijzigt onmiddellijk de blockchain!\n    c.calls += 1; \n}\n```\n\nHier gebeurt iets magisch dat fundamenteel verschilt van de vorige aanpak: er wordt **geen kopie** gemaakt en er wordt geen data naar het RAM verplaatst. De variabele `c` fungeert puur als een **pointer** (een wegwijzer of alias) naar de originele data-slot in de immense state-database van Ethereum.\n\nWanneer de EVM nu `c.calls += 1` uitvoert, weet hij dat `c` wijst naar een specifieke plek in `storage`. De instructie vertaalt zich onder de motorkap direct naar een `SSTORE`-opcode (State Store) die de nieuwe waarde permanent wegschrijft. Dit kost uiteraard gas (bijvoorbeeld 5 000 gas voor een bestaande, reeds geïnitialiseerde variabele), maar het is de enige manier om de state definitief te wijzigen.\n\nNaast de semantische correctheid (je update gaat niet meer verloren), biedt de `storage`-pointer vaak ook aanzienlijke gas-voordelen wanneer je grote structs hebt. Stel dat je `Config`-struct uit tien verschillende velden bestaat, en je wilt in je functie enkel de `calls`-teller verhogen. Als je `memory` gebruikt, wordt de EVM gedwongen om alle tien de velden uit `storage` in te lezen (`SLOAD`) en naar `memory` te kopiëren. Dat is weggegooid gas als je de overige negen velden niet eens nodig hebt. Met een `storage`-pointer laadt de EVM pas data in wanneer je expliciet een veld opvraagt of overschrijft. In ons voorbeeld wordt dus uitsluitend het veld `calls` geraakt.\n\n> [!tip] Vuistregel voor reference types in state\n> Wil je de velden van een struct of array in een mapping **wijzigen**? Gebruik dan **altijd** een `storage` pointer. Wil je de data enkel **lezen**? Dan kun je direct uitlezen (`uint x = configs[msg.sender].calls`), of eventueel een `memory`-kopie maken als je de data vele malen in een complexe loop moet hergebruiken (omdat herhaaldelijk uit `storage` lezen duurder kan worden dan één keer kopiëren naar RAM en daar verder rekenen).",
+   "checks": [
+    {
+     "id": "c4",
+     "type": "type",
+     "skill": "storage-pointers",
+     "level": 2,
+     "prompt": "Welk keyword creëert een referentie naar de originele data in de mapping?",
+     "explain": "Een storage pointer verwijst direct naar de state.",
+     "answers": [
+      "storage"
+     ],
+     "lang": "code"
+    },
+    {
+     "id": "c5",
+     "type": "cloze",
+     "skill": "storage-pointers",
+     "level": 2,
+     "prompt": "Vul aan om de URL van de beller te updaten in storage.",
+     "explain": "Je wijzigt de struct, dus je hebt een storage pointer nodig.",
+     "text": "Config {{storage}} c = configs[msg.sender]; c.webhookUrl = newUrl;",
+     "lang": "code"
+    }
+   ]
+  },
+  {
+   "id": "calldata",
+   "title": "Calldata voor inkomende parameters",
+   "md": "We hebben nu gezien hoe we omgaan met data die al in het contract (in state) zit. Maar wat doen we met data die van buitenaf wordt meegegeven door de gebruiker, zoals de argumenten van een functie?\n\nAls je een `external` of `public` functie schrijft die een string of array (beide reference types) ontvangt, dwingt de compiler je ook hier een datalocatie op te geven. Heel vaak zie je dat developers blindelings `memory` typen. Maar voor inkomende parameters in een externe interface is er bijna altijd een betere, goedkopere optie: **`calldata`**.\n\nBekijk het verschil in gas-efficiëntie:\n\n```solidity\n// Goed, maar duurder in gasverbruik:\nfunction registerWebhook(string memory url) external { \n    configs[msg.sender] = Config(url, 0);\n}\n\n// Beter en goedkoper:\nfunction registerWebhook(string calldata url) external { \n    configs[msg.sender] = Config(url, 0);\n}\n```\n\nWanneer je `memory` specificeert als parameterlocatie, forceer je de EVM om eerst te kijken naar de binnenkomende transactie-payload, ruimte te reserveren in het tijdelijke RAM, en de volledige byte-string daarnaartoe te kopiëren. Dat proces (gefaciliteerd door de `CALLDATACOPY`-opcode) kost gas. Pas daarna kan de functie-logica de string uitlezen uit dat RAM.\n\nGebruik je echter `calldata`, dan zeg je tegen de EVM: *\"Bespaar jezelf de moeite. Laat de data maar lekker zitten in de transactie-payload, ik lees het daar wel rechtstreeks uit af.\"* De data bevindt zich al op het netwerk, dus we besparen zowel CPU-cycli als RAM-ruimte.\n\nEr is één cruciale eigenschap van `calldata` die je moet onthouden: het is strikt **read-only**. Waarom? Omdat de transactie-payload cryptografisch ondertekend is door de private key van de verzender. Als een smart contract de payload tijdens de executie zou kunnen wijzigen, zou de handtekening ongeldig worden. \n\n> [!warning] Calldata kan niet gemuteerd worden\n> Wat doet de compiler als je probeert een calldata-parameter aan te passen, bijvoorbeeld via `url = \"nieuwe_url\";`? Je krijgt direct een compilatie-fout. De compiler staat niet toe dat je wijzigingen doorvoert aan variabelen in de calldata-locatie. Wil je de binnenkomende string toch manipuleren, bijvoorbeeld om hem aan een andere string te plakken of naar kleine letters om te zetten? Dán ben je wel genoodzaakt om `memory` te gebruiken in je signatuur, zodat je over een wijzigbare kopie in het RAM beschikt.",
+   "checks": [
+    {
+     "id": "c6",
+     "type": "mcq",
+     "skill": "calldata-params",
+     "level": 2,
+     "prompt": "Waarom is `calldata` goedkoper dan `memory` voor functie-argumenten?",
+     "explain": "Het vermijdt een allocatie en kopie naar RAM.",
+     "options": [
+      "Het vermijdt het kopiëren van data van de transactie naar het interne geheugen.",
+      "Calldata wordt niet naar de blockchain gestuurd.",
+      "Calldata kan geen lange strings bevatten.",
+      "Calldata is een nieuw type dat minder bytes inneemt."
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c7",
+     "type": "mcq",
+     "skill": "calldata-params",
+     "level": 2,
+     "prompt": "Wat doet de compiler als je probeert een parameter met `calldata` aan te passen in de functie (`url = \"andere url\";`)?",
+     "explain": "Calldata is per definitie onveranderlijk (read-only).",
+     "options": [
+      "Hij geeft een foutmelding (compilatie faalt).",
+      "Hij wijzigt het tijdelijk, maar zonder de state aan te passen.",
+      "Hij verandert de originele transactie.",
+      "Hij schakelt stilletjes over naar memory."
+     ],
+     "answer": 0
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "copy-vs-ref",
+   "level": 1,
+   "prompt": "Welke datalocatie wordt gebruikt voor data die permanent op de blockchain moet blijven?",
+   "explain": "Storage is de permanente state van een contract.",
+   "options": [
+    "storage",
+    "memory",
+    "calldata",
+    "stack"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "mcq",
+   "skill": "calldata-params",
+   "level": 1,
+   "prompt": "Voor welk van de volgende types MOET je een datalocatie opgeven als functieparameter?",
+   "explain": "Value types (uint256, address) kopiëren gewoon by value; reference types vereisen een locatie.",
+   "options": [
+    "string",
+    "uint256",
+    "address",
+    "bool"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p03",
+   "type": "cloze",
+   "skill": "storage-pointers",
+   "level": 2,
+   "prompt": "Maak een **referentie** naar de struct in storage.",
+   "explain": "storage maakt een pointer; wijzigingen hierin treffen de blockchain.",
+   "text": "Config {{storage}} conf = configs[msg.sender];",
+   "lang": "code"
+  },
+  {
+   "id": "p04",
+   "type": "cloze",
+   "skill": "copy-vs-ref",
+   "level": 2,
+   "prompt": "Maak een **lokale kopie** van de struct in het RAM, die je naderhand kunt weggooien zonder de blockchain aan te passen.",
+   "explain": "memory kopieert de waarden naar het RAM.",
+   "text": "Config {{memory}} tempConf = configs[msg.sender];",
+   "lang": "code"
+  },
+  {
+   "id": "p05",
+   "type": "explain",
+   "skill": "copy-vs-ref",
+   "level": 3,
+   "prompt": "Leg aan een andere developer uit waarom deze logica faalt:\n`User memory u = users[msg.sender]; u.points += 10;`",
+   "explain": "Kunnen uitleggen toont fundamenteel begrip van het EVM-geheugen.",
+   "model": "Het keyword `memory` maakt een onafhankelijke kopie van de data uit storage in het RAM. De berekening verhoogt de punten alleen in die lokale RAM-kopie. Aan het eind van de functie wordt het RAM gewist, dus de originele waarden in storage op de blockchain blijven ongewijzigd. Gebruik `storage` om de echte state bij te werken.",
+   "rubric": [
+    "Memory creëert een onafhankelijke kopie",
+    "Updates gebeuren enkel lokaal (in RAM)",
+    "Bij einde functie wordt memory gewist/verloren",
+    "Om blockchain te updaten moet je `storage` gebruiken"
+   ]
+  },
+  {
+   "id": "p06",
+   "type": "code",
+   "skill": "storage-pointers",
+   "level": 2,
+   "prompt": "Fix de bug in het contract: de score van de speler verhoogt niet op de blockchain.",
+   "explain": "De `memory`-kopie update de blockchain niet. Vervang door `storage`.",
+   "contract": "Game",
+   "file": "Game.sol",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Game {\n    struct Player { uint256 score; }\n    mapping(address => Player) public players;\n\n    function addScore() external {\n        // BUG: de update gebeurt lokaal in memory\n        Player memory p = players[msg.sender];\n        p.score += 10;\n    }\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Game {\n    struct Player { uint256 score; }\n    mapping(address => Player) public players;\n\n    function addScore() external {\n        Player storage p = players[msg.sender];\n        p.score += 10;\n    }\n}",
+   "tests": [
+    {
+     "name": "addScore update de score permanent",
+     "steps": [
+      {
+       "call": "addScore",
+       "as": "alice"
+      },
+      {
+       "expect": {
+        "call": "players",
+        "args": [
+         "alice"
+        ],
+        "eq": 10
+       }
+      }
+     ]
+    },
+    {
+     "name": "twee keer addScore wordt 20",
+     "steps": [
+      {
+       "call": "addScore",
+       "as": "alice"
+      },
+      {
+       "call": "addScore",
+       "as": "alice"
+      },
+      {
+       "expect": {
+        "call": "players",
+        "args": [
+         "alice"
+        ],
+        "eq": 20
+       }
+      }
+     ]
+    },
+    {
+     "name": "bob blijft ongewijzigd als alice speelt",
+     "steps": [
+      {
+       "call": "addScore",
+       "as": "alice"
+      },
+      {
+       "expect": {
+        "call": "players",
+        "args": [
+         "bob"
+        ],
+        "eq": 0
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p07",
+   "type": "match",
+   "skill": "copy-vs-ref",
+   "level": 1,
+   "prompt": "Koppel de datalocatie aan haar gedrag voor complexe types in een functie.",
+   "explain": "De drie basissmaken van reference types.",
+   "pairs": [
+    [
+     "storage",
+     "creëert een pointer naar de on-chain state"
+    ],
+    [
+     "memory",
+     "creëert een tijdelijke, wijzigbare kopie in RAM"
+    ],
+    [
+     "calldata",
+     "leest efficiënt de originele read-only transactiedata"
+    ]
+   ]
+  },
+  {
+   "id": "p08",
+   "type": "type",
+   "skill": "calldata-params",
+   "level": 2,
+   "prompt": "Welk keyword gebruik je bij voorkeur voor een `string` parameter in een `external` functie om gas te besparen?",
+   "explain": "calldata vermijdt de kopie naar RAM.",
+   "answers": [
+    "calldata"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "storage-pointers",
+   "level": 2,
+   "prompt": "Welk keyword transformeert een lokale definitie van een struct naar een referentie (pointer) naar de mapping in state?",
+   "explain": "Met `storage` wijs je direct naar de blokketen-opslag.",
+   "answers": [
+    "storage"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p10",
+   "type": "mcq",
+   "skill": "calldata-params",
+   "level": 2,
+   "prompt": "Waarom kan een functie geen wijzigingen aanbrengen aan een variabele van het type `calldata`?",
+   "explain": "De EVM staat geen mutaties toe in de transactiepayload om veiligheids- en architectuurredenen.",
+   "options": [
+    "Omdat de transactiedata al ondertekend en gefixeerd is en dus per definitie read-only is.",
+    "Omdat calldata rechtstreeks naar opslag schrijft en dat te duur zou zijn.",
+    "Dat kan wel, maar je betaalt er extra gas voor.",
+    "Omdat externe functies sowieso pure functies zijn."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p11",
+   "type": "order",
+   "skill": "storage-pointers",
+   "level": 2,
+   "prompt": "Zet in de juiste chronologische volgorde: wat gebeurt er onder de motorkap bij `User storage u = users[msg.sender]; u.score++;`?",
+   "explain": "Van pointer aanmaken tot wegschrijven op de blockchain.",
+   "tiles": [
+    "De EVM start de functie-executie",
+    "Er wordt een pointer aangemaakt naar de juiste storage slot van de mapping",
+    "De EVM leest de huidige score uit de blockchain (SLOAD)",
+    "De EVM verhoogt het getal met 1",
+    "De nieuwe score wordt permanent opgeslagen (SSTORE)"
+   ]
+  },
+  {
+   "id": "p12",
+   "type": "cloze",
+   "skill": "calldata-params",
+   "level": 2,
+   "prompt": "Zorg dat deze parameter zo goedkoop mogelijk wordt verwerkt.",
+   "explain": "calldata is goedkoper dan memory voor inkomende strings.",
+   "text": "function updateKey(string {{calldata}} apiKey) external { ... }",
+   "lang": "code"
+  },
+  {
+   "id": "p13",
+   "type": "mcq",
+   "skill": "copy-vs-ref",
+   "level": 2,
+   "prompt": "Je wijst een struct direct toe in state, bv. `users[msg.sender] = User(\"Thibaud\", 10);`. Gebruik je hierbij `storage` of `memory`?",
+   "explain": "Als je geen lokale variabele aanmaakt, wijs je direct de struct by-value toe aan de state. Je schrijft de hele struct meteen weg.",
+   "options": [
+    "Geen van beide is nodig; je schrijft de instantie direct naar de mapping in storage.",
+    "Je moet User memory() gebruiken.",
+    "Je moet User storage() gebruiken.",
+    "Je moet de mapping eerst initializeren met new."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p14",
+   "type": "code",
+   "skill": "calldata-params",
+   "level": 2,
+   "prompt": "Optimaliseer de functie `setMessage` zodat de stringparameter minder gas kost.",
+   "explain": "Vervang `memory` door `calldata` voor external parameters.",
+   "contract": "Greeter",
+   "file": "Greeter.sol",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Greeter {\n    string public message;\n\n    // TODO: optimaliseer de datalocatie van de parameter\n    function setMessage(string memory _msg) external {\n        message = _msg;\n    }\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Greeter {\n    string public message;\n\n    function setMessage(string calldata _msg) external {\n        message = _msg;\n    }\n}",
+   "tests": [
+    {
+     "name": "heeft calldata gebruikt",
+     "source": {
+      "contains": "calldata"
+     }
+    },
+    {
+     "name": "heeft memory verwijderd",
+     "source": {
+      "notContains": "string memory _msg"
+     }
+    },
+    {
+     "name": "werkt nog steeds",
+     "steps": [
+      {
+       "call": "setMessage",
+       "args": [
+        "Hallo"
+       ]
+      },
+      {
+       "expect": {
+        "call": "message",
+        "eq": "Hallo"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p15",
+   "type": "cloze",
+   "skill": "copy-vs-ref",
+   "level": 2,
+   "prompt": "Voor strings die geretourneerd worden, is calldata geen optie (je creëert ze vaak intern). Welk keyword gebruik je in `returns (...)`?",
+   "explain": "Dingen die je teruggeeft, staan in het RAM geassembleerd, dus memory.",
+   "text": "function getGreeting() external view returns (string {{memory}}) { return \"Hello\"; }",
+   "lang": "code"
+  },
+  {
+   "id": "p16",
+   "type": "mcq",
+   "skill": "storage-pointers",
+   "level": 3,
+   "prompt": "Waarom is het gebruik van een `storage` pointer in een lus (om honderden configuraties bij te werken) gevaarlijk?",
+   "explain": "Opslag is extreem duur, lussen met writes raken snel de block gas limit.",
+   "options": [
+    "Elke loop-iteratie triggert een SSTORE, wat kan leiden tot het bereiken van de block gas limit.",
+    "Storage pointers kunnen maximaal naar één mapping wijzen.",
+    "De EVM staat geen storage-keywords toe in loops.",
+    "Het compileren zal falen vanwege read-only restricties."
+   ],
+   "answer": 0
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "type",
+   "skill": "calldata-params",
+   "level": 1,
+   "prompt": "Welk keyword maakt een parameter read-only én vermijdt een memory copy?",
+   "explain": "calldata",
+   "answers": [
+    "calldata"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m02",
+   "type": "type",
+   "skill": "storage-pointers",
+   "level": 1,
+   "prompt": "Welk keyword laat een lokale variabele wijzen naar een data-slot op de blockchain?",
+   "explain": "storage pointer",
+   "answers": [
+    "storage"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m03",
+   "type": "type",
+   "skill": "copy-vs-ref",
+   "level": 1,
+   "prompt": "Welk keyword gebruik je voor een tijdelijke array die je in de functie vult maar niet wilt bewaren?",
+   "explain": "memory wordt gewist na executie.",
+   "answers": [
+    "memory"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m04",
+   "type": "cloze",
+   "skill": "storage-pointers",
+   "level": 2,
+   "prompt": "Creeër een pointer naar het saldo van de beller.",
+   "explain": "storage wijst naar de mapping.",
+   "text": "Account {{storage}} myAcc = accounts[msg.sender];",
+   "lang": "code"
+  },
+  {
+   "id": "m05",
+   "type": "mcq",
+   "skill": "calldata-params",
+   "level": 2,
+   "prompt": "Je probeert `text = \"hallo\";` uit te voeren op `string calldata text`. Resultaat?",
+   "explain": "Calldata is onveranderlijk; de compiler staat dit niet toe.",
+   "options": [
+    "Een compiler error: je kan calldata niet muteren.",
+    "Het wijzigt de parameter, maar enkel voor de duur van de functie.",
+    "De EVM zal reverten (Panic 0x11).",
+    "Het werkt probleemloos en spaart gas."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m06",
+   "type": "code",
+   "skill": "storage-pointers",
+   "level": 2,
+   "prompt": "Activeer het account van de beller op de blockchain. Gebruik een pointer.",
+   "explain": "Geen memory gebruiken, dat updatet de blockchain niet.",
+   "contract": "Bank",
+   "file": "Bank.sol",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Bank {\n    struct Account { uint256 balance; bool active; }\n    mapping(address => Account) public accounts;\n\n    function activate() external {\n        // TODO: maak het account van msg.sender actief (active = true)\n    }\n\n    // Helper voor tests\n    function isActive(address user) external view returns (bool) {\n        return accounts[user].active;\n    }\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Bank {\n    struct Account { uint256 balance; bool active; }\n    mapping(address => Account) public accounts;\n\n    function activate() external {\n        Account storage acc = accounts[msg.sender];\n        acc.active = true;\n    }\n\n    function isActive(address user) external view returns (bool) {\n        return accounts[user].active;\n    }\n}",
+   "tests": [
+    {
+     "name": "activate zet de status naar true",
+     "steps": [
+      {
+       "expect": {
+        "call": "isActive",
+        "args": [
+         "alice"
+        ],
+        "eq": false
+       }
+      },
+      {
+       "call": "activate",
+       "as": "alice"
+      },
+      {
+       "expect": {
+        "call": "isActive",
+        "args": [
+         "alice"
+        ],
+        "eq": true
+       }
+      }
+     ]
+    },
+    {
+     "name": "storage pointer gebruikt",
+     "source": {
+      "contains": "storage"
+     }
+    }
+   ]
+  },
+  {
+   "id": "m07",
+   "type": "cloze",
+   "skill": "calldata-params",
+   "level": 2,
+   "prompt": "Vul aan: geef een API-sleutel mee als externe parameter, zonder RAM-kopie.",
+   "explain": "calldata voor external parameters.",
+   "text": "function authenticate(string {{calldata}} key) external { ... }",
+   "lang": "code"
+  },
+  {
+   "id": "m08",
+   "type": "mcq",
+   "skill": "calldata-params",
+   "level": 3,
+   "prompt": "Wanneer **moet** je `memory` gebruiken in plaats van `calldata` voor een external functieparameter?",
+   "explain": "Omdat calldata immutable is, moet je memory gebruiken als je the parameter intern wil aanpassen of verrijken voor je hem opslaat.",
+   "options": [
+    "Als je de string in de functie nog wilt samenvoegen of wijzigen.",
+    "Als de string langer is dan 32 bytes.",
+    "Als de functie `payable` is.",
+    "Als je de string later naar een storage pointer wilt schrijven."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m09",
+   "type": "match",
+   "skill": "copy-vs-ref",
+   "level": 2,
+   "prompt": "Welk gedrag hoort bij welk keyword?",
+   "explain": "Verschil tussen referentie en kopieën.",
+   "pairs": [
+    [
+     "storage",
+     "mutaties triggeren SSTORE (permanent)"
+    ],
+    [
+     "memory",
+     "mutaties verdwijnen na executie"
+    ],
+    [
+     "calldata",
+     "mutaties zijn verboden door compiler"
+    ]
+   ]
+  },
+  {
+   "id": "m10",
+   "type": "cloze",
+   "skill": "copy-vs-ref",
+   "level": 2,
+   "prompt": "Vul aan om een dynamische return string correct in RAM op te slaan.",
+   "explain": "Return data leeft in memory.",
+   "text": "function getVersion() external view returns (string {{memory}}) { ... }",
+   "lang": "code"
+  },
+  {
+   "id": "m11",
+   "type": "order",
+   "skill": "copy-vs-ref",
+   "level": 2,
+   "prompt": "Sorteer de locaties van **goedkoopst** (qua uitvoering of gas) naar **duurst**.",
+   "explain": "Calldata = read-only (zeer goedkoop), memory = vluchtig (goedkoop), storage = permanent (extreem duur).",
+   "tiles": [
+    "calldata",
+    "memory",
+    "storage"
+   ]
+  },
+  {
+   "id": "m12",
+   "type": "mcq",
+   "skill": "storage-pointers",
+   "level": 3,
+   "prompt": "Mag je een `storage` pointer declareren binnen een `pure` of `view` functie?",
+   "explain": "In een view functie mag je data uit storage lezen via een pointer, zolang je niet wegschrijft. In pure mag je de state helemaal niet aanraken.",
+   "options": [
+    "In `view` wel (om velden te lezen), in `pure` niet.",
+    "Nee, storage impliceert altijd schrijfrechten, dus dat faalt altijd.",
+    "Ja, in beide zolang de functie maar public is.",
+    "Alleen in `pure`, om zo gas te vermijden."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m13",
+   "type": "cloze",
+   "skill": "storage-pointers",
+   "level": 2,
+   "prompt": "Verhoog het aantal keer dat deze automation gefaald heeft.",
+   "explain": "Je wijzigt de struct, gebruik dus een pointer.",
+   "text": "function logError() external { Workflow {{storage}} w = workflows[msg.sender]; w.fails++; }",
+   "lang": "code"
+  },
+  {
+   "id": "m14",
+   "type": "mcq",
+   "skill": "copy-vs-ref",
+   "level": 2,
+   "prompt": "Wat gebeurt er als je een `memory` struct toewijst aan een `storage` variabele? \n`users[msg.sender] = myMemoryStruct;`",
+   "explain": "De waarden uit RAM worden naar de blockchain geschreven.",
+   "options": [
+    "De volledige inhoud wordt uit het RAM naar de blockchain gekopieerd (meerdere SSTOREs).",
+    "Dat faalt, want typelocaties mogen niet gemixt worden.",
+    "De storage variabele wordt tijdelijk read-only.",
+    "Het wijzigt alleen het RAM-gedeelte."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m15",
+   "type": "type",
+   "skill": "storage-pointers",
+   "level": 2,
+   "prompt": "Typ de afkorting die bij deze operatie hoort in de EVM: `c.calls += 1` via een storage pointer.",
+   "explain": "De EVM code voor state schrijven.",
+   "answers": [
+    "SSTORE"
+   ],
+   "lang": "code",
+   "caseSensitive": false
+  },
+  {
+   "id": "m16",
+   "type": "code",
+   "skill": "calldata-params",
+   "level": 2,
+   "prompt": "Verander de datalocatie om een compiler-fout op te lossen (wees efficiënt).",
+   "explain": "Een array als argument voor external -> calldata.",
+   "contract": "Router",
+   "file": "Router.sol",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Router {\n    // TODO: fix de ontbrekende datalocatie van de array.\n    function route(address[] targets) external pure returns (uint256) {\n        return targets.length;\n    }\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Router {\n    function route(address[] calldata targets) external pure returns (uint256) {\n        return targets.length;\n    }\n}",
+   "tests": [
+    {
+     "name": "compileert en gebruikt calldata",
+     "source": {
+      "contains": "calldata targets"
+     }
+    },
+    {
+     "name": "geeft correct lengte terug",
+     "steps": [
+      {
+       "expect": {
+        "call": "route",
+        "args": [
+         [
+          "alice",
+          "bob"
+         ]
+        ],
+        "eq": 2
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m17",
+   "type": "numeric",
+   "skill": "storage-pointers",
+   "level": 2,
+   "prompt": "Hoeveel gas kost een eerste schrijfactie (`SSTORE` 0 → niet-0) die uitgevoerd wordt via een storage pointer?",
+   "explain": "Een koude nieuwe slot schrijven is de duurste actie (ca. 22 100).",
+   "value": 22100,
+   "abs": 0
+  },
+  {
+   "id": "m18",
+   "type": "mcq",
+   "skill": "copy-vs-ref",
+   "level": 2,
+   "prompt": "Een struct `Settings` heeft veld `uint256 timeout`. Je laadt de struct in memory en leest de timeout af. Kost de initialisatie in memory veel gas?",
+   "explain": "Ja, in tegenstelling tot een pointer, dwingt memory de EVM de hele struct uit storage te SLOAD'en en in RAM the droppen.",
+   "options": [
+    "Ja, want de hele struct moet stuk voor stuk uit storage (SLOAD) naar het RAM gekopieerd worden.",
+    "Nee, memory is altijd gratis.",
+    "Nee, de EVM maakt een pointer achter de schermen.",
+    "Nee, want structs worden pas uitgelezen wanneer de specifieke velden geraakt worden."
+   ],
+   "answer": 0
+  }
+ ],
+ "production": {
+  "type": "code",
+  "contract": "WebhookRegistry",
+  "file": "WebhookRegistry.sol",
+  "prompt": "Je bouwt een on-chain configuratiebeheerder voor je B2B-klanten (zoals een n8n-webhook-registry).\n\n- `struct Config { string webhookUrl; uint256 callsMade; }` en een mapping `configs` op basis van klantadres.\n- Schrijf `registerWebhook(string calldata url)`: slaat de URL op via msg.sender en zet `callsMade` op 0.\n- Schrijf `logCall()`: verhoogt `callsMade` voor de verzender met 1, gebruikmakend van een **storage pointer**.\n\nZorg ook voor de `getCalls(address client)` view-functie, zodat we in de tests gemakkelijk het getal kunnen checken.",
+  "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract WebhookRegistry {\n    struct Config {\n        string webhookUrl;\n        uint256 callsMade;\n    }\n    mapping(address => Config) public configs;\n\n    // TODO 1: functie registerWebhook(string calldata url)\n    // Wijs direct de Config toe aan msg.sender\n\n    // TODO 2: functie logCall()\n    // Gebruik een storage pointer en verhoog callsMade\n\n    // TODO 3: functie getCalls(address client) external view returns (uint256)\n    // Geef de callsMade terug\n}",
+  "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract WebhookRegistry {\n    struct Config {\n        string webhookUrl;\n        uint256 callsMade;\n    }\n    mapping(address => Config) public configs;\n\n    function registerWebhook(string calldata url) external {\n        configs[msg.sender] = Config(url, 0);\n    }\n\n    function logCall() external {\n        Config storage c = configs[msg.sender];\n        c.callsMade += 1;\n    }\n\n    function getCalls(address client) external view returns (uint256) {\n        return configs[client].callsMade;\n    }\n}",
+  "tests": [
+   {
+    "name": "kan webhook registeren",
+    "steps": [
+     {
+      "call": "registerWebhook",
+      "as": "alice",
+      "args": [
+       "https://n8n.example.com/hook"
+      ]
+     },
+     {
+      "expect": {
+       "call": "getCalls",
+       "args": [
+        "alice"
+       ],
+       "eq": 0
+      }
+     }
+    ]
+   },
+   {
+    "name": "logCall verhoogt calls via storage",
+    "steps": [
+     {
+      "call": "registerWebhook",
+      "as": "alice",
+      "args": [
+       "url"
+      ]
+     },
+     {
+      "call": "logCall",
+      "as": "alice"
+     },
+     {
+      "call": "logCall",
+      "as": "alice"
+     },
+     {
+      "expect": {
+       "call": "getCalls",
+       "args": [
+        "alice"
+       ],
+       "eq": 2
+      }
+     }
+    ]
+   },
+   {
+    "name": "registerWebhook gebruikt calldata voor gas besparing",
+    "source": {
+     "contains": "calldata"
+    }
+   },
+   {
+    "name": "logCall gebruikt storage pointer",
+    "source": {
+     "contains": "storage"
+    }
+   }
+  ],
+  "model": "Twee dingen vallen op: bij `register` wijzen we de struct in één adem toe (directe kopie naar storage). In `logCall` maken we lokaal een `storage`-pointer aan. Dat was de enige manier om `callsMade` permanent te verhogen zonder alles eerst nodeloos in RAM te kopiëren. We vermijden ook memory in de externe parameters met `calldata`.",
+  "rubric": [
+   "`registerWebhook` gebruikt `calldata` parameter",
+   "`registerWebhook` slaat de config op in de mapping",
+   "`logCall` definieert een `Config storage` variabele",
+   "`logCall` wijzigt the storage struct waardoor het effect permanent is",
+   "`getCalls` geeft de juiste `uint256` terug"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-storage",
+   "front": "Wat is een `storage` pointer?",
+   "back": "Een lokale referentie in je functie die direct wijst naar state op de blockchain. Mutaties hierin kosten gas, maar zijn permanent.",
+   "skill": "storage-pointers"
+  },
+  {
+   "id": "c-memory",
+   "front": "Wat gebeurt er als je een storage struct ophaalt met `memory`?",
+   "back": "Je maakt een onafhankelijke kopie in het RAM. Wijzigingen hebben géén effect op de blockchain en de data verdwijnt na executie.",
+   "skill": "copy-vs-ref"
+  },
+  {
+   "id": "c-calldata",
+   "front": "Wat is het voordeel van `calldata` voor external string parameters?",
+   "back": "Het slaat de kopieer-stap naar het RAM over en leest direct de ruwe, read-only transactiedata. Dat is beduidend goedkoper.",
+   "skill": "calldata-params"
+  },
+  {
+   "id": "c-readonly",
+   "front": "Mag je een `calldata` variabele aanpassen in je functie?",
+   "back": "Nee. Omdat het de onveranderlijke handtekening/data van de transactie representeert, staat de compiler mutaties (read-only) niet toe.",
+   "skill": "calldata-params"
+  },
+  {
+   "id": "c-sstore-gas",
+   "front": "Hoeveel gas kost een eerste schrijfactie (SSTORE 0 → niet-0)?",
+   "back": "~22 100 gas",
+   "answers": [
+    "22100",
+    "22 100"
+   ],
+   "lang": "num",
+   "skill": "storage-pointers"
+  },
+  {
+   "id": "c-structs",
+   "front": "Wanneer móét je een datalocatie specificeren?",
+   "back": "Voor **reference types** (arrays, structs, mappings en strings). Simpele types (uint, bool) kopiëren altijd gewoon by value.",
+   "skill": "copy-vs-ref"
+  }
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-27",
+  "adaptedFor": "Je hebt al 7 dagen geen Solidity geoefend, dus we starten met een rustige opbouw rond pointers en geheugen. De voorbeelden zijn afgestemd op je B2B-automatisatiewerk."
+ }
+}

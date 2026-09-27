@@ -1,0 +1,956 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "greek",
+ "id": 4,
+ "roadmap": "gr-a1-04-gender-articles",
+ "kind": "core",
+ "title": "De of het? Geslachten, lidwoorden en de basiswerkwoorden",
+ "subtitle": "Hoe je mannelijk, vrouwelijk en onzijdig herkent, en de werkwoorden zijn (είμαι) en hebben (έχω)",
+ "level": "A1",
+ "minutes": 45,
+ "summary": "Elk Grieks zelfstandig naamwoord heeft een geslacht: mannelijk, vrouwelijk of onzijdig. In deze les leer je hoe je dat in één oogopslag ziet, welk lidwoord erbij hoort, en hoe je je eerste echte zinnen bouwt met 'zijn' en 'hebben'.",
+ "objectives": [
+  {
+   "id": "letters",
+   "text": "Je herkent de valse vrienden (β, ρ) en de ie-club foutloos."
+  },
+  {
+   "id": "geslacht",
+   "text": "Je herkent het geslacht van een zelfstandig naamwoord aan de uitgang (-ος, -α/-η, -ο/-ι)."
+  },
+  {
+   "id": "bepaald",
+   "text": "Je kiest het juiste bepaalde lidwoord (ο, η, το)."
+  },
+  {
+   "id": "onbepaald",
+   "text": "Je kiest het juiste onbepalde lidwoord (ένας, μία, ένα)."
+  },
+  {
+   "id": "pronouns",
+   "text": "Je kent de persoonlijke voornaamwoorden en laat ze correct weg als onderwerp."
+  },
+  {
+   "id": "verbs",
+   "text": "Je vervoegt είμαι (zijn) en έχω (hebben) correct in de tegenwoordige tijd."
+  }
+ ],
+ "vocab": [
+  {
+   "term": "άντρας",
+   "translit": "ántras",
+   "meaning": "man"
+  },
+  {
+   "term": "γυναίκα",
+   "translit": "jinéka",
+   "meaning": "vrouw"
+  },
+  {
+   "term": "παιδί",
+   "translit": "peðí",
+   "meaning": "kind"
+  },
+  {
+   "term": "αυτοκίνητο",
+   "translit": "aftokínito",
+   "meaning": "auto"
+  },
+  {
+   "term": "δάσκαλος",
+   "translit": "ðáskalos",
+   "meaning": "leraar"
+  },
+  {
+   "term": "μεγάλος",
+   "translit": "megálos",
+   "meaning": "groot"
+  },
+  {
+   "term": "μικρός",
+   "translit": "mikrós",
+   "meaning": "klein"
+  },
+  {
+   "term": "εγώ",
+   "translit": "egó",
+   "meaning": "ik"
+  },
+  {
+   "term": "εσύ",
+   "translit": "esí",
+   "meaning": "jij"
+  },
+  {
+   "term": "εμείς",
+   "translit": "emís",
+   "meaning": "wij"
+  },
+  {
+   "term": "είμαι",
+   "translit": "íme",
+   "meaning": "(ik) ben"
+  },
+  {
+   "term": "έχω",
+   "translit": "écho",
+   "meaning": "(ik) heb"
+  }
+ ],
+ "sections": [
+  {
+   "id": "herhaling",
+   "title": "Herhaling: De valkuilen van het alfabet",
+   "md": "Omdat dit een nieuwe start is na je vorige pogingen, halen we eerst twee belangrijke valkuilen op. Ze zijn essentieel om straks de nieuwe woorden correct te lezen.\n\n**1. De valse vrienden**\nSommige Griekse letters lijken sterk op letters die je kent, maar klinken helemaal anders:\n- **β** klinkt als **v** (nooit b!) — *βιβλίο* is vivlío.\n- **ρ** klinkt als **r** (nooit p!) — *νερό* is neró.\n\n**2. De beroemde ie-club**\nIn het Grieks klinken maar liefst drie letters exact hetzelfde, namelijk als de Nederlandse **ie**:\n- **η** (ήτα) — let op, dit is géén 'n'!\n- **ι** (γιώτα)\n- **υ** (ύψιλον)\n\nAls je één van deze drie ziet, zeg dan altijd resoluut *ie*!",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "letters",
+     "level": 1,
+     "prompt": "Welke drie letters klinken in het Grieks allemaal als **ie**?",
+     "explain": "De η, ι en υ vormen samen de 'ie-club' (iotacisme).",
+     "options": [
+      "η, ι, υ",
+      "ε, η, ι",
+      "ο, ι, υ",
+      "η, υ, ω"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c2",
+     "type": "type",
+     "skill": "letters",
+     "level": 2,
+     "prompt": "Hoe klinkt de Griekse letter **β**? (typ de Latijnse letter in het Nederlands)",
+     "explain": "De β is een 'v', zoals in βιβλίο (boek).",
+     "answers": [
+      "v"
+     ],
+     "lang": "nl"
+    }
+   ]
+  },
+  {
+   "id": "geslacht",
+   "title": "De of het? Drie geslachten",
+   "md": "In het Nederlands is een woord een 'de'-woord of een 'het'-woord. In het Grieks heeft elk zelfstandig naamwoord precies één van drie geslachten: **mannelijk**, **vrouwelijk** of **onzijdig**. Dat klinkt ingewikkeld, maar het is eigenlijk makkelijker dan in het Nederlands! Je kunt het namelijk bijna altijd aflezen aan het einde van het woord.\n\n| Geslacht | Bepaald lidwoord ('de/het') | Typische uitgang | Voorbeelden |\n|---|:---:|---|---|\n| **Mannelijk** | **ο** (de) | -ος, -ας, -ης | **ο** φίλ**ος** (vriend), **ο** άντρ**ας** (man) |\n| **Vrouwelijk** | **η** (de) | -α, -η | **η** γυναίκ**α** (vrouw), **η** μέρ**α** (dag) |\n| **Onzijdig** | **το** (het) | -ο, -ι, -μα | **το** βιβλί**ο** (boek), **το** παιδ**ί** (kind) |\n\nZie je een woord dat eindigt op -ος? Dan weet je voor 99% zeker dat het mannelijk is en het lidwoord **ο** krijgt.\n\n> [!pitfall] De η is vrouwelijk, niet mannelijk!\n> Het lidwoord **η** betekent 'de' voor vrouwelijke woorden. Verwar het niet met de letter 'n'. Je spreekt het uit als *ie*. Dus: η γυναίκα klinkt als *ie jinéka*.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "cloze",
+     "skill": "bepaald",
+     "level": 2,
+     "prompt": "Kies het juiste bepaalde lidwoord (ο, η, το). Kijk goed naar de laatste letter van elk woord!",
+     "explain": "-ος is mannelijk (ο), -α is vrouwelijk (η), -ο is onzijdig (το).",
+     "text": "{{ο}} δάσκαλος · {{η}} γυναίκα · {{το}} βιβλίο",
+     "lang": "el"
+    }
+   ]
+  },
+  {
+   "id": "onbepaald",
+   "title": "Een, een of een (ένας, μία, ένα)",
+   "md": "Wil je niet 'de' man zeggen, maar 'een' man? Dan gebruik je het **onbepaald lidwoord**. Ook dat past zich naadloos aan aan het geslacht van het woord.\n\n| Geslacht | 'Een' | Voorbeeld |\n|---|:---:|---|\n| **Mannelijk** | **ένας** | **ένας** φίλος (een vriend) |\n| **Vrouwelijk** | **μία** of **μια** | **μία** γυναίκα (een vrouw) |\n| **Onzijdig** | **ένα** | **ένα** παιδί (een kind) |\n\nMerk op: *ένας* klinkt lekker mannelijk (het eindigt op -ας), en *μία* klinkt vrouwelijk (eindigt op -α). De vorm *ένα* eindigt ook op -α, maar is het onzijdige woord (net zoals *ένα βιβλίο* opvallend genoeg eindigt op -α terwijl het lidwoord is).\n\n> [!tip] μία of μια?\n> Beiden betekenen \"een\" en zijn vrouwelijk. **μία** (MÍ-a) gebruik je als je de nadruk erop legt (precies één). **μια** (mja) gebruik je in de vlotte spreektaal als het woord onbeklemtoond is. In deze app rekenen we ze allebei goed.",
+   "checks": [
+    {
+     "id": "c4",
+     "type": "cloze",
+     "skill": "onbepaald",
+     "level": 2,
+     "prompt": "Vul het juiste onbepaalde lidwoord (ένας, μία, ένα) in.",
+     "explain": "φίλος is mannelijk (ένας), γυναίκα is vrouwelijk (μία/μια), παιδί is onzijdig (ένα).",
+     "text": "{{ένας}} φίλος · {{μία|μια}} γυναίκα · {{ένα}} παιδί",
+     "lang": "el"
+    }
+   ]
+  },
+  {
+   "id": "pronouns",
+   "title": "Ik, jij, wij... en waarom je ze weghaalt",
+   "md": "Om zinnen te maken, moeten we weten wie iets doet. Dit zijn de belangrijkste persoonlijke voornaamwoorden:\n\n- **εγώ** (ik)\n- **εσύ** (jij)\n- **αυτός / αυτή / αυτό** (hij / zij / het)\n- **εμείς** (wij)\n- **εσείς** (jullie / u)\n- **αυτοί / αυτές / αυτά** (zij, meervoud)\n\n> [!rule] Laat het onderwerp weg!\n> In het Nederlands moet je altijd zeggen wie iets doet: *Ik* loop, *hij* slaapt. In het Grieks niet! Aan de uitgang van het werkwoord hoort een Griek al onmiddellijk wie de actie uitvoert.\n> \n> Je zegt dus niet *εγώ θέλω* (ik wil), maar gewoon **θέλω**. Je gebruikt εγώ of εσύ alléén als je er extra nadruk op wilt leggen: \"Nee, *ík* wil dat!\"",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "mcq",
+     "skill": "pronouns",
+     "level": 1,
+     "prompt": "Waarom laat een Griekwoorden als 'εγώ' (ik) en 'εσύ' (jij) meestal weg in een zin?",
+     "explain": "De uitgang van het werkwoord vertelt al genoeg. Je gebruikt εγώ alleen om extra nadruk te leggen.",
+     "options": [
+      "Omdat je aan de uitgang van het werkwoord al hoort wie het doet.",
+      "Omdat dat beleefder is in de Griekse cultuur.",
+      "Omdat deze woorden alleen in schrijftaal bestaan.",
+      "Omdat de werkwoorden al heel lang zijn."
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "verbs",
+   "title": "De basis: zijn en hebben",
+   "md": "Laten we je eerste zinnen bouwen met de twee belangrijkste (maar onregelmatige) werkwoorden: **είμαι** (zijn) en **έχω** (hebben).\n\n**είμαι (zijn)**\n- (εγώ) **είμαι** — ik ben\n- (εσύ) **είσαι** — jij bent\n- (αυτός) **είναι** — hij/zij/het is\n- (εμείς) **είμαστε** — wij zijn\n- (εσείς) **είστε** — jullie zijn / u bent\n- (αυτοί) **είναι** — zij zijn (let op: identiek aan hij/zij is!)\n\n**έχω (hebben)**\n- (εγώ) **έχω** — ik heb\n- (εσύ) **έχεις** — jij hebt\n- (αυτός) **έχει** — hij/zij/het heeft\n- (εμείς) **έχουμε** — wij hebben\n- (εσείς) **έχετε** — jullie hebben / u heeft\n- (αυτοί) **έχουν** (of έχουνε) — zij hebben\n\n> [!example] Je eerste zinnen\n> - **Έχω ένα αυτοκίνητο.** (Ik heb een auto.) -> εγώ laat je weg.\n> - **Είμαστε φίλοι.** (Wij zijn vrienden.)",
+   "checks": [
+    {
+     "id": "c6",
+     "type": "cloze",
+     "skill": "verbs",
+     "level": 2,
+     "prompt": "Vul de juiste vorm van het werkwoord in.",
+     "explain": "είμαι = ik ben; έχουμε = wij hebben.",
+     "text": "(ik) ben = {{είμαι}} · (wij) hebben = {{έχουμε}}",
+     "lang": "el"
+    }
+   ]
+  },
+  {
+   "id": "adjectives",
+   "title": "Bijvoeglijke naamwoorden kleuren mee",
+   "md": "Zelfstandige naamwoorden (zoals auto, man, zee) hebben een *vast* geslacht. Maar **bijvoeglijke naamwoorden** (woorden als groot, klein, mooi) passen zich aan aan het woord waar ze bij horen! Ze kleuren als een kameleon mee met hun buurman.\n\nNeem het woord **μεγάλος** (groot).\n- Bij een mannelijk woord wordt het **μεγάλος**: ο μεγάλος άντρας (de grote man)\n- Bij een vrouwelijk woord wordt het **μεγάλη**: η μεγάλη γυναίκα (de grote vrouw)\n- Bij een onzijdig woord wordt het **μεγάλο**: το μεγάλο αυτοκίνητο (de grote auto)\n\nJe ziet dat de uitgang van het bijvoeglijk naamwoord (-ος, -η, -ο) perfect rijmt met de geslachtsregels uit het begin van deze les.",
+   "checks": [
+    {
+     "id": "c7",
+     "type": "mcq",
+     "skill": "geslacht",
+     "level": 2,
+     "prompt": "Wat is correct voor 'de grote vriend'?",
+     "explain": "φίλος is mannelijk, dus groot moet ook eindigen op -ος: ο μεγάλος φίλος.",
+     "options": [
+      "ο μεγάλος φίλος",
+      "ο μεγάλη φίλος",
+      "ο μεγάλο φίλος",
+      "η μεγάλος φίλος"
+     ],
+     "answer": 0
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "geslacht",
+   "level": 1,
+   "prompt": "Welke uitgang hoort typisch bij een **mannelijk** woord?",
+   "explain": "Woorden op -ος, -ας en -ης zijn bijna altijd mannelijk (zoals ο φίλος, ο άντρας).",
+   "options": [
+    "-ος, -ας, -ης",
+    "-α, -η",
+    "-ο, -ι, -μα",
+    "-ω, -ου"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "mcq",
+   "skill": "geslacht",
+   "level": 1,
+   "prompt": "Welk geslacht heeft **το βιβλίο**?",
+   "explain": "Het lidwoord is το en het woord eindigt op -ο. Dat betekent dat het onzijdig is.",
+   "options": [
+    "Onzijdig",
+    "Mannelijk",
+    "Vrouwelijk"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p03",
+   "type": "match",
+   "skill": "bepaald",
+   "level": 1,
+   "prompt": "Koppel het juiste lidwoord ('de'/'het') aan het geslacht.",
+   "explain": "ο is mannelijk, η is vrouwelijk, το is onzijdig.",
+   "pairs": [
+    [
+     "Mannelijk",
+     "ο"
+    ],
+    [
+     "Vrouwelijk",
+     "η"
+    ],
+    [
+     "Onzijdig",
+     "το"
+    ]
+   ]
+  },
+  {
+   "id": "p04",
+   "type": "cloze",
+   "skill": "bepaald",
+   "level": 2,
+   "prompt": "Vul het juiste bepaalde lidwoord (ο, η, το) in.",
+   "explain": "φίλος = mannelijk, γυναίκα = vrouwelijk, παιδί = onzijdig.",
+   "text": "{{ο}} φίλος · {{η}} γυναίκα · {{το}} παιδί",
+   "lang": "el"
+  },
+  {
+   "id": "p05",
+   "type": "type",
+   "skill": "bepaald",
+   "level": 2,
+   "prompt": "Vertaal naar het Grieks: **het huis**.",
+   "explain": "το σπίτι — onzijdig, dus lidwoord το.",
+   "answers": [
+    "το σπίτι"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "ο σπίτι",
+     "feedback": "σπίτι eindigt op -ι, dat is onzijdig. Het lidwoord is το.",
+     "tag": "gender-neuter"
+    }
+   ]
+  },
+  {
+   "id": "p06",
+   "type": "cloze",
+   "skill": "onbepaald",
+   "level": 2,
+   "prompt": "Vul het onbepaalde lidwoord in (ένας, μία, ένα).",
+   "explain": "άντρας is mannelijk (ένας), θάλασσα is vrouwelijk (μία/μια).",
+   "text": "{{ένας}} άντρας · {{μία|μια}} θάλασσα",
+   "lang": "el"
+  },
+  {
+   "id": "p07",
+   "type": "type",
+   "skill": "onbepaald",
+   "level": 2,
+   "prompt": "Vertaal naar het Grieks: **een leraar**.",
+   "explain": "δάσκαλος is mannelijk (-ος), dus 'een' wordt ένας.",
+   "answers": [
+    "ένας δάσκαλος"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "ενασ δασκαλοσ",
+     "feedback": "Vergeet de slot-sigma (ς) niet aan het einde van een woord!",
+     "tag": "sigma-end"
+    },
+    {
+     "match": "ενα δασκαλος",
+     "feedback": "δάσκαλος is mannelijk. 'Een' is dan 'ένας', niet 'ένα'.",
+     "tag": "gender-masc-indef"
+    }
+   ]
+  },
+  {
+   "id": "p08",
+   "type": "match",
+   "skill": "pronouns",
+   "level": 1,
+   "prompt": "Koppel de Griekse voornaamwoorden aan hun vertaling.",
+   "explain": "εγώ = ik, εσύ = jij, εμείς = wij, αυτοί = zij.",
+   "pairs": [
+    [
+     "εγώ",
+     "ik"
+    ],
+    [
+     "εσύ",
+     "jij"
+    ],
+    [
+     "εμείς",
+     "wij"
+    ],
+    [
+     "αυτοί",
+     "zij"
+    ]
+   ]
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "pronouns",
+   "level": 2,
+   "prompt": "Vertaal: **wij**.",
+   "explain": "εμείς — klemtoon op de ί.",
+   "answers": [
+    "εμείς"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p10",
+   "type": "cloze",
+   "skill": "verbs",
+   "level": 2,
+   "prompt": "Vul de juiste vormen in van είμαι (zijn).",
+   "explain": "ik ben = είμαι, wij zijn = είμαστε.",
+   "text": "(ik) ben = {{είμαι}} · (wij) zijn = {{είμαστε}}",
+   "lang": "el"
+  },
+  {
+   "id": "p11",
+   "type": "type",
+   "skill": "verbs",
+   "level": 2,
+   "prompt": "Vertaal: **wij hebben** (laat 'wij' weg).",
+   "explain": "έχουμε — de uitgang vertelt al dat het om 'wij' gaat.",
+   "answers": [
+    "έχουμε"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "εμείς έχουμε",
+     "feedback": "Dat klopt, maar probeer in het Grieks het onderwerp (εμείς) weg te laten, dat klinkt natuurlijker!",
+     "tag": "drop-pronoun"
+    }
+   ]
+  },
+  {
+   "id": "p12",
+   "type": "type",
+   "skill": "verbs",
+   "level": 2,
+   "prompt": "Vertaal: **hij is** (laat 'hij' weg).",
+   "explain": "είναι. Let op: dit woord kan ook 'zij is', 'het is' en zelfs 'zij zijn' betekenen!",
+   "answers": [
+    "είναι"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p13",
+   "type": "cloze",
+   "skill": "geslacht",
+   "level": 2,
+   "prompt": "Kies de juiste uitgang voor het woord groot (μεγάλος).",
+   "explain": "φίλος is mannelijk, dus krijg je μεγάλος. θάλασσα is vrouwelijk, dus μεγάλη.",
+   "text": "ο {{μεγάλος}} φίλος · η {{μεγάλη}} θάλασσα",
+   "lang": "el"
+  },
+  {
+   "id": "p14",
+   "type": "type",
+   "skill": "verbs",
+   "level": 3,
+   "prompt": "Vertaal: **Ik heb een boek.** (laat 'ik' weg)",
+   "explain": "Έχω (ik heb) + ένα βιβλίο (een boek).",
+   "answers": [
+    "Έχω ένα βιβλίο",
+    "έχω ένα βιβλίο",
+    "Εγώ έχω ένα βιβλίο"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p15",
+   "type": "order",
+   "skill": "verbs",
+   "level": 2,
+   "prompt": "Bouw de zin: **Zij hebben een grote auto.** (laat 'zij' weg)",
+   "explain": "Έχουν (zij hebben) ένα μεγάλο αυτοκίνητο. Zowel het lidwoord, het bijvoeglijk naamwoord als het woord auto zijn onzijdig.",
+   "tiles": [
+    "Έχουν",
+    "ένα",
+    "μεγάλο",
+    "αυτοκίνητο"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p16",
+   "type": "mcq",
+   "skill": "verbs",
+   "level": 2,
+   "prompt": "Welke vertaling van **είναι** is FOUT?",
+   "explain": "είναι betekent hij is, zij is, het is én zij zijn (meervoud). Het betekent NIET 'wij zijn' (dat is είμαστε).",
+   "options": [
+    "wij zijn",
+    "hij is",
+    "zij zijn",
+    "het is"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p17",
+   "type": "dictation",
+   "skill": "bepaald",
+   "level": 2,
+   "prompt": "Luister en schrijf op.",
+   "explain": "το παιδί (het kind). Onzijdig, met tónos op de ι.",
+   "text": "το παιδί",
+   "lang": "el"
+  },
+  {
+   "id": "p18",
+   "type": "dictation",
+   "skill": "bepaald",
+   "level": 2,
+   "prompt": "Luister en schrijf op.",
+   "explain": "η γυναίκα (de vrouw). Vrouwelijk, tónos op αί.",
+   "text": "η γυναίκα",
+   "lang": "el"
+  },
+  {
+   "id": "p19",
+   "type": "dictation",
+   "skill": "onbepaald",
+   "level": 2,
+   "prompt": "Luister en schrijf op.",
+   "explain": "ένας καφές (een koffie).",
+   "text": "ένας καφές",
+   "lang": "el"
+  },
+  {
+   "id": "p20",
+   "type": "type",
+   "skill": "bepaald",
+   "level": 2,
+   "prompt": "Vertaal: **de vrouw**.",
+   "explain": "η γυναίκα (vrouwelijk).",
+   "answers": [
+    "η γυναίκα"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p21",
+   "type": "speak",
+   "skill": "verbs",
+   "level": 2,
+   "prompt": "Spreek dit woord uit.",
+   "explain": "αυτοκίνητο (af-to-KÍ-ni-to). De klemtoon valt redelijk vooraan.",
+   "text": "αυτοκίνητο",
+   "lang": "el",
+   "translit": "aftokínito"
+  },
+  {
+   "id": "p22",
+   "type": "handwrite",
+   "skill": "verbs",
+   "level": 2,
+   "prompt": "Schrijf: έχω (ik heb).",
+   "explain": "Let op de χ.",
+   "target": "έχω"
+  },
+  {
+   "id": "p23",
+   "type": "type",
+   "skill": "letters",
+   "level": 2,
+   "prompt": "Typ de Griekse letter die klinkt als **v** in het woord *vivlío*.",
+   "explain": "De β (bèta) klinkt in het Grieks altijd als een v.",
+   "answers": [
+    "β"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p24",
+   "type": "mcq",
+   "skill": "letters",
+   "level": 1,
+   "prompt": "Welke van deze letters behoort **niet** tot de ie-club?",
+   "explain": "η, ι en υ klinken allemaal als ie. ο klinkt als een korte o.",
+   "options": [
+    "ο",
+    "η",
+    "ι",
+    "υ"
+   ],
+   "answer": 0
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "type",
+   "skill": "pronouns",
+   "level": 2,
+   "prompt": "Vertaal: **ik**.",
+   "explain": "εγώ — met klemtoon op de ώ.",
+   "answers": [
+    "εγώ"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m02",
+   "type": "type",
+   "skill": "pronouns",
+   "level": 2,
+   "prompt": "Vertaal: **jij**.",
+   "explain": "εσύ — met υ uit de ie-club en klemtoon achteraan.",
+   "answers": [
+    "εσύ"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m03",
+   "type": "match",
+   "skill": "geslacht",
+   "level": 2,
+   "prompt": "Koppel de woorden aan hun geslacht op basis van de uitgang.",
+   "explain": "άντρας (-ας) is mannelijk. μέρα (-α) is vrouwelijk. νερό (-ο) is onzijdig.",
+   "pairs": [
+    [
+     "άντρας",
+     "Mannelijk"
+    ],
+    [
+     "μέρα",
+     "Vrouwelijk"
+    ],
+    [
+     "νερό",
+     "Onzijdig"
+    ]
+   ]
+  },
+  {
+   "id": "m04",
+   "type": "cloze",
+   "skill": "bepaald",
+   "level": 2,
+   "prompt": "Kies het passende bepaalde lidwoord (ο, η, το) voor elk woord.",
+   "explain": "αυτοκίνητο is onzijdig (το), καφές is mannelijk (ο), μέρα is vrouwelijk (η).",
+   "text": "{{το}} αυτοκίνητο · {{ο}} καφές · {{η}} μέρα",
+   "lang": "el"
+  },
+  {
+   "id": "m05",
+   "type": "type",
+   "skill": "bepaald",
+   "level": 3,
+   "prompt": "Vertaal: **de dag**.",
+   "explain": "η μέρα (of η ημέρα). Vrouwelijk.",
+   "answers": [
+    "η μέρα",
+    "η ημέρα"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m06",
+   "type": "type",
+   "skill": "bepaald",
+   "level": 3,
+   "prompt": "Vertaal: **de man**.",
+   "explain": "ο άντρας. Mannelijk, met -ς op het einde.",
+   "answers": [
+    "ο άντρας"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m07",
+   "type": "cloze",
+   "skill": "onbepaald",
+   "level": 2,
+   "prompt": "Vul het onbepaalde lidwoord (een) in.",
+   "explain": "παιδί is onzijdig, dus het krijgt ένα.",
+   "text": "{{ένα}} παιδί",
+   "lang": "el"
+  },
+  {
+   "id": "m08",
+   "type": "type",
+   "skill": "onbepaald",
+   "level": 3,
+   "prompt": "Vertaal: **een vrouw**.",
+   "explain": "μία γυναίκα (of μια γυναίκα).",
+   "answers": [
+    "μία γυναίκα",
+    "μια γυναίκα"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "verbs",
+   "level": 2,
+   "prompt": "Vertaal: **(jij) bent**.",
+   "explain": "είσαι. (είμαι = ik ben, είσαι = jij bent)",
+   "answers": [
+    "είσαι"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m10",
+   "type": "type",
+   "skill": "verbs",
+   "level": 2,
+   "prompt": "Vertaal: **(wij) zijn**.",
+   "explain": "είμαστε.",
+   "answers": [
+    "είμαστε"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m11",
+   "type": "type",
+   "skill": "verbs",
+   "level": 2,
+   "prompt": "Vertaal: **(zij - mv) hebben**.",
+   "explain": "έχουν of έχουνε.",
+   "answers": [
+    "έχουν",
+    "έχουνε"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m12",
+   "type": "type",
+   "skill": "verbs",
+   "level": 2,
+   "prompt": "Vertaal: **(jullie) hebben**.",
+   "explain": "έχετε.",
+   "answers": [
+    "έχετε"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m13",
+   "type": "mcq",
+   "skill": "pronouns",
+   "level": 1,
+   "prompt": "Welk voornaamwoord betekent **wij**?",
+   "explain": "εμείς = wij. εγώ = ik. εσείς = jullie.",
+   "options": [
+    "εμείς",
+    "εγώ",
+    "εσείς",
+    "αυτοί"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m14",
+   "type": "order",
+   "skill": "verbs",
+   "level": 3,
+   "prompt": "Vertaal: **Ik ben een leraar.** (Laat 'ik' weg!)",
+   "explain": "Είμαι ένας δάσκαλος. Je laat 'εγώ' weg om natuurlijker te klinken.",
+   "tiles": [
+    "Είμαι",
+    "ένας",
+    "δάσκαλος"
+   ],
+   "lang": "el",
+   "distractors": [
+    "εγώ",
+    "μία"
+   ]
+  },
+  {
+   "id": "m15",
+   "type": "cloze",
+   "skill": "geslacht",
+   "level": 2,
+   "prompt": "Kies de juiste vorm voor 'klein' (μικρός).",
+   "explain": "σπίτι is onzijdig, dus het krijgt μικρό.",
+   "text": "το {{μικρό}} σπίτι",
+   "lang": "el"
+  },
+  {
+   "id": "m16",
+   "type": "type",
+   "skill": "verbs",
+   "level": 3,
+   "prompt": "Vertaal: **Wij hebben een klein huis.** (Laat 'wij' weg)",
+   "explain": "Έχουμε (wij hebben) ένα μικρό σπίτι.",
+   "answers": [
+    "Έχουμε ένα μικρό σπίτι",
+    "έχουμε ένα μικρό σπίτι",
+    "Εμείς έχουμε ένα μικρό σπίτι"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m17",
+   "type": "dictation",
+   "skill": "bepaald",
+   "level": 2,
+   "prompt": "Luister naar de uitspraak en typ het woord.",
+   "explain": "ο δάσκαλος (de leraar). Let op de tónos en de slot-sigma (ς).",
+   "text": "ο δάσκαλος",
+   "lang": "el"
+  },
+  {
+   "id": "m18",
+   "type": "dictation",
+   "skill": "onbepaald",
+   "level": 3,
+   "prompt": "Luister naar het fragment en schrijf het op.",
+   "explain": "ένα μεγάλο βιβλίο (een groot boek). Alles op zijn onzijdigs: ένα, μεγάλο, βιβλίο.",
+   "text": "ένα μεγάλο βιβλίο",
+   "lang": "el"
+  },
+  {
+   "id": "m19",
+   "type": "mcq",
+   "skill": "geslacht",
+   "level": 1,
+   "prompt": "Welk geslacht heeft **παιδί** (kind)?",
+   "explain": "Het woord eindigt op -ι. Dit is een typische uitgang voor onzijdige woorden (το παιδί).",
+   "options": [
+    "Onzijdig",
+    "Mannelijk",
+    "Vrouwelijk"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m20",
+   "type": "type",
+   "skill": "verbs",
+   "level": 2,
+   "prompt": "Vertaal: **(hij) heeft**.",
+   "explain": "έχει.",
+   "answers": [
+    "έχει"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m21",
+   "type": "cloze",
+   "skill": "verbs",
+   "level": 2,
+   "prompt": "Vul in om te maken: **Ik heb een auto**.",
+   "explain": "Έχω = ik heb, ένα = een (onzijdig).",
+   "text": "{{Έχω}} {{ένα}} αυτοκίνητο.",
+   "lang": "el"
+  },
+  {
+   "id": "m22",
+   "type": "type",
+   "skill": "letters",
+   "level": 2,
+   "prompt": "Hoe klinkt de letter **ρ**? (typ de Nederlandse letter)",
+   "explain": "ρ (rho) klinkt als r, niet als p.",
+   "answers": [
+    "r"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "m23",
+   "type": "type",
+   "skill": "letters",
+   "level": 2,
+   "prompt": "Welke letter uit de ie-club lijkt op een Latijnse 'n'?",
+   "explain": "η (ita) lijkt op een n, maar klinkt als ie.",
+   "answers": [
+    "η"
+   ],
+   "lang": "el"
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "el",
+  "minWords": 10,
+  "prompt": "Stel jezelf voor in het Grieks. Schrijf minstens 5 korte zinnen. Vertel wie je bent, wat je bent (bijvoorbeeld leraar - δάσκαλος, of lerares - δασκάλα), en wat je hebt (een huis, een grote auto, een vriend - φίλος, etc.). Gebruik de werkwoorden είμαι en έχω.\n\nTip: laat 'ik' (εγώ) weg waar dat natuurlijk voelt!",
+  "model": "Είμαι ο Thibaud. Είμαι δάσκαλος. Έχω ένα μεγάλο σπίτι. Έχω ένα μικρό αυτοκίνητο. Έχω έναν φίλο.",
+  "rubric": [
+   "Je hebt de werkwoorden είμαι en έχω foutloos vervoegd",
+   "Je hebt de juiste lidwoorden (ο/η/το of ένας/μία/ένα) gekozen op basis van het geslacht",
+   "Het onderwerp (εγώ) is correct weggelaten waar dat vlotter klinkt",
+   "Elk woord van twee of meer lettergrepen heeft precies één tónos op de juiste klinker"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-lid-m",
+   "front": "Wat is het **mannelijk** bepaald lidwoord (de)?",
+   "back": "**ο** (bijv. ο φίλος)",
+   "answers": [
+    "ο"
+   ],
+   "lang": "el",
+   "skill": "bepaald"
+  },
+  {
+   "id": "c-lid-f",
+   "front": "Wat is het **vrouwelijk** bepaald lidwoord (de)?",
+   "back": "**η** (bijv. η γυναίκα)",
+   "answers": [
+    "η"
+   ],
+   "lang": "el",
+   "skill": "bepaald"
+  },
+  {
+   "id": "c-lid-n",
+   "front": "Wat is het **onzijdig** bepaald lidwoord (het)?",
+   "back": "**το** (bijv. το σπίτι)",
+   "answers": [
+    "το"
+   ],
+   "lang": "el",
+   "skill": "bepaald"
+  },
+  {
+   "id": "c-onb-m",
+   "front": "Wat is het **mannelijk** onbepaald lidwoord (een)?",
+   "back": "**ένας** (bijv. ένας φίλος)",
+   "answers": [
+    "ένας"
+   ],
+   "lang": "el",
+   "skill": "onbepaald"
+  },
+  {
+   "id": "c-onb-f",
+   "front": "Wat is het **vrouwelijk** onbepaald lidwoord (een)?",
+   "back": "**μία** of **μια** (bijv. μία γυναίκα)",
+   "answers": [
+    "μία",
+    "μια"
+   ],
+   "lang": "el",
+   "skill": "onbepaald"
+  },
+  {
+   "id": "c-verb-eimai",
+   "front": "Hoe zeg je **(ik) ben** in het Grieks?",
+   "back": "**είμαι**",
+   "answers": [
+    "είμαι"
+   ],
+   "lang": "el",
+   "skill": "verbs"
+  },
+  {
+   "id": "c-verb-echo",
+   "front": "Hoe zeg je **(wij) hebben** in het Grieks?",
+   "back": "**έχουμε**",
+   "answers": [
+    "έχουμε"
+   ],
+   "lang": "el",
+   "skill": "verbs"
+  }
+ ],
+ "sources": [
+  "Holton, Mackridge & Philippaki-Warburton, *Greek: A Comprehensive Grammar* (Routledge)",
+  "Κέντρο Ελληνικής Γλώσσας — Πιστοποίηση Ελληνομάθειας, niveau A1"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-27",
+  "adaptedFor": "Tempo vertraagd en extra herhaling van de ie-club en valse vrienden (η, β, ρ) toegevoegd aan het begin van de les, na een score van < A0 in de diagnostische test. Accent ligt op heldere, eenduidige voorbeelden."
+ }
+}

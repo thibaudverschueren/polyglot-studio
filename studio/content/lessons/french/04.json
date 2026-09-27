@@ -1,0 +1,879 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "french",
+ "id": 4,
+ "roadmap": "fr-c1-04-precision-lexicale",
+ "title": "Précision lexicale: anglicismes, barbarismes, paronymes",
+ "subtitle": "Zeg precies wat je bedoelt in zakelijk Frans door schijnvrienden, verzonnen constructies en klankverwanten te vermijden.",
+ "level": "C1",
+ "minutes": 45,
+ "summary": "Een overtuigende tekst valt of staat met de juiste woordkeuze. Deze les scherpt je lexicale precisie aan en pakt de meest hardnekkige anglicismen, barbarismen en paronymen aan die zelfs op directieniveau nog te vaak opduiken.",
+ "objectives": [
+  {
+   "id": "anglicismes",
+   "text": "Je herkent en vervangt frequente anglicismen zoals 'opportunité', 'initier' en 'être en charge de'."
+  },
+  {
+   "id": "barbarismes",
+   "text": "Je vermijdt barbarismen en corrigeert foutieve constructies zoals 'pallier à'."
+  },
+  {
+   "id": "paronymes",
+   "text": "Je kiest feilloos tussen paronymen (conjecture/conjoncture, éminent/imminent) op basis van hun exacte betekenis."
+  }
+ ],
+ "vocab": [
+  {
+   "term": "une occasion",
+   "meaning": "een kans, een gunstige gelegenheid"
+  },
+  {
+   "term": "l'opportunité (f)",
+   "meaning": "de wenselijkheid, de gepastheid"
+  },
+  {
+   "term": "lancer",
+   "meaning": "starten, opzetten (een project)"
+  },
+  {
+   "term": "initier (à)",
+   "meaning": "inwijden (in)"
+  },
+  {
+   "term": "être chargé de",
+   "meaning": "verantwoordelijk zijn voor, de leiding hebben over"
+  },
+  {
+   "term": "pallier",
+   "meaning": "verhelpen, verzachten (direct overgankelijk, geen voorzetsel)"
+  },
+  {
+   "term": "remédier à",
+   "meaning": "verhelpen, genezen (indirect overgankelijk, met voorzetsel à)"
+  },
+  {
+   "term": "la conjoncture",
+   "meaning": "de samenloop van omstandigheden, de (economische) situatie"
+  },
+  {
+   "term": "la conjecture",
+   "meaning": "de gissing, de hypothese"
+  },
+  {
+   "term": "éminent",
+   "meaning": "voortreffelijk, hoogstaand, uitmuntend"
+  },
+  {
+   "term": "imminent",
+   "meaning": "nakend, ophanden zijnd, dreigend"
+  }
+ ],
+ "diagnostic": {
+  "intro": "Aangezien er de afgelopen tijd geen activiteit was in dit vak, testen we kort je parate kennis van de vorige C1-lessen (register, pronominale werkwoorden, hypotheses). Zo weet je coach waar extra aandacht nodig is.",
+  "bands": [
+   "Opfrissing nodig",
+   "C1 Beheerst",
+   "C2 Klaar"
+  ],
+  "items": [
+   {
+    "id": "d01",
+    "type": "mcq",
+    "skill": "tournures",
+    "level": 2,
+    "prompt": "« Le projet a fait long feu. » Wat betekent dit?",
+    "explain": "*Faire long feu* = mislukken.",
+    "options": [
+     "Het project is mislukt.",
+     "Het project duurde erg lang.",
+     "Het project is een groot succes geworden."
+    ],
+    "answer": 0,
+    "band": "C1 Beheerst"
+   },
+   {
+    "id": "d02",
+    "type": "type",
+    "skill": "interrogation",
+    "level": 2,
+    "prompt": "Herschrijf met complexe inversie: **Est-ce que le client a payé ?**",
+    "explain": "Zelfstandig naamwoord vooraan + inversie met voornaamwoord (a-t-il).",
+    "answers": [
+     "Le client a-t-il payé ?",
+     "Le client a-t-il payé"
+    ],
+    "lang": "fr",
+    "band": "C1 Beheerst"
+   },
+   {
+    "id": "d03",
+    "type": "cloze",
+    "skill": "pp-pronominaux",
+    "level": 3,
+    "prompt": "Vul het voltooid deelwoord van **succéder** in.",
+    "explain": "*Se succéder* heeft een indirect object (*se* = *à l'un l'autre*), dus geen akkoord.",
+    "text": "Elles se sont {{succédé}} à ce poste.",
+    "lang": "fr",
+    "band": "C2 Klaar"
+   },
+   {
+    "id": "d04",
+    "type": "cloze",
+    "skill": "pp-pronominaux",
+    "level": 2,
+    "prompt": "Vul het voltooid deelwoord van **rendre** in.",
+    "explain": "*Se rendre compte* is een vaste uitdrukking en altijd onveranderlijk.",
+    "text": "Elle s'est {{rendu}} compte de son erreur.",
+    "lang": "fr",
+    "band": "C1 Beheerst"
+   },
+   {
+    "id": "d05",
+    "type": "mcq",
+    "skill": "hypothetique",
+    "level": 2,
+    "prompt": "Si j'avais été là, je ___.",
+    "explain": "Si + plus-que-parfait -> conditionnel passé.",
+    "options": [
+     "l'aurais fait",
+     "l'avais fait",
+     "le ferais",
+     "le ferai"
+    ],
+    "answer": 0,
+    "band": "C1 Beheerst"
+   },
+   {
+    "id": "d06",
+    "type": "cloze",
+    "skill": "hypothetique",
+    "level": 2,
+    "prompt": "Vul de juiste vorm van **avoir** in.",
+    "explain": "*Au cas où* + conditionnel.",
+    "text": "Au cas où vous {{auriez}} des questions, appelez-moi.",
+    "lang": "fr",
+    "band": "C1 Beheerst"
+   },
+   {
+    "id": "d07",
+    "type": "cloze",
+    "skill": "subj-relative",
+    "level": 2,
+    "prompt": "Vul de juiste vorm van **être** in.",
+    "explain": "Na *le seul* volgt in het formele register de subjonctif.",
+    "text": "C'est le seul argument qui {{soit}} valable.",
+    "lang": "fr",
+    "band": "C2 Klaar"
+   },
+   {
+    "id": "d08",
+    "type": "type",
+    "skill": "lexique",
+    "level": 2,
+    "prompt": "Herschrijf in het soutenu: **faire une erreur**.",
+    "explain": "Kies het precieze werkwoord *commettre*.",
+    "answers": [
+     "commettre une erreur"
+    ],
+    "lang": "fr",
+    "band": "Opfrissing nodig"
+   },
+   {
+    "id": "d09",
+    "type": "cloze",
+    "skill": "registres",
+    "level": 1,
+    "prompt": "Vul in. Vervang *ça* in deze formele zin.",
+    "explain": "*Ça* wordt *cela* in het soutenu.",
+    "text": "{{Cela}} m'importune.",
+    "lang": "fr",
+    "band": "Opfrissing nodig"
+   }
+  ]
+ },
+ "sections": [
+  {
+   "id": "anglicismes",
+   "title": "Anglicismes et faux amis",
+   "md": "In het zakelijk Frans sluipen ongemerkt veel Engelse woorden en zinsstructuren binnen. Zulke **anglicismen** zijn een doorn in het oog van puristen en Franse lezers. Op C1/C2-niveau dien je deze te vermijden en het correcte Franse equivalent te gebruiken. We bespreken hier de drie meest hardnekkige fouten die op de werkvloer helaas gemeengoed zijn geworden.\n\n### 1. Être en charge de\nUit het Engels: *to be in charge of*. Dit is een letterlijke, maar foute vertaling. Hoewel je het voortdurend hoort, is het een constructie die door de Académie française stellig wordt afgewezen. In verzorgd Frans gebruik je het voltooid deelwoord van het werkwoord *charger*.\n- Fout: [[fr:Il est en charge du recrutement.]]\n- Juist: [[fr:Il est chargé du recrutement.]]\n- Juist: [[fr:Il a la charge du recrutement.]]\n- Juist: [[fr:Il est responsable du recrutement.]]\n\nAndere elegante alternatieven zijn *avoir la charge de*, *avoir la responsabilité de* of simpelweg *être responsable de*. In een managementnota of juridisch advies dien je deze valse vriend resoluut te vermijden.\n\n### 2. Initier un projet\nIn het Frans betekent *initier* 'inwijden' in een kunst of geheim (bv. [[fr:initier quelqu'un à la musique]]). Het veelvuldige gebruik als synoniem voor *to initiate* (starten, beginnen) is een klassieke fout in bedrijven. Je 'inwijdt' immers geen project of strategie.\n- Fout: [[fr:Nous allons initier une nouvelle stratégie.]]\n- Juist: [[fr:Nous allons lancer une nouvelle stratégie.]] (of *amorcer*, *entamer*, *mettre en place*).\n\nAfhankelijk van de context en de gewenste nuance kun je ook kiezen voor **amorcer** (op gang brengen) of **instaurer** (instellen). Dit toont ware lexicale precisie.\n\n### 3. Opportunité vs Occasion\nMisschien wel de meest gemaakte fout door Nederlandstaligen en een typische *faux ami* (valse vriend).\n- **Une occasion** is een kans of een gunstige gelegenheid (Engels: *opportunity*).\n- **L'opportunité** duidt in het Frans uitsluitend op de **wenselijkheid** of gepastheid van een beslissing (het *opportuun* zijn). Het beantwoordt de vraag: *Is het wel verstandig of gepast om dit nu te doen?*\n\n> [!pitfall] Une belle opportunité\n> Zeg nooit: [[fr:C'est une belle opportunité pour notre entreprise.]] Je bedoelt immers dat het een kans is: [[fr:C'est une belle occasion de croître.]]. Wel correct is: [[fr:Nous discutons de l'opportunité de cet investissement.]] (Is het wel verstandig/gepast om het te doen?) Je hoort dit vaak in juridische en bestuurlijke contexten: *juger de l'opportunité des poursuites* (de opportuniteit van de vervolging beoordelen).",
+   "checks": [
+    {
+     "id": "c1a",
+     "type": "type",
+     "skill": "anglicismes",
+     "level": 2,
+     "prompt": "Herschrijf zonder anglicisme (vervang de foute constructie): **Elle est en charge de l'équipe.**",
+     "explain": "*Être chargé de* is de correcte Franse vorm.",
+     "answers": [
+      "Elle est chargée de l'équipe.",
+      "Elle est chargée de l'équipe",
+      "Elle a la charge de l'équipe.",
+      "Elle est responsable de l'équipe."
+     ],
+     "lang": "fr"
+    },
+    {
+     "id": "c1b",
+     "type": "cloze",
+     "skill": "anglicismes",
+     "level": 2,
+     "prompt": "Kies het juiste woord: kans of wenselijkheid.",
+     "explain": "Een 'kans' is *une occasion*. *Opportunité* is een anglicisme in deze context.",
+     "text": "Nous avons eu la belle {{occasion}} de discuter avec la direction.",
+     "lang": "fr",
+     "errors": [
+      {
+       "match": "/opportunit/",
+       "feedback": "Opportunité = wenselijkheid. Hier gaat het over een kans (occasion).",
+       "tag": "angl-opp"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "barbarismes",
+   "title": "Le barbarisme syntaxique : Pallier",
+   "md": "Een *barbarisme* is een fout waarbij je een woord misvormt of verkeerd construeert. Zelfs journalisten en directieleden bezondigen zich hier dagelijks aan, maar op C1/C2-niveau is deze fout onvergeeflijk. De absolute nummer één op de lijst van ergernissen in formele teksten is de foutieve zinsbouw rond het woord **pallier**.\n\n### Pallier est transitif direct\nHet werkwoord **pallier** betekent 'verhelpen' of 'verzachten' (bv. een probleem of een tekort). Het komt van het Latijnse *pallium* (mantel) en betekent figuurlijk 'bedekken'. Het is **direct overgankelijk** (*transitif direct*). Het krijgt dus een lijdend voorwerp (COD) **zónder** voorzetsel. Je 'bedekt' immers rechtstreeks iets.\n\n- Fout: [[fr:Il faut pallier à ce manque.]]\n- Juist: [[fr:Il faut pallier ce manque.]]\n- Juist: [[fr:Nous pallierons les difficultés.]]\n\n### Waarom gaat dit zo vaak mis?\nVele Franstaligen verwarren *pallier* met zijn naaste synoniem **remédier**. Dat werkwoord neemt wél een indirect object (met *à*). Omdat sprekers vaak twijfelen en *pallier* als een deftiger alternatief voor *remédier* zien, plakken ze er onterecht de *à* aan vast. Dit is een vorm van hypercorrectie die uitmondt in een klassiek barbarisme.\n\nKies dus bewust voor één van de twee juiste structuren:\n1. [[fr:pallier quelque chose]] (direct)\n2. [[fr:remédier à quelque chose]] (indirect)\n\n> [!tip] De verleiding van de 'A'\n> Als je aarzelt, denk dan aan het werkwoord *compenser* of *masquer*. Dat is net als *pallier* direct overgankelijk. Omdat je intuïtief *compenser un manque* zegt (en nooit *compenser à un manque*), zeg je ook logischerwijs *pallier un manque*.",
+   "checks": [
+    {
+     "id": "c2a",
+     "type": "cloze",
+     "skill": "barbarismes",
+     "level": 2,
+     "prompt": "Vul in. Let op de aanwezigheid of afwezigheid van een voorzetsel.",
+     "explain": "*Pallier* is direct overgankelijk (neemt géén *à* of afgeleiden daarvan).",
+     "text": "Le gouvernement tente de pallier {{la}} crise.",
+     "lang": "fr",
+     "errors": [
+      {
+       "match": "/à la/",
+       "feedback": "Geen voorzetsel 'à' bij pallier! Het is pallier la crise.",
+       "tag": "pallier-prep"
+      }
+     ]
+    },
+    {
+     "id": "c2b",
+     "type": "type",
+     "skill": "barbarismes",
+     "level": 2,
+     "prompt": "Herschrijf de zin met het werkwoord **remédier**: « Il faut pallier ce manque. »",
+     "explain": "*Remédier* neemt, in tegenstelling tot *pallier*, wél het voorzetsel *à*.",
+     "answers": [
+      "Il faut remédier à ce manque.",
+      "Il faut remédier à ce manque"
+     ],
+     "lang": "fr"
+    }
+   ]
+  },
+  {
+   "id": "paronymes-1",
+   "title": "Les paronymes (1) : Conjoncture / Conjecture",
+   "md": "*Paronymes* (paroniemen of klankverwanten) zijn woorden die qua klank en spelling zodanig op elkaar lijken, dat ze zelfs door hoogopgeleide moedertaalsprekers weleens verward worden. Omdat het verschil vaak in slechts één of twee letters zit, leest de spellingscontrole er vlot overheen. Toch betekenen ze wezenlijk iets anders. In een professionele context getuigt het correct gebruik van paroniemen van een grote lexicale precisie. \n\n### Conjoncture vs Conjecture\n\n**La conjoncture** (met een **n**)\nDit is de samenloop van omstandigheden, vaak de actuele economische of politieke situatie. Het komt van het Latijnse *conjungere* (samenvoegen, verbinden). Je spreekt over de economische context of de marktverhoudingen.\n- [[fr:La conjoncture économique est actuellement très défavorable aux investissements.]]\n- [[fr:Dans cette conjoncture, la prudence est de mise.]]\n\n**La conjecture** (zonder n, met een c)\nDit is een hypothese, een gissing, een veronderstelling. Het is niet gebaseerd op harde feiten. Dit woord is verwant aan het Engelse *conjecture* en komt van het Latijnse *conicere* (samenwerpen). Je werpt als het ware ideeën op zonder zekerheid.\n- [[fr:Ses déclarations ne reposent sur rien, ce ne sont que des conjectures.]]\n- De vaste uitdrukking: [[fr:se perdre en conjectures]] (zich in wild giswerk verliezen).\n\n> [!mnemonic] Onthoud de N\n> Conjo**n**cture hoort bij co**n**texte of situatio**n** (de situatie).\n> Conje**c**ture hoort bij een aspe**c**t of theorie (een theorie of gissing zonder bewijs).",
+   "checks": [
+    {
+     "id": "c3a",
+     "type": "mcq",
+     "skill": "paronymes",
+     "level": 2,
+     "prompt": "Vu la ___ économique actuelle, nous reportons le projet.",
+     "explain": "De economische situatie is *la conjoncture*.",
+     "options": [
+      "conjoncture",
+      "conjecture",
+      "conjonction"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "paronymes-2",
+   "title": "Les paronymes (2) : Éminent / Imminent",
+   "md": "Nog twee paronymen die in formele teksten cruciaal zijn, zijn *éminent* en *imminent*. Je kunt je in zakelijke correspondentie of academisch werk hier geen slordigheid veroorloven, want de betekenissen liggen werkelijk mijlenver uit elkaar. Waar het ene woord bewondering uitdrukt, drukt het andere hoogdringendheid of dreiging uit.\n\n### Éminent vs Imminent\n\n**Éminent(e)**\nDit adjectief betekent: hoogstaand, voortreffelijk, uitmuntend, buitengewoon. Het komt van het Latijnse *eminere* (uitsteken). Je gebruikt het vaak om (de kwaliteiten van) een persoon, zijn intelligentie of zijn rol te prijzen. Het is een uitstekend woord om register te verhogen.\n- [[fr:Notre directeur a consulté un éminent spécialiste.]] (Een uitstekende, befaamde specialist).\n- [[fr:Elle a joué un rôle éminent dans la réussite de ce dossier.]]\n\n**Imminent(e)**\nDit betekent: nakend, ophanden zijnd, wat zeer binnenkort of onmiddellijk zal gebeuren. Het is afgeleid van *imminere* (overhellen, dreigen te vallen). Vaak, maar niet altijd, heeft het een dreigende, onheilspellende of urgente bijklank.\n- [[fr:La faillite de cette entreprise partenaire est imminente.]] (Ze kan elk moment gebeuren).\n- [[fr:Nous redoutons un danger imminent.]]\n\n> [!mnemonic] Onthoud de dubbele M\n> Het onderscheid maken gaat het best door te letten op de dubbele consonant.\n> Im**m**inent (met de dubbele m) betekent dat iets im**m**édiatement (onmiddellijk) gaat gebeuren.",
+   "checks": [
+    {
+     "id": "c4a",
+     "type": "cloze",
+     "skill": "paronymes",
+     "level": 2,
+     "prompt": "Vul in (éminent / imminent).",
+     "explain": "Een nakend gevaar is een *danger imminent*.",
+     "text": "La population a été prévenue d'un danger {{imminent}}.",
+     "lang": "fr"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "anglicismes",
+   "level": 1,
+   "prompt": "Welke zin bevat **geen** anglicisme?",
+   "explain": "*Être chargé de* is correct. *Être en charge de* is een letterlijke, foutieve vertaling.",
+   "options": [
+    "Elle est chargée du recrutement.",
+    "Elle est en charge du recrutement.",
+    "Elle est sur la charge du recrutement."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "type",
+   "skill": "anglicismes",
+   "level": 2,
+   "prompt": "Herschrijf de zin zonder anglicisme (verbeter de aangeduide woorden): **Qui est en charge de ce client ?**",
+   "explain": "Vervang *en charge* door *chargé* (of *responsable*).",
+   "answers": [
+    "Qui est chargé de ce client ?",
+    "Qui est chargé de ce client",
+    "Qui a la charge de ce client ?",
+    "Qui est responsable de ce client ?"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "p03",
+   "type": "cloze",
+   "skill": "anglicismes",
+   "level": 2,
+   "prompt": "Vul het juiste woord in (kans/gelegenheid).",
+   "explain": "Een kans is *une occasion*. *Opportunité* duidt enkel op wenselijkheid.",
+   "text": "J'ai eu l'{{occasion}} de lui parler hier.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "/opportunit/",
+     "feedback": "Opportunité is een anglicisme voor 'kans'. Gebruik occasion.",
+     "tag": "angl-opp"
+    }
+   ]
+  },
+  {
+   "id": "p04",
+   "type": "match",
+   "skill": "anglicismes",
+   "level": 1,
+   "prompt": "Koppel de begrippen.",
+   "explain": "Onderscheid de valse vrienden.",
+   "pairs": [
+    [
+     "une occasion",
+     "een kans, een gelegenheid"
+    ],
+    [
+     "l'opportunité",
+     "de wenselijkheid"
+    ],
+    [
+     "lancer (un projet)",
+     "starten, opzetten"
+    ],
+    [
+     "initier (qqn à qqch)",
+     "iemand inwijden in iets"
+    ]
+   ]
+  },
+  {
+   "id": "p05",
+   "type": "type",
+   "skill": "anglicismes",
+   "level": 2,
+   "prompt": "Herschrijf de zin met een correct Frans werkwoord: **Nous allons initier une nouvelle stratégie.**",
+   "explain": "*Initier* betekent inwijden. Gebruik *lancer*, *amorcer* of *entamer*.",
+   "answers": [
+    "Nous allons lancer une nouvelle stratégie.",
+    "Nous allons lancer une nouvelle stratégie",
+    "Nous allons amorcer une nouvelle stratégie.",
+    "Nous allons entamer une nouvelle stratégie.",
+    "Nous allons mettre en place une nouvelle stratégie."
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "p06",
+   "type": "mcq",
+   "skill": "barbarismes",
+   "level": 1,
+   "prompt": "Welke zin is correct opgebouwd?",
+   "explain": "*Pallier* krijgt een lijdend voorwerp zonder voorzetsel. *Remédier* krijgt wel *à*.",
+   "options": [
+    "Il faut pallier ce problème.",
+    "Il faut pallier à ce problème.",
+    "Il faut remédier ce problème."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p07",
+   "type": "cloze",
+   "skill": "barbarismes",
+   "level": 2,
+   "prompt": "Vul het juiste woord in (kies tussen *le* en *au*).",
+   "explain": "*Pallier* neemt geen voorzetsel, dus je vult enkel het lidwoord in.",
+   "text": "Le directeur tente de pallier {{le}} manque de personnel.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "/au/",
+     "feedback": "Fout! Pallier is direct overgankelijk en neemt dus nooit 'à' of afleidingen (au/aux).",
+     "tag": "pallier-prep"
+    }
+   ]
+  },
+  {
+   "id": "p08",
+   "type": "cloze",
+   "skill": "barbarismes",
+   "level": 2,
+   "prompt": "Vul het ontbrekende voorzetsel in.",
+   "explain": "*Remédier* krijgt in tegenstelling tot *pallier* wél het voorzetsel *à*.",
+   "text": "Il faut remédier {{à}} ce problème.",
+   "lang": "fr"
+  },
+  {
+   "id": "p09",
+   "type": "order",
+   "skill": "barbarismes",
+   "level": 2,
+   "prompt": "Bouw de zin correct op.",
+   "explain": "Let op: *pallier* wordt direct gevolgd door het lijdend voorwerp.",
+   "tiles": [
+    "Nous",
+    "devons",
+    "pallier",
+    "cette",
+    "crise."
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "p10",
+   "type": "mcq",
+   "skill": "paronymes",
+   "level": 2,
+   "prompt": "Vu la ___ économique actuelle, nous reportons le projet.",
+   "explain": "De economische situatie of context = *la conjoncture*.",
+   "options": [
+    "conjoncture",
+    "conjecture",
+    "conjonction"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p11",
+   "type": "cloze",
+   "skill": "paronymes",
+   "level": 2,
+   "prompt": "Vul het juiste paroniem in (meervoud van conjoncture of conjecture).",
+   "explain": "Een hypothese/gissing is *une conjecture*.",
+   "text": "Ses théories ne sont que des {{conjectures}}.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "/conjonctures/",
+     "feedback": "Conjoncture = situatie. Hier bedoel je de hypothese/gissing (conjectures).",
+     "tag": "paro-conj"
+    }
+   ]
+  },
+  {
+   "id": "p12",
+   "type": "cloze",
+   "skill": "paronymes",
+   "level": 2,
+   "prompt": "Vul het juiste paroniem in (éminent of imminent).",
+   "explain": "Uitstekend, hoogstaand = *éminent*.",
+   "text": "Le professeur est un scientifique {{éminent}}.",
+   "lang": "fr"
+  },
+  {
+   "id": "p13",
+   "type": "cloze",
+   "skill": "paronymes",
+   "level": 2,
+   "prompt": "Vul het juiste paroniem in (éminent of imminent).",
+   "explain": "Nakend, dreigend, ophanden zijnd = *imminent*.",
+   "text": "L'entreprise est menacée de faillite {{imminente}}.",
+   "lang": "fr"
+  },
+  {
+   "id": "p14",
+   "type": "dictation",
+   "skill": "paronymes",
+   "level": 2,
+   "prompt": "Luister en schrijf wat je hoort.",
+   "explain": "*Imminent* = nakend.",
+   "text": "Un changement imminent.",
+   "lang": "fr"
+  },
+  {
+   "id": "p15",
+   "type": "explain",
+   "skill": "barbarismes",
+   "level": 3,
+   "prompt": "Leg kort uit waarom de volgende zin een barbarisme is: « L'État tente de pallier à la crise. »",
+   "explain": "Vergelijk jouw analyse met de rubric.",
+   "model": "Le verbe « pallier » est transitif direct. Il se construit donc sans préposition. Il faut dire : pallier la crise.",
+   "rubric": [
+    "Je benoemt dat 'pallier' direct overgankelijk (transitif direct) is",
+    "Je legt uit dat het voorzetsel 'à' geschrapt moet worden",
+    "Je geeft de juiste verbetering: pallier la crise"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "p16",
+   "type": "speak",
+   "skill": "anglicismes",
+   "level": 2,
+   "prompt": "Spreek vlot uit zonder te haperen.",
+   "explain": "*Être chargé de* is de elegante vertaling van 'to be in charge of'.",
+   "text": "Je suis chargé de ce dossier.",
+   "lang": "fr"
+  },
+  {
+   "id": "p17",
+   "type": "type",
+   "skill": "anglicismes",
+   "level": 3,
+   "prompt": "Herschrijf de zin en verbeter de grote faux ami: **C'est une belle opportunité de croissance.**",
+   "explain": "*Opportunité* in de zin van 'kans' is een anglicisme. Gebruik *occasion*.",
+   "answers": [
+    "C'est une belle occasion de croissance.",
+    "C'est une belle occasion de croissance"
+   ],
+   "lang": "fr"
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "cloze",
+   "skill": "anglicismes",
+   "level": 2,
+   "prompt": "Vul in (één woord): Il est ___ de la communication.",
+   "explain": "In het Frans ben je *chargé de* of *responsable de*.",
+   "text": "Il est {{chargé}} de la communication.",
+   "lang": "fr"
+  },
+  {
+   "id": "m02",
+   "type": "type",
+   "skill": "anglicismes",
+   "level": 2,
+   "prompt": "Herschrijf zonder anglicisme: **Marc est en charge du budget.**",
+   "explain": "Vervang *en charge* door het juiste woord.",
+   "answers": [
+    "Marc est chargé du budget.",
+    "Marc a la charge du budget.",
+    "Marc est responsable du budget.",
+    "Marc est chargé du budget"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m03",
+   "type": "mcq",
+   "skill": "anglicismes",
+   "level": 1,
+   "prompt": "Kies het juiste woord voor 'kans/gelegenheid'.",
+   "explain": "Een kans = *une occasion*. Wenselijkheid = *opportunité*.",
+   "options": [
+    "une occasion",
+    "une opportunité",
+    "une conjoncture"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m04",
+   "type": "cloze",
+   "skill": "anglicismes",
+   "level": 2,
+   "prompt": "Kies het juiste woord voor 'kans'.",
+   "explain": "Kans = *occasion*.",
+   "text": "C'est une excellente {{occasion}} de collaborer.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "/opportunit/",
+     "feedback": "Geen anglicisme! Je bedoelt een kans (occasion), geen wenselijkheid.",
+     "tag": "angl-opp"
+    }
+   ]
+  },
+  {
+   "id": "m05",
+   "type": "type",
+   "skill": "anglicismes",
+   "level": 2,
+   "prompt": "Herschrijf de zin (verbeter het foutieve werkwoord): **Nous devons initier ce projet.**",
+   "explain": "*Initier* betekent inwijden. Voor een project gebruik je *lancer* of *amorcer*.",
+   "answers": [
+    "Nous devons lancer ce projet.",
+    "Nous devons amorcer ce projet.",
+    "Nous devons entamer ce projet.",
+    "Nous devons mettre en place ce projet.",
+    "Nous devons lancer ce projet"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m06",
+   "type": "mcq",
+   "skill": "barbarismes",
+   "level": 1,
+   "prompt": "Welke constructie is syntactisch correct?",
+   "explain": "*Pallier* is direct overgankelijk.",
+   "options": [
+    "pallier les difficultés",
+    "pallier aux difficultés",
+    "pallier à les difficultés"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m07",
+   "type": "cloze",
+   "skill": "barbarismes",
+   "level": 2,
+   "prompt": "Vul in. Let op de voorzetselvalkuil.",
+   "explain": "Geen voorzetsel *à*, direct gevolgd door *les insuffisances*.",
+   "text": "Afin de pallier {{les}} insuffisances du système.",
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "/aux/",
+     "feedback": "Pallier neemt geen à of aux. Het lijdend voorwerp volgt direct: pallier les insuffisances.",
+     "tag": "pallier-prep"
+    }
+   ]
+  },
+  {
+   "id": "m08",
+   "type": "type",
+   "skill": "barbarismes",
+   "level": 3,
+   "prompt": "Verbeter de constructiefout, herschrijf de hele zin: **Comment pallier au problème ?**",
+   "explain": "Schrap het voorzetsel (*au* wordt *le*).",
+   "answers": [
+    "Comment pallier le problème ?",
+    "Comment pallier le problème"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m09",
+   "type": "cloze",
+   "skill": "barbarismes",
+   "level": 2,
+   "prompt": "Vul in: voorzetsel of niets?",
+   "explain": "*Remédier* vereist wél het voorzetsel *à*.",
+   "text": "Il faudra remédier {{à}} cette situation.",
+   "lang": "fr"
+  },
+  {
+   "id": "m10",
+   "type": "order",
+   "skill": "barbarismes",
+   "level": 2,
+   "prompt": "Plaats de zinsdelen in de juiste volgorde.",
+   "explain": "*Pallier* wordt direct gevolgd door *les pertes*.",
+   "tiles": [
+    "Nous",
+    "essayons",
+    "de pallier",
+    "les",
+    "pertes."
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m11",
+   "type": "mcq",
+   "skill": "paronymes",
+   "level": 1,
+   "prompt": "Wat is het juiste paroniem voor de 'economische situatie'?",
+   "explain": "De (economische) conjunctuur = *la conjoncture*.",
+   "options": [
+    "la conjoncture",
+    "la conjecture",
+    "la conjonction"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m12",
+   "type": "cloze",
+   "skill": "paronymes",
+   "level": 2,
+   "prompt": "Vul in (conjoncture of conjecture).",
+   "explain": "De context/situatie = *la conjoncture*.",
+   "text": "La {{conjoncture}} actuelle ne permet pas d'embaucher.",
+   "lang": "fr"
+  },
+  {
+   "id": "m13",
+   "type": "cloze",
+   "skill": "paronymes",
+   "level": 2,
+   "prompt": "Vul in (meervoud van conjoncture of conjecture).",
+   "explain": "Gissingen zonder basis = *des conjectures*.",
+   "text": "Ils se perdent en {{conjectures}} sur la date de son départ.",
+   "lang": "fr"
+  },
+  {
+   "id": "m14",
+   "type": "mcq",
+   "skill": "paronymes",
+   "level": 1,
+   "prompt": "Welk woord betekent 'voortreffelijk, uitmuntend'?",
+   "explain": "Voortreffelijk, uitmuntend = *éminent*.",
+   "options": [
+    "éminent",
+    "imminent",
+    "immanent"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m15",
+   "type": "cloze",
+   "skill": "paronymes",
+   "level": 2,
+   "prompt": "Vul in (éminent of imminent). Let op de uitgang (mannelijk enkelvoud).",
+   "explain": "Nakend, wat onmiddellijk dreigt = *imminent*.",
+   "text": "Nous redoutons un effondrement {{imminent}} de ce marché.",
+   "lang": "fr"
+  },
+  {
+   "id": "m16",
+   "type": "dictation",
+   "skill": "paronymes",
+   "level": 2,
+   "prompt": "Luister en schrijf wat je hoort.",
+   "explain": "Een uitmuntend jurist = *éminent*.",
+   "text": "Un éminent juriste.",
+   "lang": "fr"
+  },
+  {
+   "id": "m17",
+   "type": "dictation",
+   "skill": "barbarismes",
+   "level": 2,
+   "prompt": "Luister en schrijf de zin (let op het voorzetsel, of net het ontbreken ervan).",
+   "explain": "*Pallier* direct gevolgd door het lijdend voorwerp.",
+   "text": "Il faut pallier ce déficit.",
+   "lang": "fr"
+  },
+  {
+   "id": "m18",
+   "type": "type",
+   "skill": "anglicismes",
+   "level": 3,
+   "prompt": "Herschrijf en verbeter het anglicisme (wenselijkheid vs kans): **C'est l'opportunité de votre vie.**",
+   "explain": "De kans van je leven = *l'occasion de votre vie*.",
+   "answers": [
+    "C'est l'occasion de votre vie.",
+    "C'est l'occasion de votre vie"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m19",
+   "type": "cloze",
+   "skill": "paronymes",
+   "level": 2,
+   "prompt": "Vul in (éminent of imminent). Let op de uitgang (vrouwelijk enkelvoud).",
+   "explain": "Een nakende (dreigende) breuk = *imminente*.",
+   "text": "La rupture de leurs relations semble {{imminente}}.",
+   "lang": "fr"
+  },
+  {
+   "id": "m20",
+   "type": "cloze",
+   "skill": "anglicismes",
+   "level": 2,
+   "prompt": "Vul het woord in dat de **wenselijkheid** of gepastheid uitdrukt.",
+   "explain": "Wenselijkheid = *l'opportunité*.",
+   "text": "Le conseil étudie l'{{opportunité}} d'une telle mesure.",
+   "lang": "fr"
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "fr",
+  "minWords": 40,
+  "prompt": "**Réécrivez ce message en corrigeant les cinq erreurs de vocabulaire et de syntaxe** (anglicismes, barbarismes, paronymes).\n\n> Bonjour, face à la conjecture économique difficile, nous avons pris la décision d'initier un nouveau plan de relance. Marc sera en charge de ce dossier. Il devra pallier aux baisses de ventes. C'est une belle opportunité pour lui de faire ses preuves.",
+  "model": "Bonjour, face à la conjoncture économique difficile, nous avons pris la décision de lancer un nouveau plan de relance. Marc sera chargé de ce dossier. Il devra pallier les baisses de ventes. C'est une belle occasion pour lui de faire ses preuves.",
+  "rubric": [
+   "conjecture → conjoncture (economische situatie)",
+   "initier → lancer (of amorcer, entamer - voor het starten van een project)",
+   "sera en charge de → sera chargé de (of aura la charge de, sera responsable de)",
+   "pallier aux → pallier les (of remédier aux - pallier is direct overgankelijk)",
+   "opportunité → occasion (de kans om zich te bewijzen)"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-pallier",
+   "front": "Welk voorzetsel volgt in het Frans na **pallier** (in de betekenis van verhelpen: *pallier ... un problème*) ?",
+   "back": "Geen enkel! *Pallier* is **direct overgankelijk**. Je zegt dus: *pallier un problème*.",
+   "skill": "barbarismes"
+  },
+  {
+   "id": "c-remedier",
+   "front": "Welk voorzetsel volgt na **remédier** (*remédier ... un problème*) ?",
+   "back": "**à** (*remédier à un problème*).",
+   "skill": "barbarismes"
+  },
+  {
+   "id": "c-encharge",
+   "front": "Waarom is *être en charge de ce projet* fout in het zakelijk Frans?",
+   "back": "Het is een **anglicisme** (*to be in charge of*). De correcte Franse uitdrukking is: **être chargé de** ce projet (of *responsable de*).",
+   "skill": "anglicismes"
+  },
+  {
+   "id": "c-initier",
+   "front": "Waarom mag je *initier un projet* niet gebruiken voor het opstarten van een project?",
+   "back": "Het is een **anglicisme** (*to initiate*). *Initier* betekent 'iemand inwijden'. Gebruik voor een project **lancer**, **amorcer** of **entamer**.",
+   "skill": "anglicismes"
+  },
+  {
+   "id": "c-opportunite",
+   "front": "Wanneer gebruik je **opportunité** wél correct in het Frans?",
+   "back": "Om de **wenselijkheid** of **gepastheid** aan te geven (bv. *l'opportunité d'une mesure*). Als je het over een 'kans' hebt, gebruik je **occasion**.",
+   "skill": "anglicismes"
+  },
+  {
+   "id": "c-conjoncture",
+   "front": "Hoe onthoud je vlot het verschil tussen **conjoncture** en **conjecture**?",
+   "back": "Conjo**n**cture (met de n) hoort bij het co**n**texte (de actuele situatie). Conjecture is slechts een gissing of hypothese.",
+   "skill": "paronymes"
+  },
+  {
+   "id": "c-imminent",
+   "front": "Wat is het wezenlijke verschil tussen de paroniemen **éminent** en **imminent**?",
+   "back": "**Éminent** = voortreffelijk of uitmuntend (*un juriste éminent*).\n**Imminent** = nakend of ophanden zijnd (*un danger imminent*).",
+   "skill": "paronymes"
+  }
+ ],
+ "sources": [
+  "Académie française — *Dire, ne pas dire*",
+  "Grevisse & Goosse, *Le Bon Usage* (16e éd.)"
+ ],
+ "kind": "core",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-27",
+  "adaptedFor": "Nieuwe start gemaakt met een diagnostische opfrissing omdat er de afgelopen weken geen lessen werden voltooid. Focus op actieve verwerking om het ritme weer op te bouwen."
+ }
+}

@@ -1,0 +1,1142 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "automation",
+ "id": 4,
+ "roadmap": "au-04-code-node",
+ "title": "De Code-node (JavaScript)",
+ "subtitle": "Complexe transformaties schrijven in JavaScript zonder het itemmodel te breken",
+ "level": "praktijk",
+ "minutes": 45,
+ "summary": "De Code-node geeft je de volledige kracht van JavaScript binnen n8n. Ideaal voor complexe logica, maar gevaarlijk als je vergeet hoe n8n met items omgaat. Je leert de twee modi (Run Once for All vs Each Item), het vereiste return-formaat, en waarom je nooit `fetch` gebruikt in n8n.",
+ "objectives": [
+  {
+   "id": "code-mode",
+   "text": "Je kiest resoluut de juiste modus (All vs Each) voor je Code-node en kent de impact op prestaties."
+  },
+  {
+   "id": "code-return",
+   "text": "Je retourneert data in het exacte n8n-itemformaat `[{ json: { ... } }]` of `{ json: { ... } }`."
+  },
+  {
+   "id": "code-errors",
+   "text": "Je herkent, debugt (met console.log) en voorkomt veelgemaakte fouten zoals het muteren van de input."
+  },
+  {
+   "id": "code-when-not",
+   "text": "Je weet wanneer je de Code-node moet vermijden (bv. voor HTTP-requests) en ingebouwde nodes moet gebruiken."
+  }
+ ],
+ "sections": [
+  {
+   "id": "intro-mode",
+   "title": "De Code-node: volledige vrijheid met JavaScript",
+   "md": "Wanneer de standaard nodes (zoals Set, Edit Fields, of Merge) niet volstaan voor je transformatie, biedt de **Code-node** de ultieme uitweg. Hiermee schrijf je puur JavaScript (in een Node.js omgeving) om je data precies zo te boetseren als de klant vraagt. Omdat je de volledige controle krijgt, is het wel cruciaal dat je begrijpt hoe n8n achter de schermen met items omgaat. Je kunt namelijk makkelijk de flow van de workflow breken als je data in het verkeerde formaat teruggeeft.\n\nDe Code-node heeft twee verschillende uitvoeringsmodi, die bepalen hoe je data binnenkrijgt en hoe je code wordt uitgevoerd:\n\n1. **Run Once for All Items** (de standaard). In deze modus draait je script exact één keer, ongeacht hoeveel items er de node binnenkomen. Je krijgt toegang tot alle items als een array via het commando `$input.all()`. Deze modus is absoluut noodzakelijk wanneer je de *structuur* van de datastroom wilt veranderen. Wil je items sorteren op prijs? Wil je duplicaten verwijderen? Wil je vijf binnenkomende items samenvoegen tot één samenvattend rapport? Dan moet je script de volledige array in het geheugen hebben.\n2. **Run Once for Each Item**. In deze modus draait de Code-node *N* keer—één keer voor elk item dat binnenkomt. De interface verandert licht: je gebruikt niet langer `$input.all()`, maar je hebt direct toegang tot het huidige item via de variabele `$json`. Deze modus is handig voor eenvoudige één-op-één transformaties, vergelijkbaar met een Edit Fields-node. Denk aan het berekenen van een leeftijd op basis van een geboortedatum per contact, of het normaliseren van een telefoonnummer.\n\n> [!rule] Gebruik `$input.all()`, niet `items`\n> In oudere tutorials of documentatie zie je vaak de syntax `items[0].json`. In moderne versies van n8n (vanaf v1.0) is dit verouderd. Gebruik altijd `$input.all()` om items op te halen. Het is veiliger, consistenter en ondersteunt makkelijker toegang tot de metadata van items.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "code-mode",
+     "level": 1,
+     "prompt": "Welke modus van de Code-node geeft je toegang tot de array van alle items via `$input.all()`?",
+     "explain": "In deze modus krijg je de complete array en bepaal je zelf hoeveel items de node retourneert.",
+     "options": [
+      "Run Once for All Items",
+      "Run Once for Each Item",
+      "Run Every Item",
+      "Execute Once"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "return-format",
+   "title": "Het heilige return-formaat en transformaties",
+   "md": "De meest gemaakte fout door beginners in de Code-node is simpelweg vergeten dat n8n een heel specifiek itemformaat vereist. Je kunt niet zomaar een getal, een string, of een willekeurige array van objecten retourneren. Alles wat uit een Code-node stroomt, moet voldoen aan de n8n-itemstructuur.\n\nIn **Run Once for All Items** verwacht n8n altijd een **array van objecten**, waarbij de eigenlijke data ingepakt zit in een sleutel met de naam `json`. Daarnaast kan een item eventueel binaire data (`binary`) of flow-metadata (`pairedItem`) bevatten, maar `json` is verplicht.\n\n```javascript\n// FOUT: n8n snapt dit niet en zal een foutmelding geven\nreturn [ { naam: \"Thibaud\", leeftijd: 22 } ];\n\n// JUIST: De data zit netjes verpakt in het json-veld\nreturn [ { json: { naam: \"Thibaud\", leeftijd: 22 } } ];\n```\n\nAls je de binnenkomende data wilt transformeren zonder velden te verliezen, is de combinatie van de array `.map()`-methode en de JavaScript spread-operator (`...`) je beste vriend. Hiermee maak je per item een nieuw object aan, kopieer je de bestaande velden, en voeg je nieuwe toe of overschrijf je oude.\n\n```javascript\n// Voeg aan alle items een berekend veld toe\nreturn $input.all().map(item => ({\n  json: {\n    ...item.json,               // Behoud alle originele velden\n    isVolwassen: item.json.leeftijd >= 18 // Berekend veld\n  }\n}));\n```\n\nIn **Run Once for Each Item** is de vereiste iets simpeler, maar het principe blijft hetzelfde. Omdat de node per item draait, retourneer je **geen array**, maar exact één object met de `json`-sleutel.\n\n```javascript\n// Run Once for Each Item\nreturn {\n  json: {\n    ...$json,\n    isVolwassen: $json.leeftijd >= 18\n  }\n};\n```\n\nAls je in de All-modus het aantal items wilt reduceren (bijvoorbeeld door ongewenste leads weg te filteren), gebruik je de `.filter()` methode. Ook in dat geval zorg je ervoor dat de output een array is die de `json`-structuur respecteert.",
+   "checks": [
+    {
+     "id": "c2",
+     "type": "mcq",
+     "skill": "code-return",
+     "level": 1,
+     "prompt": "Wat is het juiste return-formaat voor de **Run Once for Each Item**-modus?",
+     "explain": "In Each-modus geef je precies één item terug (geen array), gewrapt in een json-eigenschap.",
+     "options": [
+      "`return { json: { ... } };`",
+      "`return [{ json: { ... } }];`",
+      "`return { ... };`",
+      "`return $json;`"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "async-fetch",
+   "title": "Asynchroon werken en de fetch-valkuil",
+   "md": "De Code-node in n8n ondersteunt asynchrone JavaScript-code. Je kunt *top-level await* gebruiken, wat betekent dat je externe processen, timers, of bepaalde data-operaties synchroon kunt laten afhandelen voordat de node zijn data doorgeeft.\n\nOmdat je asynchrone code kunt schrijven, is het verleidelijk om ingebouwde Node.js-functies zoals `fetch()` of pakketten zoals `axios` te gebruiken om direct vanuit de Code-node een API-aanroep te doen. In de B2B-architectuur die we in deze opleiding aanleren, is dat echter een **absolute no-go**.\n\n> [!warning] Gebruik NOOIT `fetch` of netwerkverzoeken in een Code-node\n> Alle communicatie met de buitenwereld moet verlopen via de ingebouwde **HTTP Request-node** of specifieke app-nodes.\n\nHier zijn de strategische en technische redenen waarom:\n1. **Foutafhandeling en Retries**: Een HTTP Request-node kan geconfigureerd worden om automatisch opnieuw te proberen (retries) bij een tijdelijke serverfout (zoals 500 of 502). Als je `fetch` gebruikt, moet je deze complexe backoff-logica zelf in JavaScript programmeren.\n2. **Rate Limits**: Professionele API's beperken het aantal verzoeken per seconde (429 Too Many Requests). De HTTP-node kan hier elegant mee omgaan in combinatie met n8n-instellingen, terwijl een Code-node script faliekant crasht.\n3. **Beveiliging van Credentials**: Wanneer je `fetch` gebruikt, moet je API-sleutels of tokens vaak hardcoden of ophalen uit variabelen. De HTTP Request-node koppelt veilig met n8n's ingebouwde credentials manager, waar sleutels geëncrypteerd in de database opgeslagen zitten.\n4. **Zichtbaarheid voor de klant**: Workflows moeten onderhoudbaar zijn. Iedereen ziet direct aan een HTTP-node dat er contact wordt gemaakt met een externe API. Verberg je die logica in een generieke Code-node, dan creëer je een ongewenste zwarte doos.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "mcq",
+     "skill": "code-when-not",
+     "level": 1,
+     "prompt": "Waarom gebruik je de HTTP Request-node in plaats van `fetch` in de Code-node?",
+     "explain": "De HTTP Request-node handelt automatisch retries, rate limits en credentials veilig af.",
+     "options": [
+      "Vanwege automatische foutafhandeling (retries) en veilige credential-opslag.",
+      "Omdat `fetch` verboden is in JavaScript.",
+      "Omdat de HTTP Request-node sneller is qua uitvoering.",
+      "Omdat de Code-node geen asynchrone bewerkingen ondersteunt."
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "debugging",
+   "title": "Debuggen en mutaties: de onzichtbare valkuilen",
+   "md": "Je code zal onvermijdelijk soms falen. In standaard Node.js-ontwikkeling gebruik je vaak `console.log()` om te zien wat er misgaat. In n8n werkt `console.log()` technisch gezien wel, maar de output verschijnt **niet** in de visuele editor! De logs worden geschreven naar de *stdout* van de container waarop n8n draait, waar je als cloud-gebruiker vaak geen toegang toe hebt.\n\nOm toch efficiënt te debuggen in de UI, zijn er twee beproefde methodes:\n1. **Het debug-veld**: Injecteer de verdachte variabele direct in je return-object. Je ziet dan bij uitvoering in de n8n-tabel wat de waarde exact was.\n   `return { json: { ...$json, DEBUG_WAARDE: verdachteVariabele } };`\n2. **De harde stop**: Werp een expliciete fout op met de waarde die je wilt inspecteren. De node zal onmiddellijk crashen en toont de string in de editor.\n   `throw new Error(\"Debug: \" + JSON.stringify(verdachteVariabele));`\n\nEen andere verraderlijke foutbron in de Code-node is **mutatie door referentie**. In JavaScript worden objecten doorgegeven als referenties. Als je rechtstreeks de input muteert:\n\n```javascript\n// GEVAARLIJK: Je wijzigt de originele referentie\nfor (const item of $input.all()) {\n  item.json.prijs = item.json.prijs * 1.21; \n}\n```\n\nWanneer je workflow zich eerder heeft afgesplitst en een andere tak gebruikt óók diezelfde items, kan jouw directe mutatie onvoorspelbare side-effects veroorzaken in de andere tak. Beide takken wijzen naar hetzelfde geheugenadres!\n\n> [!pitfall] Bescherm jezelf met de spread operator\n> Behandel `$input.all()` en `$json` alsof ze *read-only* zijn. Maak altijd een nieuw object aan met `{ json: { ...item.json, nieuwVeld: 1 } }`. Dit kopieert de waarden naar een gloednieuw object, zodat eerdere referenties en andere takken intact blijven.",
+   "checks": [
+    {
+     "id": "c4",
+     "type": "type",
+     "skill": "code-errors",
+     "level": 1,
+     "prompt": "Waar verschijnen de logs van `console.log()` in een n8n Code-node standaard?",
+     "explain": "Console logs worden naar de backend (server logs, terminal, docker logs) gestuurd, niet naar de UI.",
+     "answers": [
+      "server logs",
+      "terminal",
+      "backend logs",
+      "in de terminal",
+      "logs",
+      "docker logs"
+     ],
+     "lang": "nl"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "code-mode",
+   "level": 1,
+   "prompt": "Je wilt alle binnenkomende items **sorteren** op datum. Welke modus kies je voor de Code-node?",
+   "explain": "Om te sorteren moet de node alle items tegelijk in het geheugen hebben, dus 'Run Once for All Items'.",
+   "options": [
+    "Run Once for All Items",
+    "Run Once for Each Item",
+    "Execute Once"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "mcq",
+   "skill": "code-mode",
+   "level": 1,
+   "prompt": "Hoe vaak wordt de code uitgevoerd in **Run Once for Each Item**-modus als er 50 items binnenkomen?",
+   "explain": "De node draait 50 keer, één keer per item, en `$json` wijst telkens naar het huidige item.",
+   "options": [
+    "50 keer",
+    "1 keer",
+    "Afhankelijk van de Execute Once-instelling"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p03",
+   "type": "mcq",
+   "skill": "code-return",
+   "level": 1,
+   "prompt": "In **Run Once for All Items**-modus, wat is de juiste manier om data te retourneren?",
+   "explain": "n8n verwacht een array van objecten, waarbij elk object een `json`-eigenschap heeft.",
+   "options": [
+    "`return [{ json: { naam: \"Thibaud\" } }];`",
+    "`return [{ naam: \"Thibaud\" }];`",
+    "`return { json: { naam: \"Thibaud\" } };`",
+    "`return { naam: \"Thibaud\" };`"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p04",
+   "type": "mcq",
+   "skill": "code-return",
+   "level": 1,
+   "prompt": "In **Run Once for Each Item**-modus, welk formaat moet je retourneren?",
+   "explain": "In Each-modus retourneer je exact één item, gewrapt in een object met een `json`-sleutel.",
+   "options": [
+    "`return { json: { ... } };`",
+    "`return [{ json: { ... } }];`",
+    "`return { ... };`"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p05",
+   "type": "jscode",
+   "skill": "code-return",
+   "level": 2,
+   "prompt": "Code-node (Run Once for All Items): voeg aan elk item de eigenschap `processed: true` toe.",
+   "explain": "Gebruik `map` om over `$input.all()` te itereren en retourneer een array met `{ json: ... }`.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().map(item => ({ json: { ...item.json, processed: true } }));",
+   "cases": [
+    {
+     "items": [
+      {
+       "id": 1
+      },
+      {
+       "id": 2
+      }
+     ],
+     "expected": [
+      {
+       "id": 1,
+       "processed": true
+      },
+      {
+       "id": 2,
+       "processed": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p06",
+   "type": "jscode",
+   "skill": "code-return",
+   "level": 2,
+   "prompt": "Code-node (Run Once for Each Item): voeg de eigenschap `processed: true` toe.",
+   "explain": "In Each-modus gebruik je `$json` (het huidige item) en retourneer je `{ json: { ... } }`.",
+   "mode": "each",
+   "starter": "return { json: $json };",
+   "solution": "return { json: { ...$json, processed: true } };",
+   "cases": [
+    {
+     "items": [
+      {
+       "id": 1
+      },
+      {
+       "id": 2
+      }
+     ],
+     "expected": [
+      {
+       "id": 1,
+       "processed": true
+      },
+      {
+       "id": 2,
+       "processed": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p07",
+   "type": "mcq",
+   "skill": "code-when-not",
+   "level": 1,
+   "prompt": "Waarom mag je **geen** `fetch` of `axios` gebruiken in een Code-node voor externe API's?",
+   "explain": "De HTTP Request-node handelt retries, rate limits, statuscodes en credentials veilig en automatisch af.",
+   "options": [
+    "Je mist automatische retries, foutafhandeling en veilige credential-opslag.",
+    "De Code-node ondersteunt geen asynchrone functies.",
+    "Omdat n8n externe netwerkpakketten blokkeert.",
+    "`fetch` is trager dan de HTTP Request-node."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p08",
+   "type": "type",
+   "skill": "code-errors",
+   "level": 1,
+   "prompt": "Waar verschijnt de output van een `console.log()` in een Code-node?",
+   "explain": "De output gaat naar de server logs (terminal/Docker), niet naar de n8n UI.",
+   "answers": [
+    "server logs",
+    "terminal",
+    "logs",
+    "docker logs",
+    "console van de server",
+    "backend",
+    "in de logs",
+    "server"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "code-mode",
+   "level": 1,
+   "prompt": "Met welke variabele haal je in moderne n8n (v1+) **alle items** op in 'Run Once for All Items'-modus? (Geef de exacte code, incl. haakjes)",
+   "explain": "Gebruik altijd `$input.all()` in plaats van de verouderde `items`.",
+   "answers": [
+    "$input.all()"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p10",
+   "type": "jscode",
+   "skill": "code-mode",
+   "level": 2,
+   "prompt": "Code-node (Run Once for All Items): **filter** items en behoud alleen degenen waar `age >= 18`.",
+   "explain": "Gebruik `filter` op de array van items. Je hoeft niets te remappen als je de overblijvende items intact laat.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().filter(item => item.json.age >= 18);",
+   "cases": [
+    {
+     "items": [
+      {
+       "name": "A",
+       "age": 16
+      },
+      {
+       "name": "B",
+       "age": 20
+      }
+     ],
+     "expected": [
+      {
+       "name": "B",
+       "age": 20
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p11",
+   "type": "jscode",
+   "skill": "code-mode",
+   "level": 2,
+   "prompt": "Code-node (Run Once for Each Item): combineer `first_name` en `last_name` tot `full_name` (gescheiden door spatie) en behoud de overige velden.",
+   "explain": "In Each-modus manipuleer je `$json`.",
+   "mode": "each",
+   "starter": "return { json: $json };",
+   "solution": "return { json: { ...$json, full_name: `${$json.first_name} ${$json.last_name}` } };",
+   "cases": [
+    {
+     "items": [
+      {
+       "first_name": "Jan",
+       "last_name": "Peeters",
+       "id": 1
+      }
+     ],
+     "expected": [
+      {
+       "first_name": "Jan",
+       "last_name": "Peeters",
+       "id": 1,
+       "full_name": "Jan Peeters"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p12",
+   "type": "jscode",
+   "skill": "code-mode",
+   "level": 3,
+   "prompt": "Code-node (Run Once for All Items): groepeer alle items tot **één item** met een eigenschap `all_ids` (een array met daarin alle `id`'s). Dit vervangt een Aggregate-node.",
+   "explain": "Creëer een array door de id's te extraheren, en retourneer dan exact één item: `[{ json: { all_ids: [...] } }]`.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return [{ json: { all_ids: $input.all().map(i => i.json.id) } }];",
+   "cases": [
+    {
+     "items": [
+      {
+       "id": 10
+      },
+      {
+       "id": 20
+      }
+     ],
+     "expected": [
+      {
+       "all_ids": [
+        10,
+        20
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p13",
+   "type": "mcq",
+   "skill": "code-errors",
+   "level": 2,
+   "prompt": "Wat is een nadeel van het direct muteren van objecten in een Code-node (bv. `item.json.newField = 1`) in plaats van de spread operator (`...item.json`) te gebruiken?",
+   "explain": "JavaScript geeft objecten door als referentie. Mutaties kunnen soms neveneffecten geven als eerdere nodes naar dezelfde referentie wijzen.",
+   "options": [
+    "Het kan onverwachte side-effects geven omdat objecten via referentie worden doorgegeven.",
+    "Het verbreekt de asynchrone ketting in n8n.",
+    "Het triggert een geheugenlek in de Node.js engine.",
+    "Het wordt niet opgeslagen in de output van de node."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p14",
+   "type": "jscode",
+   "skill": "code-mode",
+   "level": 3,
+   "prompt": "Code-node (Run Once for All Items): er komt 1 item binnen met een eigenschap `tags` (een array van strings). Maak een apart item voor **elke tag**. Behoud de string als het `tag` veld. (Dit vervangt een Split Out node).",
+   "explain": "Haal de array uit het eerste item (`$input.all()[0].json.tags`) en map over deze array.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "const tags = $input.all()[0].json.tags;\nreturn tags.map(tag => ({ json: { tag } }));",
+   "cases": [
+    {
+     "items": [
+      {
+       "tags": [
+        "urgent",
+        "tech",
+        "sales"
+       ]
+      }
+     ],
+     "expected": [
+      {
+       "tag": "urgent"
+      },
+      {
+       "tag": "tech"
+      },
+      {
+       "tag": "sales"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p15",
+   "type": "explain",
+   "skill": "code-when-not",
+   "level": 3,
+   "prompt": "Een klant stelt voor: *\"Waarom schrijven we in de Code-node niet gewoon een scriptje met 'axios' dat de lead pusht naar ons CRM? Dat scheelt weer een HTTP-node.\"* Leg in maximaal 3 zinnen uit waarom je dit niet doet.",
+   "explain": "Klant wil een API call in code doen in plaats van met de HTTP node.",
+   "model": "De HTTP Request-node in n8n handelt automatisch fouten, retries en rate-limits af, wat cruciaal is voor de stabiliteit. Bovendien slaan we API-sleutels veilig versleuteld op in n8n in plaats van ze bloot te stellen in de code. Zo vermijden we onbetrouwbare verbindingen en beveiligen we jullie data optimaal.",
+   "rubric": [
+    "Benoemt retries/foutafhandeling van de HTTP node",
+    "Benoemt veilige opslag van credentials",
+    "Begrijpelijk voor een klant, niet veroordelend"
+   ]
+  },
+  {
+   "id": "p16",
+   "type": "jscode",
+   "skill": "code-mode",
+   "level": 2,
+   "prompt": "Code-node (Run Once for All Items): bereken de som van het veld `amount` over alle items. Retourneer **één item** met de eigenschap `total`.",
+   "explain": "Gebruik `reduce` op `$input.all()` en pak het resultaat in in `[{ json: { total: ... } }]`.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "const total = $input.all().reduce((sum, item) => sum + item.json.amount, 0);\nreturn [{ json: { total } }];",
+   "cases": [
+    {
+     "items": [
+      {
+       "amount": 10
+      },
+      {
+       "amount": 25.5
+      },
+      {
+       "amount": 4.5
+      }
+     ],
+     "expected": [
+      {
+       "total": 40
+      }
+     ]
+    },
+    {
+     "items": [],
+     "expected": [
+      {
+       "total": 0
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "jscode",
+   "skill": "code-return",
+   "level": 2,
+   "prompt": "Code-node (Run Once for Each Item): Voeg `price_incl_tax` toe (21% btw). Rond af op 2 decimalen.",
+   "explain": "Zorg dat je `Math.round(val * 100) / 100` gebruikt voor het afronden.",
+   "mode": "each",
+   "starter": "return { json: $json };",
+   "solution": "return { json: { ...$json, price_incl_tax: Math.round($json.price * 1.21 * 100) / 100 } };",
+   "cases": [
+    {
+     "items": [
+      {
+       "price": 10
+      },
+      {
+       "price": 12.5
+      }
+     ],
+     "expected": [
+      {
+       "price": 10,
+       "price_incl_tax": 12.1
+      },
+      {
+       "price": 12.5,
+       "price_incl_tax": 15.13
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m02",
+   "type": "jscode",
+   "skill": "code-mode",
+   "level": 2,
+   "prompt": "Code-node (Run Once for All Items): Filter items weg waar `email` afwezig is, `null` is, of een lege string.",
+   "explain": "Controleer of de string 'truthy' is en niet leeg.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().filter(i => i.json.email && typeof i.json.email === 'string' && i.json.email.trim() !== '');",
+   "cases": [
+    {
+     "items": [
+      {
+       "email": "a@b.com"
+      },
+      {
+       "email": ""
+      },
+      {
+       "email": null
+      },
+      {
+       "name": "Test"
+      }
+     ],
+     "expected": [
+      {
+       "email": "a@b.com"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m03",
+   "type": "mcq",
+   "skill": "code-return",
+   "level": 1,
+   "prompt": "Wat ontbreekt in dit return-statement in 'Run Once for All Items' mode? `return [{ naam: \"Jan\" }];`",
+   "explain": "De array bevat een plat object in plaats van een object met een `json`-eigenschap.",
+   "options": [
+    "De `json`-sleutel die de data omhult.",
+    "De array-haken `[]`.",
+    "Een `$input.all()` statement bovenaan.",
+    "De `return` is niet asynchroon."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m04",
+   "type": "jscode",
+   "skill": "code-mode",
+   "level": 2,
+   "prompt": "Code-node (Run Once for Each Item): Haal het domein uit het `email` veld en bewaar dit als `domain`. (Veronderstel dat er altijd een `@` is).",
+   "explain": "Splits de string op `@` en pak het tweede deel.",
+   "mode": "each",
+   "starter": "return { json: $json };",
+   "solution": "return { json: { ...$json, domain: $json.email.split('@')[1] } };",
+   "cases": [
+    {
+     "items": [
+      {
+       "email": "thibaud@polyglot.com"
+      }
+     ],
+     "expected": [
+      {
+       "email": "thibaud@polyglot.com",
+       "domain": "polyglot.com"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m05",
+   "type": "jscode",
+   "skill": "code-mode",
+   "level": 3,
+   "prompt": "Code-node (Run Once for All Items): **Sorteer** de items aflopend op `price`.",
+   "explain": "Array.sort() past in-place aan, of je kunt een kopie sorteren. Zorg dat je items correct vergelijkt via `a.json.price`.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().sort((a, b) => b.json.price - a.json.price);",
+   "cases": [
+    {
+     "items": [
+      {
+       "price": 10
+      },
+      {
+       "price": 50
+      },
+      {
+       "price": 20
+      }
+     ],
+     "expected": [
+      {
+       "price": 50
+      },
+      {
+       "price": 20
+      },
+      {
+       "price": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m06",
+   "type": "mcq",
+   "skill": "code-mode",
+   "level": 2,
+   "prompt": "Je wilt een oplopend volgnummer toevoegen aan alle 100 items (1 tot 100). Welke modus kies je, en waarom?",
+   "explain": "Run Once for All Items geeft je toegang tot de array en de index, wat veel makkelijker is voor een teller dan Each mode (waarbij de Code node iteratie-status moet bijhouden).",
+   "options": [
+    "Run Once for All Items, want je itereert over de hele array en kunt de index gebruiken.",
+    "Run Once for Each Item, want het volgnummer verschilt per item.",
+    "Execute Once, want je wilt de teller maar één keer starten.",
+    "Beide modi zijn exact even makkelijk voor een volgnummer."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m07",
+   "type": "type",
+   "skill": "code-when-not",
+   "level": 1,
+   "prompt": "Welke ingebouwde n8n-node gebruik je in plaats van `fetch` of `axios` om een API aan te spreken?",
+   "explain": "De HTTP Request node handelt retries, rate limits en veilige credentials af.",
+   "answers": [
+    "HTTP Request",
+    "HTTP",
+    "HTTP Request Node",
+    "http request-node",
+    "http node"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "m08",
+   "type": "jscode",
+   "skill": "code-mode",
+   "level": 2,
+   "prompt": "Code-node (Run Once for All Items): Behoud uitsluitend de **eerste 3 items**.",
+   "explain": "Gebruik `slice(0, 3)` op de array van items.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().slice(0, 3);",
+   "cases": [
+    {
+     "items": [
+      {
+       "id": 1
+      },
+      {
+       "id": 2
+      },
+      {
+       "id": 3
+      },
+      {
+       "id": 4
+      }
+     ],
+     "expected": [
+      {
+       "id": 1
+      },
+      {
+       "id": 2
+      },
+      {
+       "id": 3
+      }
+     ]
+    },
+    {
+     "items": [
+      {
+       "id": 1
+      }
+     ],
+     "expected": [
+      {
+       "id": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m09",
+   "type": "jscode",
+   "skill": "code-mode",
+   "level": 2,
+   "prompt": "Code-node (Run Once for Each Item): Als de klant VIP is (`vip: true`), krijgt hij 10% korting. Voeg het veld `discount` (getal) toe. Indien geen VIP, is `discount` 0.",
+   "explain": "Gebruik een ternaire operator of een if-statement.",
+   "mode": "each",
+   "starter": "return { json: $json };",
+   "solution": "return { json: { ...$json, discount: $json.vip ? $json.price * 0.10 : 0 } };",
+   "cases": [
+    {
+     "items": [
+      {
+       "price": 100,
+       "vip": true
+      },
+      {
+       "price": 100,
+       "vip": false
+      }
+     ],
+     "expected": [
+      {
+       "price": 100,
+       "vip": true,
+       "discount": 10
+      },
+      {
+       "price": 100,
+       "vip": false,
+       "discount": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m10",
+   "type": "type",
+   "skill": "code-mode",
+   "level": 1,
+   "prompt": "Hoe heet de Code-node modus die één object (`{ json: ... }`) per keer vereist als output?",
+   "explain": "Dit is de modus die per item wordt uitgevoerd.",
+   "answers": [
+    "Run Once for Each Item",
+    "Each Item",
+    "Run Once For Each",
+    "Each"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "m11",
+   "type": "type",
+   "skill": "code-mode",
+   "level": 1,
+   "prompt": "Wat is in de Code-node het n8n-equivalent van een array items? (De exacte syntax om ze allemaal te lezen).",
+   "explain": "Dit geeft de input items array terug in de vorm `[{ json: { ... } }]`.",
+   "answers": [
+    "$input.all()"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m12",
+   "type": "jscode",
+   "skill": "code-return",
+   "level": 2,
+   "prompt": "Code-node (Run Once for Each Item): Zet de **eerste letter** van de eigenschap `name` om in een hoofdletter.",
+   "explain": "Combineer `charAt(0).toUpperCase()` met `slice(1)`.",
+   "mode": "each",
+   "starter": "return { json: $json };",
+   "solution": "return { json: { ...$json, name: $json.name.charAt(0).toUpperCase() + $json.name.slice(1) } };",
+   "cases": [
+    {
+     "items": [
+      {
+       "name": "thibaud"
+      }
+     ],
+     "expected": [
+      {
+       "name": "Thibaud"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m13",
+   "type": "jscode",
+   "skill": "code-mode",
+   "level": 2,
+   "prompt": "Code-node (Run Once for All Items): Retourneer exact **één item** dat het veld `count` heeft, bevattende het totale aantal input-items.",
+   "explain": "Je telt het aantal objecten in de array, en stopt dit in het n8n item-formaat.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return [{ json: { count: $input.all().length } }];",
+   "cases": [
+    {
+     "items": [
+      {
+       "a": 1
+      },
+      {
+       "a": 2
+      },
+      {
+       "a": 3
+      }
+     ],
+     "expected": [
+      {
+       "count": 3
+      }
+     ]
+    },
+    {
+     "items": [],
+     "expected": [
+      {
+       "count": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m14",
+   "type": "jscode",
+   "skill": "code-mode",
+   "level": 3,
+   "prompt": "Code-node (Run Once for Each Item): Maskeer een kredietkaart. Vervang in `card_number` alles behalve de laatste 4 cijfers door sterretjes (*). Voeg dit toe als `card_redacted`.",
+   "explain": "Gebruik `slice(-4)` en `padStart`.",
+   "mode": "each",
+   "starter": "return { json: $json };",
+   "solution": "return { json: { ...$json, card_redacted: $json.card_number.slice(-4).padStart($json.card_number.length, '*') } };",
+   "cases": [
+    {
+     "items": [
+      {
+       "card_number": "1234567812345678"
+      }
+     ],
+     "expected": [
+      {
+       "card_number": "1234567812345678",
+       "card_redacted": "************5678"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m15",
+   "type": "mcq",
+   "skill": "code-errors",
+   "level": 2,
+   "prompt": "Je gebruikt `console.log(data)` in de Code-node, maar je hebt geen toegang tot de terminal van de server. Wat is een snelle workaround?",
+   "explain": "Voeg de variabele toe aan het output-JSON-object, zodat het visueel inspecteerbaar wordt in de editor.",
+   "options": [
+    "De variabele tijdelijk als eigenschap aan de output toevoegen, bv. `debug_data`.",
+    "De Execute Once knop aanzetten om logs in de browser te tonen.",
+    "Een Log Node installeren uit de Community catalogus.",
+    "De workflow draaien als 'Test workflow', wat console.log deblokkeert."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m16",
+   "type": "jscode",
+   "skill": "code-mode",
+   "level": 2,
+   "prompt": "Code-node (Run Once for All Items): Transformeer items zodat je **enkel** het veld `name` retourneert (de samenvoeging van `first_name` en `last_name`). Verwijder de rest van de velden.",
+   "explain": "Gebruik `.map()` om een geheel nieuw `json`-object per item op te bouwen, zonder de spread operator.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().map(i => ({ json: { name: `${i.json.first_name} ${i.json.last_name}` } }));",
+   "cases": [
+    {
+     "items": [
+      {
+       "first_name": "Jan",
+       "last_name": "Smit",
+       "age": 40
+      }
+     ],
+     "expected": [
+      {
+       "name": "Jan Smit"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m17",
+   "type": "jscode",
+   "skill": "code-return",
+   "level": 1,
+   "prompt": "Code-node (Run Once for Each Item): Voeg simpelweg de vaste eigenschap `status: \"pending\"` toe aan het item.",
+   "explain": "Spreid het huidige item (`...$json`) en voeg `status` toe.",
+   "mode": "each",
+   "starter": "return { json: $json };",
+   "solution": "return { json: { ...$json, status: \"pending\" } };",
+   "cases": [
+    {
+     "items": [
+      {
+       "id": 1
+      }
+     ],
+     "expected": [
+      {
+       "id": 1,
+       "status": "pending"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m18",
+   "type": "jscode",
+   "skill": "code-mode",
+   "level": 3,
+   "prompt": "Code-node (Run Once for All Items): Je krijgt items met `category` en `price`. Retourneer **één item** waarin de eigenschappen de categorieën zijn en de waarden de totale prijs per categorie.",
+   "explain": "Combineer een for-loop of `reduce` om het object op te bouwen, en wrap dit in `[{ json: result }]`.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "const result = {};\nfor (const item of $input.all()) {\n  const cat = item.json.category;\n  result[cat] = (result[cat] || 0) + item.json.price;\n}\nreturn [{ json: result }];",
+   "cases": [
+    {
+     "items": [
+      {
+       "category": "books",
+       "price": 10
+      },
+      {
+       "category": "electronics",
+       "price": 100
+      },
+      {
+       "category": "books",
+       "price": 5
+      }
+     ],
+     "expected": [
+      {
+       "books": 15,
+       "electronics": 100
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m19",
+   "type": "mcq",
+   "skill": "code-when-not",
+   "level": 2,
+   "prompt": "Een API heeft een rate limit van 2 requests per seconde. Waarom is een Code-node met een `for`-lus en `fetch` hier een slechte keuze?",
+   "explain": "De HTTP Request-node ondersteunt ingebouwde configuraties voor rate limits en exponential backoff.",
+   "options": [
+    "Je moet dan zelf pauzes en retry-logica programmeren, wat de Code-node complex en foutgevoelig maakt.",
+    "Je kunt in een Code-node onmogelijk netwerkverzoeken of fetch-calls doen vanwege n8n's sandbox.",
+    "Een Code-node kan maximaal één request per uitvoering verwerken en zal de iteratie direct afbreken.",
+    "n8n blokkeert externe pakketten zoals axios of fetch altijd standaard in een containeromgeving."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m20",
+   "type": "jscode",
+   "skill": "code-errors",
+   "level": 2,
+   "prompt": "Deze Code-node faalt met de fout `item.map is not a function`. Pas de code aan zodat hij het veld `list` (dat een array van namen is) uitleest en een nieuw item per naam teruggeeft. Bij een ontbrekend of ongeldig `list`-veld, negeer je het item.",
+   "explain": "De klassieke fout: `.map` of een lus aanroepen op iets wat geen array is. Controleer eerst `Array.isArray(item.json.list)`.",
+   "mode": "all",
+   "starter": "const out = [];\nfor (const item of $input.all()) {\n  // Fix de aanname dat list altijd een array is\n  for (const name of item.json.list) {\n    out.push({ json: { name } });\n  }\n}\nreturn out;",
+   "solution": "const out = [];\nfor (const item of $input.all()) {\n  if (Array.isArray(item.json.list)) {\n    for (const name of item.json.list) {\n      out.push({ json: { name } });\n    }\n  }\n}\nreturn out;",
+   "cases": [
+    {
+     "name": "mix van geldige en ongeldige items",
+     "items": [
+      {
+       "list": [
+        "Jan",
+        "Piet"
+       ]
+      },
+      {
+       "list": null
+      },
+      {
+       "other": "data"
+      }
+     ],
+     "expected": [
+      {
+       "name": "Jan"
+      },
+      {
+       "name": "Piet"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m21",
+   "type": "type",
+   "skill": "code-errors",
+   "level": 2,
+   "prompt": "Je wilt de uitvoering van een Code-node onmiddellijk stoppen en een fout met de data van variabele `x` visueel in n8n tonen. Welk JavaScript-statement gebruik je daarvoor? Begin je antwoord met `throw`.",
+   "explain": "Door een Error op te gooien stopt de node en zie je de string in de editor.",
+   "answers": [
+    "throw new Error(JSON.stringify(x))",
+    "throw new Error(x)",
+    "throw Error(JSON.stringify(x))",
+    "throw Error(x)"
+   ],
+   "lang": "code"
+  }
+ ],
+ "production": {
+  "type": "jscode",
+  "mode": "all",
+  "prompt": "**Klantopdracht.** Je klant importeert dagelijks een rommelige lijst met nieuwe leads uit een oude tool. Schrijf een Code-node (Run Once for All Items) om deze data op te schonen vóór ze naar het CRM gaan:\n\n- `email`: Verwijder spaties rondom (trim) en zet alles om naar kleine letters.\n- `phone`: Verwijder alle spaties, streepjes (`-`) en punten (`.`).\n- Als `email` leeg is of afwezig, verwerp (filter) het item volledig.\n- Zorg dat andere velden (zoals `name` of `company`) ongewijzigd blijven.",
+  "starter": "// Schoon de leads op en retourneer alleen geldige items.\n// - email: lowercase en zonder spaties vooraf/achteraf.\n// - phone: verwijder spaties, '-' en '.' (indien aanwezig).\n// - Filter items zonder (of met een lege) email eruit.\n\nreturn $input.all();",
+  "solution": "return $input.all()\n  .filter(i => typeof i.json.email === 'string' && i.json.email.trim() !== '')\n  .map(i => {\n    let cleanedPhone = i.json.phone;\n    if (typeof cleanedPhone === 'string') {\n      cleanedPhone = cleanedPhone.replace(/[ \\-.]/g, '');\n    }\n    return {\n      json: {\n        ...i.json,\n        email: i.json.email.trim().toLowerCase(),\n        phone: cleanedPhone\n      }\n    };\n  });",
+  "cases": [
+   {
+    "name": "Opschonen + filtering",
+    "items": [
+     {
+      "name": "Sofie",
+      "email": " Sofie@Acme.be ",
+      "phone": "0478 12.34-56"
+     },
+     {
+      "name": "Geen email",
+      "email": "",
+      "phone": "0499 99 99 99"
+     },
+     {
+      "name": "Jonas",
+      "email": "JONAS@BETA.NL",
+      "company": "Beta"
+     }
+    ],
+    "expected": [
+     {
+      "name": "Sofie",
+      "email": "sofie@acme.be",
+      "phone": "0478123456"
+     },
+     {
+      "name": "Jonas",
+      "email": "jonas@beta.nl",
+      "company": "Beta"
+     }
+    ]
+   }
+  ],
+  "model": "De oplossing combineert `.filter()` (om foute leads tegen te houden) en `.map()` om per geldig item een nieuw object op te bouwen. Reguliere expressies (`/[ \\-.]/g`) of ketens van `.replaceAll()` verwijderen de ongewenste karakters uit het telefoonnummer (als het een string is). Let op de `typeof` check voor strings om onverwachte fouten te vermijden.",
+  "rubric": [
+   "Code filtert items met lege of ontbrekende emails succesvol weg",
+   "E-mailadres wordt verwerkt met trim() en toLowerCase()",
+   "Telefoonnummer wordt veilig opgeschoond (spaties, punten, streepjes weg)",
+   "Overige velden (zoals 'company' of 'name') blijven intact door een correcte spread"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-mode-all",
+   "front": "Wat is de standaard uitvoeringsmodus van de Code-node?",
+   "back": "**Run Once for All Items**",
+   "skill": "code-mode"
+  },
+  {
+   "id": "c-input-all",
+   "front": "Met welke variabele haal je alle items op in 'Run Once for All Items' modus?",
+   "back": "`$input.all()`",
+   "answers": [
+    "$input.all()"
+   ],
+   "lang": "code",
+   "skill": "code-mode"
+  },
+  {
+   "id": "c-each-json",
+   "front": "Welke variabele bevat de data van het huidige item in 'Run Once for Each Item' modus?",
+   "back": "`$json`",
+   "answers": [
+    "$json"
+   ],
+   "lang": "code",
+   "skill": "code-mode"
+  },
+  {
+   "id": "c-no-fetch",
+   "front": "Waarom mag je geen `fetch` of `axios` gebruiken in de Code-node?",
+   "back": "De **HTTP Request-node** is veiliger en handelt automatisch retries en rate limits af.",
+   "skill": "code-when-not"
+  },
+  {
+   "id": "c-logs",
+   "front": "Waar kun je de output van `console.log()` lezen in n8n?",
+   "back": "In de **server logs** (of terminal), niet in de visuele editor.",
+   "skill": "code-errors"
+  },
+  {
+   "id": "c-return-all",
+   "front": "Welk formaat verwacht n8n als return-waarde in 'Run Once for All Items' modus?",
+   "back": "Een array van objecten met een json-sleutel: `[{ json: { ... } }]`",
+   "skill": "code-return"
+  }
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-27",
+  "adaptedFor": "Tempo is iets trager na pauze: we starten met extra herhaling van het itemmodel en geven veel concrete voorbeelden."
+ },
+ "kind": "core"
+}

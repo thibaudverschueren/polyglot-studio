@@ -1,0 +1,838 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "spanish",
+ "id": 2,
+ "roadmap": "es-a1-02-ser-articulos",
+ "kind": "core",
+ "title": "Ser, lidwoorden en geslacht: wie ben je, wat doe je?",
+ "subtitle": "Je identiteit en beroep uitdrukken met ser, de logica achter lidwoorden en geslacht, en het meervoud vormen.",
+ "level": "A1",
+ "minutes": 40,
+ "summary": "In deze les leer je het fundament om over jezelf te vertellen: wie ben je, waar kom je vandaan en wat doe je. Tegelijk leer je de logica van lidwoorden, woordgeslacht en meervoud. En je ontdekt waarom *el problema* mannelijk is.",
+ "objectives": [
+  {
+   "id": "ser",
+   "text": "Je kunt het werkwoord ser vervoegen en gebruiken om te vertellen wie je bent en wat je doet."
+  },
+  {
+   "id": "beroepen",
+   "text": "Je kunt vertellen wat je beroep of nationaliteit is, en weet dat dit zonder lidwoord en zonder hoofdletter gebeurt."
+  },
+  {
+   "id": "geslacht",
+   "text": "Je kunt het geslacht van zelfstandige naamwoorden herkennen aan hun uitgang en de juiste bepaalde en onbepaalde lidwoorden kiezen."
+  },
+  {
+   "id": "meervoud",
+   "text": "Je kunt het meervoud van zelfstandige en bijvoeglijke naamwoorden vormen en ze in geslacht en getal laten overeenstemmen."
+  }
+ ],
+ "vocab": [
+  {
+   "term": "el estudiante, la estudiante",
+   "meaning": "de student(e)"
+  },
+  {
+   "term": "el profesor, la profesora",
+   "meaning": "de leraar, de lerares"
+  },
+  {
+   "term": "el ingeniero, la ingeniera",
+   "meaning": "de ingenieur"
+  },
+  {
+   "term": "el problema",
+   "meaning": "het probleem"
+  },
+  {
+   "term": "el sistema",
+   "meaning": "het systeem"
+  },
+  {
+   "term": "el programa",
+   "meaning": "het programma"
+  },
+  {
+   "term": "la ciudad",
+   "meaning": "de stad"
+  },
+  {
+   "term": "el país",
+   "meaning": "het land"
+  },
+  {
+   "term": "la empresa",
+   "meaning": "het bedrijf"
+  },
+  {
+   "term": "trabajar",
+   "meaning": "werken"
+  }
+ ],
+ "sections": [
+  {
+   "id": "ser",
+   "title": "Het werkwoord ser (zijn)",
+   "md": "In het Spaans is het werkwoord **ser** (zijn) een van de belangrijkste woorden. Je gebruikt het voor je wezenlijke kenmerken: je naam, je herkomst, je nationaliteit en je beroep.\n\n| Persoon | ser | Voorbeeld |\n|---|---|---|\n| yo | **soy** | [[es:Soy Thibaud.]] |\n| tú | **eres** | [[es:¿De dónde eres?]] |\n| él, ella, usted | **es** | [[es:Es de Madrid.]] |\n| nosotros/as | **somos** | [[es:Somos estudiantes.]] |\n| vosotros/as | **sois** | [[es:¿Sois de España?]] |\n| ellos/as, ustedes | **son** | [[es:Son ingenieros.]] |\n\nOmdat de Spaanse werkwoorden elk een unieke uitgang hebben, hoor je aan het woord zelf al over wie het gaat. Daarom laten Spanjaarden het persoonlijk voornaamwoord (*yo, tú, él*) in de praktijk meestal weg. Je gebruikt ze alleen als je er nadruk op wil leggen, of om een contrast te maken: *Yo soy belga, y él es español.* (Ík ben Belg, en híj is Spanjaard).\n\n> [!note] Usted en ustedes\n> Zoals je in de vorige les zag, gebruik je voor de beleefdheidsvorm *usted* (u) en *ustedes* (jullie beleefd) de 3e persoon: *es* en *son*.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "cloze",
+     "skill": "ser",
+     "level": 1,
+     "prompt": "Vul de juiste vorm van **ser** in.",
+     "explain": "yo -> soy",
+     "text": "Yo {{soy}} belga.",
+     "lang": "es"
+    },
+    {
+     "id": "c2",
+     "type": "mcq",
+     "skill": "ser",
+     "level": 2,
+     "prompt": "Wat is de juiste vorm voor **usted** (u)?",
+     "explain": "*usted* en *ustedes* gebruiken altijd de 3e persoon (*es* / *son*).",
+     "options": [
+      "es",
+      "eres",
+      "sois",
+      "son"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "beroepen",
+   "title": "Beroep en nationaliteit: zonder extra's",
+   "md": "Wanneer je in het Spaans vertelt wat je doet, valt er een woord weg dat we in het Nederlands wél gebruiken: het onbepaalde lidwoord (een).\n\nHier is je Frans de perfecte hefboom, want de Spaanse en Franse regel zijn identiek: je gebruikt **geen lidwoord bij een beroep**.\n* [[fr:Je suis ingénieur.]] -> [[es:Soy ingeniero.]]\n* [[fr:Elle est étudiante.]] -> [[es:Es estudiante.]]\n\nJe gebruikt alleen een lidwoord als er een bijvoeglijk naamwoord of extra kwalificatie bij het beroep staat: *Es un ingeniero excelente.* (Hij is een uitstekende ingenieur).\n\nVerder schrijf je **nationaliteiten en talen** in het Spaans altijd met een **kleine letter**. Dat is een veelgemaakte fout bij Nederlandstaligen!\n* [[es:Soy belga.]] (Ik ben Belg.)\n* [[es:Hablo español y francés.]] (Ik spreek Spaans en Frans.)",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "type",
+     "skill": "beroepen",
+     "level": 1,
+     "prompt": "Vertaal: **Zij is studente.**",
+     "explain": "Geen lidwoord: *Ella es estudiante* of gewoon *Es estudiante*.",
+     "answers": [
+      "Ella es estudiante.",
+      "Es estudiante."
+     ],
+     "lang": "es",
+     "errors": [
+      {
+       "match": "/una estudiante/i",
+       "feedback": "Geen lidwoord bij een beroep (net als in het Frans).",
+       "tag": "articulo-profesion"
+      }
+     ]
+    },
+    {
+     "id": "c4",
+     "type": "mcq",
+     "skill": "beroepen",
+     "level": 1,
+     "prompt": "Welke zin is correct in het Spaans?",
+     "explain": "Nationaliteiten schrijf je in het Spaans met een kleine letter en zonder lidwoord als je een beroep of hoedanigheid uitdrukt.",
+     "options": [
+      "Él es francés.",
+      "Él es el francés.",
+      "Él es de francés."
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "geslacht",
+   "title": "Lidwoorden, geslacht en valse vrienden",
+   "md": "Elk zelfstandig naamwoord in het Spaans is mannelijk of vrouwelijk. Het grote voordeel ten opzichte van het Frans is dat je het geslacht in het Spaans vaak gewoon aan de uitgang van het woord kan zien.\n\n* **Mannelijk**: eindigt meestal op **-o**. De lidwoorden zijn **el** (de) en **un** (een). Voorbeeld: *el chico, un libro, el banco*.\n* **Vrouwelijk**: eindigt meestal op **-a**. De lidwoorden zijn **la** (de) en **una** (een). Voorbeeld: *la chica, una mesa, la empresa*.\n\nEr zijn een paar waterdichte regels voor woorden die niet op -o of -a eindigen. Woorden op **-ción**, **-sión**, **-dad** en **-tad** zijn altijd vrouwelijk: *la canción* (het lied), *la ciudad* (de stad), *la universidad* (de universiteit).\n\n> [!pitfall] De Griekse valkuil: -ma\n> Een beruchte valkuil zijn de internationale woorden van Griekse oorsprong die eindigen op **-ma** of **-ta**. Deze woorden zijn **mannelijk**, hoewel ze op een -a eindigen! Leer ze meteen goed aan: *el problema, el sistema, el programa, el idioma* (de taal), *el planeta* (de planeet).\n\n> [!warning] Valse vrienden FR/ES\n> Hoewel het geslacht vaak overeenkomt met het Frans, zijn er enkele verraderlijke uitzonderingen die je moet kennen:\n> * [[es:el color]] (m) = [[fr:la couleur]] (v)\n> * [[es:el coche]] (m) = [[fr:la voiture]] (v)\n> * [[es:la cuenta]] (v) = [[fr:le compte]] (m)",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "mcq",
+     "skill": "geslacht",
+     "level": 1,
+     "prompt": "Welk lidwoord hoort bij **problema**?",
+     "explain": "Woorden op -ma van Griekse oorsprong zijn mannelijk: *el problema*.",
+     "options": [
+      "el problema",
+      "la problema",
+      "los problema"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c6",
+     "type": "type",
+     "skill": "geslacht",
+     "level": 2,
+     "prompt": "Vertaal: **de stad**.",
+     "explain": "Woorden op -dad zijn vrouwelijk: *la ciudad*.",
+     "answers": [
+      "la ciudad"
+     ],
+     "lang": "es"
+    }
+   ]
+  },
+  {
+   "id": "meervoud",
+   "title": "Meervoud en het aanpassen van adjectieven",
+   "md": "Het meervoud maken is in het Spaans zeer logisch: je voegt een klank toe, en je spreekt die altijd uit.\n\n1. Eindigt het woord op een **klinker**? Voeg **-s** toe. (*el libro* -> *los libros*, *la empresa* -> *las empresas*).\n2. Eindigt het op een **medeklinker**? Voeg **-es** toe. (*la ciudad* -> *las ciudades*, *el país* -> *los países*).\n3. Eindigt het op **-z**? Dat wordt **-ces**. (*el lápiz* -> *los lápices*, *la luz* -> *las luces*).\n\nDe meervoudige lidwoorden zijn **los / las** en **unos / unas**.\n\n> [!rule] Concordancia (Overeenkomst)\n> Bijvoeglijke naamwoorden (adjectieven) passen zich in het Spaans altijd aan het zelfstandig naamwoord aan. Ze nemen het **geslacht** (m/v) én het **getal** (enk/mv) over.\n> * *el coche rojo* -> *los coches rojos*\n> * *la casa roja* -> *las casas rojas*\n\nEindigt een adjectief in de mannelijke vorm op een **-e** of een **medeklinker**? Dan is de vorm voor mannelijk en vrouwelijk meestal exact hetzelfde: *un chico inteligente* / *una chica inteligente*, *un hombre belga* / *una mujer belga*.\n\nLet op de grote uitzondering: **nationaliteiten** die op een medeklinker eindigen, krijgen in de vrouwelijke vorm wél een **-a**: *el hombre francés* -> *la mujer francesa*, *el chico español* -> *la chica española*.\n\n> [!tip] Tildes in het meervoud\n> Een meervoud op -es voegt een lettergreep toe. Daardoor kan de klemtoonregel veranderen, zoals we in les 1 zagen! *el francés* (tilde, want klemtoon op laatste en eindigt op -s) wordt *los franceses* (geen tilde, want eindigt op -s en klemtoon op de voorlaatste). Omgekeerd krijgt *el examen* in het meervoud wél een tilde: *los exámenes* (klemtoon op de third van achter, esdrújula).",
+   "checks": [
+    {
+     "id": "c7",
+     "type": "type",
+     "skill": "meervoud",
+     "level": 1,
+     "prompt": "Vorm het meervoud van **la ciudad**.",
+     "explain": "Eindigt op een medeklinker, dus +es: *las ciudades*.",
+     "answers": [
+      "las ciudades"
+     ],
+     "lang": "es"
+    },
+    {
+     "id": "c8",
+     "type": "type",
+     "skill": "meervoud",
+     "level": 2,
+     "prompt": "Vertaal: **De Franse vrouw** (*la mujer*).",
+     "explain": "Nationaliteit eindigt op medeklinker, dus de vrouwelijke vorm krijgt een -a: *la mujer francesa*.",
+     "answers": [
+      "la mujer francesa"
+     ],
+     "lang": "es"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "ser",
+   "level": 1,
+   "prompt": "Waarom laten Spanjaarden het onderwerp (zoals *yo*, *tú*) vaak weg in een zin?",
+   "explain": "Omdat de werkwoordsvorm (*soy, eres, es*) al duidelijk maakt over wie het gaat.",
+   "options": [
+    "Omdat de werkwoordsvorm al duidelijk maakt over wie het gaat.",
+    "Omdat ze kortere zinnen willen maken.",
+    "Omdat het onbeleefd is om over jezelf of anderen direct te spreken."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "cloze",
+   "skill": "ser",
+   "level": 1,
+   "prompt": "Vul de juiste vorm van **ser** in voor *nosotros* (wij).",
+   "explain": "nosotros -> somos",
+   "text": "Nosotros {{somos}} belgas.",
+   "lang": "es"
+  },
+  {
+   "id": "p03",
+   "type": "cloze",
+   "skill": "ser",
+   "level": 1,
+   "prompt": "Vul de juiste vorm van **ser** in voor *ella* (zij).",
+   "explain": "ella -> es",
+   "text": "Ella {{es}} estudiante.",
+   "lang": "es"
+  },
+  {
+   "id": "p04",
+   "type": "type",
+   "skill": "beroepen",
+   "level": 2,
+   "prompt": "Vertaal: **Ik ben student.**",
+   "explain": "Geen lidwoord bij een beroep of hoedanigheid: *Soy estudiante*.",
+   "answers": [
+    "Soy estudiante.",
+    "Yo soy estudiante."
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "/un estudiante/i",
+     "feedback": "In het Spaans gebruik je géén lidwoord voor een beroep of studie: *Soy estudiante*.",
+     "tag": "articulo-profesion"
+    }
+   ]
+  },
+  {
+   "id": "p05",
+   "type": "mcq",
+   "skill": "beroepen",
+   "level": 1,
+   "prompt": "Hoe vertaal je \"Ik ben Spanjaard\"?",
+   "explain": "Talen en nationaliteiten schrijf je met een kleine letter, en als nationaliteit gebruik je geen lidwoord.",
+   "options": [
+    "Soy español.",
+    "Soy un español.",
+    "Soy de español."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p06",
+   "type": "cloze",
+   "skill": "beroepen",
+   "level": 2,
+   "prompt": "Ana is Française. Vul het juiste bijvoeglijk naamwoord in.",
+   "explain": "Nationaliteiten die op een medeklinker eindigen (*francés*), krijgen een -a in het vrouwelijk (*francesa*).",
+   "text": "Ana es {{francesa}}.",
+   "lang": "es"
+  },
+  {
+   "id": "p07",
+   "type": "multi",
+   "skill": "geslacht",
+   "level": 2,
+   "prompt": "Welke woorden zijn **mannelijk**?",
+   "explain": "*problema* en *sistema* zijn van Griekse oorsprong (-ma) en mannelijk. *canción* (-ción) en *ciudad* (-dad) zijn vrouwelijk.",
+   "options": [
+    "el problema",
+    "el sistema",
+    "la canción",
+    "la ciudad"
+   ],
+   "answers": [
+    0,
+    1
+   ]
+  },
+  {
+   "id": "p08",
+   "type": "match",
+   "skill": "geslacht",
+   "level": 1,
+   "prompt": "Koppel de Spaanse term aan de juiste vertaling.",
+   "explain": "Let op het geslacht van *ciudad* (v) en *país* (m).",
+   "pairs": [
+    [
+     "el coche",
+     "de auto"
+    ],
+    [
+     "la ciudad",
+     "de stad"
+    ],
+    [
+     "el país",
+     "het land"
+    ],
+    [
+     "la empresa",
+     "het bedrijf"
+    ]
+   ]
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "geslacht",
+   "level": 2,
+   "prompt": "Vertaal (met het bepaalde lidwoord el/la): **de stad**.",
+   "explain": "Woorden op -dad zijn altijd vrouwelijk: *la ciudad*.",
+   "answers": [
+    "la ciudad"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p10",
+   "type": "type",
+   "skill": "geslacht",
+   "level": 2,
+   "prompt": "Vertaal (met het onbepaalde lidwoord un/una): **een probleem**.",
+   "explain": "Woorden op -ma van Griekse oorsprong zijn mannelijk: *un problema*.",
+   "answers": [
+    "un problema"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "/una problema/i",
+     "feedback": "Valkuil! Woorden op -ma zijn (bijna) altijd mannelijk in het Spaans: *un problema*.",
+     "tag": "genero-ma"
+    }
+   ]
+  },
+  {
+   "id": "p11",
+   "type": "mcq",
+   "skill": "meervoud",
+   "level": 3,
+   "prompt": "Waarom schrijven we **la canción** (met tilde) maar **las canciones** (zonder tilde)?",
+   "explain": "In het meervoud eindigt het woord op -s en valt de klemtoon op de voorlaatste lettergreep (-CIO-nes). Dat volgt de hoofdregel, dus is er geen tilde meer nodig.",
+   "options": [
+    "Omdat het meervoud de regel volgt (eindigt op -s, klemtoon voorlaatste).",
+    "Omdat meervouden in het Spaans nooit een tilde krijgen.",
+    "Omdat het woord vrouwelijk is en -ción altijd zonder tilde is in meervoud.",
+    "Omdat de klemtoon in het meervoud verschuift naar de -ne-."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p12",
+   "type": "type",
+   "skill": "meervoud",
+   "level": 2,
+   "prompt": "Vorm het meervoud van **el lápiz** (het potlood).",
+   "explain": "Eindigt op -z, dat wordt -ces in het meervoud: *los lápices*.",
+   "answers": [
+    "los lápices"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p13",
+   "type": "type",
+   "skill": "meervoud",
+   "level": 2,
+   "prompt": "Vorm het meervoud van **la mujer** (de vrouw).",
+   "explain": "Eindigt op een medeklinker, dus +es: *las mujeres*.",
+   "answers": [
+    "las mujeres"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p14",
+   "type": "type",
+   "skill": "meervoud",
+   "level": 2,
+   "prompt": "Vertaal: **De rode auto's** (*el coche rojo* in het meervoud).",
+   "explain": "Beide woorden krijgen -s: *los coches rojos*.",
+   "answers": [
+    "los coches rojos"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p15",
+   "type": "cloze",
+   "skill": "meervoud",
+   "level": 2,
+   "prompt": "Vul het meervoud van het adjectief in.",
+   "explain": "*belga* krijgt gewoon een -s. Zowel mannelijk als vrouwelijk is *belgas*.",
+   "text": "Las chicas {{belgas}}.",
+   "lang": "es",
+   "errors": [
+    {
+     "match": "/belges/i",
+     "feedback": "Niet verwarren met het Frans! *belga* wordt *belgas*.",
+     "tag": "frans-interferentie"
+    }
+   ]
+  },
+  {
+   "id": "p16",
+   "type": "cloze",
+   "skill": "meervoud",
+   "level": 2,
+   "prompt": "Vul de juiste vrouwelijke vorm in van *francés*.",
+   "explain": "Nationaliteit op medeklinker + a: *francesa*.",
+   "text": "La profesora {{francesa}}.",
+   "lang": "es"
+  },
+  {
+   "id": "p17",
+   "type": "order",
+   "skill": "ser",
+   "level": 2,
+   "prompt": "Bouw de zin: **Wij zijn ingenieurs.**",
+   "explain": "Geen lidwoord bij beroepen.",
+   "tiles": [
+    "Nosotros",
+    "somos",
+    "ingenieros."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p18",
+   "type": "explain",
+   "skill": "geslacht",
+   "level": 3,
+   "prompt": "Leg in je eigen woorden uit waarom we zeggen: **El problema es grave** en niet **La problema**.",
+   "explain": "Vergelijk jouw uitleg met het model.",
+   "model": "Hoewel 'problema' op een -a eindigt, is het een woord van Griekse oorsprong op -ma. Deze woorden zijn in het Spaans de grote uitzondering en zijn altijd mannelijk. Daarom gebruiken we 'el'.",
+   "rubric": [
+    "Woorden op -ma van Griekse oorsprong zijn een uitzondering.",
+    "Ze zijn altijd mannelijk (en krijgen dus 'el')."
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "cloze",
+   "skill": "ser",
+   "level": 1,
+   "prompt": "Vul de juiste vorm van **ser** in voor *ustedes*.",
+   "explain": "*ustedes* (jullie beleefd) gebruikt de 3e persoon meervoud: *son*.",
+   "text": "Ustedes {{son}}.",
+   "lang": "es"
+  },
+  {
+   "id": "m02",
+   "type": "cloze",
+   "skill": "ser",
+   "level": 1,
+   "prompt": "Vul de juiste vorm van **ser** in voor *vosotros*.",
+   "explain": "*vosotros* (jullie informeel in Spanje) -> *sois*.",
+   "text": "Vosotros {{sois}}.",
+   "lang": "es"
+  },
+  {
+   "id": "m03",
+   "type": "type",
+   "skill": "ser",
+   "level": 2,
+   "prompt": "Vertaal: **Hij is Belg.**",
+   "explain": "*Él es belga* (of *Es belga*). Geen hoofdletter, geen lidwoord.",
+   "answers": [
+    "Él es belga.",
+    "Es belga."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m04",
+   "type": "mcq",
+   "skill": "ser",
+   "level": 2,
+   "prompt": "Wanneer gebruik je in het Spaans de persoonlijke voornaamwoorden (*yo, tú, él*) wél?",
+   "explain": "Je gebruikt ze om nadruk te leggen of om een tegenstelling/contrast aan te duiden (*Yo soy belga, y él es español*).",
+   "options": [
+    "Om nadruk te leggen of een contrast te maken.",
+    "Altijd, want anders weet men niet over wie je spreekt.",
+    "Alleen in formele situaties.",
+    "Je gebruikt ze nooit, ze zijn uit de taal verdwenen."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m05",
+   "type": "type",
+   "skill": "beroepen",
+   "level": 2,
+   "prompt": "Vertaal: **Zij is lerares.**",
+   "explain": "Beroep zonder lidwoord: *Ella es profesora*.",
+   "answers": [
+    "Ella es profesora.",
+    "Es profesora."
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "/una profesora/i",
+     "feedback": "Gebruik geen lidwoord bij een beroep.",
+     "tag": "articulo-profesion"
+    }
+   ]
+  },
+  {
+   "id": "m06",
+   "type": "order",
+   "skill": "beroepen",
+   "level": 2,
+   "prompt": "Bouw de zin: **Ik ben programmeur uit België.**",
+   "explain": "*Soy programador* (geen lidwoord). *de Bélgica* geeft de herkomst aan.",
+   "tiles": [
+    "Soy",
+    "programador",
+    "de",
+    "Bélgica."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m07",
+   "type": "multi",
+   "skill": "geslacht",
+   "level": 2,
+   "prompt": "Welke woorden zijn **vrouwelijk**?",
+   "explain": "*universidad, nación, identidad* zijn vrouwelijk (-dad, -ción). *idioma, color* zijn mannelijk.",
+   "options": [
+    "la universidad",
+    "la nación",
+    "la identidad",
+    "el idioma",
+    "el color"
+   ],
+   "answers": [
+    0,
+    1,
+    2
+   ]
+  },
+  {
+   "id": "m08",
+   "type": "type",
+   "skill": "geslacht",
+   "level": 2,
+   "prompt": "Vertaal (met het onbepaalde lidwoord un/una): **een programma**.",
+   "explain": "Woorden op -ma van Griekse oorsprong zijn mannelijk: *un programa*.",
+   "answers": [
+    "un programa"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "/una programa/i",
+     "feedback": "Valkuil! Woorden op -ma zijn mannelijk in het Spaans: *un programa*.",
+     "tag": "genero-ma"
+    }
+   ]
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "geslacht",
+   "level": 2,
+   "prompt": "Vertaal (met het bepaalde lidwoord el/la): **het land**.",
+   "explain": "*el país*.",
+   "answers": [
+    "el país"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m10",
+   "type": "cloze",
+   "skill": "geslacht",
+   "level": 2,
+   "prompt": "Vul de juiste bepaalde lidwoorden in (*el* of *la*).",
+   "explain": "*color* is een valse vriend met het Frans (mannelijk in ES). *flor* is vrouwelijk (la flor).",
+   "text": "{{El}} color de {{la}} flor.",
+   "lang": "es"
+  },
+  {
+   "id": "m11",
+   "type": "type",
+   "skill": "meervoud",
+   "level": 3,
+   "prompt": "Vorm het meervoud van **el país** (het land).",
+   "explain": "Eindigt op medeklinker, dus +es. De tilde blijft staan om de a-i klinkerbotsing te breken: *los países*.",
+   "answers": [
+    "los países"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "/los paises/i",
+     "feedback": "Zonder tilde zou de a en i als één lettergreep (tweeklank) klinken: pai-ses. De tilde breekt ze: pa-í-ses.",
+     "tag": "tilde"
+    }
+   ]
+  },
+  {
+   "id": "m12",
+   "type": "type",
+   "skill": "meervoud",
+   "level": 2,
+   "prompt": "Vorm het meervoud van **el mes** (de maand).",
+   "explain": "Eindigt op medeklinker, dus +es: *los meses*.",
+   "answers": [
+    "los meses"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m13",
+   "type": "type",
+   "skill": "meervoud",
+   "level": 2,
+   "prompt": "Vorm het meervoud van **la luz** (het licht).",
+   "explain": "Eindigt op -z, dat wordt -ces: *las luces*.",
+   "answers": [
+    "las luces"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m14",
+   "type": "type",
+   "skill": "meervoud",
+   "level": 2,
+   "prompt": "Vertaal: **De Spaanse mannen** (*el hombre español* in het meervoud).",
+   "explain": "Beide woorden krijgen -es: *los hombres españoles*.",
+   "answers": [
+    "los hombres españoles"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m15",
+   "type": "cloze",
+   "skill": "meervoud",
+   "level": 2,
+   "prompt": "Vrouwelijk meervoud: een goede lerares = una profesora excelente. Twee...",
+   "explain": "*excelente* eindigt op -e en verandert niet van geslacht, we voegen enkel een -s toe voor het meervoud.",
+   "text": "Dos profesoras {{excelentes}}.",
+   "lang": "es"
+  },
+  {
+   "id": "m16",
+   "type": "type",
+   "skill": "meervoud",
+   "level": 2,
+   "prompt": "Vertaal: **De Franse bedrijven** (*la empresa francesa* in het meervoud).",
+   "explain": "Beide woorden krijgen -s: *las empresas francesas*.",
+   "answers": [
+    "las empresas francesas"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m17",
+   "type": "cloze",
+   "skill": "meervoud",
+   "level": 3,
+   "prompt": "Vorm het meervoud van *el examen*.",
+   "explain": "Het woord *examen* (e-XA-men) volgt de klemtoonregel en heeft geen tilde. In het meervoud (e-XÁ-me-nes) valt de klemtoon op de derde lettergreep van achter, een esdrújula. Dan moet er wél een tilde staan.",
+   "text": "Los {{exámenes}}.",
+   "lang": "es"
+  },
+  {
+   "id": "m18",
+   "type": "type",
+   "skill": "beroepen",
+   "level": 2,
+   "prompt": "Vertaal: **Wij zijn studenten.**",
+   "explain": "*Somos estudiantes.* Geen lidwoord.",
+   "answers": [
+    "Somos estudiantes.",
+    "Nosotros somos estudiantes.",
+    "Nosotras somos estudiantes."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m19",
+   "type": "type",
+   "skill": "beroepen",
+   "level": 2,
+   "prompt": "Vertaal: **Ik spreek Frans en Spaans.**",
+   "explain": "Talen schrijf je met een kleine letter in het Spaans.",
+   "answers": [
+    "Hablo francés y español.",
+    "Hablo español y francés.",
+    "Yo hablo francés y español.",
+    "Yo hablo español y francés."
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "/Francés|Español/",
+     "feedback": "Let op de hoofdletters: talen en nationaliteiten schrijf je altijd met een kleine letter in het Spaans.",
+     "tag": "hoofdletters"
+    }
+   ]
+  },
+  {
+   "id": "m20",
+   "type": "mcq",
+   "skill": "beroepen",
+   "level": 2,
+   "prompt": "Welke zin is 100% correct in het Spaans?",
+   "explain": "*Soy estudiante* (geen lidwoord). *Estudianta* bestaat niet, en *Yo soy de estudiante* is grammaticaal fout.",
+   "options": [
+    "Soy estudiante.",
+    "Soy un estudiante.",
+    "Yo soy de estudiante.",
+    "Soy estudianta."
+   ],
+   "answer": 0
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "es",
+  "minWords": 30,
+  "prompt": "**Stel jezelf voor** (30-50 woorden). Vertel hoe je heet, je nationaliteit en je beroep/studie (Handelsingenieur = *Ingeniería Comercial*). Vertel daarna hoe je nieuwe Spaanse collega heet (Carlos), zijn nationaliteit (Spaans) en zijn beroep (programmeur = *programador*). Sluit vriendelijk af.",
+  "model": "¡Hola!\n\nMe llamo Thibaud y soy belga. Soy estudiante de Ingeniería Comercial. Mi compañero se llama Carlos. Él es español y es programador.\n\n¡Encantado de conoceros! Hasta pronto.",
+  "rubric": [
+   "Juiste vervoegingen van *ser* (*soy, es*).",
+   "Beroepen (*estudiante, programador*) zonder lidwoord.",
+   "Nationaliteiten (*belga, español*) zonder hoofdletter.",
+   "Spelling van *español* (met tilde) en *belga* (zonder tilde).",
+   "Correcte leestekens (¡!)."
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-ser-1",
+   "front": "Vervoeg **ser** (zijn) in het enkelvoud (yo, tú, él/ella/usted).",
+   "back": "soy, eres, es",
+   "skill": "ser"
+  },
+  {
+   "id": "c-ser-2",
+   "front": "Vervoeg **ser** (zijn) in het meervoud (nosotros, vosotros, ellos/ustedes).",
+   "back": "somos, sois, son",
+   "skill": "ser"
+  },
+  {
+   "id": "c-soy-estudiante",
+   "front": "Hoe vertaal je: **Ik ben student.** (mannelijk)",
+   "back": "Soy estudiante. (Geen lidwoord bij beroepen!)",
+   "answers": [
+    "Soy estudiante."
+   ],
+   "lang": "es",
+   "skill": "beroepen"
+  },
+  {
+   "id": "c-hoofdletters",
+   "front": "Schrijf je talen en nationaliteiten met een hoofdletter in het Spaans?",
+   "back": "Nee, **altijd met een kleine letter**: *soy belga, hablo francés*.",
+   "skill": "beroepen"
+  },
+  {
+   "id": "c-ma",
+   "front": "Wat is het geslacht van internationale woorden op **-ma** (problema, sistema)?",
+   "back": "**Mannelijk**, omdat ze uit het Grieks komen: *el problema, el sistema*.",
+   "skill": "geslacht"
+  },
+  {
+   "id": "c-cion",
+   "front": "Wat is het geslacht van woorden op **-ción** en **-dad**?",
+   "back": "**Vrouwelijk**: *la canción, la ciudad*.",
+   "skill": "geslacht"
+  },
+  {
+   "id": "c-z-meervoud",
+   "front": "Hoe maak je woorden op **-z** meervoud (zoals *la luz*)?",
+   "back": "De z wordt **-ces**: *las luces*.",
+   "skill": "meervoud"
+  },
+  {
+   "id": "c-color",
+   "front": "Wat is het geslacht van **color** (kleur)?",
+   "back": "Mannelijk: **el color**. (Dit is een valse vriend, in het Frans is het vrouwelijk: *la couleur*).",
+   "skill": "geslacht"
+  },
+  {
+   "id": "c-concordancia",
+   "front": "Krijgen nationaliteiten op een medeklinker (zoals *francés*) een aparte vrouwelijke vorm?",
+   "back": "Ja, ze krijgen een **-a**: *francesa, española*.",
+   "skill": "meervoud"
+  }
+ ],
+ "sources": [
+  "RAE y ASALE — *Ortografía de la lengua española* (2010)",
+  "Instituto Cervantes — *Plan curricular* (niveaus A1–B2)"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-27",
+  "adaptedFor": "Omdat je de afgelopen week niet in de app geoefend hebt en je pogingen op nul staan, is deze les op een rustig basistempo gehouden zonder te veel theorie tegelijk. De focus ligt op heldere, voorspelbare regels."
+ }
+}
