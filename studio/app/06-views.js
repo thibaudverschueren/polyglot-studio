@@ -15,7 +15,34 @@ const statusChip = (t, id) => {
   return `<span class="${m[0]}">${m[1]}</span>`;
 };
 
-/* ======================= Shell ======================= */
+/* ======================= Shell & Access ======================= */
+PS.isSharedArticleRoute = (h = location.hash) => {
+  const parts = (h || '').replace(/^#\/?/, '').split('/').filter(Boolean);
+  return parts[0] === 'lezen' && parts.length >= 2 && !!parts[1];
+};
+
+PS.isGuestArticle = (h = location.hash) => {
+  return PS.isSharedArticleRoute(h) && !PS.cloud.signedIn() && !PS.store.get('polyglot_local_only');
+};
+
+PS.publicShell = () => {
+  const app = document.getElementById('app');
+  app.innerHTML = `<div class="shell shell--public">
+    <header class="public-header">
+      <div class="brand">
+        <span class="brand-mark">Π</span>
+        <span>Polyglot Studio<small>Onder de motorkap</small></span>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" data-gate-trigger style="display:inline-flex;align-items:center;gap:6px">
+        ${PS.icon('lock', 'icon-s')} Inloggen
+      </button>
+    </header>
+    <main class="main main--public" id="main" tabindex="-1"></main>
+  </div>`;
+  const btn = PS.$('[data-gate-trigger]', app);
+  if (btn) btn.onclick = () => PS.renderGate();
+};
+
 PS.shell = () => {
   const app = document.getElementById('app');
   const nav = [['#/', 'today', 'Vandaag'], ['#/paden', 'book', 'Leerpaden'], ['#/herhalen', 'repeat', 'Herhalen'], ['#/lezen', 'bookOpen', 'Lezen'], ['#/voortgang', 'chart', 'Voortgang']];
@@ -54,6 +81,7 @@ const mobileBar = (extra = '') => `<div class="mobilebar"><a class="brand" href=
 
 /* ======================= Router ======================= */
 PS.render = () => {
+  if (PS.needsGate()) { PS.renderGate(); return; }
   const main = document.getElementById('main'); if (!main) return;
   let h = location.hash || '#/';
   const parts = h.replace(/^#\/?/, '').split('/').filter(Boolean);
@@ -505,18 +533,31 @@ PS.views.bindAccount = (box, onDone) => {
 
 /* ---------- Login gate (shown when cloud sync is configured but you are not signed in) ---------- */
 PS.needsGate = () => {
-  if (location.hash && location.hash.startsWith('#/lezen')) return false;
-  return PS.cloud.configured() && !PS.cloud.signedIn() && !PS.store.get('polyglot_local_only');
+  if (PS.cloud.signedIn() || PS.store.get('polyglot_local_only')) return false;
+  if (!PS.cloud.configured()) return false;
+  // Unauthenticated guests may ONLY view a specific shared article (#/lezen/<id>)
+  if (PS.isSharedArticleRoute()) return false;
+  return true;
 };
 PS.renderGate = () => {
   const app = document.getElementById('app');
+  const returnToArticle = PS.isSharedArticleRoute() ? location.hash : '';
   app.innerHTML = `<div class="gate"><div class="gate-orbs" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
     <div class="gate-card"><div class="gate-glyphs" aria-hidden="true"><span style="color:var(--greek)">Ω</span><span style="color:var(--french)">É</span><span style="color:var(--spanish)">Ñ</span><span class="mono" style="color:var(--solidity)">0x</span><span style="color:var(--ai)">∇</span><span class="mono" style="color:var(--automation)">{ }</span><span class="mono" style="color:var(--jev)">⑂</span></div>
-      <h1 class="display" style="font-size:34px;text-align:center;margin:10px 0 4px">Polyglot Studio</h1><p class="lede" style="text-align:center;font-size:15.5px;margin-bottom:18px">Log in om je voortgang veilig te bewaren en tussen iPhone, iPad en Mac te synchroniseren.</p>
+      <h1 class="display" style="font-size:34px;text-align:center;margin:10px 0 4px">Polyglot Studio</h1><p class="lede" style="text-align:center;font-size:15.5px;margin-bottom:18px">Log in om toegang te krijgen tot alle leerpaden, oefeningen en je persoonlijke voortgang.</p>
       <div data-gate-login>${PS.views.loginForm()}</div>
-      <button class="btn btn-ghost btn-sm btn-block" data-local style="margin-top:10px">Verder zonder account (alleen dit toestel)</button></div></div>`;
+      <button class="btn btn-ghost btn-sm btn-block" data-local style="margin-top:10px">Verder zonder account (alleen dit toestel)</button>
+      ${returnToArticle ? `<div style="text-align:center;margin-top:14px"><a href="${returnToArticle}" class="small muted" data-back-to-article style="text-decoration:none">← Terug naar het gedeelde artikel</a></div>` : ''}
+    </div></div>`;
   PS.views.bindAccount(PS.$('[data-gate-login]', app), () => { PS.shell(); PS.render(); });
   PS.$('[data-local]', app).onclick = () => { PS.store.set('polyglot_local_only', true); PS.shell(); PS.render(); };
+  const back = PS.$('[data-back-to-article]', app);
+  if (back) back.onclick = (e) => {
+    e.preventDefault();
+    location.hash = returnToArticle;
+    if (PS.isGuestArticle()) PS.publicShell(); else PS.shell();
+    PS.render();
+  };
 };
 
 /* ---------- Theme ---------- */

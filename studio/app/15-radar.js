@@ -136,25 +136,46 @@ PS.radar = {
     PS.speech.bindSay(box);
     const acts = PS.$('[data-actions]', box);
     const paint = () => {
-      const lk = R.liked(a.id);
-      acts.innerHTML = `<button class="btn btn-line btn-sm${R.isRead(a.id) ? ' on' : ''}" data-ra="read">${PS.icon('check', 'icon-s')} ${R.isRead(a.id) ? 'Gelezen' : 'Markeer als gelezen'}</button>
-        <button class="btn btn-line btn-sm${lk === 1 ? ' on' : ''}" data-ra="up">${PS.icon('thumbUp', 'icon-s')} Meer hierover</button>
-        <button class="btn btn-line btn-sm${lk === -1 ? ' on' : ''}" data-ra="down">${PS.icon('thumbDown', 'icon-s')} Minder hierover</button>
-        <button class="btn btn-line btn-sm${R.saved(a.id) ? ' on' : ''}" data-ra="save">${PS.icon('star', 'icon-s')} ${R.saved(a.id) ? 'Bewaard' : 'Bewaren'}</button>
-        <button class="btn btn-line btn-sm" data-ra="share">${PS.icon('share', 'icon-s')} Deel artikel</button>`;
+      const isGuest = PS.isGuestArticle && PS.isGuestArticle();
+      if (isGuest) {
+        acts.innerHTML = `<button class="btn btn-primary btn-sm" data-ra="share" style="padding:8px 18px">${PS.icon('share', 'icon-s')} Deel artikel</button>
+          <button class="btn btn-line btn-sm" data-ra="login">${PS.icon('lock', 'icon-s')} Inloggen om te bewaren</button>`;
+      } else {
+        const lk = R.liked(a.id);
+        acts.innerHTML = `<button class="btn btn-line btn-sm${R.isRead(a.id) ? ' on' : ''}" data-ra="read">${PS.icon('check', 'icon-s')} ${R.isRead(a.id) ? 'Gelezen' : 'Markeer als gelezen'}</button>
+          <button class="btn btn-line btn-sm${lk === 1 ? ' on' : ''}" data-ra="up">${PS.icon('thumbUp', 'icon-s')} Meer hierover</button>
+          <button class="btn btn-line btn-sm${lk === -1 ? ' on' : ''}" data-ra="down">${PS.icon('thumbDown', 'icon-s')} Minder hierover</button>
+          <button class="btn btn-line btn-sm${R.saved(a.id) ? ' on' : ''}" data-ra="save">${PS.icon('star', 'icon-s')} ${R.saved(a.id) ? 'Bewaard' : 'Bewaren'}</button>
+          <button class="btn btn-line btn-sm" data-ra="share">${PS.icon('share', 'icon-s')} Deel artikel</button>`;
+      }
     };
     paint();
     acts.onclick = (e) => {
       const b = e.target.closest('[data-ra]'); if (!b) return;
       const k = b.dataset.ra;
+      if (k === 'share') { R.share(a); return; }
+      if (k === 'login') { PS.renderGate(); return; }
+      if (PS.isGuestArticle && PS.isGuestArticle()) {
+        PS.toast('Log in om artikels te bewaren of je voorkeuren op te slaan.');
+        setTimeout(() => PS.renderGate(), 400);
+        return;
+      }
       if (k === 'read') R.markRead(a.id);
       if (k === 'up' || k === 'down') { const v = R.like(a.id, k === 'up' ? 1 : -1); if (v) PS.toast(v === 1 ? 'Genoteerd: meer over dit soort onderwerpen.' : 'Genoteerd: minder over dit soort onderwerpen.'); }
       if (k === 'save') R.toggleSave(a.id);
-      if (k === 'share') R.share(a);
       paint(); if (PS.updateShell) PS.updateShell(location.hash);
     };
+    if (PS.isGuestArticle && PS.isGuestArticle()) {
+      box.querySelectorAll('.radar-related a').forEach((link) => {
+        link.onclick = (e) => {
+          e.preventDefault();
+          PS.toast('Log in om dit vak en de lessen te volgen.');
+          setTimeout(() => PS.renderGate(), 400);
+        };
+      });
+    }
     const end = PS.$('[data-sources]', box);
-    if (end && 'IntersectionObserver' in window) {
+    if (end && 'IntersectionObserver' in window && !(PS.isGuestArticle && PS.isGuestArticle())) {
       const io = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting)) { R.markRead(a.id); paint(); io.disconnect(); if (PS.updateShell) PS.updateShell(location.hash); } });
       io.observe(end);
     }
@@ -192,7 +213,11 @@ PS.views.radar = () => {
 };
 
 PS.views.radarArticle = (id) => {
-  const html = `<div class="page page-article"><div class="lesson-top" style="display:flex;justify-content:space-between;align-items:center"><a class="back" href="#/lezen">${PS.icon('chevronLeft')} Onder de motorkap</a><button type="button" class="btn btn-line btn-sm" data-share-top title="Deel artikel" style="display:none">${PS.icon('share', 'icon-s')} Deel</button></div><div data-article><div class="empty"><span class="loader"></span></div></div></div>`;
+  const isGuest = PS.isGuestArticle && PS.isGuestArticle();
+  const backHtml = isGuest
+    ? `<span class="eyebrow" style="display:inline-flex;align-items:center;gap:6px">${PS.icon('bookOpen', 'icon-s')} Onder de motorkap</span>`
+    : `<a class="back" href="#/lezen">${PS.icon('chevronLeft')} Onder de motorkap</a>`;
+  const html = `<div class="page page-article"><div class="lesson-top" style="display:flex;justify-content:space-between;align-items:center">${backHtml}<button type="button" class="btn btn-line btn-sm" data-share-top title="Deel artikel" style="display:none">${PS.icon('share', 'icon-s')} Deel</button></div><div data-article><div class="empty"><span class="loader"></span></div></div></div>`;
   const after = (root) => {
     const box = PS.$('[data-article]', root);
     const topShare = PS.$('[data-share-top]', root);
@@ -206,7 +231,14 @@ PS.views.radarArticle = (id) => {
         PS.radar.renderArticle(box, a);
       }
     })
-      .catch((e) => { box.innerHTML = `<div class="empty">${PS.icon('alert')}<p>${PS.esc(e.message)}. Ben je offline, open het artikel dan later opnieuw.</p><a class="btn btn-line" href="#/lezen">Terug naar het overzicht</a></div>`; });
+      .catch((e) => {
+        const backBtn = isGuest
+          ? `<button class="btn btn-line" data-guest-retry>Opnieuw proberen</button>`
+          : `<a class="btn btn-line" href="#/lezen">Terug naar het overzicht</a>`;
+        box.innerHTML = `<div class="empty">${PS.icon('alert')}<p>${PS.esc(e.message)}. Ben je offline, open het artikel dan later opnieuw.</p>${backBtn}</div>`;
+        const retry = PS.$('[data-guest-retry]', box);
+        if (retry) retry.onclick = () => location.reload();
+      });
   };
   return { html, after };
 };

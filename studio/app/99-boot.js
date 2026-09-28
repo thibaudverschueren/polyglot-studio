@@ -26,9 +26,27 @@ PS.boot = () => {
     history.replaceState(null, '', `${location.pathname}#/les/${q.get('track')}/${Number(q.get('lesson'))}`);
   }
   PS.cloud.captureRedirect();
-  if (PS.needsGate()) PS.renderGate();
-  else { PS.shell(); PS.render(); }
-  window.addEventListener('hashchange', () => { if (!PS.runnerOpen && document.getElementById('main')) PS.render(); });
+  if (PS.needsGate()) {
+    PS.renderGate();
+  } else {
+    if (PS.isGuestArticle && PS.isGuestArticle()) PS.publicShell();
+    else PS.shell();
+    PS.render();
+  }
+  window.addEventListener('hashchange', () => {
+    if (PS.needsGate()) {
+      PS.renderGate();
+      return;
+    }
+    const isGuest = PS.isGuestArticle && PS.isGuestArticle();
+    const curShell = document.querySelector('.shell');
+    const isCurPublic = curShell && curShell.classList.contains('shell--public');
+    if (!document.getElementById('main') || (isGuest !== isCurPublic)) {
+      if (isGuest) PS.publicShell();
+      else PS.shell();
+    }
+    if (!PS.runnerOpen && document.getElementById('main')) PS.render();
+  });
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => PS.setTheme()); } catch (e) {}
 
   /* Active study time: 15 s heartbeat while visible and recently used */
