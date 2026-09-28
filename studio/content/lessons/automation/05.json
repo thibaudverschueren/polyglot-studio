@@ -1,0 +1,959 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "automation",
+ "id": 5,
+ "roadmap": "au-05-flow-control",
+ "kind": "core",
+ "title": "Flow control: IF, Switch, Filter en Batches",
+ "subtitle": "Items slim routeren, loops maken en API-limieten respecteren in n8n",
+ "level": "praktijk",
+ "minutes": 45,
+ "summary": "Niet alle items volgen hetzelfde pad. In deze les leer je hoe je datastromen splitst, workflows in batches opdeelt om crashes te vermijden, en herbruikbare logica afzondert in sub-workflows. Essentieel voor stabiele B2B-integraties.",
+ "objectives": [
+  {
+   "id": "routing",
+   "text": "Je stuurt items naar de juiste tak met een IF-, Switch- of Filter-node."
+  },
+  {
+   "id": "loop",
+   "text": "Je knipt grote datasets op in behapbare stukken (batches) met de Loop-node."
+  },
+  {
+   "id": "wait",
+   "text": "Je voorkomt rate limits door pauzes in te bouwen met de Wait-node."
+  },
+  {
+   "id": "sub-workflow",
+   "text": "Je hergebruikt logica door een sub-workflow aan te roepen via de Execute Workflow-node."
+  },
+  {
+   "id": "binary",
+   "text": "Je verwerkt en begrijpt binaire data (bestanden) in het n8n-itemmodel."
+  }
+ ],
+ "sections": [
+  {
+   "id": "routing",
+   "title": "Routing: IF, Switch en Filter",
+   "md": "Wanneer je data integreert voor B2B-klanten, moet niet elk item exact dezelfde actie ondergaan. Een Belgische lead krijgt een andere welkomstmail dan een Franse lead; een defect product vereist een escalatie, een gewone retour niet.\n\nWanneer niet elk item dezelfde actie moet ondergaan, gebruik je routing-nodes. Dit is vergelijkbaar met een wissel op een treinspoor, maar dan per item geëvalueerd. In n8n hebben we drie belangrijke smaken:\n\n- **IF-node**: Test een voorwaarde (bv. `{{ $json.score > 50 }}`). Elk item gaat naar de `true`-tak óf de `false`-tak. Gaan er 10 items in, en 7 zijn true, dan lopen er 7 verder op de bovenste tak en 3 op de onderste. Het is cruciaal om te onthouden dat nodes *per item* werken; de IF-node stuurt niet de hele batch naar één kant, maar verdeelt de items netjes over de twee paden.\n- **Filter-node**: Werkt precies als IF, maar gooit de `false`-items gewoon weg. Dit houdt je canvas netjes als je toch niets met de mislukte items doet.\n- **Switch-node**: Beoordeelt een veld en stuurt het item naar 1 van maximaal 4 gedefinieerde uitgangen (0, 1, 2 of 3). Ideaal om leads per land of type ticket te routeren, zodat je geen geneste keten van IF-nodes krijgt.\n\n> [!pitfall] Fallback is belangrijk\n> Bedenk bij de Switch-node wat er met items moet gebeuren die aan geen enkele voorwaarde voldoen. Gebruik de *Fallback*-uitgang om deze veilig af te vangen. Anders verdwijnen die items zomaar, wat kan leiden tot verloren bestellingen of leads.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "routing",
+     "level": 1,
+     "prompt": "Wat is het belangrijkste verschil tussen IF en Filter?",
+     "explain": "Filter heeft geen false-tak, alles wat faalt verdwijnt gewoon uit de workflow.",
+     "options": [
+      "Filter gooit de false-items onmiddellijk weg",
+      "IF kan meer dan 2 paden aanmaken",
+      "Filter kan geen expressies gebruiken",
+      "Filter is alleen voor strings"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c2",
+     "type": "numeric",
+     "skill": "routing",
+     "level": 1,
+     "prompt": "Er gaan 20 items de IF-node in. 8 voldoen aan de voorwaarde. Hoeveel items verlaten de node op de false-tak?",
+     "explain": "De overgebleven 12 items (20 - 8) gaan naar de false-tak.",
+     "value": 12,
+     "abs": 0
+    }
+   ]
+  },
+  {
+   "id": "loop",
+   "title": "Grote volumes met Batches",
+   "md": "Wanneer Thibaud voor klanten automatiseringen bouwt, krijgt hij vaak te maken met grootschalige datasynchronisaties. Denk aan een webshop die 's nachts een enorme catalogus moet updaten.\n\nAPI's hebben vaak rate limits (je mag niet meer dan 100 aanroepen per minuut doen), en n8n kan crashen met *Out of Memory* als je 50.000 producten in één keer verwerkt. Node.js (waarop n8n draait) moet al die items in het werkgeheugen houden. Zodra de limiet is bereikt, crasht n8n meedogenloos.\n\nDe oplossing is de **Loop Over Items**-node (vroeger de *Split In Batches*-node). Deze node fungeert als een sluis. In plaats van alles tegelijk door te laten, knipt hij de stroom van binnenkomende items op in behapbare groepen of iteraties.\n\nDeze node deelt de binnenkomende items op in groepen. Je stelt een batchgrootte in, bv. 50.\nDe node stuurt de eerste 50 items door de `Loop`-tak. Deze 50 items doorlopen vervolgens de gewenste acties (zoals HTTP-requests of databasetransacties). Na je bewerkingen **moet** je de flow weer verbinden met de ingang van de Loop-node. Alleen op die manier registreert n8n dat de huidige batch klaar is, waarna de node registreert dat de batch klaar is, en vuurt de volgende 50 af.\n\nZodra alle items verwerkt zijn, loopt de data door de `Done`-tak. Als je de resultaten van alle iteraties wilt bundelen, plaats je daar een **Aggregate**-node, zodat alle losse iteraties weer tot één nette array of stroom gebundeld worden.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "numeric",
+     "skill": "loop",
+     "level": 1,
+     "prompt": "Je voedt de Loop-node met 120 items en stelt de batchgrootte in op 30. Hoeveel iteraties zullen er draaien?",
+     "explain": "120 gedeeld door 30 is 4 iteraties.",
+     "value": 4,
+     "abs": 0
+    },
+    {
+     "id": "c4",
+     "type": "cloze",
+     "skill": "loop",
+     "level": 1,
+     "prompt": "Vul aan welk pad items volgen na de Loop-node:",
+     "explain": "Zodra alle iteraties zijn voltooid, gaan de items de workflow verder op de Done-tak.",
+     "text": "Wanneer alle batches verwerkt zijn, passeren de items de {{Done}}-tak van de Loop-node."
+    }
+   ]
+  },
+  {
+   "id": "wait",
+   "title": "Pauzeren tegen Rate Limits",
+   "md": "Zelfs als je data netjes in batches opdeelt met een Loop-node, kan een externe server nog steeds protesteren. Als je snel veel data ophaalt of aanmaakt, antwoordt een externe server soms met de foutcode HTTP **429 Too Many Requests**. Dit is het signaal dat je de rate limits hebt geschonden. Je moet de frequentie verlagen. Hiervoor is de **Wait**-node.\n\nDe Wait-node kent verschillende handige modi:\n\n1. **Wachten op tijd (Time Interval)**: Je stopt de workflow voor 5 seconden, 10 minuten of zelfs een jaar. Vaak combineer je dit in een Loop-node om een kleine pauze tussen batches te forceren. Door tussen elke batch een pauze van 2 seconden in te bouwen (plaats de Wait-node aan het einde van de loop, vlak voordat hij terugkeert), dwing je n8n om de API-limieten perfect te respecteren.\n2. **Wachten op webhook (Resume)**: De workflow stopt volledig, wordt uit het actieve geheugen gehaald, en wacht tot een extern systeem een specifieke resume-URL aanroept. Ideaal voor goedkeuringen door mensen (bv. via Slack knoppen). *Voorbeeld:* Je stuurt een Slack-bericht naar een manager met een knop \"Factuur Goedkeuren\". Achter die knop zit de resume-URL. Pas wanneer de manager klikt, ontwaakt de workflow in n8n met de goedgekeurde data en gaat de verwerking verder.\n\n> [!tip] Workflow Execution Timeout\n> Wachten is goed, maar let op dat je globale n8n-configuratie (`EXECUTIONS_TIMEOUT`) lang genoeg staat ingesteld als je dagen wilt pauzeren, of vink in de *Settings* aan dat n8n gepauzeerde executies naar de database wegschrijft. Anders overleeft een gepauzeerde workflow een herstart van je n8n-server niet!",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "type",
+     "skill": "wait",
+     "level": 1,
+     "prompt": "Welke HTTP-statuscode geeft aan dat je rate limits hebt overschreden?",
+     "explain": "429 Too Many Requests is het signaal om een Wait-node in te zetten.",
+     "answers": [
+      "429"
+     ],
+     "lang": "num"
+    },
+    {
+     "id": "c6",
+     "type": "mcq",
+     "skill": "wait",
+     "level": 1,
+     "prompt": "Wat is het voordeel van de 'On Webhook Call' modus in de Wait-node?",
+     "explain": "Je pauzeert totdat iemand (of een systeem) expliciet een unieke webhook-URL bezoekt.",
+     "options": [
+      "De workflow wacht tot een externe url wordt aangeroepen, handig voor menselijke goedkeuring",
+      "Het genereert een nieuwe webhook-node voor de hele workflow",
+      "Het vermindert API-kosten automatisch door slim wachten",
+      "Het wacht tot de database leeg is"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "subworkflow",
+   "title": "Sub-workflows en herbruikbaarheid",
+   "md": "Wanneer je steeds complexere integraties bouwt, merk je al snel dat je bepaalde logica vaak herhaalt. Kopieer je vaak exact hetzelfde blokje nodes naar verschillende workflows (bv. 'Zoek klant op, indien onbekend: maak klant aan')? Het is onhoudbaar en foutgevoelig om die nodes telkens te kopiëren en te plakken. Gebruik de **Execute Workflow**-node om logica te centraliseren in een 'sub-workflow'.\n\nEen sub-workflow is gewoon een aparte workflow die niet start met een Webhook of Schedule, maar met de **Execute Workflow Trigger**. De aanroepende (hoofd)workflow (de *caller*) pauzeert, stuurt zijn items naar deze trigger, en wacht op antwoord. \nDe output van de sub-workflow — de data die terugkeert naar de hoofdworkflow — is simpelweg de data die uit zijn allerlaatste actieve node stroomt. Wil je exact bepalen wat er teruggaat, plaats dan als laatste node een *Set* of *Edit Fields* in de sub-workflow.\n\nVoordelen:\n- Minder dubbele logica (DRY-principe: *Don't Repeat Yourself*). Wijzigt de API van je facturatiesysteem? Je past de logica maar in één sub-workflow aan, en alle 20 workflows die hem aanroepen zijn direct geüpdatet.\n- Complexe workflows opdelen houdt de interface overzichtelijk en vlot te bedienen. Extreem complexe workflows met 60 nodes worden immers onwerkbaar traag in de browser.\n- **Beveiliging**: Je kunt bedrijfsgevoelige stappen isoleren in een sub-workflow waar slechts enkele beheerders toegang toe hebben.",
+   "checks": [
+    {
+     "id": "c7",
+     "type": "cloze",
+     "skill": "sub-workflow",
+     "level": 1,
+     "prompt": "Vul de naam in van de trigger waarmee een sub-workflow altijd begint:",
+     "explain": "Elke sub-workflow moet specifiek starten met deze trigger-node.",
+     "text": "Een sub-workflow start je altijd met een {{Execute Workflow Trigger}}-node."
+    }
+   ]
+  },
+  {
+   "id": "binary",
+   "title": "Binaire Data (Bestanden)",
+   "md": "Tot nu toe hebben we ons gefocust op tekst en JSON. Maar items bevatten niet alleen `$json`, maar kunnen ook binaire bestanden dragen onder `$binary` (zoals een PDF-factuur of JPEG-logo). \n\nAls een item een bestand bevat, zie je in de n8n-editor naast het tabblad \"JSON\" ook een tabblad \"Binary\". De data zelf zit verpakt onder `$binary`, met eigenschappen als de bestandsnaam, de MIME-type (bv. `application/pdf`), en de werkelijke bestandsinhoud.\n\nIn tegenstelling tot JSON is binaire data extreem zwaar voor de server. Een CSV van 500 MB in het werkgeheugen laden is riskant. Standaard probeert n8n dit soort bestanden in het geheugen of de database te houden, wat snel tot crashes leidt bij zware bestanden.\nAls je self-hosted n8n beheert voor klanten, is het een absolute best practice om in de instellingen van self-hosted n8n kun je `N8N_DEFAULT_BINARY_DATA_MODE=filesystem` zetten, zodat n8n grote bestanden naar schijf schrijft in plaats van het hele RAM-geheugen te vullen. Zodra de executie klaar is, ruimt n8n dit netjes weer op.\n\n> [!rule] Bestanden creëren en omzetten\n> Gebruik de *Move Binary Data*-node of *Read/Write Binary File* (op de server) om JSON-data om te zetten naar binaire bestanden, en vice versa. Zij lezen de `$json` en bouwen een bestand op in `$binary`, zodat je het bestand vervolgens via HTTP of e-mail kunt doorsturen.",
+   "checks": [
+    {
+     "id": "c8",
+     "type": "type",
+     "skill": "binary",
+     "level": 1,
+     "prompt": "Onder welke sleutel binnen het item bewaart n8n bestanden en beelden?",
+     "explain": "De tekstdata zit in json, de bestanden in binary.",
+     "answers": [
+      "binary",
+      "Binary"
+     ],
+     "errors": [
+      {
+       "match": "json",
+       "feedback": "JSON bevat enkel tekst/data. Bestanden zitten in een ander object.",
+       "tag": "json-confusion"
+      }
+     ],
+     "lang": "code"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "routing",
+   "level": 1,
+   "prompt": "Wat is het functionele voordeel van een Filter-node tegenover een IF-node?",
+   "explain": "Filter houdt het canvas schoner omdat er geen loze false-tak bestaat.",
+   "options": [
+    "Filter gooit de false-items weg, wat overbodige vertakkingen bespaart",
+    "Filter is sneller in de verwerking",
+    "Filter kan meer complexe expressies aan",
+    "Filter kan tot 4 paden routeren"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "numeric",
+   "skill": "routing",
+   "level": 2,
+   "prompt": "Er gaan 50 items een Filter-node in. De voorwaarde is `price > 100`. Er zijn 35 items boven dit bedrag. Hoeveel items verschijnen op de output?",
+   "explain": "Alleen de items die true opleveren komen eruit. De rest wordt genegeerd.",
+   "value": 35,
+   "abs": 0
+  },
+  {
+   "id": "p03",
+   "type": "type",
+   "skill": "routing",
+   "level": 1,
+   "prompt": "Hoe heet de node waarmee je items over maximaal 4 gedefinieerde paden kunt verdelen o.b.v. regels?",
+   "explain": "De Switch-node voorkomt ketens van meerdere IF-nodes.",
+   "answers": [
+    "Switch",
+    "switch",
+    "Switch-node",
+    "switch-node"
+   ],
+   "errors": [
+    {
+     "match": "if",
+     "feedback": "De IF-node heeft maximaal twee paden (true/false).",
+     "tag": "if-confusion"
+    }
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "p04",
+   "type": "jscode",
+   "skill": "routing",
+   "level": 2,
+   "prompt": "Schrijf de Code-node (modus All) die als Filter fungeert: behoud uitsluitend items waarvan `status` exact `'active'` is.",
+   "explain": "Je gebruikt de .filter() array methode.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().filter(i => i.json.status === 'active');",
+   "cases": [
+    {
+     "items": [
+      {
+       "status": "active"
+      },
+      {
+       "status": "archived"
+      }
+     ],
+     "expected": [
+      {
+       "status": "active"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p05",
+   "type": "cloze",
+   "skill": "loop",
+   "level": 1,
+   "prompt": "Vul de nodenaam in voor het opdelen van batches:",
+   "explain": "Batches maak je met de Loop Over Items-node.",
+   "text": "De {{Loop Over Items|Loop}}-node voorkomt dat grote lijsten in één keer naar een API worden gestuurd."
+  },
+  {
+   "id": "p06",
+   "type": "numeric",
+   "skill": "loop",
+   "level": 2,
+   "prompt": "Je hebt een lijst van 150 producten en stelt de Loop-node in op een batchgrootte van 25. Hoeveel iteraties levert dit op?",
+   "explain": "150 / 25 = 6 iteraties.",
+   "value": 6,
+   "abs": 0
+  },
+  {
+   "id": "p07",
+   "type": "cloze",
+   "skill": "wait",
+   "level": 1,
+   "prompt": "Vul de statuscode en nodenaam in voor rate limits:",
+   "explain": "429 is Too Many Requests, op te lossen met Wait.",
+   "text": "Als een API rate limit fout {{429}} geeft, is het slim om een {{Wait}}-node toe te voegen."
+  },
+  {
+   "id": "p08",
+   "type": "type",
+   "skill": "sub-workflow",
+   "level": 1,
+   "prompt": "Wat is de vereiste trigger-node aan het begin van een sub-workflow?",
+   "explain": "Een Execute Workflow Trigger is nodig om door een Execute Workflow node te worden opgeroepen.",
+   "answers": [
+    "Execute Workflow Trigger",
+    "execute workflow trigger",
+    "Execute Workflow Trigger node"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "p09",
+   "type": "mcq",
+   "skill": "sub-workflow",
+   "level": 2,
+   "prompt": "Wat levert de Execute Workflow-node in de hoofdworkflow als resultaat op?",
+   "explain": "Het systeem neemt automatisch de data van de laatste node die draait in de sub-workflow.",
+   "options": [
+    "De output van de laatst uitgevoerde node in de sub-workflow",
+    "Altijd de originele items plus een log",
+    "Geen data, deze node dient enkel voor neveneffecten",
+    "De output van de Trigger-node"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p10",
+   "type": "cloze",
+   "skill": "binary",
+   "level": 1,
+   "prompt": "Onder welke sleutel worden binaire bestanden zoals PDF's bewaard in het n8n-itemmodel?",
+   "explain": "Naast json gebruikt n8n het object binary voor bestanden.",
+   "text": "Bestanden (zoals PDF's) zitten in het n8n-item onder de sleutel {{binary}}."
+  },
+  {
+   "id": "p11",
+   "type": "jsexpr",
+   "skill": "routing",
+   "level": 2,
+   "prompt": "Schrijf de expressie die `'binnenland'` oplevert als `country` gelijk is aan `'BE'`, en in de overige gevallen `'buitenland'` oplevert.",
+   "explain": "Een ternaire (if/else) operator toepassen.",
+   "input": {
+    "country": "BE"
+   },
+   "expected": "binnenland",
+   "solution": "{{ $json.country === 'BE' ? 'binnenland' : 'buitenland' }}"
+  },
+  {
+   "id": "p12",
+   "type": "jscode",
+   "skill": "routing",
+   "level": 2,
+   "prompt": "Code-node (Run Once for Each Item): Voeg een boolean `isValid` toe. Deze is `true` als de eigenschap `email` een string is en niet leeg is.",
+   "explain": "In 'each'-mode geef je voor elk item een object met 'json' erin terug.",
+   "mode": "each",
+   "starter": "return { json: $json };",
+   "solution": "return { json: { ...$json, isValid: typeof $json.email === 'string' && $json.email.trim() !== '' } };",
+   "cases": [
+    {
+     "items": [
+      {
+       "email": "test@test.be"
+      }
+     ],
+     "expected": [
+      {
+       "email": "test@test.be",
+       "isValid": true
+      }
+     ]
+    },
+    {
+     "items": [
+      {
+       "email": " "
+      }
+     ],
+     "expected": [
+      {
+       "email": " ",
+       "isValid": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p13",
+   "type": "explain",
+   "skill": "loop",
+   "level": 3,
+   "prompt": "Een klant mailt: *\"Elke nacht crasht onze n8n met 'Out of Memory' wanneer we 50.000 producten updaten in ons PIM. Hoe lossen we dit op?\"* Schrijf een bondig antwoord met de oorzaak en de juiste n8n-architectuur.",
+   "explain": "Klantcommunicatie vergt heldere taal voor complexe problemen.",
+   "model": "De crash wordt veroorzaakt omdat n8n probeert alle 50.000 producten tegelijk in het werkgeheugen (RAM) van de server te plaatsen, wat overbelasting veroorzaakt. De oplossing is het inbouwen van een 'Loop Over Items'-node. Hierdoor snijden we de producten op in kleine batches (bijvoorbeeld per 100). Het werkgeheugen blijft zo stabiel en de workflow draait vloeiend door.",
+   "rubric": [
+    "Noemt de oorzaak: data wordt tegelijkertijd in RAM gehouden",
+    "Noemt de oplossing: Loop Over Items / batches",
+    "Is maximaal 4 zinnen zonder onnodig technisch jargon"
+   ]
+  },
+  {
+   "id": "p14",
+   "type": "numeric",
+   "skill": "wait",
+   "level": 3,
+   "prompt": "Je moet 100 API calls uitvoeren, met een limiet van 5 requests per seconde op de server. Als je dit veilig ontwerpt, hoeveel seconden kost de absolute minimale wachttijd over de totale flow voor deze 100 items?",
+   "explain": "100 calls verdeeld over 5 per seconde levert 20 seconden op.",
+   "value": 20,
+   "abs": 0
+  },
+  {
+   "id": "p15",
+   "type": "jscode",
+   "skill": "loop",
+   "level": 2,
+   "prompt": "Code-node (Run Once for All Items): verwijder elk item waarvan `price` niet strikt groter is dan `0`.",
+   "explain": "De Array .filter() methode evalueert elk item.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().filter(i => i.json.price > 0);",
+   "cases": [
+    {
+     "items": [
+      {
+       "price": 10
+      },
+      {
+       "price": 0
+      },
+      {
+       "price": -5
+      }
+     ],
+     "expected": [
+      {
+       "price": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p16",
+   "type": "type",
+   "skill": "loop",
+   "level": 1,
+   "prompt": "Welke node gebruik je om items die de 'Done'-tak van de Loop verlaten weer samen te voegen tot één gebundelde array/item?",
+   "explain": "Aggregate bundelt items tot een array in 1 item.",
+   "answers": [
+    "Aggregate",
+    "aggregate",
+    "Aggregate-node",
+    "Aggregate node"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "p17",
+   "type": "numeric",
+   "skill": "routing",
+   "level": 2,
+   "prompt": "200 items gaan de IF-node in. Exact 20% van de items voldoet aan de voorwaarde. Hoeveel items passeren via de false-tak?",
+   "explain": "80% van 200 items passeert via false, wat neerkomt op 160.",
+   "value": 160,
+   "abs": 0
+  },
+  {
+   "id": "p18",
+   "type": "type",
+   "skill": "wait",
+   "level": 1,
+   "prompt": "Met welke modus laat de Wait-node een workflow pauzeren tot een unieke URL wordt geraakt?",
+   "explain": "De webhook of resume URL functie in de Wait node.",
+   "answers": [
+    "webhook",
+    "Webhook",
+    "On Webhook",
+    "On webhook call"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "p19",
+   "type": "mcq",
+   "skill": "binary",
+   "level": 2,
+   "prompt": "Je hebt JSON-data en je wilt er een CSV-bestand van maken in je item. Welke node helpt hierbij?",
+   "explain": "Om JSON naar binary te brengen, gebruik je gespecialiseerde nodes of de Spreadsheet File / Move Binary Data node.",
+   "options": [
+    "Move Binary Data",
+    "Set Binary Data",
+    "JSON to Binary",
+    "Data Converter"
+   ],
+   "answer": 0
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "numeric",
+   "skill": "routing",
+   "level": 2,
+   "prompt": "In een IF-node komen 35 items binnen. 15 daarvan gaan naar `true`. Hoeveel items verlaten de node op de `false`-tak?",
+   "explain": "Alle restitems vallen in de false-tak: 35 - 15 = 20.",
+   "value": 20,
+   "abs": 0
+  },
+  {
+   "id": "m02",
+   "type": "type",
+   "skill": "routing",
+   "level": 1,
+   "prompt": "Welke routeringsnode verwerpt de niet-matchende items volledig zonder ze naar een false-tak te sturen?",
+   "explain": "De Filter-node dropt items stilzwijgend.",
+   "answers": [
+    "Filter",
+    "filter",
+    "Filter-node"
+   ],
+   "errors": [
+    {
+     "match": "if",
+     "feedback": "De IF-node stuurt items die niet matchen altijd door naar een false-tak.",
+     "tag": "if-confusion"
+    }
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "m03",
+   "type": "cloze",
+   "skill": "routing",
+   "level": 1,
+   "prompt": "Vul de tekst over het maximale aantal uitgangen van de Switch-node aan:",
+   "explain": "De Switch node laat toe om zonder geneste constructies te werken.",
+   "text": "De Switch-node heeft standaard de mogelijkheid tot maximaal {{4|vier}} genummerde uitgangen om data te routeren."
+  },
+  {
+   "id": "m04",
+   "type": "numeric",
+   "skill": "loop",
+   "level": 2,
+   "prompt": "Je hebt een datastroom van 225 items die door een Loop-node gaan met een ingestelde batch size van 75. Hoeveel volledige lussen worden er uitgevoerd?",
+   "explain": "225 gedeeld door 75 levert precies 3 iteraties.",
+   "value": 3,
+   "abs": 0
+  },
+  {
+   "id": "m05",
+   "type": "jscode",
+   "skill": "routing",
+   "level": 2,
+   "prompt": "Code-node (Run Once for All Items): laat enkel de items door waar `age` gelijk is aan of groter is dan 18.",
+   "explain": "Je filtert de items direct met i.json.age >= 18.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().filter(i => i.json.age >= 18);",
+   "cases": [
+    {
+     "items": [
+      {
+       "age": 17
+      },
+      {
+       "age": 18
+      },
+      {
+       "age": 25
+      }
+     ],
+     "expected": [
+      {
+       "age": 18
+      },
+      {
+       "age": 25
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m06",
+   "type": "cloze",
+   "skill": "sub-workflow",
+   "level": 1,
+   "prompt": "Welke trigger-node vormt steevast het startpunt van elke sub-workflow?",
+   "explain": "Elke sub-workflow start met deze trigger.",
+   "text": "Een sub-workflow wordt altijd ingeleid door een {{Execute Workflow Trigger}}-node."
+  },
+  {
+   "id": "m07",
+   "type": "type",
+   "skill": "binary",
+   "level": 1,
+   "prompt": "Onder welk attribuut (key) staat de data van een binnengehaald PDF-bestand in het n8n-item?",
+   "explain": "JSON is enkel voor tekst en objecten.",
+   "answers": [
+    "binary",
+    "Binary"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m08",
+   "type": "numeric",
+   "skill": "wait",
+   "level": 3,
+   "prompt": "De doelsever staat slechts 2 requests per seconde toe. Jij verstuurt een lijst van 50 items. Wat is de minimaal berekende tijd in seconden die nodig is om dit foutloos te verwerken?",
+   "explain": "50 requests aan 2 per seconde = 25 seconden benodigde verwerkingstijd/wachttijd.",
+   "value": 25,
+   "abs": 0
+  },
+  {
+   "id": "m09",
+   "type": "cloze",
+   "skill": "wait",
+   "level": 2,
+   "prompt": "Vul de specifieke HTTP-statuscode en de bijbehorende node in om api-fouten te voorkomen:",
+   "explain": "Wait node tegen rate limits.",
+   "text": "Om een HTTP rate limit fout {{429}} effectief te voorkomen, pauzeer je een operatie structureel met een {{Wait}}-node."
+  },
+  {
+   "id": "m10",
+   "type": "jsexpr",
+   "skill": "routing",
+   "level": 2,
+   "prompt": "Geef het woord `'enterprise'` terug als `employees` groter of gelijk is aan 50, geef anders `'smb'` terug.",
+   "explain": "Ternaire operator logica.",
+   "input": {
+    "employees": 75
+   },
+   "expected": "enterprise",
+   "solution": "{{ $json.employees >= 50 ? 'enterprise' : 'smb' }}"
+  },
+  {
+   "id": "m11",
+   "type": "jscode",
+   "skill": "routing",
+   "level": 2,
+   "prompt": "Code-node (Run Once for Each Item): Voeg een veld `segment` toe met de waarde `'enterprise'` indien `employees` >= 50, of `'smb'` indien minder.",
+   "explain": "Dit is de Code variant van de expressie in m10.",
+   "mode": "each",
+   "starter": "return { json: $json };",
+   "solution": "return { json: { ...$json, segment: $json.employees >= 50 ? 'enterprise' : 'smb' } };",
+   "cases": [
+    {
+     "items": [
+      {
+       "employees": 10
+      },
+      {
+       "employees": 50
+      }
+     ],
+     "expected": [
+      {
+       "employees": 10,
+       "segment": "smb"
+      },
+      {
+       "employees": 50,
+       "segment": "enterprise"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m12",
+   "type": "mcq",
+   "skill": "binary",
+   "level": 3,
+   "prompt": "Wat verandert de n8n-configuratie `N8N_DEFAULT_BINARY_DATA_MODE=filesystem` aan het gedrag rond binaire data?",
+   "explain": "Dit is cruciaal om RAM niet vol te stouwen met bestanden (Out of Memory).",
+   "options": [
+    "Het schrijft grote bestanden direct naar schijf in plaats van ze in het werkgeheugen (RAM) te houden",
+    "Het verwijdert binaire bestanden automatisch aan het eind van de executie",
+    "Het voorkomt dat bestanden in workflows geïmporteerd kunnen worden",
+    "Het slaat bestanden op in de centrale n8n SQLite-database"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m13",
+   "type": "cloze",
+   "skill": "loop",
+   "level": 1,
+   "prompt": "Vul de naam in van de node die in iteraties verwerkte items opnieuw verzamelt achter de 'Done'-tak:",
+   "explain": "Aggregate maakt van meerdere iteratie items 1 gebundeld item.",
+   "text": "Items op de 'Done'-tak van een Loop-node voeg je na afloop samen met de {{Aggregate}}-node."
+  },
+  {
+   "id": "m14",
+   "type": "jsexpr",
+   "skill": "routing",
+   "level": 2,
+   "prompt": "Geef de waarde `true` terug (als boolean) als de array `items` één of meerdere elementen bevat.",
+   "explain": "Vergelijk of de array lengte groter is dan 0.",
+   "input": {
+    "items": [
+     1,
+     2
+    ]
+   },
+   "expected": true,
+   "solution": "{{ $json.items.length > 0 }}"
+  },
+  {
+   "id": "m15",
+   "type": "jscode",
+   "skill": "loop",
+   "level": 2,
+   "prompt": "Code-node (Run Once for All Items): verhoog `price` van álle items met 10% (vermenigvuldig met 1.1) en rond af op 2 decimalen met `Math.round()`.",
+   "explain": "Met .map() converteer alle items en met wiskunde rond je nauwkeurig af.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().map(i => ({ json: { ...i.json, price: Math.round(i.json.price * 1.1 * 100) / 100 } }));",
+   "cases": [
+    {
+     "items": [
+      {
+       "price": 10
+      },
+      {
+       "price": 100
+      }
+     ],
+     "expected": [
+      {
+       "price": 11
+      },
+      {
+       "price": 110
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m16",
+   "type": "numeric",
+   "skill": "routing",
+   "level": 2,
+   "prompt": "In een Filter-node passeren 15 items met de id's 1 tot en met 15. De filter-expressie luidt `$json.id > 10`. Hoeveel items resulteert deze bewerking op de output?",
+   "explain": "De items met id's 11, 12, 13, 14 en 15 zijn groter dan 10. Dat zijn 5 stuks.",
+   "value": 5,
+   "abs": 0
+  },
+  {
+   "id": "m17",
+   "type": "cloze",
+   "skill": "routing",
+   "level": 1,
+   "prompt": "Benoem de twee typen takken die een IF-node gebruikt om data te verdelen:",
+   "explain": "IF heeft een specifiek takken-model.",
+   "text": "De IF-node splitst de uitvoering via een {{true|waar}}-tak en een {{false|onwaar}}-tak."
+  },
+  {
+   "id": "m18",
+   "type": "type",
+   "skill": "loop",
+   "level": 1,
+   "prompt": "Met welke node verwerk je gecontroleerd hoeveel items er in één keer naar een externe partij gestuurd worden?",
+   "explain": "De Loop-node bouwt batches op.",
+   "answers": [
+    "Loop Over Items",
+    "Loop",
+    "loop",
+    "Loop-node"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "m19",
+   "type": "jscode",
+   "skill": "routing",
+   "level": 2,
+   "prompt": "Code-node (Run Once for All Items): verwijder de items waarbij `status` gelijk is aan `'archived'`.",
+   "explain": "Met .filter filter je direct the items via `!==`.",
+   "mode": "all",
+   "starter": "return $input.all();",
+   "solution": "return $input.all().filter(i => i.json.status !== 'archived');",
+   "cases": [
+    {
+     "items": [
+      {
+       "status": "active"
+      },
+      {
+       "status": "archived"
+      }
+     ],
+     "expected": [
+      {
+       "status": "active"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m20",
+   "type": "mcq",
+   "skill": "wait",
+   "level": 3,
+   "prompt": "Wat is het belangrijkste zakelijke argument om een Wait-node via een 'Resume'-webhook op te zetten in plaats van op vaste tijd te wachten?",
+   "explain": "Het pauzeert workflows langdurig totdat er een menselijke goedkeuringsactie heeft plaatsgevonden in bijvoorbeeld CRM of Slack.",
+   "options": [
+    "Het staat integratie toe van onbepaalde asynchrone externe acties zoals menselijke handmatige goedkeuring in een ander systeem",
+    "Het reduceert het geheugengebruik efficiënter dan een Wait op vaste tijden",
+    "Het garandeert sneller afleveren van data zonder netwerkvertraging",
+    "Het activeert automatisch beveiligingsmaatregelen via encryptie"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m21",
+   "type": "type",
+   "skill": "sub-workflow",
+   "level": 2,
+   "prompt": "Welke node gebruik je in een hoofdworkflow om een andere herbruikbare workflow aan te roepen?",
+   "explain": "De Execute Workflow-node pauzeert de huidige flow, vuurt de sub-workflow af en wacht op resultaat.",
+   "answers": [
+    "Execute Workflow",
+    "Execute Workflow node",
+    "execute workflow",
+    "Execute Workflow-node"
+   ],
+   "lang": "nl"
+  }
+ ],
+ "production": {
+  "type": "jscode",
+  "mode": "all",
+  "prompt": "**Klantopdracht.** Een lead-aanbieder post 100 leads per minuut naar onze webhook. Voor we ze opslaan in het CRM, moeten we data filteren en verrijken.\n\nSchrijf een Code-node (Run Once for All Items) die:\n1. Leads verwijdert als ze **geen** geldige, niet-lege string als `email` hebben.\n2. Een boolean `isEuropean` toevoegt: `true` als `country` gelijk is aan `'BE'`, `'NL'` of `'FR'` (werkt ook met kleine letters in de invoer, dus zet eerst om naar hoofdletters!).\n3. Een veld `priority` toevoegt: `'high'` als het veld `employees` groter dan of gelijk is aan 100, anders `'normal'`.\n\nGeef de gefilterde en verrijkte lijst met items terug.",
+  "starter": "// Filter en map leads\nreturn $input.all();",
+  "solution": "return $input.all()\n  .filter(i => typeof i.json.email === 'string' && i.json.email.trim() !== '')\n  .map(i => {\n    const c = String(i.json.country || '').toUpperCase();\n    return {\n      json: {\n        ...i.json,\n        isEuropean: ['BE', 'NL', 'FR'].includes(c),\n        priority: i.json.employees >= 100 ? 'high' : 'normal'\n      }\n    };\n  });",
+  "cases": [
+   {
+    "name": "volledig en europees",
+    "items": [
+     {
+      "email": "a@a.be",
+      "country": "be",
+      "employees": 150
+     }
+    ],
+    "expected": [
+     {
+      "email": "a@a.be",
+      "country": "be",
+      "employees": 150,
+      "isEuropean": true,
+      "priority": "high"
+     }
+    ]
+   },
+   {
+    "name": "geen email, wel nederland",
+    "items": [
+     {
+      "email": null,
+      "country": "NL",
+      "employees": 50
+     }
+    ],
+    "expected": []
+   },
+   {
+    "name": "andere regio (US) en kleine KMO",
+    "items": [
+     {
+      "email": "b@b.com",
+      "country": "US",
+      "employees": 10
+     }
+    ],
+    "expected": [
+     {
+      "email": "b@b.com",
+      "country": "US",
+      "employees": 10,
+      "isEuropean": false,
+      "priority": "normal"
+     }
+    ]
+   }
+  ],
+  "model": "We gebruiken `.filter(...)` om lege/foute e-mails weg te snijden en daarna `.map(...)` om resterende leads uit te breiden. Cruciaal is het gebruik van `.toUpperCase()` op het landveld zodat 'be' en 'BE' allebei succesvol matchen via `.includes()`. Spread (`...i.json`) behoudt originele attributen.",
+  "rubric": [
+   "Maakt correct gebruik van filter met type check op de email string",
+   "Kijkt naar kleine èn grote letters (toUpperCase) voor country",
+   "Behoudt de initiële properties van elk item met de spread operator",
+   "Is correct afgeschermd met de n8n-specifieke `json` envelopstructuur bij de retourobjecten"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-1",
+   "front": "IF vs Filter-node?",
+   "back": "IF splitst in een true- en false-tak. Filter gooit items die false opleveren onmiddellijk weg.",
+   "skill": "routing"
+  },
+  {
+   "id": "c-2",
+   "front": "Tot hoeveel standaarduitgangen heeft een Switch-node?",
+   "back": "**4** (0, 1, 2 en 3)",
+   "answers": [
+    "4",
+    "vier"
+   ],
+   "lang": "nl",
+   "skill": "routing"
+  },
+  {
+   "id": "c-3",
+   "front": "Welke node bundelt een gigantisch aantal items op in kleine partijen?",
+   "back": "**Loop Over Items** (vroeger Split In Batches)",
+   "answers": [
+    "Loop",
+    "Loop Over Items",
+    "loop"
+   ],
+   "lang": "nl",
+   "skill": "loop"
+  },
+  {
+   "id": "c-4",
+   "front": "Wat is het voordeel van een 'Webhook (Resume)' Wait-node?",
+   "back": "De workflow stopt helemaal en spaart RAM tot een externe partij of gebruiker expliciet de reserverings-URL bezoekt.",
+   "skill": "wait"
+  },
+  {
+   "id": "c-5",
+   "front": "Welke foutcode voorkom je specifiek met een Wait-node (rate limits)?",
+   "back": "**429** (Too Many Requests)",
+   "answers": [
+    "429"
+   ],
+   "lang": "num",
+   "skill": "wait"
+  },
+  {
+   "id": "c-6",
+   "front": "Met welke node moet elke sub-workflow verplicht starten?",
+   "back": "**Execute Workflow Trigger**",
+   "answers": [
+    "Execute Workflow Trigger"
+   ],
+   "lang": "code",
+   "skill": "sub-workflow"
+  },
+  {
+   "id": "c-7",
+   "front": "Onder welke root sleutel vinden we bestanden in een n8n-item terug?",
+   "back": "**binary**",
+   "answers": [
+    "binary"
+   ],
+   "lang": "code",
+   "skill": "binary"
+  },
+  {
+   "id": "c-8",
+   "front": "Met welke node bundel je de items van de 'Done'-tak op het eind van je iteraties?",
+   "back": "**Aggregate**",
+   "answers": [
+    "Aggregate"
+   ],
+   "lang": "code",
+   "skill": "loop"
+  }
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-27",
+  "adaptedFor": "Extra uitleg over loops om de crash-angst bij grotere B2B operaties weg te nemen. Klantcases gericht op stabiele operaties zonder Out of Memory."
+ }
+}

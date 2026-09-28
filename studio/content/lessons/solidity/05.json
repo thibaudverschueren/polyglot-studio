@@ -1,0 +1,837 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "solidity",
+ "id": 5,
+ "roadmap": "sol-05-errors-modifiers",
+ "title": "Fouten en toegangscontrole",
+ "subtitle": "Require, custom errors, modifiers en het veilige Ownable-patroon",
+ "level": "beginner",
+ "minutes": 45,
+ "summary": "Zonder toegangscontrole kan iedereen je contract leeghalen. Je leert state beschermen met modifiers en efficiënt gas besparen met custom errors.",
+ "objectives": [
+  {
+   "id": "panic-error",
+   "text": "Je onderscheidt interne fouten (Panic) van bedrijfslogica (Error) en verklaart het nut van reverts."
+  },
+  {
+   "id": "custom-errors",
+   "text": "Je vervangt require-strings door custom errors om aanzienlijk gas te besparen."
+  },
+  {
+   "id": "modifiers",
+   "text": "Je schrijft en gebruikt modifiers om controles (zoals onlyOwner) herbruikbaar te maken."
+  },
+  {
+   "id": "ownable",
+   "text": "Je beveiligt kritieke functies met het Ownable-patroon en past de tweestaps-overdracht toe."
+  }
+ ],
+ "sections": [
+  {
+   "id": "sec-panic-error",
+   "title": "Wanneer het misgaat: Revert, Panic en Error",
+   "md": "In Ethereum is een transactie *alles of niets*. Als de uitvoering halverwege faalt, wordt de transactie volledig **teruggedraaid** (een zogenaamde revert). Alle wijzigingen aan state-variabelen, overschrijvingen van ether en gelogde events worden ongedaan gemaakt, alsof de transactie nooit heeft plaatsgevonden.\n\n> [!warning] Gas is weg\n> Hoewel de state veilig hersteld wordt, is het tot aan de fout verbruikte gas wél kwijt. De nodes in het netwerk hebben het rekenwerk immers al uitgevoerd en eisen daarvoor hun vergoeding. Dit voorkomt DDoS-aanvallen op het netwerk.\n\nEr zijn twee grote families van fouten in Solidity 0.8:\n\n1. **Panic (interne fouten)**: Dit zijn kritieke fouten die voorkomen dat het contract in een corrupte staat belandt. Denk aan delen door nul, out-of-bounds toegang tot een array, of een rekenkundige overflow (bijvoorbeeld een `uint256` die onder 0 zakt). De compiler voegt hiervoor automatisch checks toe die een `Panic` opwerpen. Ze gebruiken de `0xfe` (INVALID) of vergelijkbare interne opcodes in lagere niveaus.\n2. **Error (bedrijfslogica)**: Dit zijn de functionele regels die *jij* als ontwikkelaar oplegt. Voorbeelden zijn \"je saldo is te laag\", \"dit contract is tijdelijk gepauzeerd\", of \"jij bent niet de beheerder\".\n\nHistorisch (tot Solidity 0.8.3) werd voor bedrijfslogica steevast de functie `require` gebruikt:\n\n```solidity\nfunction withdraw(uint256 amount) external {\n    // Als de conditie false is, stopt de executie hier\n    require(amount <= balance, \"Onvoldoende saldo\");\n    balance -= amount;\n}\n```\nAls de conditie in de `require` faalt, gooit de EVM onder water een standaard `Error(string)` op en draait de transactie terug met de meegegeven tekst. Vroeger bestond ook `assert()` voor Panics, maar in moderne Solidity hoef je dat vrijwel nooit meer zelf te schrijven.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "panic-error",
+     "level": 1,
+     "prompt": "Wat gebeurt er met de variabelen als een transactie halverwege revert?",
+     "explain": "Een revert draait alle state-wijzigingen van de huidige transactie terug.",
+     "options": [
+      "Ze worden teruggezet naar hun staat vóór de transactie",
+      "De tot dan toe gedane wijzigingen blijven behouden",
+      "Het contract wordt vernietigd",
+      "Je krijgt je verbruikte gas terug"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "sec-custom-errors",
+   "title": "Gas besparen met Custom Errors",
+   "md": "Het grote nadeel van `require(cond, \"Lange foutmelding\")` is het stevige gasverbruik. De volledige foutmelding (de string) moet letterlijk worden opgeslagen in de bytecode van je gedeployde contract. Bovendien moet de EVM bij een revert deze tekst ABI-coderen in memory om hem terug te sturen naar de beller. Dat is duur, en hoe langer de tekst, hoe hoger de deployment- en uitvoeringskosten.\n\nSinds Solidity 0.8.4 lossen we dit veel eleganter op met **custom errors**. Ze zijn veel goedkoper omdat ze onder de motorkap slechts een **4-byte selector** gebruiken, precies op dezelfde manier als functie-aanroepen werken.\n\n```solidity\n// 1. Definieer de error buiten of binnen het contract\n// Optioneel met parameters, wat debuggen in een frontend veel makkelijker maakt\nerror InsufficientBalance(uint256 requested, uint256 available);\n\ncontract Bank {\n    uint256 public balance = 100;\n\n    function withdraw(uint256 amount) external {\n        // 2. Gebruik if + revert in plaats van require\n        if (amount > balance) {\n            // Dit roept de error op en rolt de transactie terug\n            revert InsufficientBalance(amount, balance);\n        }\n        balance -= amount;\n    }\n}\n```\n\nWanneer deze `withdraw` faalt, stuurt de EVM geen lange string terug, maar de selector van de error (bijv. `0x12345678`) gevolgd door de gecodeerde waarden van `requested` en `available`. Een frontend of block explorer (zoals Etherscan) kent de definitie van de error en vertaalt dit terug naar leesbare tekst.\n\n> [!tip] Best Practice\n> Gebruik `require` alleen nog voor snelle prototype-scripts of testbestanden. In professionele productiecode gebruik je áltijd het patroon `if (...) revert CustomError();`. Het bespaart je substantieel gas bij de deployment én telkens wanneer een gebruiker de functie foutief aanroept.",
+   "checks": [
+    {
+     "id": "c2",
+     "type": "mcq",
+     "skill": "custom-errors",
+     "level": 2,
+     "prompt": "Waarom bespaart een custom error gas vergeleken met `require`?",
+     "explain": "Custom errors sturen enkel een 4-byte selector en hun parameters terug.",
+     "options": [
+      "Het slaat geen lange strings op in de bytecode, maar gebruikt een 4-byte selector",
+      "Het weigert de transactie voordat er gas verbruikt is",
+      "Het vermijdt dat de state wordt teruggedraaid",
+      "Het compileert naar een Panic in plaats van een Error"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "sec-modifiers",
+   "title": "Modifiers voor herbruikbare checks",
+   "md": "Stel dat je vijftien verschillende beheerder-functies hebt. Je wilt absoluut niet in elke functie de regel `if (msg.sender != admin) revert Unauthorized();` kopiëren (volgens het DRY-principe: Don't Repeat Yourself). Daarvoor dienen **modifiers**.\n\nEen modifier is een speciaal blok code dat vóór (en optioneel na) een functie wordt uitgevoerd. Het speciale symbool **`_;`** (een underscore gevolgd door een puntkomma) is cruciaal: het bepaalt de exacte plek waar de code van de uiteindelijke functie wordt ingevoegd door de compiler.\n\n```solidity\ncontract AdminControls {\n    address public admin;\n    error Unauthorized(address caller);\n\n    // Definieer de modifier met de herbruikbare logica\n    modifier onlyAdmin() {\n        if (msg.sender != admin) {\n            revert Unauthorized(msg.sender);\n        }\n        _; // Hier wordt de rest van de functie geplakt!\n    }\n\n    // Pas hem toe in de functiedeclaratie\n    function secureAction() external onlyAdmin {\n        // Deze code wordt op de plek van `_;` in de modifier uitgevoerd\n        // We weten 100% zeker dat de beller de admin is\n    }\n}\n```\n\nJe kunt aan een modifier ook parameters meegeven, net als bij een functie: `modifier groterDan(uint256 drempel) { ... }`.\nDaarnaast is het mogelijk om code *na* de `_;` te plaatsen. Dat is enorm nuttig voor bijvoorbeeld een reentrancy guard, waarbij je een slot sluit, de functie laat uitvoeren, en daarna het slot weer opent.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "type",
+     "skill": "modifiers",
+     "level": 1,
+     "prompt": "Welk symbool in een modifier markeert de plek waar de rest van de functie wordt ingevoegd?",
+     "explain": "De underscore gevolgd door een puntkomma (`_;`).",
+     "answers": [
+      "_;"
+     ],
+     "lang": "code"
+    }
+   ]
+  },
+  {
+   "id": "sec-ownable",
+   "title": "Het Ownable-patroon en tweestaps-overdracht",
+   "md": "Het meest gebruikte en essentiële toegangscontrolepatroon in smart contracts (vooral in DeFi) is **Ownable**. Het idee is simpel: een contract krijgt exact één `owner` (meestal het adres dat het contract oorspronkelijk deployde), en uitsluitend die eigenaar mag kritieke instellingen of parameters wijzigen.\n\nDe simpele, naïeve versie ziet er zo uit:\n\n```solidity\ncontract SimpleOwnable {\n    address public owner;\n    error NotOwner();\n\n    constructor() {\n        owner = msg.sender; // De deployer wordt de allereerste eigenaar\n    }\n\n    modifier onlyOwner() {\n        if (msg.sender != owner) revert NotOwner();\n        _;\n    }\n\n    // Overdracht van macht naar een nieuw adres\n    function transferOwnership(address newOwner) external onlyOwner {\n        owner = newOwner;\n    }\n}\n```\n\n> [!pitfall] Jezelf per ongeluk definitief buitensluiten\n> Wat gebeurt er als de eigenaar `transferOwnership` aanroept, maar per ongeluk een klein typfoutje maakt in het nieuwe adres (of het 0-adres meegeeft)? De rechten gaan over naar een adres waar niemand de private key van heeft. Het contract is dan **voorgoed stuurloos**. Je kunt deze actie nooit meer ongedaan maken, want de oude eigenaar heeft geen rechten meer.\n\nOmdat blockchain-operaties onomkeerbaar zijn, gebruiken we in productie (zoals in de bibliotheken van OpenZeppelin) altijd een **tweestaps-eigendomsoverdracht**:\n1. De huidige eigenaar roept `proposeOwnership(newOwner)` aan. De variabele `owner` blijft intact, maar `pendingOwner` wordt ingevuld.\n2. De beoogde nieuwe eigenaar (de `pendingOwner`) moet daarna zelf een functie `acceptOwnership()` aanroepen.\n\nPas in stap 2 wordt `owner = pendingOwner` uitgevoerd. Zo bewijst de nieuwe eigenaar cryptografisch dat hij daadwerkelijk de controle heeft over dat specifieke adres. Faalt hij, of was het adres fout? Dan gebeurt er niets en behoudt de oude eigenaar gewoon zijn rechten.",
+   "checks": [
+    {
+     "id": "c4",
+     "type": "mcq",
+     "skill": "ownable",
+     "level": 2,
+     "prompt": "Wat is het gevaar van eigendomsoverdracht in één stap?",
+     "explain": "Bij een verkeerd ingetypt adres is het contract permanent stuurloos.",
+     "options": [
+      "Een typfout in het adres kan het contract voorgoed onbestuurbaar maken",
+      "Het kost beduidend meer gas dan twee stappen",
+      "Iedereen kan het eigendom opeisen",
+      "Het compileert niet in Solidity 0.8"
+     ],
+     "answer": 0
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "panic-error",
+   "level": 1,
+   "prompt": "Wat verstaat Solidity onder een **Panic**?",
+   "explain": "Panics zijn runtime interne fouten zoals deling door nul of arithmetic overflow.",
+   "options": [
+    "Een interne, technische fout zoals een overflow of out-of-bounds error",
+    "Een fout in de bedrijfslogica gedefinieerd met require",
+    "Een handtekening die ongeldig is",
+    "Een functie die het gaslimiet overschrijdt"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "cloze",
+   "skill": "panic-error",
+   "level": 1,
+   "prompt": "Vervolledig deze traditionele require-check.",
+   "explain": "Require neemt de conditie en optioneel een foutmelding.",
+   "text": "{{require}}(msg.sender == owner, \"Niet toegestaan\");",
+   "lang": "code"
+  },
+  {
+   "id": "p03",
+   "type": "mcq",
+   "skill": "custom-errors",
+   "level": 1,
+   "prompt": "Sinds welke grote Solidity-versie zijn custom errors (met het `error`-keyword) standaard?",
+   "explain": "Solidity 0.8.4 introduceerde custom errors.",
+   "options": [
+    "Solidity 0.8.4",
+    "Solidity 0.6.12",
+    "Solidity 0.7.0",
+    "Solidity 0.4.24"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p04",
+   "type": "type",
+   "skill": "custom-errors",
+   "level": 2,
+   "prompt": "Wat is het sleutelwoord om een error op te gooien als je al in een `if`-blok zit?",
+   "explain": "Gebruik `revert` gevolgd door de error call.",
+   "answers": [
+    "revert"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p05",
+   "type": "cloze",
+   "skill": "custom-errors",
+   "level": 2,
+   "prompt": "Definieer een custom error `TeLaag` die meekrijgt hoeveel Ether tekort is (als `uint256`).",
+   "explain": "Je kunt types definiëren binnen de haakjes, net als bij een event of functie.",
+   "text": "{{error}} TeLaag({{uint256}} tekort);",
+   "lang": "code",
+   "errors": [
+    {
+     "match": "event",
+     "feedback": "Een event slaat logs op; we zoeken het keyword voor een foutmelding (error).",
+     "tag": "event-vs-error"
+    }
+   ]
+  },
+  {
+   "id": "p06",
+   "type": "cloze",
+   "skill": "modifiers",
+   "level": 1,
+   "prompt": "Vul het speciale symbool aan dat zegt: 'plak hier de code van de functie'.",
+   "explain": "`_;` merge code.",
+   "text": "modifier onlyAdmin() { if(msg.sender != admin) revert(); {{_;}} }",
+   "lang": "code"
+  },
+  {
+   "id": "p07",
+   "type": "order",
+   "skill": "modifiers",
+   "level": 2,
+   "prompt": "Zet de onderdelen van de modifier in de juiste volgorde.",
+   "explain": "Naam, check, body-merger.",
+   "tiles": [
+    "modifier onlyOwner() {",
+    "if (msg.sender != owner)",
+    "revert Unauthorized();",
+    "_;",
+    "}"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p08",
+   "type": "match",
+   "skill": "panic-error",
+   "level": 2,
+   "prompt": "Koppel de foutafhandeling aan de eigenschap.",
+   "explain": "Ken de verschillen tussen Panic, require en custom errors.",
+   "pairs": [
+    [
+     "Panic (0x11)",
+     "Automatisch opgeworpen bij overflow in 0.8"
+    ],
+    [
+     "require",
+     "Makkelijk voor prototypes, kost meer gas (string)"
+    ],
+    [
+     "custom error",
+     "Gebruikt een 4-byte selector, uiterst gas-efficiënt"
+    ]
+   ]
+  },
+  {
+   "id": "p09",
+   "type": "cloze",
+   "skill": "modifiers",
+   "level": 2,
+   "prompt": "Pas de modifier `onlyOwner` toe op deze functie.",
+   "explain": "Zet de modifier-naam achter de visibiliteit (external).",
+   "text": "function withdraw() external {{onlyOwner}} { balance = 0; }",
+   "lang": "code"
+  },
+  {
+   "id": "p10",
+   "type": "type",
+   "skill": "ownable",
+   "level": 1,
+   "prompt": "Welke globale variabele gebruiken we in de `constructor` om de deployer als eigenaar in te stellen?",
+   "explain": "`msg.sender` identificeert altijd de aanroeper van de huidige functie/deploy.",
+   "answers": [
+    "msg.sender"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p11",
+   "type": "cloze",
+   "skill": "ownable",
+   "level": 2,
+   "prompt": "De constructor instelt de eigenaar bij deployment.",
+   "explain": "Een constructor draait maar één keer.",
+   "text": "{{constructor}}() { owner = {{msg.sender}}; }",
+   "lang": "code"
+  },
+  {
+   "id": "p12",
+   "type": "mcq",
+   "skill": "ownable",
+   "level": 2,
+   "prompt": "Bij de tweestaps-eigendomsoverdracht is er een `pendingOwner`. Wie kan met succes `acceptOwnership()` aanroepen?",
+   "explain": "Alleen de beoogde nieuwe eigenaar kan het claimen; zo wordt bewezen dat het adres geen typfout was.",
+   "options": [
+    "Enkel de beoogde `pendingOwner` zelf",
+    "De huidige actieve `owner` van het contract",
+    "Elk willekeurig geregistreerd adres op het netwerk",
+    "De nodes via een decentrale consensus-stemming"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p13",
+   "type": "explain",
+   "skill": "ownable",
+   "level": 3,
+   "prompt": "Leg kort uit waarom een tweestaps-eigendomsoverdracht veiliger is dan een simpele `owner = newOwner;`.",
+   "explain": "Veiligheid op de blockchain vereist robuustheid tegen kleine menselijke fouten.",
+   "model": "Bij een simpele overdracht kan een typfout in het adres van de nieuwe eigenaar ertoe leiden dat de rechten naar een onbestaand (of verkeerd) adres gaan, waardoor het contract voor altijd onbestuurbaar wordt. Bij twee stappen moet de nieuwe eigenaar de overdracht eerst actief accepteren, wat direct bewijst dat het ingevulde adres toegankelijk is.",
+   "rubric": [
+    "Benoemt het risico van typfouten (contract locked)",
+    "Benoemt dat de tweede stap bewijst dat de ontvanger toegang heeft"
+   ]
+  },
+  {
+   "id": "p14",
+   "type": "code",
+   "skill": "custom-errors",
+   "level": 2,
+   "prompt": "Vervang de dure `require` in deze kluis door een gas-efficiënte custom error `TooSmall` met een parameter `minimum`.",
+   "explain": "1. Definieer de error. 2. Gebruik if (...) revert ErrorName(args).",
+   "contract": "Vault",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Vault {\n    uint256 public total;\n\n    // TODO: Definieer error TooSmall(uint256 minimum)\n\n    function deposit(uint256 amount) external {\n        // TODO: Vervang dit door een if-revert patroon met de custom error\n        require(amount >= 10, \"Minstens 10\");\n\n        total += amount;\n    }\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Vault {\n    uint256 public total;\n\n    error TooSmall(uint256 minimum);\n\n    function deposit(uint256 amount) external {\n        if (amount < 10) {\n            revert TooSmall(10);\n        }\n\n        total += amount;\n    }\n}",
+   "tests": [
+    {
+     "name": "Grote deposit werkt",
+     "steps": [
+      {
+       "call": "deposit",
+       "args": [
+        15
+       ]
+      },
+      {
+       "expect": {
+        "call": "total",
+        "eq": 15
+       }
+      }
+     ]
+    },
+    {
+     "name": "Te kleine deposit faalt met custom error",
+     "steps": [
+      {
+       "call": "deposit",
+       "args": [
+        5
+       ],
+       "reverts": "TooSmall"
+      }
+     ]
+    }
+   ],
+   "file": "Vault.sol"
+  },
+  {
+   "id": "p15",
+   "type": "numeric",
+   "skill": "custom-errors",
+   "level": 1,
+   "prompt": "Hoeveel bytes neemt de identifier (selector) van een custom error in beslag in het contract?",
+   "explain": "Net als functies krijgen errors een unieke 4-byte selector.",
+   "value": 4,
+   "abs": 0,
+   "unit": "bytes"
+  },
+  {
+   "id": "p16",
+   "type": "cloze",
+   "skill": "ownable",
+   "level": 2,
+   "prompt": "Voltooi stap 2 van de eigendomsoverdracht.",
+   "explain": "De beller moet de pending eigenaar zijn, pas daarna wordt de echte owner overschreven.",
+   "text": "function acceptOwnership() external { if (msg.sender != pendingOwner) {{revert}} Unauthorized(); owner = {{pendingOwner}}; }",
+   "lang": "code"
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "mcq",
+   "skill": "panic-error",
+   "level": 1,
+   "prompt": "Welke stelling over reverts is correct?",
+   "explain": "Gas betaalt voor de gedane berekeningen.",
+   "options": [
+    "State wordt hersteld, maar je betaalt wel voor het verbruikte gas tot de fout",
+    "State blijft gewijzigd tot op het punt van de fout",
+    "Je krijgt al je gas terug omdat de transactie faalde",
+    "De EVM verwijdert het contract van het netwerk"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m02",
+   "type": "type",
+   "skill": "custom-errors",
+   "level": 2,
+   "prompt": "Schrijf de definitie van een fout genaamd `Ongeldig` zonder parameters.",
+   "explain": "Het start met error.",
+   "answers": [
+    "error Ongeldig();"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m03",
+   "type": "cloze",
+   "skill": "custom-errors",
+   "level": 2,
+   "prompt": "Zet de `require(a != 0, \"Nul\");` om naar een if-revert constructie.",
+   "explain": "Draai de conditie om in de if: we vangen het faalgeval op.",
+   "text": "{{if}} (a == 0) { {{revert}} NulError(); }",
+   "lang": "code"
+  },
+  {
+   "id": "m04",
+   "type": "mcq",
+   "skill": "custom-errors",
+   "level": 3,
+   "prompt": "Stel je hebt een functie die in een loop 50 checks doet. Wat is de meest efficiënte afhandeling?",
+   "explain": "Custom errors besparen gas bij deployment, maar óók aanzienlijk tijdens execution (calldata/return data).",
+   "options": [
+    "Custom errors gebruiken",
+    "Require gebruiken met een string van max 32 tekens",
+    "Een Panic-oorzakelijke fout triggeren (bijv. assert)",
+    "Return false in plaats van reverten"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m05",
+   "type": "match",
+   "skill": "modifiers",
+   "level": 1,
+   "prompt": "Koppel de toegangscontroletheorie.",
+   "explain": "Beheers de bouwstenen van modifiers.",
+   "pairs": [
+    [
+     "modifier",
+     "Herbruikbaar blok code rondom een functie"
+    ],
+    [
+     "_;",
+     "De plek waar de functie zelf wordt ingevoegd"
+    ],
+    [
+     "revert",
+     "Breekt uitvoering af als de conditie niet gehaald is"
+    ]
+   ]
+  },
+  {
+   "id": "m06",
+   "type": "cloze",
+   "skill": "modifiers",
+   "level": 2,
+   "prompt": "Je wilt dat the modifier `activeOnly` ook ná de functie controleert of het systeem veilig is.",
+   "explain": "_; staat in het midden.",
+   "text": "modifier activeOnly() { checkActive(); {{_;}} checkSafe(); }",
+   "lang": "code"
+  },
+  {
+   "id": "m07",
+   "type": "order",
+   "skill": "ownable",
+   "level": 2,
+   "prompt": "Zet de stappen van het Ownable-contract in de juiste levenscyclus.",
+   "explain": "Van constructie via voorstel naar acceptatie.",
+   "tiles": [
+    "Constructor wordt gedraaid, owner = deployer",
+    "Eigenaar stelt een nieuwe eigenaar voor (pendingOwner)",
+    "Beoogde eigenaar ontdekt de transactie",
+    "Beoogde eigenaar belt acceptOwnership()",
+    "owner wordt overschreven en het contract is overgedragen"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "m08",
+   "type": "numeric",
+   "skill": "custom-errors",
+   "level": 2,
+   "prompt": "Een error `Insufficient(uint256)` is gedefinieerd. Hoeveel *bytes* kost de error selector die naar de blockchain verstuurd wordt in de revert-data?",
+   "explain": "De selector van een fout of functie in Solidity is exact de eerste 4 bytes van de keccak256 hash van de handtekening.",
+   "value": 4,
+   "abs": 0,
+   "unit": "bytes"
+  },
+  {
+   "id": "m09",
+   "type": "cloze",
+   "skill": "ownable",
+   "level": 2,
+   "prompt": "Het is een goede praktijk om te controleren dat men het adres niet per ongeluk naar `address(0)` zet.",
+   "explain": "Gebruik een custom error.",
+   "text": "if (newOwner == {{address(0)}}) revert {{InvalidAddress}}();",
+   "lang": "code"
+  },
+  {
+   "id": "m10",
+   "type": "code",
+   "skill": "modifiers",
+   "level": 2,
+   "prompt": "Implementeer de modifier `onlyAdmin` met de custom error `NotAdmin()`.",
+   "explain": "Gebruik msg.sender, de error en de underscore.",
+   "contract": "System",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract System {\n    address public admin;\n    error NotAdmin();\n\n    constructor() {\n        admin = msg.sender;\n    }\n\n    // TODO: schrijf de modifier onlyAdmin\n\n    // we passen hem hier toe\n    function secure() external onlyAdmin {\n        // succes\n    }\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract System {\n    address public admin;\n    error NotAdmin();\n\n    constructor() {\n        admin = msg.sender;\n    }\n\n    modifier onlyAdmin() {\n        if (msg.sender != admin) revert NotAdmin();\n        _;\n    }\n\n    function secure() external onlyAdmin {\n    }\n}",
+   "tests": [
+    {
+     "name": "Admin mag de functie roepen",
+     "steps": [
+      {
+       "call": "secure"
+      }
+     ]
+    },
+    {
+     "name": "Niet-admin revert",
+     "steps": [
+      {
+       "call": "secure",
+       "as": "bob",
+       "reverts": "NotAdmin"
+      }
+     ]
+    }
+   ],
+   "file": "System.sol"
+  },
+  {
+   "id": "m11",
+   "type": "mcq",
+   "skill": "modifiers",
+   "level": 2,
+   "prompt": "Wat gebeurt er als je de `_;` in je modifier vergeet?",
+   "explain": "Als `_;` ontbreekt, wordt de body van de gemodificeerde functie nooit geplakt en dus nooit uitgevoerd.",
+   "options": [
+    "De code van de functie waar je de modifier op toepast, wordt nooit uitgevoerd",
+    "Het contract compileert niet (syntax error)",
+    "De functie voert zich twee keer uit",
+    "De modifier voert geen checks uit"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m12",
+   "type": "type",
+   "skill": "ownable",
+   "level": 2,
+   "prompt": "Welk adres voorkomt het verbranden van eigendom (zonder dit expliciet te willen)?",
+   "explain": "Je checkt tegen address(0).",
+   "answers": [
+    "address(0)"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m13",
+   "type": "cloze",
+   "skill": "ownable",
+   "level": 3,
+   "prompt": "Maak de simpele eigendomsoverdracht veiliger door check op `address(0)` in 1 stap.",
+   "explain": "Hoewel 2 stappen beter is, is address(0) weren altijd de basis.",
+   "text": "function transfer(address newOwner) external onlyOwner { if(newOwner == {{address(0)}}) revert Error(); owner = {{newOwner}}; }",
+   "lang": "code"
+  },
+  {
+   "id": "m14",
+   "type": "mcq",
+   "skill": "panic-error",
+   "level": 2,
+   "prompt": "Een `uint256` variabele bevat 0. Je doet er `- 1` bij in Solidity 0.8. Wat gooit de EVM op?",
+   "explain": "Sinds 0.8 is er arithmetic overflow/underflow bescherming (Panic 0x11).",
+   "options": [
+    "Panic(0x11) voor een arithmetic underflow",
+    "Error(\"Underflow\")",
+    "Niets, de waarde wordt 2^256 - 1",
+    "Custom Error"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m15",
+   "type": "code",
+   "skill": "ownable",
+   "level": 3,
+   "prompt": "Implementeer de tweede stap van het 2-step Ownable patroon: `acceptOwnership()`.",
+   "explain": "Check of de afzender wel de pending owner is, zet de nieuwe owner, wis de pending owner.",
+   "contract": "TwoStep",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract TwoStep {\n    address public owner;\n    address public pendingOwner;\n    error NotPending();\n\n    constructor() {\n        owner = msg.sender;\n    }\n\n    function propose(address newOwner) external {\n        require(msg.sender == owner);\n        pendingOwner = newOwner;\n    }\n\n    function acceptOwnership() external {\n        // TODO: controleer of msg.sender pendingOwner is (revert NotPending indien niet)\n        // TODO: maak de sender de nieuwe owner\n        // TODO: zet pendingOwner veilig terug naar address(0)\n    }\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract TwoStep {\n    address public owner;\n    address public pendingOwner;\n    error NotPending();\n\n    constructor() {\n        owner = msg.sender;\n    }\n\n    function propose(address newOwner) external {\n        require(msg.sender == owner);\n        pendingOwner = newOwner;\n    }\n\n    function acceptOwnership() external {\n        if (msg.sender != pendingOwner) revert NotPending();\n        owner = msg.sender;\n        pendingOwner = address(0);\n    }\n}",
+   "tests": [
+    {
+     "name": "Niet-pending kan niet accepteren",
+     "steps": [
+      {
+       "call": "propose",
+       "args": [
+        "alice"
+       ]
+      },
+      {
+       "call": "acceptOwnership",
+       "as": "bob",
+       "reverts": "NotPending"
+      }
+     ]
+    },
+    {
+     "name": "Succesvolle overdracht en reset",
+     "steps": [
+      {
+       "call": "propose",
+       "args": [
+        "alice"
+       ]
+      },
+      {
+       "call": "acceptOwnership",
+       "as": "alice"
+      },
+      {
+       "expect": {
+        "call": "owner",
+        "eq": "alice"
+       }
+      },
+      {
+       "expect": {
+        "call": "pendingOwner",
+        "eq": "0x0000000000000000000000000000000000000000"
+       }
+      }
+     ]
+    }
+   ],
+   "file": "TwoStep.sol"
+  },
+  {
+   "id": "m16",
+   "type": "type",
+   "skill": "custom-errors",
+   "level": 2,
+   "prompt": "Als je een require string hebt: `require(x > 0, \"Val cannot be zero\");`. Hoeveel kostbare bytes tekst wordt er in de bytecode opgeslagen?",
+   "explain": "De lengte van de string bepaalt het aantal opgeslagen bytes (18 tekens).",
+   "answers": [
+    "18"
+   ],
+   "lang": "num"
+  },
+  {
+   "id": "m17",
+   "type": "mcq",
+   "skill": "modifiers",
+   "level": 3,
+   "prompt": "Je kan meerdere modifiers na elkaar zetten: `function test() external auth valid { ... }`. Wat is de volgorde van executie?",
+   "explain": "Modifiers voeren van links naar rechts uit. De `_;` in `auth` triggert `valid`, en de `_;` in `valid` triggert de functiebody.",
+   "options": [
+    "auth start, de `_;` springt naar valid, de `_;` springt naar de functie",
+    "Ze worden tegelijk (parallel) berekend door de EVM",
+    "De functie loopt eerst, dan valid, dan auth",
+    "valid start, de `_;` springt naar auth"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m18",
+   "type": "cloze",
+   "skill": "custom-errors",
+   "level": 2,
+   "prompt": "Vervolledig het ophalen van msg.sender in een fout.",
+   "explain": "Revert met het adres dat in overtreding is.",
+   "text": "error WrongCaller(address caller); if (msg.sender != owner) revert {{WrongCaller}}({{msg.sender}});",
+   "lang": "code"
+  },
+  {
+   "id": "m19",
+   "type": "cloze",
+   "skill": "panic-error",
+   "level": 2,
+   "prompt": "Vul de juiste foutfamilie in voor ingebouwde veiligheidschecks (zoals deling door nul of overflow).",
+   "explain": "De EVM werpt automatisch een Panic op, terwijl je voor je eigen bedrijfslogica een Error (of custom error) definieert.",
+   "text": "Een ingebouwde veiligheidsfout van de EVM is een {{Panic}} (bijv. code 0x11).",
+   "lang": "nl"
+  }
+ ],
+ "production": {
+  "type": "code",
+  "contract": "SecureVault",
+  "file": "SecureVault.sol",
+  "prompt": "**Bouw een veilige kluis voor één eigenaar.**\n\n- Maak een contract `SecureVault` met `owner` (address) en `vaultBalance` (uint256), beide `public`.\n- Definieer in de constructor de deployer als eigenaar.\n- Maak een custom error `Unauthorized()` en een modifier `onlyOwner` die deze error triggert als de beller niet de eigenaar is.\n- Maak een `deposit(uint256 amount)` functie (mag iedereen bellen) die `vaultBalance` verhoogt.\n- Maak een `withdraw(uint256 amount)` functie beveiligd met `onlyOwner` die `vaultBalance` verlaagt. Als `amount > vaultBalance`, revert met een error `TooPoor()`.\n\nWerk iteratief: schrijf de code, klik op Compileer & deploy in het Contract-tabblad en check de opslag. Run pas daarna de tests.",
+  "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SecureVault {\n    // TODO: variabelen owner en vaultBalance\n    // TODO: custom errors: Unauthorized() en TooPoor()\n\n    // TODO: constructor\n\n    // TODO: modifier onlyOwner\n\n    // TODO: deposit(uint256 amount)\n\n    // TODO: withdraw(uint256 amount) - let op: enkel owner\n}",
+  "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SecureVault {\n    address public owner;\n    uint256 public vaultBalance;\n\n    error Unauthorized();\n    error TooPoor();\n\n    modifier onlyOwner() {\n        if (msg.sender != owner) revert Unauthorized();\n        _;\n    }\n\n    constructor() {\n        owner = msg.sender;\n    }\n\n    function deposit(uint256 amount) external {\n        vaultBalance += amount;\n    }\n\n    function withdraw(uint256 amount) external onlyOwner {\n        if (amount > vaultBalance) revert TooPoor();\n        vaultBalance -= amount;\n    }\n}",
+  "tests": [
+   {
+    "name": "Constructor zet de owner correct in state",
+    "steps": [
+     {
+      "deploy": "SecureVault",
+      "as": "alice"
+     },
+     {
+      "expect": {
+       "call": "owner",
+       "eq": "alice"
+      }
+     }
+    ]
+   },
+   {
+    "name": "Iedereen kan deposit doen",
+    "steps": [
+     {
+      "call": "deposit",
+      "as": "bob",
+      "args": [
+       100
+      ]
+     },
+     {
+      "expect": {
+       "call": "vaultBalance",
+       "eq": 100
+      }
+     }
+    ]
+   },
+   {
+    "name": "Niet-owner withdraw revert met Unauthorized",
+    "steps": [
+     {
+      "call": "deposit",
+      "args": [
+       100
+      ]
+     },
+     {
+      "call": "withdraw",
+      "as": "bob",
+      "args": [
+       50
+      ],
+      "reverts": "Unauthorized"
+     }
+    ]
+   },
+   {
+    "name": "Owner kan withdraw doen en state updatet",
+    "steps": [
+     {
+      "call": "deposit",
+      "args": [
+       100
+      ]
+     },
+     {
+      "call": "withdraw",
+      "args": [
+       40
+      ]
+     },
+     {
+      "expect": {
+       "call": "vaultBalance",
+       "eq": 60
+      }
+     }
+    ]
+   },
+   {
+    "name": "Withdraw boven saldo revert met TooPoor",
+    "steps": [
+     {
+      "call": "deposit",
+      "args": [
+       50
+      ]
+     },
+     {
+      "call": "withdraw",
+      "args": [
+       60
+      ],
+      "reverts": "TooPoor"
+     }
+    ]
+   },
+   {
+    "name": "Code bevat modifier syntax en _,",
+    "source": {
+     "contains": "_;"
+    }
+   }
+  ],
+  "model": "Een robuust patroon. Merk op hoe we `if (...) revert Custom();` gebruiken. Dit is efficiënt omdat je geen overbodige strings in de blockchain laadt, en door de modifier blijft je code DRY.",
+  "rubric": []
+ },
+ "cards": [
+  {
+   "id": "c-revertgas",
+   "front": "Krijg je gas terug bij een transactie die revert?",
+   "back": "**Nee**. De state wordt wel teruggedraaid, maar het verbruikte gas voor de rekentijd tot aan de fout ben je kwijt.",
+   "skill": "panic-error"
+  },
+  {
+   "id": "c-customerrorgas",
+   "front": "Waarom zijn custom errors (`error MyError();`) goedkoper dan `require` met een string?",
+   "back": "Custom errors sturen slechts een **4-byte selector** terug en slaan geen lange tekst op in de on-chain bytecode.",
+   "skill": "custom-errors"
+  },
+  {
+   "id": "c-modifier",
+   "front": "Wat is het doel van het symbool `_;` in een modifier?",
+   "back": "Het is een 'placeholder' die de EVM vertelt: **plak hier de body** van de functie die deze modifier gebruikt.",
+   "answers": [
+    "_;"
+   ],
+   "lang": "code",
+   "skill": "modifiers"
+  },
+  {
+   "id": "c-twostep",
+   "front": "Waarom is een tweestaps-eigendomsoverdracht veiliger?",
+   "back": "Het voorkomt dat een **typfout** het contract definitief stuurloos (locked) maakt. De nieuwe eigenaar moet zelf accepteren, wat bewijst dat hij toegang heeft.",
+   "skill": "ownable"
+  },
+  {
+   "id": "c-panic11",
+   "front": "Wat is een Panic 0x11?",
+   "back": "Een interne fout geworpen door de EVM (sinds 0.8) bij een **arithmetic overflow of underflow**.",
+   "skill": "panic-error"
+  },
+  {
+   "id": "c-error-syntax",
+   "front": "Wat is het commando om een error genaamd `NietToegestaan` daadwerkelijk op te werpen?",
+   "back": "`revert NietToegestaan();`",
+   "answers": [
+    "revert NietToegestaan();"
+   ],
+   "lang": "code",
+   "skill": "custom-errors"
+  }
+ ],
+ "sources": [
+  "Solidity documentation v0.8: Errors and the Revert Statement",
+  "OpenZeppelin Contracts: Ownable & Ownable2Step"
+ ],
+ "kind": "core",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-27",
+  "adaptedFor": "Geen recente activiteit in de afgelopen 7 dagen; tempo is stabiel gehouden met extra focus op heldere voorbeelden (zoals het why achter tweestaps-overdracht) zonder diagnostische barrières."
+ }
+}

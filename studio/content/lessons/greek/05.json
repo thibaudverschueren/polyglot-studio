@@ -1,0 +1,810 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "greek",
+ "id": 5,
+ "roadmap": "gr-a1-05-accusative",
+ "kind": "core",
+ "title": "De accusatief enkelvoud en bestellen in de taverna",
+ "subtitle": "Het lijdend voorwerp (ton/tin), de ν-regel, en je eerste drankje bestellen",
+ "level": "A1",
+ "minutes": 45,
+ "summary": "Vandaag leer je hoe zelfstandige naamwoorden veranderen als ze het lijdend voorwerp worden. Daarna bestel je zelfverzekerd je eerste drankje in een Griekse taverna en vraag je om de rekening.",
+ "objectives": [
+  {
+   "id": "ie-club",
+   "text": "Je herkent en gebruikt de letters van de ie-club (η, ι, υ) foutloos."
+  },
+  {
+   "id": "taverna",
+   "text": "Je bestelt beleefd in een taverna en vraagt om de rekening."
+  },
+  {
+   "id": "accusative-masc",
+   "text": "Je vervangt het onderwerp door een lijdend voorwerp (accusatief) en laat de -ς weg bij mannelijke woorden."
+  },
+  {
+   "id": "nu-rule",
+   "text": "Je past de ν-regel correct toe: altijd τον, en τη(ν) enkel voor bepaalde letters."
+  },
+  {
+   "id": "indef-article",
+   "text": "Je gebruikt het juiste onbepaalde lidwoord (έναν, μία, ένα) in de accusatief."
+  }
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-27",
+  "adaptedFor": "Extra herhaling van de ie-club toegevoegd omdat de niveautest wees op verwarring met deze klinkers. Tempo iets verlaagd naar aanleiding van de geschatte uitslag (< A0)."
+ },
+ "vocab": [
+  {
+   "term": "ο λογαριασμός",
+   "translit": "o logariasmós",
+   "meaning": "de rekening"
+  },
+  {
+   "term": "ο κατάλογος",
+   "translit": "o katálogos",
+   "meaning": "de menukaart"
+  },
+  {
+   "term": "παρακαλώ",
+   "translit": "parakaló",
+   "meaning": "alstublieft; graag gedaan"
+  },
+  {
+   "term": "θα ήθελα",
+   "translit": "tha íthela",
+   "meaning": "ik zou willen"
+  },
+  {
+   "term": "θα πάρω",
+   "translit": "tha páro",
+   "meaning": "ik neem; ik zal nemen"
+  },
+  {
+   "term": "ο χυμός",
+   "translit": "o chymós",
+   "meaning": "het sap"
+  },
+  {
+   "term": "το τραπέζι",
+   "translit": "to trapézi",
+   "meaning": "de tafel"
+  },
+  {
+   "term": "βλέπω",
+   "translit": "vlépo",
+   "meaning": "ik zie"
+  }
+ ],
+ "sections": [
+  {
+   "id": "ie-club",
+   "title": "Herhaling: de ie-club",
+   "md": "In de niveautest merkte je coach dat de **ie-club** nog een beetje lastig was. Dat is volkomen normaal: je hersenen proberen de letters te lezen zoals ze er in het Latijnse alfabet uitzien. Laten we dat kort opfrissen.\n\nHet Nieuwgrieks heeft maar liefst drie letters die allemaal klinken als de Nederlandse **ie**:\n- **η** (ita): ημέρα (dag) — *let op: dit is geen n!*\n- **ι** (jota): σπίτι (huis)\n- **υ** (ipsilon): ύπνος (slaap) — *let op: dit is geen u of y!*\n\nAlle drie klinken ze exact hetzelfde. Je kunt aan de uitspraak niet horen welke letter je moet schrijven. Je moet de spelling dus bij elk woord van buiten leren. Onthoud: zie je een *η*, *ι* of *υ*? Ze klinken allemaal als *ie* (en bijvoorbeeld niet als n, i of u!).\n\nWaarom hebben ze dan drie letters voor één klank? In het Oudgrieks klonken deze letters wel degelijk verschillend (lange è, korte i, en een u-klank). Door de eeuwen heen zijn die klanken in de spreektaal allemaal samengevallen tot één 'ie'. Taalkundigen noemen dit verschijnsel *iotacisme*. Omdat de Grieken erg trots zijn op hun historische spelling, hebben ze de oude letters bewaard, ook al spreken ze ze nu hetzelfde uit.\n\nTrain jezelf om bij het zien van een 'η' niet meer aan een 'n' te denken, maar meteen de 'ie'-klank te horen. Zo maak je in no-time de omslag naar het Griekse alfabet.",
+   "checks": [
+    {
+     "id": "c01",
+     "type": "multi",
+     "skill": "ie-club",
+     "level": 1,
+     "prompt": "Welke letters klinken allemaal als **ie**?",
+     "explain": "η, ι en υ vormen samen de ie-club.",
+     "options": [
+      "η",
+      "ι",
+      "υ",
+      "ε",
+      "α",
+      "ω"
+     ],
+     "answers": [
+      0,
+      1,
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "id": "taverna",
+   "title": "Bestellen in de taverna",
+   "md": "Tijd voor de praktijk! Als je in Griekenland aankomt, is de kans groot dat je meteen neerstrijkt op een terrasje. Als je iets wilt bestellen in een taverna, een *kafeneio* (koffiehuis) of een bar, gebruik je twee heel handige en veelvoorkomende zinnen:\n- **θα ήθελα** (tha í-the-la): ik zou willen\n- **θα πάρω** (tha pá-ro): ik neem (letterlijk: ik zal nemen)\n\nBeide vormen zijn beleefd en worden constant door elkaar gebruikt, al klinkt *θα ήθελα* nog net iets zachter en formeler. Je voegt er achteraan natuurlijk altijd **παρακαλώ** (pa-ra-ka-LÓ — alstublieft) aan toe. Dit woord betekent overigens ook \"graag gedaan\" als antwoord op bedankt, én \"hallo\" als je de telefoon opneemt!\n\nIn België proberen we vaak stilletjes de blik van de ober te vangen, maar in Griekenland is het heel gewoon om even je hand op te steken en vriendelijk \"Παρακαλώ!\" of \"Συγγνώμη!\" (Pardon!) te roepen om de aandacht te trekken. Dat is daar niet onbeleefd, maar juist efficiënt.\n\n> [!example] In de taverna\n> - **Θα ήθελα** τον κατάλογο, **παρακαλώ**. (Ik zou de menukaart willen, alstublieft.)\n> - **Θα πάρω** τον λογαριασμό, **παρακαλώ**. (Ik neem de rekening, alstublieft.)\n> - **Θα ήθελα** ένα τραπέζι, **παρακαλώ**. (Ik zou een tafel willen, alstublieft.)\n\nMerk op hoe direct de Griekse manier van bestellen is. Waar we in het Nederlands vaak omslachtig vragen (\"Zou ik misschien de menukaart mogen?\"), is het in het Grieks heel normaal om gewoon te zeggen: \"Ik neem de rekening\".\n\nMaar let op... wat gebeurt er met *ο κατάλογος* (de menukaart) en *ο λογαριασμός* (de rekening)? Ze zijn opeens veranderd in *τον κατάλογο* en *τον λογαριασμό*! In de volgende sectie ontdek je waarom dat gebeurt en waarom dat cruciaal is in de Griekse taal.",
+   "checks": [
+    {
+     "id": "c02",
+     "type": "mcq",
+     "skill": "taverna",
+     "level": 1,
+     "prompt": "Wat is het verschil tussen *θα ήθελα* en *θα πάρω*?",
+     "explain": "*θα ήθελα* is 'ik zou willen', *θα πάρω* is 'ik neem'.",
+     "options": [
+      "θα ήθελα = ik zou willen, θα πάρω = ik neem",
+      "θα ήθελα = ik neem, θα πάρω = ik zou willen",
+      "Er is geen verschil, ze betekenen beide 'alstublieft'",
+      "θα ήθελα = de rekening, θα πάρω = de menukaart"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c03",
+     "type": "type",
+     "skill": "taverna",
+     "level": 2,
+     "prompt": "Vertaal in het Grieks: **alstublieft** (als je iets vraagt).",
+     "explain": "παρακαλώ (klemtoon op het einde).",
+     "answers": [
+      "παρακαλώ"
+     ],
+     "lang": "el",
+     "errors": [
+      {
+       "match": "παρακαλω",
+       "feedback": "Vergeet de tónos niet op de laatste letter (ώ)!",
+       "tag": "tonos-missing"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "accusative-masc",
+   "title": "Het lijdend voorwerp (de accusatief)",
+   "md": "In het Nederlands verandert een zelfstandig naamwoord niet als het van rol wisselt in de zin. Vergelijk: 'De ober is vriendelijk' (onderwerp) en 'Ik roep de ober' (lijdend voorwerp). Het woord 'ober' blijft gewoon 'ober'. Omdat wij een vaste woordvolgorde hebben (onderwerp - persoonsvorm - lijdend voorwerp), weten we toch wie wie roept.\n\nIn het Grieks werkt dit fundamenteel anders. Het woord zélf verandert van vorm. We noemen dat de **accusatief** (in de spraakkunst: de 4e naamval). Vandaag bekijken we wat er gebeurt met mannelijke woorden.\n\nBij mannelijke woorden (die in de basisvorm op -ος, -ης of -ας eindigen) gebeuren er twee dingen zodra ze het lijdend voorwerp worden:\n1. Het lidwoord **ο** wordt **τον**.\n2. Het woord zelf verliest zijn slot-**ς**.\n\nKijk maar mee naar de verandering van onderwerp naar lijdend voorwerp:\n- ο λογαριασμός → Θα ήθελα **τον** λογαριασμό. (Ik wil de rekening.)\n- ο καφές → Θα πάρω **τον** καφέ. (Ik neem de koffie.)\n- ο φίλος → Βλέπω **τον** φίλο. (Ik zie de vriend.)\n- ο κατάλογος → Θα ήθελα **τον** κατάλογο. (Ik wil de menukaart.)\n\n> [!rule] Vrije woordvolgorde dankzij de accusatief\n> Omdat het Grieks aan het woord zélf laat zien wat de rol is, is de woordvolgorde heel vrij. Je kunt gerust zeggen: *Τον καφέ πίνει ο φίλος*. (Letterlijk: De koffie drinkt de vriend). Omdat het *τον καφέ* is, weet elke Griek dat de koffie wordt gedronken, en niet zelf aan het drinken is, ook al staat de koffie vooraan in de zin!\n\n> [!mnemonic] Ezelsbruggetje\n> Zodra een mannelijk woord het lijdend voorwerp wordt (als je het ziet, wilt, neemt of hebt), verliest het zijn macho **-ς** op het einde, en krijgt het lidwoord er een **-ν** bij. Hij wordt als het ware 'zachter' zonder die harde sissende s-klank.\n\nVergeet dit niet: het niet toepassen van deze regel klinkt voor een Griek alsof je in het Nederlands zegt: \"Ik zie hij\" in plaats van \"Ik zie hem\". Het is een fundamenteel onderdeel van de taal, en fouten hiertegen vallen meteen op.",
+   "checks": [
+    {
+     "id": "c04",
+     "type": "mcq",
+     "skill": "accusative-masc",
+     "level": 2,
+     "prompt": "Wat is de juiste vorm in de zin: *Θα πάρω ___* (de koffie)?",
+     "explain": "Het lijdend voorwerp van ο καφές is τον καφέ (ο wordt τον, en -ς valt weg).",
+     "options": [
+      "τον καφέ",
+      "ο καφές",
+      "τον καφές",
+      "το καφέ"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c05",
+     "type": "type",
+     "skill": "accusative-masc",
+     "level": 2,
+     "prompt": "Schrijf het lijdend voorwerp (accusatief) van **ο χυμός** (het sap).",
+     "explain": "ο wordt τον, en de -ς valt weg: τον χυμό.",
+     "answers": [
+      "τον χυμό"
+     ],
+     "lang": "el"
+    }
+   ]
+  },
+  {
+   "id": "nu-rule",
+   "title": "De ν-regel: blijft de n of valt hij weg?",
+   "md": "Je weet nu hoe mannelijke woorden veranderen. Maar hoe zit het met de vrouwelijke en onzijdige woorden in de accusatief?\n\n- **Onzijdige woorden** (το) blijven altijd **το** (το νερό, το σπίτι). Zowel het lidwoord als het woord zelf veranderen niet.\n- **Vrouwelijke woorden** (η) veranderen in **την** of **τη**. Het woord zelf (bijv. μέρα, θάλασσα) verandert niet.\n\nMaar wanneer schrijf je *την* en wanneer *τη*? Waarom zeggen we *την* πόλη, maar *τη* θάλασσα? Dit wordt bepaald door de gouden **ν-regel**. Grieken houden namelijk van klanken die soepel in elkaar overvloeien (eufonie). Sommige medeklinkers na een ν zijn moeilijk uit te spreken zonder te haperen, dus dan valt de ν weg.\n\n> [!rule] De ν-regel (de mi-ni-regel)\n> 1. **Mannelijk (τον) verliest NOOIT zijn ν.** Altijd *τον* φίλο, *τον* καφέ. Waarom? Omdat je anders *το* φίλο zou zeggen, en dat klinkt als het onzijdige lidwoord *το*. Om het mannelijk geslacht te beschermen, blijft de ν hier muurvast staan, ongeacht de letter die volgt.\n> 2. **Vrouwelijk (την) verliest de ν vaak.** Je bewaart de ν alleen als het volgende woord met een **klinker** begint, óf met een harde klank. Dat zijn de plofklanken: **κ, π, τ, ξ, ψ** (en hun combinaties **μπ, ντ, γκ, τσ, τζ**). Voor de overige, 'zachte' of vloeiende medeklinkers (β, γ, δ, ζ, θ, λ, μ, ν, ρ, σ, φ, χ) valt de ν weg.\n\nVoorbeelden vrouwelijk in de praktijk:\n- **την** πόλη (de stad) → π is hard, ν blijft.\n- **την** ημέρα (de dag) → η is een klinker, ν blijft.\n- **τη** θάλασσα (de zee) → θ is zacht, ν valt weg.\n- **τη** φίλη (de vriendin) → φ is zacht, ν valt weg.\n\n> [!pitfall] Spreektaal vs. schrijftaal\n> In de vlotte spreektaal hoor je Grieken deze regel weleens door elkaar halen of overal de ν aan vastplakken, maar in officieel, correct geschreven Grieks is dit een keiharde spellingregel. Let er dus goed op als je typt of schrijft!",
+   "checks": [
+    {
+     "id": "c06",
+     "type": "cloze",
+     "skill": "nu-rule",
+     "level": 2,
+     "prompt": "Vul τη of την in.",
+     "explain": "θάλασσα begint met een zachte klank (θ), dus τη. πόλη begint met een harde klank (π), dus την.",
+     "text": "{{τη}} θάλασσα · {{την}} πόλη",
+     "lang": "el"
+    },
+    {
+     "id": "c07",
+     "type": "mcq",
+     "skill": "nu-rule",
+     "level": 2,
+     "prompt": "Waarom schrijf je in *τον φίλο* de ν wél, terwijl φ een zachte letter is?",
+     "explain": "τον (mannelijk) verliest nooit zijn ν, om verwarring met το (onzijdig) te voorkomen.",
+     "options": [
+      "Omdat het woord mannelijk is: τον verliest NOOIT zijn ν.",
+      "Omdat φ in dit geval als een harde letter telt.",
+      "Omdat het woord op een klinker eindigt.",
+      "Omdat φίλο een uitzondering is op de regel."
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "indef-article",
+   "title": "Een koffie, alstublieft",
+   "md": "Wat als je 'een' wilt zeggen in plaats van 'de'? Net als het bepaalde lidwoord (ο, η, το), past ook het onbepaalde lidwoord ('een') zich aan als het lijdend voorwerp wordt. De basisvormen voor het onderwerp zijn: ένας (mannelijk), μία (vrouwelijk), en ένα (onzijdig).\n\nWanneer we ze als lijdend voorwerp gebruiken (bijvoorbeeld als je iets bestelt in een taverna), gebeurt het volgende:\n\n- **Mannelijk**: ένας → **έναν**. Het woord verliest zijn slot-ς en krijgt een -ν. Let op de ν-regel: net als bij *τον*, behoudt *έναν* **altijd** zijn ν, ongeacht de beginletter van het volgende woord! Dus: έναν καφέ.\n- **Vrouwelijk**: **μία** blijft gewoon **μία**. Dit woord heeft sowieso geen -ς om te verliezen en krijgt ook geen extra letters.\n- **Onzijdig**: **ένα** blijft eenvoudigweg **ένα**. Het onzijdig blijft altijd zichzelf.\n\nDus als we in de taverna zitten, klinkt dat zo:\n- Θα ήθελα **έναν** καφέ. (Ik zou een koffie willen.) — *mannelijk*\n- Θα ήθελα **έναν** χυμό. (Ik zou een sapje willen.) — *mannelijk*\n- Θα πάρω **ένα** νερό. (Ik neem een water.) — *onzijdig*\n- Θα πάρω **ένα** τραπέζι. (Ik neem een tafel.) — *onzijdig*\n- Βλέπω **μία** θάλασσα. (Ik zie een zee.) — *vrouwelijk*\n\n> [!tip] Telwoorden en lidwoorden\n> Wist je dat *ένας, μία, ένα* niet alleen het onbepaalde lidwoord 'een' is, maar ook het telwoord 'één'? Als je *έναν καφέ* bestelt, zeg je dus letterlijk \"één koffie\". Dat verklaart waarom je er ook de klemtoon stevig op kunt leggen als de ober je vraagt hoeveel koffies je precies wilt.\n\nZo, je kent nu de basis om in Griekenland het terras op te stappen en luid en duidelijk in correct Grieks je eerste bestelling te plaatsen. Καλή όρεξη! (Smakelijk!)",
+   "checks": [
+    {
+     "id": "c08",
+     "type": "cloze",
+     "skill": "indef-article",
+     "level": 2,
+     "prompt": "Vul het onbepaalde lidwoord in (έναν, μία, ένα) in de accusatief.",
+     "explain": "καφές is mannelijk (έναν), νερό is onzijdig (ένα), μέρα is vrouwelijk (μία).",
+     "text": "Θα πάρω {{έναν}} καφέ, {{ένα}} νερό και {{μία}} μέρα άδεια (vrij).",
+     "lang": "el"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "multi",
+   "skill": "ie-club",
+   "level": 1,
+   "prompt": "Welke letters klinken allemaal als **ie**?",
+   "explain": "η, ι en υ.",
+   "options": [
+    "η",
+    "ι",
+    "υ",
+    "ε",
+    "α",
+    "ω"
+   ],
+   "answers": [
+    0,
+    1,
+    2
+   ]
+  },
+  {
+   "id": "p02",
+   "type": "type",
+   "skill": "ie-club",
+   "level": 2,
+   "prompt": "Vertaal en schrijf in het Grieks met de juiste 'ie' (denk aan ι): **huis**.",
+   "explain": "το σπίτι (gebruikt twee keer de ι).",
+   "answers": [
+    "το σπίτι",
+    "σπίτι"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p03",
+   "type": "type",
+   "skill": "ie-club",
+   "level": 2,
+   "prompt": "Vertaal en schrijf in het Grieks met de juiste 'ie' (denk aan η): **dag**.",
+   "explain": "η μέρα (of ημέρα).",
+   "answers": [
+    "μέρα",
+    "ημέρα",
+    "η μέρα"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p04",
+   "type": "mcq",
+   "skill": "taverna",
+   "level": 1,
+   "prompt": "Je spreekt de ober aan en bestelt iets. Wat is de meest beleefde manier om 'ik zou willen' te zeggen?",
+   "explain": "Θα ήθελα = ik zou willen.",
+   "options": [
+    "Θα ήθελα",
+    "Θα πάρω",
+    "Παρακαλώ",
+    "Βλέπω"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p05",
+   "type": "order",
+   "skill": "taverna",
+   "level": 2,
+   "prompt": "Zet in de juiste volgorde: *Ik zou de menukaart willen, alstublieft.*",
+   "explain": "Θα ήθελα τον κατάλογο, παρακαλώ.",
+   "tiles": [
+    "Θα",
+    "ήθελα",
+    "τον",
+    "κατάλογο",
+    "παρακαλώ"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p06",
+   "type": "type",
+   "skill": "taverna",
+   "level": 2,
+   "prompt": "Vertaal: **ik neem**.",
+   "explain": "θα πάρω.",
+   "answers": [
+    "θα πάρω"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p07",
+   "type": "mcq",
+   "skill": "accusative-masc",
+   "level": 2,
+   "prompt": "Wat is het lijdend voorwerp (accusatief) van **ο φίλος**?",
+   "explain": "ο wordt τον, en -ς valt weg: τον φίλο.",
+   "options": [
+    "τον φίλο",
+    "το φίλο",
+    "τον φίλος",
+    "τη φίλο"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p08",
+   "type": "type",
+   "skill": "accusative-masc",
+   "level": 2,
+   "prompt": "Schrijf in het Grieks (als lijdend voorwerp): **de menukaart**.",
+   "explain": "ο κατάλογος wordt τον κατάλογο.",
+   "answers": [
+    "τον κατάλογο"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "τον καταλογος",
+     "feedback": "Vergeet de slot-ς niet weg te halen in de accusatief!",
+     "tag": "acc-sigma"
+    }
+   ]
+  },
+  {
+   "id": "p09",
+   "type": "cloze",
+   "skill": "accusative-masc",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van het lidwoord in (in het lijdend voorwerp).",
+   "explain": "ο καφές -> τον καφέ, ο χυμός -> τον χυμό.",
+   "text": "Θα πάρω {{τον}} καφέ και {{τον}} χυμό.",
+   "lang": "el"
+  },
+  {
+   "id": "p10",
+   "type": "type",
+   "skill": "accusative-masc",
+   "level": 2,
+   "prompt": "Vertaal en zet in de juiste naamval: **(ik zie) de rekening**.",
+   "explain": "ο λογαριασμός -> τον λογαριασμό (lijdend voorwerp).",
+   "answers": [
+    "τον λογαριασμό"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p11",
+   "type": "mcq",
+   "skill": "nu-rule",
+   "level": 2,
+   "prompt": "Waarom schrijven we **τη θάλασσα** en niet **την θάλασσα**?",
+   "explain": "Voor een zachte klank (zoals θ) valt de ν van 'την' weg.",
+   "options": [
+    "Voor een zachte klank zoals θ valt de ν van 'την' weg.",
+    "Omdat het woord vrouwelijk is, vervalt de ν altijd.",
+    "Voor een harde klank zoals θ valt de ν weg.",
+    "Omdat het woord op een klinker eindigt."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p12",
+   "type": "cloze",
+   "skill": "nu-rule",
+   "level": 2,
+   "prompt": "Pas de ν-regel correct toe: vul τη of την in.",
+   "explain": "μέρα (μ is zacht) -> τη. πόλη (π is hard) -> την.",
+   "text": "Βλέπω {{τη}} μέρα και {{την}} πόλη.",
+   "lang": "el"
+  },
+  {
+   "id": "p13",
+   "type": "type",
+   "skill": "nu-rule",
+   "level": 2,
+   "prompt": "Vertaal (lijdend voorwerp): **de zee**.",
+   "explain": "η θάλασσα. θ is zacht, dus τη θάλασσα.",
+   "answers": [
+    "τη θάλασσα"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "την θαλασσα",
+     "feedback": "θ is een zachte klank, dus de ν valt weg (τη).",
+     "tag": "nu-rule-soft"
+    }
+   ]
+  },
+  {
+   "id": "p14",
+   "type": "match",
+   "skill": "indef-article",
+   "level": 1,
+   "prompt": "Koppel de juiste vorm van 'een' (als lijdend voorwerp) aan het geslacht.",
+   "explain": "mannelijk=έναν, vrouwelijk=μία, onzijdig=ένα.",
+   "pairs": [
+    [
+     "έναν",
+     "mannelijk"
+    ],
+    [
+     "μία",
+     "vrouwelijk"
+    ],
+    [
+     "ένα",
+     "onzijdig"
+    ]
+   ]
+  },
+  {
+   "id": "p15",
+   "type": "type",
+   "skill": "indef-article",
+   "level": 2,
+   "prompt": "Vertaal (als lijdend voorwerp): **een koffie**.",
+   "explain": "ένας καφές (mannelijk) wordt έναν καφέ.",
+   "answers": [
+    "έναν καφέ"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "p16",
+   "type": "cloze",
+   "skill": "indef-article",
+   "level": 2,
+   "prompt": "Vul in: έναν, μία of ένα.",
+   "explain": "φίλο (mannelijk) -> έναν; νερό (onzijdig) -> ένα; μέρα (vrouwelijk) -> μία.",
+   "text": "Βλέπω {{έναν}} φίλο, {{ένα}} νερό και {{μία}} μέρα.",
+   "lang": "el"
+  },
+  {
+   "id": "p17",
+   "type": "dictation",
+   "skill": "taverna",
+   "level": 3,
+   "prompt": "Luister en schrijf de zin op.",
+   "explain": "Θα ήθελα τον κατάλογο. (Ik zou de menukaart willen).",
+   "text": "Θα ήθελα τον κατάλογο.",
+   "lang": "el"
+  },
+  {
+   "id": "p18",
+   "type": "speak",
+   "skill": "taverna",
+   "level": 2,
+   "prompt": "Spreek uit: **Ik neem de rekening, alstublieft.**",
+   "explain": "Θα πάρω τον λογαριασμό, παρακαλώ. Let op de klemtonen.",
+   "text": "Θα πάρω τον λογαριασμό, παρακαλώ.",
+   "lang": "el",
+   "translit": "Tha páro ton logariasmó, parakaló."
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "type",
+   "skill": "ie-club",
+   "level": 2,
+   "prompt": "Welke Griekse letter uit de ie-club klinkt als 'ie' en ziet eruit als een Latijnse 'n'?",
+   "explain": "De η (ita) lijkt op een n, maar is een klinker.",
+   "answers": [
+    "η"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m02",
+   "type": "mcq",
+   "skill": "ie-club",
+   "level": 2,
+   "prompt": "In welk van deze woorden zit géén letter uit de ie-club?",
+   "explain": "το νερό gebruikt de ε en ο. De andere gebruiken η, ι of υ.",
+   "options": [
+    "το νερό",
+    "το σπίτι",
+    "ο ύπνος",
+    "η μέρα"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m03",
+   "type": "type",
+   "skill": "taverna",
+   "level": 2,
+   "prompt": "Vertaal: **ik zou willen**.",
+   "explain": "θα ήθελα.",
+   "answers": [
+    "θα ήθελα"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m04",
+   "type": "order",
+   "skill": "taverna",
+   "level": 2,
+   "prompt": "Zet in de juiste volgorde: *Ik neem de rekening, alstublieft.*",
+   "explain": "Θα πάρω τον λογαριασμό, παρακαλώ.",
+   "tiles": [
+    "Θα",
+    "πάρω",
+    "τον",
+    "λογαριασμό",
+    "παρακαλώ"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m05",
+   "type": "type",
+   "skill": "taverna",
+   "level": 2,
+   "prompt": "Vertaal: **alstublieft**.",
+   "explain": "παρακαλώ.",
+   "answers": [
+    "παρακαλώ"
+   ],
+   "lang": "el",
+   "errors": [
+    {
+     "match": "παρακαλω",
+     "feedback": "Tónos op de laatste letter vergeten!",
+     "tag": "tonos-missing"
+    }
+   ]
+  },
+  {
+   "id": "m06",
+   "type": "type",
+   "skill": "accusative-masc",
+   "level": 2,
+   "prompt": "Maak de zin af (lijdend voorwerp): Θα πάρω (de koffie).",
+   "explain": "ο καφές -> τον καφέ.",
+   "answers": [
+    "τον καφέ",
+    "Θα πάρω τον καφέ"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m07",
+   "type": "cloze",
+   "skill": "accusative-masc",
+   "level": 2,
+   "prompt": "Vul in: de vriend (ο φίλος) in het lijdend voorwerp.",
+   "explain": "ο -> τον, en -ς valt weg.",
+   "text": "Βλέπω {{τον}} φίλ{{ο}}.",
+   "lang": "el"
+  },
+  {
+   "id": "m08",
+   "type": "type",
+   "skill": "accusative-masc",
+   "level": 3,
+   "prompt": "Vertaal: **ik zie de rekening**.",
+   "explain": "βλέπω (ik zie) + τον λογαριασμό (accusatief).",
+   "answers": [
+    "βλέπω τον λογαριασμό"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m09",
+   "type": "cloze",
+   "skill": "nu-rule",
+   "level": 2,
+   "prompt": "Kies tussen τη of την.",
+   "explain": "πόλη (π is hard) -> την. μέρα (μ is zacht) -> τη.",
+   "text": "Βλέπω {{την}} πόλη (stad) en {{τη}} μέρα.",
+   "lang": "el"
+  },
+  {
+   "id": "m10",
+   "type": "type",
+   "skill": "nu-rule",
+   "level": 3,
+   "prompt": "Schrijf de juiste vorm van het lidwoord vóór **θάλασσα** (accusatief).",
+   "explain": "θ is zacht, dus τη.",
+   "answers": [
+    "τη"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m11",
+   "type": "mcq",
+   "skill": "nu-rule",
+   "level": 2,
+   "prompt": "Waarom verandert **ο λογαριασμός** in **τον λογαριασμό** met een 'ν', ook al is de λ zacht?",
+   "explain": "Bij mannelijke woorden (τον) valt de ν NOOIT weg.",
+   "options": [
+    "Mannelijke woorden behouden altijd de ν in τον.",
+    "Omdat λ in dit geval een harde klank is.",
+    "Omdat het woord met een klinker eindigt.",
+    "Omdat de -ς op het einde is weggevallen."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m12",
+   "type": "type",
+   "skill": "indef-article",
+   "level": 2,
+   "prompt": "Vertaal (als lijdend voorwerp): **een vriend**.",
+   "explain": "ένας φίλος -> έναν φίλο.",
+   "answers": [
+    "έναν φίλο"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m13",
+   "type": "cloze",
+   "skill": "indef-article",
+   "level": 2,
+   "prompt": "Vul in: een (έναν, μία, ένα).",
+   "explain": "χυμό = mannelijk (έναν), σπίτι = onzijdig (ένα).",
+   "text": "Θα πάρω {{έναν}} χυμό και {{ένα}} σπίτι.",
+   "lang": "el"
+  },
+  {
+   "id": "m14",
+   "type": "type",
+   "skill": "indef-article",
+   "level": 2,
+   "prompt": "Vertaal (als lijdend voorwerp): **een sap(je)**.",
+   "explain": "ο χυμός -> έναν χυμό.",
+   "answers": [
+    "έναν χυμό"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m15",
+   "type": "type",
+   "skill": "taverna",
+   "level": 3,
+   "prompt": "Vertaal de hele zin: **Ik neem de menukaart, alstublieft.**",
+   "explain": "Θα πάρω (ik neem) τον κατάλογο (accusatief), παρακαλώ.",
+   "answers": [
+    "Θα πάρω τον κατάλογο παρακαλώ",
+    "Θα πάρω τον κατάλογο, παρακαλώ"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m16",
+   "type": "dictation",
+   "skill": "accusative-masc",
+   "level": 2,
+   "prompt": "Luister en typ.",
+   "explain": "τον καφέ.",
+   "text": "τον καφέ",
+   "lang": "el"
+  },
+  {
+   "id": "m17",
+   "type": "type",
+   "skill": "ie-club",
+   "level": 2,
+   "prompt": "Vertaal uit het hoofd: **water** (met lidwoord).",
+   "explain": "το νερό.",
+   "answers": [
+    "το νερό"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m18",
+   "type": "type",
+   "skill": "ie-club",
+   "level": 2,
+   "prompt": "Vertaal uit het hoofd: **huis** (met lidwoord).",
+   "explain": "το σπίτι.",
+   "answers": [
+    "το σπίτι"
+   ],
+   "lang": "el"
+  },
+  {
+   "id": "m19",
+   "type": "cloze",
+   "skill": "accusative-masc",
+   "level": 3,
+   "prompt": "Je vraagt een tafel aan de ober. Vul de ontbrekende woorden in.",
+   "explain": "een = ένα, tafel = τραπέζι.",
+   "text": "Θα ήθελα {{ένα}} {{τραπέζι}}, παρακαλώ.",
+   "lang": "el"
+  },
+  {
+   "id": "m20",
+   "type": "order",
+   "skill": "taverna",
+   "level": 3,
+   "prompt": "Zet in de juiste volgorde: *Ik zou een koffie en een water willen.*",
+   "explain": "Θα ήθελα έναν καφέ και ένα νερό.",
+   "tiles": [
+    "Θα",
+    "ήθελα",
+    "έναν",
+    "καφέ",
+    "και",
+    "ένα",
+    "νερό"
+   ],
+   "lang": "el"
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "el",
+  "minWords": 10,
+  "prompt": "Stel je voor: je zit op een zonnig terras in Athene. De ober komt naar je toe.\n\nSchrijf in het Grieks twee zinnen:\n1. Zeg beleefd dat je 'een koffie' en 'een water' wilt.\n2. Zeg daarna (alsof je het plots bedenkt) dat je de rekening neemt, alstublieft.\n\nGebruik de juiste accusatief-vormen en tónos!",
+  "model": "Θα ήθελα έναν καφέ και ένα νερό.\nΘα πάρω τον λογαριασμό, παρακαλώ.",
+  "rubric": [
+   "Je gebruikt 'Θα ήθελα' of 'Θα πάρω' correct.",
+   "Je schrijft 'έναν καφέ' met -ν bij het lidwoord en zonder -ς bij καφέ.",
+   "Je gebruikt 'τον λογαριασμό' correct, zonder -ς.",
+   "Je sluit af met 'παρακαλώ'.",
+   "Elk woord met ≥ 2 lettergrepen heeft precies één tónos op de juiste klinker."
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-acc-masc",
+   "front": "Wat gebeurt er met mannelijke woorden (op -ος of -ης/-ας) als ze lijdend voorwerp (accusatief) worden?",
+   "back": "Het lidwoord (ο) krijgt een **ν** (τον), en het woord verliest zijn slot-**ς**. (ο φίλος → τον φίλο)",
+   "skill": "accusative-masc"
+  },
+  {
+   "id": "c-nu-masc",
+   "front": "Wanneer verliest het mannelijke lidwoord **τον** zijn ν?",
+   "back": "**Nooit.** (Om verwarring met *το* te voorkomen, behoudt *τον* altijd zijn ν).",
+   "skill": "nu-rule"
+  },
+  {
+   "id": "c-nu-fem",
+   "front": "De ν-regel: voor welke letters behoudt het vrouwelijke lidwoord **την** zijn ν?",
+   "back": "Voor **klinkers** en voor de harde letters **κ, π, τ, ξ, ψ** (en hun combinaties μπ, ντ, γκ, τσ, τζ).",
+   "skill": "nu-rule"
+  },
+  {
+   "id": "c-indef-masc",
+   "front": "Wat is het onbepaalde lidwoord voor een mannelijk lijdend voorwerp ('een' koffie)?",
+   "back": "**έναν** (verliest de -ς en krijgt een -ν).",
+   "answers": [
+    "έναν"
+   ],
+   "lang": "el",
+   "skill": "indef-article"
+  },
+  {
+   "id": "c-ie-club",
+   "front": "Welke drie klinkers vormen de *ie-club*?",
+   "back": "**η, ι, υ**",
+   "skill": "ie-club"
+  },
+  {
+   "id": "c-acc-fem-neu",
+   "front": "Hoe veranderen vrouwelijke en onzijdige woorden als ze lijdend voorwerp worden?",
+   "back": "Ze veranderen niet, alleen het vrouwelijke lidwoord verliest soms zijn ν (η → τη/την).",
+   "skill": "accusative-masc"
+  }
+ ],
+ "sources": [
+  "Holton, Mackridge & Philippaki-Warburton, *Greek: A Comprehensive Grammar* (Routledge)",
+  "Κέντρο Ελληνικής Γλώσσας — Πιστοποίηση Ελληνομάθειας, niveau A1"
+ ]
+}

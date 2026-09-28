@@ -1,0 +1,926 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "spanish",
+ "id": 3,
+ "roadmap": "es-a1-03-presente",
+ "kind": "core",
+ "title": "Presente van regelmatige werkwoorden en vragen stellen",
+ "subtitle": "Spreek over wat je doet, stel vragen en gebruik het Frans als hefboom (door te weten wat je níet moet doen)",
+ "level": "A1",
+ "minutes": 45,
+ "summary": "Je leert de drie groepen regelmatige werkwoorden (-ar, -er, -ir) vervoegen. Je ontdekt waarom je in het Spaans het onderwerp meestal weglaat, en je leert vlot vragen stellen en ontkennen zonder de ballast van het Frans.",
+ "objectives": [
+  {
+   "id": "presente-ar",
+   "text": "Je vervoegt regelmatige werkwoorden op -ar foutloos in de presente."
+  },
+  {
+   "id": "presente-er-ir",
+   "text": "Je vervoegt regelmatige werkwoorden op -er en -ir foutloos in de presente."
+  },
+  {
+   "id": "vragen",
+   "text": "Je vormt ja/nee-vragen en gebruikt de juiste vraagwoorden (mét tilde)."
+  },
+  {
+   "id": "ontkenning",
+   "text": "Je ontkent zinnen correct met no voor het werkwoord."
+  }
+ ],
+ "vocab": [
+  {
+   "term": "hablar",
+   "meaning": "spreken, praten"
+  },
+  {
+   "term": "trabajar",
+   "meaning": "werken"
+  },
+  {
+   "term": "estudiar",
+   "meaning": "studeren"
+  },
+  {
+   "term": "comprar",
+   "meaning": "kopen"
+  },
+  {
+   "term": "preguntar",
+   "meaning": "vragen"
+  },
+  {
+   "term": "comer",
+   "meaning": "eten"
+  },
+  {
+   "term": "beber",
+   "meaning": "drinken"
+  },
+  {
+   "term": "leer",
+   "meaning": "lezen"
+  },
+  {
+   "term": "vender",
+   "meaning": "verkopen"
+  },
+  {
+   "term": "vivir",
+   "meaning": "wonen; leven"
+  },
+  {
+   "term": "escribir",
+   "meaning": "schrijven"
+  },
+  {
+   "term": "abrir",
+   "meaning": "openen"
+  },
+  {
+   "term": "recibir",
+   "meaning": "ontvangen"
+  },
+  {
+   "term": "¿qué?",
+   "meaning": "wat?"
+  },
+  {
+   "term": "¿dónde?",
+   "meaning": "waar?"
+  },
+  {
+   "term": "¿cuándo?",
+   "meaning": "wanneer?"
+  },
+  {
+   "term": "¿cómo?",
+   "meaning": "hoe?"
+  },
+  {
+   "term": "¿quién?",
+   "meaning": "wie?"
+  },
+  {
+   "term": "¿por qué?",
+   "meaning": "waarom?"
+  },
+  {
+   "term": "porque",
+   "meaning": "omdat"
+  },
+  {
+   "term": "¿cuánto?",
+   "meaning": "hoeveel?"
+  }
+ ],
+ "sections": [
+  {
+   "id": "intro-onderwerp",
+   "title": "Zonder onderwerp, toch duidelijk",
+   "md": "In het Frans is het onderwerp verplicht. Als je *parle* of *parles* hoort, klinkt dat immers precies hetzelfde. Daarom móét je er *je* of *tu* voor zetten, anders weet niemand over wie je het hebt. Het Nederlands werkt vergelijkbaar: we zeggen 'ik werk' en 'jij werkt', waarbij het voornaamwoord onmisbaar is.\n\nIn het Spaans zit de taal efficiënter in elkaar. De uitgang van het werkwoord is voor elke persoon (ik, jij, hij, wij, jullie, zij) volstrekt uniek. Omdat die uitgang al alle grammaticale informatie bevat, laat je in het Spaans het onderwerp (*yo, tú, él, nosotros, vosotros, ellos*) **meestal weg**.\n\nJe zegt dus niet *yo hablo*, maar simpelweg [[es:hablo]]. Je zegt niet *tú trabajas*, maar gewoon [[es:trabajas]]. Dit is geen informele spreektaal, maar de strikte standaardregel. Het klinkt voor een moedertaalspreker zelfs onnatuurlijk als je de hele tijd *yo* en *tú* blijft herhalen; alsof je heel erg met jezelf bezig bent.\n\nWanneer gebruik je het onderwerp dan wel? Uitsluitend als je **nadruk** wil leggen of een **tegenstelling** wil maken. Vergelijk:\n\n- [[es:Hablo francés.]] (Ik spreek Frans. — neutrale vaststelling)\n- [[es:Yo hablo francés, pero él habla inglés.]] (Ík spreek Frans, maar híj spreekt Engels. — contrast)\n\nOok gebruik je *él, ella* of *usted* soms even ter verduidelijking, omdat die drie personen wél dezelfde werkwoordsuitgang delen. Zodra het duidelijk is over wie het gaat, laat je ze in de volgende zinnen weer weg.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "presente-ar",
+     "level": 1,
+     "prompt": "Waarom zeggen Spanjaarden vaker *estudio* in plaats van *yo estudio*?",
+     "explain": "De uitgang (-o) geeft al ondubbelzinnig aan dat het om de ik-vorm gaat. Het onderwerp continu herhalen is onnodig en klinkt onnatuurlijk.",
+     "options": [
+      "Aan de uitgang hoor je al over wie het gaat.",
+      "Omdat Spanjaarden zo snel mogelijk willen spreken.",
+      "Omdat *yo* onbeleefd klinkt in formele situaties.",
+      "Dat is een grammaticale regel uit Latijns-Amerika."
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "ar-werkwoorden",
+   "title": "De regelmatige werkwoorden op -ar",
+   "md": "De Spaanse werkwoorden worden ingedeeld in drie grote groepen, gebaseerd op hun uitgang in de infinitief (het hele werkwoord). Veruit de meeste werkwoorden eindigen op **-ar**. Denk aan [[es:hablar]] (spreken), [[es:trabajar]] (werken), [[es:estudiar]] (studeren), [[es:comprar]] (kopen) en [[es:preguntar]] (vragen).\n\nOm deze werkwoorden in de tegenwoordige tijd (de *presente*) te vervoegen, haal je de uitgang -ar van de stam, en plak je er de uitgang voor de juiste persoon aan vast. We nemen [[es:trabajar]] (werken) als model:\n\n| Persoon | Uitgang | Voorbeeld | Uitspraak |\n|---|---|---|---|\n| (yo) | **-o** | trabaj**o** | tra-BA-jo |\n| (tú) | **-as** | trabaj**as** | tra-BA-jas |\n| (él/ella/usted) | **-a** | trabaj**a** | tra-BA-ja |\n| (nosotros/as) | **-amos** | trabaj**amos** | tra-ba-JA-mos |\n| (vosotros/as) | **-áis** | trabaj**áis** | tra-ba-JÁIS |\n| (ellos/ellas/ustedes) | **-an** | trabaj**an** | tra-BA-jan |\n\nMerk op hoe de klemtoon zich gedraagt. Bij *trabajo*, *trabajas*, *trabaja* en *trabajan* valt de klemtoon steevast op de **voorlaatste lettergreep** van het woord, dus op de *a* van de stam (BA). Maar bij *trabajamos* en *trabajáis* verschuift de klemtoon naar de uitgang (JA en JÁIS).\n\n> [!pitfall] Let op de tilde bij vosotros\n> De uitgang voor *vosotros* (jullie in Spanje) is **-áis**. Omdat dit woord eindigt op een -s maar de klemtoon op de láátste lettergreep valt, overtreedt dit woord de standaard klemtoonregel. Daarom eist de spelling een tilde op de a: *trabajáis*, *habláis*, *estudiáis*. Laat je die tilde weg (*trabajais*), dan maak je een spelfout. Voor zakelijke communicatie is dit een belangrijk detail.",
+   "checks": [
+    {
+     "id": "c2",
+     "type": "type",
+     "skill": "presente-ar",
+     "level": 1,
+     "prompt": "Vervoeg **hablar** voor *tú* (jij).",
+     "explain": "De stam is *habl-* en de uitgang voor *tú* is *-as*.",
+     "answers": [
+      "hablas"
+     ],
+     "lang": "es"
+    },
+    {
+     "id": "c3",
+     "type": "type",
+     "skill": "presente-ar",
+     "level": 2,
+     "prompt": "Vervoeg **trabajar** voor *vosotros* (jullie in Spanje).",
+     "explain": "De uitgang is *-áis*, altijd mét tilde.",
+     "answers": [
+      "trabajáis"
+     ],
+     "lang": "es",
+     "errors": [
+      {
+       "match": "trabajais",
+       "feedback": "Vergeet de tilde op de a niet: trabajáis.",
+       "tag": "tilde-vosotros"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "er-ir-werkwoorden",
+   "title": "De regelmatige werkwoorden op -er en -ir",
+   "md": "Naast de -ar groep zijn er werkwoorden die eindigen op **-er** (zoals [[es:comer]], eten; [[es:beber]], drinken; [[es:vender]], verkopen; [[es:leer]], lezen) en op **-ir** (zoals [[es:vivir]], wonen/leven; [[es:escribir]], schrijven; [[es:abrir]], openen; [[es:recibir]], ontvangen).\n\nZe lijken erg op elkaar, met een paar cruciale verschillen bij de vormen voor *wij* en *jullie*.\n\n| Persoon | -er (comer) | -ir (vivir) |\n|---|---|---|\n| (yo) | com**o** | viv**o** |\n| (tú) | com**es** | viv**es** |\n| (él/ella/usted) | com**e** | viv**e** |\n| (nosotros/as) | com**emos** | viv**imos** |\n| (vosotros/as) | com**éis** | viv**ís** |\n| (ellos/ellas/ustedes) | com**en** | viv**en** |\n\nKijk goed naar de overeenkomsten en de subtiele verschillen:\n- De **ik-vorm** eindigt áltijd op **-o**, in alle drie de werkwoordsgroepen (*hablo, como, vivo*).\n- De uitgangen voor *tú*, *él/ella/usted* en *ellos/ellas/ustedes* delen exact dezelfde klinker voor zowel de -er als de -ir groep (*comes/vives, come/vive, comen/viven*).\n- Het grote verschil zit hem in **nosotros** en **vosotros**. Daar volgt de uitgang de klinker van de groep: -er krijgt *-emos* en *-éis*, terwijl -ir *-imos* en *-ís* krijgt.\n\n> [!rule] Ook hier een tilde voor vosotros\n> Net als bij *-áis*, krijgen de vosotros-vormen van de andere groepen ook systematisch een tilde op de laatste klinker: *-éis* (*coméis*) en *-ís* (*vivís*).\n\n> [!tip] Je Franse bril als hefboom\n> Gebruik je uitgebreide Franse woordenschat om te voorspellen tot welke groep een Spaans werkwoord behoort. Woorden die in het Frans op -ir of -re eindigen, vallen in het Spaans in bijna alle gevallen in de -ir of -er groep. Vergelijk *vivre* met *vivir*, *écrire* met *escribir*, *vendre* met *vender*, en *recevoir* met *recibir*. Dit inzicht geeft je een enorme voorsprong bij het snel opbouwen van je Spaanse woordenschat.",
+   "checks": [
+    {
+     "id": "c4",
+     "type": "type",
+     "skill": "presente-er-ir",
+     "level": 2,
+     "prompt": "Vervoeg **comer** voor *nosotros* (wij).",
+     "explain": "Dit is een werkwoord op -er: dus *nosotros comemos*.",
+     "answers": [
+      "comemos"
+     ],
+     "lang": "es",
+     "errors": [
+      {
+       "match": "comamos",
+       "feedback": "Bijna! De klinker voor de -er groep is de e: comemos.",
+       "tag": "er-klinker"
+      },
+      {
+       "match": "comimos",
+       "feedback": "Comer eindigt op -er, dus de wij-vorm eindigt op -emos, niet -imos.",
+       "tag": "er-klinker"
+      }
+     ]
+    },
+    {
+     "id": "c5",
+     "type": "type",
+     "skill": "presente-er-ir",
+     "level": 2,
+     "prompt": "Vervoeg **vivir** voor *vosotros* (jullie).",
+     "explain": "Werkwoord op -ir: de uitgang is *-ís*, mét tilde.",
+     "answers": [
+      "vivís"
+     ],
+     "lang": "es",
+     "errors": [
+      {
+       "match": "vivis",
+       "feedback": "Vergeet de tilde op de i niet: vivís.",
+       "tag": "tilde-vosotros"
+      },
+      {
+       "match": "vivéis",
+       "feedback": "Vivir is een werkwoord op -ir, dus de uitgang is -ís (niet -éis).",
+       "tag": "ir-klinker"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "vragen",
+   "title": "Vragen stellen en vraagwoorden",
+   "md": "In het Frans gebruik je een complexe constructie als *est-ce que* of je draait het onderwerp en het werkwoord om met een koppelteken (*parles-tu?*). In het Nederlands passen we ook inversie toe en draaien we het werkwoord en onderwerp om (\"Werk jij?\").\n\nIn het Spaans is het stellen van een ja/nee-vraag verrassend simpel en efficiënt: er verandert grammaticaal helemaal niets aan de zin. Een ja/nee-vraag maak je uitsluitend met je **intonatie** (je stem gaat aan het einde omhoog) en in de geschreven tekst met de **omgekeerde en gewone vraagtekens** (¿ ?).\n\n- [[es:Hablas español.]] (Je spreekt Spaans. — dalende intonatie)\n- [[es:¿Hablas español?]] (Spreek je Spaans? — stijgende intonatie)\n- [[es:¿Trabajan aquí?]] (Werken zij hier?)\n\nVoor open vragen (wie, wat, waar, wanneer) gebruik je een **vraagwoord**. De absolute gouden regel in het Spaans is: **elk vraagwoord krijgt een geschreven tilde**.\n\n- **¿Qué?** (Wat?) — [[es:¿Qué estudias?]]\n- **¿Dónde?** (Waar?) — [[es:¿Dónde vives en Bélgica?]]\n- **¿Cuándo?** (Wanneer?) — [[es:¿Cuándo trabajas?]]\n- **¿Cómo?** (Hoe?) — [[es:¿Cómo escribes tu nombre?]]\n- **¿Quién? / ¿Quiénes?** (Wie?) — [[es:¿Quién lee el documento?]]\n- **¿Cuánto? / ¿Cuánta? / ¿Cuántos? / ¿Cuántas?** (Hoeveel?) — Dit vraagwoord past zich net als een bijvoeglijk naamwoord aan aan het woord dat erop volgt: [[es:¿Cuántos clientes tienes?]] (mannelijk meervoud) of [[es:¿Cuántas horas trabajas?]] (vrouwelijk meervoud).\n\n> [!pitfall] Waarom vs. Omdat\n> Let héél goed op het verschil tussen 'waarom' en 'omdat'. Dit is een klassieke fout bij anderstaligen.\n> **¿Por qué?** (Waarom?) schrijf je in **twee woorden** én met een **tilde** op de e.\n> Het antwoord **porque** (omdat) is **één woord** zónder tilde.\n> [[es:— ¿Por qué estudias español?]]\n> [[es:— Porque trabajo con clientes en Madrid.]]",
+   "checks": [
+    {
+     "id": "c6",
+     "type": "cloze",
+     "skill": "vragen",
+     "level": 2,
+     "prompt": "Vul **por qué** of **porque** in.",
+     "explain": "De vraagwaarde (waarom?) eist twee woorden mét tilde. Het antwoord (omdat) is één woord zonder tilde.",
+     "text": "¿{{Por qué|Por que}} trabajas mucho? {{Porque}} tengo muchos clientes.",
+     "lang": "es"
+    }
+   ]
+  },
+  {
+   "id": "ontkenning",
+   "title": "Ontkennen is simpel",
+   "md": "Ontkennen is in het Spaans veel transparanter dan in het Frans en het Nederlands. Waar je in het Frans een tweedelige ontkenning gebruikt (*je ne parle pas*), en in het Nederlands afhankelijk van de context 'niet' of 'geen' gebruikt (\"ik woon *niet* in Gent\", \"ik spreek *geen* Spaans\"), heeft het Spaans één elegante en universele oplossing.\n\nJe plaatst simpelweg het woordje **no** direct vóór het werkwoord.\n\n- [[es:Hablo francés.]] → [[es:No hablo francés.]] (Ik spreek geen Frans.)\n- [[es:Vivo en Gante.]] → [[es:No vivo en Gante.]] (Ik woon niet in Gent.)\n- [[es:Comemos carne.]] → [[es:No comemos carne.]] (Wij eten geen vlees.)\n\nEr komt geen extra woord aan te pas. Je gooit het Franse *pas* overboord, en je hoeft niet na te denken over het Nederlandse verschil tussen *niet* en *geen*.\n\nAls iemand je een ja/nee-vraag stelt en het antwoord is ontkennend, dan gebruik je het woord *no* **twee keer**: één keer als start van je zin als antwoord op de vraag (\"nee\"), en één keer direct vóór het werkwoord om de handeling te ontkennen. Tussen de twee zet je een komma.\n\n- [[es:¿Bebes café?]] (Drink je koffie?)\n- [[es:No, no bebo café.]] (Nee, ik drink geen koffie.)\n- [[es:¿Viven en España?]] (Wonen zij in Spanje?)\n- [[es:No, no viven allí.]] (Nee, ze wonen daar niet.)",
+   "checks": [
+    {
+     "id": "c7",
+     "type": "order",
+     "skill": "ontkenning",
+     "level": 1,
+     "prompt": "Bouw de ontkennende zin: **Wij eten geen vlees.**",
+     "explain": "Het woord *no* komt altijd direct vóór het werkwoord.",
+     "tiles": [
+      "Nosotros",
+      "no",
+      "comemos",
+      "carne."
+     ],
+     "lang": "es"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "presente-ar",
+   "level": 1,
+   "prompt": "Wat is in het Spaans de meest logische manier om \"Wij spreken\" te zeggen?",
+   "explain": "Je laat het onderwerp *nosotros* meestal weg omdat de vorm *hablamos* al duidelijk aangeeft wie er spreekt.",
+   "options": [
+    "hablamos",
+    "nosotros hablamos",
+    "hablamos nosotros",
+    "nosotros hablar"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "type",
+   "skill": "presente-ar",
+   "level": 2,
+   "prompt": "Vervoeg **hablar** voor *tú* (jij).",
+   "explain": "De stam is *habl-* en de uitgang voor de jij-vorm bij -ar is *-as*.",
+   "answers": [
+    "hablas"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p03",
+   "type": "cloze",
+   "skill": "presente-ar",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **trabajar** in.",
+   "explain": "Het onderwerp is 'Mis clientes' (zij, meervoud) → uitgang *-an*.",
+   "text": "Mis clientes {{trabajan}} en Madrid.",
+   "lang": "es"
+  },
+  {
+   "id": "p04",
+   "type": "type",
+   "skill": "presente-er-ir",
+   "level": 2,
+   "prompt": "Vervoeg **beber** voor *yo* (ik).",
+   "explain": "De uitgang voor ik (yo) is altijd *-o*, in elke werkwoordsgroep.",
+   "answers": [
+    "bebo"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p05",
+   "type": "cloze",
+   "skill": "presente-er-ir",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **vivir** in.",
+   "explain": "Voor *nosotros* met een -ir werkwoord gebruik je de uitgang *-imos*.",
+   "text": "Nosotros {{vivimos}} en Bélgica.",
+   "lang": "es",
+   "errors": [
+    {
+     "match": "vivemos",
+     "feedback": "Let op: vivir is een -ir werkwoord, dus de wij-uitgang is -imos, niet -emos.",
+     "tag": "ir-klinker"
+    }
+   ]
+  },
+  {
+   "id": "p06",
+   "type": "type",
+   "skill": "presente-er-ir",
+   "level": 3,
+   "prompt": "Vervoeg **escribir** voor *vosotros* (jullie in Spanje).",
+   "explain": "Vosotros + -ir werkwoord = *-ís* (vergeet de tilde niet).",
+   "answers": [
+    "escribís"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "escribis",
+     "feedback": "Vergeet de tilde op de laatste lettergreep niet! Het is escribís.",
+     "tag": "tilde-vosotros"
+    }
+   ]
+  },
+  {
+   "id": "p07",
+   "type": "match",
+   "skill": "presente-er-ir",
+   "level": 2,
+   "prompt": "Koppel de juiste vorm van **comer** aan de persoon.",
+   "explain": "De uitgangen van -er zijn: -o, -es, -e, -emos, -éis, -en.",
+   "pairs": [
+    [
+     "yo",
+     "como"
+    ],
+    [
+     "tú",
+     "comes"
+    ],
+    [
+     "usted",
+     "come"
+    ],
+    [
+     "nosotros",
+     "comemos"
+    ]
+   ]
+  },
+  {
+   "id": "p08",
+   "type": "mcq",
+   "skill": "ontkenning",
+   "level": 1,
+   "prompt": "Hoe ontken je een zin in het Spaans in vergelijking met het Frans?",
+   "explain": "Gewoon *no* vóór het werkwoord plaatsen. Geen tweedelige constructies zoals *ne ... pas* nodig.",
+   "options": [
+    "Door 'no' voor het werkwoord te zetten.",
+    "Door 'no' achter het werkwoord te zetten.",
+    "Met een dubbele ontkenning zoals 'no ... pas'.",
+    "Door het werkwoord van uitgang te veranderen."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "ontkenning",
+   "level": 2,
+   "prompt": "Vertaal: **Ik eet geen vlees.** (carne)",
+   "explain": "Zet *no* direct voor het werkwoord: *No como carne.*",
+   "answers": [
+    "No como carne.",
+    "Yo no como carne."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p10",
+   "type": "cloze",
+   "skill": "ontkenning",
+   "level": 1,
+   "prompt": "Maak de zin ontkennend door het juiste woord in te vullen.",
+   "explain": "Het woord *no* komt altijd vlak voor het werkwoord.",
+   "text": "Yo {{no}} hablo francés.",
+   "lang": "es"
+  },
+  {
+   "id": "p11",
+   "type": "type",
+   "skill": "vragen",
+   "level": 1,
+   "prompt": "Vertaal het vraagwoord: **Wat?**",
+   "explain": "Elk Spaans vraagwoord krijgt in de spelling een tilde.",
+   "answers": [
+    "¿Qué?",
+    "Qué"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "que",
+     "feedback": "Vraagwoorden krijgen altijd een tilde: qué.",
+     "tag": "tilde-vraagwoord"
+    }
+   ]
+  },
+  {
+   "id": "p12",
+   "type": "type",
+   "skill": "vragen",
+   "level": 1,
+   "prompt": "Vertaal het vraagwoord: **Waar?**",
+   "explain": "Elk Spaans vraagwoord krijgt in de spelling een tilde.",
+   "answers": [
+    "¿Dónde?",
+    "Dónde"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "donde",
+     "feedback": "Vraagwoorden krijgen altijd een tilde: dónde.",
+     "tag": "tilde-vraagwoord"
+    }
+   ]
+  },
+  {
+   "id": "p13",
+   "type": "cloze",
+   "skill": "vragen",
+   "level": 2,
+   "prompt": "Kies tussen **por qué** en **porque**.",
+   "explain": "Vraag = *por qué* (twee woorden met tilde), Antwoord = *porque* (één woord zonder tilde).",
+   "text": "¿{{Por qué|Por que}} estudias español? {{Porque}} tengo clientes en España.",
+   "lang": "es"
+  },
+  {
+   "id": "p14",
+   "type": "order",
+   "skill": "vragen",
+   "level": 2,
+   "prompt": "Zet de woorden in de juiste volgorde: **Wanneer werk jij?**",
+   "explain": "Vraagwoord, dan direct het werkwoord, en dan pas eventueel het onderwerp.",
+   "tiles": [
+    "¿Cuándo",
+    "trabajas",
+    "tú?"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p15",
+   "type": "dictation",
+   "skill": "vragen",
+   "level": 2,
+   "prompt": "Luister goed en schrijf de vraag foutloos op.",
+   "explain": "Vergeet de omgekeerde ¿ en de tilde op het vraagwoord *dónde* niet.",
+   "text": "¿Dónde vives?",
+   "lang": "es"
+  },
+  {
+   "id": "p16",
+   "type": "speak",
+   "skill": "ontkenning",
+   "level": 2,
+   "prompt": "Lees deze zin hardop en let op de ontkenning.",
+   "explain": "Zeg *no* duidelijk en soepel direct voor het werkwoord.",
+   "text": "No bebo mucho café.",
+   "lang": "es"
+  },
+  {
+   "id": "p17",
+   "type": "type",
+   "skill": "ontkenning",
+   "level": 2,
+   "prompt": "Vertaal: **Nee, ik spreek geen Spaans.**",
+   "explain": "Voor dit antwoord gebruik je *no* twee keer: een keer voor de zin, en een keer voor het werkwoord.",
+   "answers": [
+    "No, no hablo español.",
+    "No, yo no hablo español."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p18",
+   "type": "mcq",
+   "skill": "presente-er-ir",
+   "level": 2,
+   "prompt": "Kijk naar het Franse werkwoord *recevoir*. Tot welke groep behoort de Spaanse vertaling *recibir*?",
+   "explain": "Veel Franse werkwoorden op -ir of -re behoren in het Spaans tot de -ir of -er groep.",
+   "options": [
+    "De -ir groep",
+    "De -ar groep",
+    "De -er groep",
+    "Geen van de drie"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p19",
+   "type": "type",
+   "skill": "presente-ar",
+   "level": 2,
+   "prompt": "Vervoeg **comprar** voor *vosotros*.",
+   "explain": "De vosotros-uitgang voor -ar werkwoorden is *-áis* met tilde.",
+   "answers": [
+    "compráis"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "comprais",
+     "feedback": "Vergeet de tilde op de a niet: compráis.",
+     "tag": "tilde-vosotros"
+    }
+   ]
+  },
+  {
+   "id": "p20",
+   "type": "explain",
+   "skill": "ontkenning",
+   "level": 3,
+   "prompt": "Je Franse collega zegt in het Spaans: *Yo no hablo pas español.* Leg uit welke twee dingen hij beter of anders moet doen.",
+   "explain": "Vergelijk jouw uitleg met het model. Je mag dit in het Nederlands uitleggen.",
+   "model": "1. Hij gebruikt *yo*. Dat is niet fout, maar je laat het beter weg omdat *hablo* al duidelijk is. 2. Hij gebruikt de dubbele ontkenning *no ... pas* uit het Frans. In het Spaans volstaat één keer *no* vóór het werkwoord. Het wordt dus: *No hablo español.*",
+   "rubric": [
+    "Het onderwerp 'yo' is niet nodig en laat je beter weg.",
+    "Het Spaans gebruikt geen 'pas' (geen dubbele ontkenning). Eén keer 'no' volstaat."
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "type",
+   "skill": "presente-ar",
+   "level": 2,
+   "prompt": "Schrijf de ik-vorm van **trabajar**.",
+   "explain": "De ik-vorm eindigt in elke werkwoordsgroep altijd op -o.",
+   "answers": [
+    "trabajo"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m02",
+   "type": "type",
+   "skill": "presente-ar",
+   "level": 2,
+   "prompt": "Zet **hablar** in de zij-vorm (meervoud).",
+   "explain": "De uitgang voor meervoud (zij, ellos) is *-an* bij een -ar werkwoord.",
+   "answers": [
+    "hablan"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m03",
+   "type": "cloze",
+   "skill": "presente-ar",
+   "level": 2,
+   "prompt": "Vul de persoonsvorm van **estudiar** in voor de u-vorm (*usted*).",
+   "explain": "Usted deelt de uitgang met hij/zij (él/ella). Dat is *-a* voor een -ar werkwoord.",
+   "text": "Usted {{estudia}} mucho para los proyectos.",
+   "lang": "es"
+  },
+  {
+   "id": "m04",
+   "type": "type",
+   "skill": "presente-ar",
+   "level": 2,
+   "prompt": "Vervoeg **estudiar** in de wij-vorm.",
+   "explain": "De uitgang voor wij (*nosotros*) is *-amos*.",
+   "answers": [
+    "estudiamos"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m05",
+   "type": "type",
+   "skill": "presente-er-ir",
+   "level": 2,
+   "prompt": "Welke vorm van **comer** hoort bij *usted*?",
+   "explain": "Usted deelt de vorm met él/ella: *-e* bij een -er werkwoord.",
+   "answers": [
+    "come"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m06",
+   "type": "type",
+   "skill": "presente-er-ir",
+   "level": 3,
+   "prompt": "Vervoeg **beber** voor de Spaanse jullie-vorm (*vosotros*).",
+   "explain": "Vosotros + -er werkwoord krijgt de uitgang *-éis* (mét tilde!).",
+   "answers": [
+    "bebéis"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "bebeis",
+     "feedback": "Vergeet de tilde op de e niet: bebéis.",
+     "tag": "tilde-vosotros"
+    }
+   ]
+  },
+  {
+   "id": "m07",
+   "type": "type",
+   "skill": "presente-er-ir",
+   "level": 2,
+   "prompt": "Schrijf de tú-vorm van **escribir**.",
+   "explain": "De tú-vorm voor zowel -er als -ir eindigt op *-es*.",
+   "answers": [
+    "escribes"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m08",
+   "type": "type",
+   "skill": "presente-er-ir",
+   "level": 2,
+   "prompt": "Vervoeg **vivir** voor wij (*nosotros*).",
+   "explain": "Nosotros + -ir werkwoord krijgt de specifieke uitgang *-imos*.",
+   "answers": [
+    "vivimos"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "vivemos",
+     "feedback": "Vivir is een -ir werkwoord, dus de wij-vorm is vivimos (niet vivemos).",
+     "tag": "ir-klinker"
+    }
+   ]
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "presente-er-ir",
+   "level": 2,
+   "prompt": "Wat is de correcte ik-vorm van **comer**?",
+   "explain": "Elke groep (-ar, -er, -ir) krijgt steevast *-o* voor de ik-vorm.",
+   "answers": [
+    "como"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m10",
+   "type": "multi",
+   "skill": "presente-er-ir",
+   "level": 2,
+   "prompt": "Welke uitgangen horen uitsluitend bij een regelmatig werkwoord op **-ir**?",
+   "explain": "De uitgangen *-imos* en *-ís* onderscheiden de -ir groep van de -er groep (die *-emos* en *-éis* heeft).",
+   "options": [
+    "-amos",
+    "-imos",
+    "-éis",
+    "-ís",
+    "-áis"
+   ],
+   "answers": [
+    1,
+    3
+   ]
+  },
+  {
+   "id": "m11",
+   "type": "dictation",
+   "skill": "presente-er-ir",
+   "level": 2,
+   "prompt": "Typ de gesproken zin over wonen en leven exact over.",
+   "explain": "Hoor je goed dat *vivimos* een typisch -ir werkwoord is?",
+   "text": "Vivimos en Gante.",
+   "lang": "es"
+  },
+  {
+   "id": "m12",
+   "type": "type",
+   "skill": "ontkenning",
+   "level": 2,
+   "prompt": "Vertaal naar het Spaans: **Ik woon niet in Madrid.**",
+   "explain": "Zet gewoon *no* direct voor het werkwoord. *Yo* is overbodig en mag je weglaten.",
+   "answers": [
+    "No vivo en Madrid.",
+    "Yo no vivo en Madrid."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m13",
+   "type": "order",
+   "skill": "ontkenning",
+   "level": 2,
+   "prompt": "Bouw de Spaanse zin: **Nee, ik spreek geen Engels.**",
+   "explain": "Gebruik twee keer *no*: voor het begin van de zin, en nog eens direct voor het werkwoord.",
+   "tiles": [
+    "No,",
+    "no",
+    "hablo",
+    "inglés."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m14",
+   "type": "cloze",
+   "skill": "ontkenning",
+   "level": 2,
+   "prompt": "Vul het ontbrekende woord in om deze zin ontkennend te maken.",
+   "explain": "Het ontkennende woord *no* hoort voor het werkwoord *beben* te staan.",
+   "text": "Mis amigos {{no}} beben vino tinto.",
+   "lang": "es"
+  },
+  {
+   "id": "m15",
+   "type": "cloze",
+   "skill": "ontkenning",
+   "level": 2,
+   "prompt": "Maak de zin ontkennend: 'Nee, ik drink geen koffie.'",
+   "explain": "Twee keer 'no': één keer om te antwoorden op de vraag, één keer om het werkwoord te ontkennen.",
+   "text": "{{No}}, {{no}} bebo café.",
+   "lang": "es"
+  },
+  {
+   "id": "m16",
+   "type": "type",
+   "skill": "vragen",
+   "level": 1,
+   "prompt": "Vertaal naar het Spaans: **Hoe?**",
+   "explain": "Vergeet de verplichte tilde op het vraagwoord niet.",
+   "answers": [
+    "¿Cómo?",
+    "Cómo"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "como",
+     "feedback": "Vraagwoorden krijgen altijd een tilde: cómo.",
+     "tag": "tilde-vraagwoord"
+    }
+   ]
+  },
+  {
+   "id": "m17",
+   "type": "type",
+   "skill": "vragen",
+   "level": 1,
+   "prompt": "Vertaal naar het Spaans: **Wanneer?**",
+   "explain": "Vergeet de verplichte tilde op het vraagwoord niet.",
+   "answers": [
+    "¿Cuándo?",
+    "Cuándo"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "cuando",
+     "feedback": "Vraagwoorden krijgen altijd een tilde: cuándo.",
+     "tag": "tilde-vraagwoord"
+    }
+   ]
+  },
+  {
+   "id": "m18",
+   "type": "cloze",
+   "skill": "vragen",
+   "level": 2,
+   "prompt": "Vul het juiste Spaanse vraagwoord in voor **Hoeveel** (mannelijk meervoud).",
+   "explain": "Vraagwoord mét tilde. Het past zich hier als een adjectief aan aan *clientes* (mannelijk meervoud).",
+   "text": "¿{{Cuántos}} clientes tienes?",
+   "lang": "es",
+   "errors": [
+    {
+     "match": "cuantos",
+     "feedback": "Vraagwoorden krijgen in de spelling altijd een tilde.",
+     "tag": "tilde-vraagwoord"
+    }
+   ]
+  },
+  {
+   "id": "m19",
+   "type": "type",
+   "skill": "vragen",
+   "level": 2,
+   "prompt": "Vertaal naar het Spaans: **Waarom?**",
+   "explain": "Het bestaat uit twee woorden, en omdat het een vraagwoord is, staat er een tilde op de e.",
+   "answers": [
+    "¿Por qué?",
+    "Por qué"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "porque",
+     "feedback": "Als je 'waarom' bedoelt, schrijf je twee woorden met een tilde: por qué. Eén woord (porque) betekent immers 'omdat'.",
+     "tag": "porque-vs-por-que"
+    }
+   ]
+  },
+  {
+   "id": "m20",
+   "type": "mcq",
+   "skill": "vragen",
+   "level": 2,
+   "prompt": "Kies het juiste vraagwoord bij dit antwoord: «¿___ vives? — En Bruselas.»",
+   "explain": "Het antwoord geeft een locatie (*en Bruselas*), dus je stelt de vraag naar 'waar'.",
+   "options": [
+    "Dónde",
+    "Cuándo",
+    "Qué",
+    "Cómo"
+   ],
+   "answer": 0
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "es",
+  "minWords": 30,
+  "prompt": "Stel je voor dat je op een netwerkevent voor ondernemers in Madrid bent. Schrijf een korte introductie (30-50 woorden). \n\nVertel je naam, dat je uit België komt en in Gent woont, dat je voor een automatiseringsbedrijf werkt (*trabajo en una empresa de automatización*), en welke talen je spreekt. Sluit af door aan je gesprekspartner (formeel) te vragen waar hij/zij woont en waar hij/zij werkt.",
+  "model": "Buenos días. Me llamo Thibaud y soy de Bélgica. Vivo en Gante. Trabajo en una empresa de automatización. Hablo neerlandés, francés, inglés y un poco de español.\n\n¿Y usted? ¿Dónde vive y dónde trabaja?",
+  "rubric": [
+   "Gebruik van de ik-vormen *vivo*, *trabajo*, *hablo* zonder *yo* (onderwerp weglaten).",
+   "Correcte formele vragen (*vive*, *trabaja*) in de u-vorm.",
+   "Vraagwoord *dónde* met tilde én ¿ voor de vraag.",
+   "Talen en nationaliteiten zonder hoofdletter; eventueel *e* vóór *inglés* (indien de opsomming zo valt)."
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-onderwerp",
+   "front": "Waarom laat je in het Spaans woorden als *yo* en *tú* meestal weg?",
+   "back": "Omdat je aan de **uitgang** van het werkwoord al met absolute zekerheid hoort wie de handeling uitvoert.",
+   "skill": "presente-ar"
+  },
+  {
+   "id": "c-ar",
+   "front": "Wat zijn de uitgangen van de regelmatige **-ar** werkwoorden in de presente?",
+   "back": "**-o, -as, -a, -amos, -áis, -an**",
+   "skill": "presente-ar"
+  },
+  {
+   "id": "c-er",
+   "front": "Wat zijn de uitgangen van de regelmatige **-er** werkwoorden in de presente?",
+   "back": "**-o, -es, -e, -emos, -éis, -en**",
+   "skill": "presente-er-ir"
+  },
+  {
+   "id": "c-ir",
+   "front": "Wat zijn de uitgangen van de regelmatige **-ir** werkwoorden in de presente?",
+   "back": "**-o, -es, -e, -imos, -ís, -en**",
+   "skill": "presente-er-ir"
+  },
+  {
+   "id": "c-vosotros",
+   "front": "Wat hebben de vosotros-uitgangen (-áis, -éis, -ís) in de presente steevast gemeen?",
+   "back": "Ze hebben altijd een **tilde** op de laatste klinker van de stam.",
+   "skill": "presente-ar"
+  },
+  {
+   "id": "c-vraagwoord",
+   "front": "Wat krijgt elk Spaans vraagwoord (*que, donde, como...*) in de spelling altijd mee?",
+   "back": "Een **tilde**: *qué, dónde, cómo...*",
+   "skill": "vragen"
+  },
+  {
+   "id": "c-porque",
+   "front": "**¿Por qué?** (Waarom?) schrijf je als twee woorden met een tilde. Hoe schrijf je **omdat**?",
+   "back": "Eén woord zonder tilde: **porque**.",
+   "skill": "vragen"
+  },
+  {
+   "id": "c-ontkenning",
+   "front": "Hoe zeg je 'Ik spreek geen Frans' in het Spaans?",
+   "back": "**No** hablo francés. (Je zet het woord 'no' direct voor het werkwoord, geen dubbele ontkenningen).",
+   "skill": "ontkenning"
+  }
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-27",
+  "adaptedFor": "Tempo is standaard gehouden; aangezien er 0 oefenpogingen waren in de afgelopen 7 dagen, is de theorie fors uitgebreid (1100+ woorden) met veel uitgewerkte voorbeelden per werkwoordsgroep en expliciete contrasten met het Frans."
+ }
+}

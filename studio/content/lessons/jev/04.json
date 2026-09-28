@@ -1,0 +1,790 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "jev",
+ "id": 4,
+ "roadmap": "jev-03-inference-economics",
+ "kind": "core",
+ "title": "Inferentie-Economie: Latentie, Compute en Kosten",
+ "subtitle": "Break-even analyses tussen Frontier LLMs, TypeSafe Jev en self-hosted inference",
+ "level": "fundament",
+ "minutes": 45,
+ "summary": "Kosten en latentie zijn geen natuurwetten, maar het logische gevolg van AI-architectuur. In deze les rekenen we door waarom autoregressieve LLM's dure output-tokens aanrekenen, hoe Jev deze kosten naar nul herleidt, en vanaf welk volume het lokaal hosten van ModernBERT financieel rationeler wordt dan de cloud API.",
+ "objectives": [
+  {
+   "id": "ttft-vs-ttd",
+   "text": "Doorrekenen van TTFT (Time to First Token) vs Time to Decision voor generatieve vs beslissingsmodellen."
+  },
+  {
+   "id": "cost-structure",
+   "text": "Kostenstructuur analyseren: de impact van $0.042/1M input tokens en nul output tokens."
+  },
+  {
+   "id": "break-even",
+   "text": "Break-even analyse maken tussen frontier LLM, TypeSafe Jev cloud en self-hosted inference."
+  },
+  {
+   "id": "modernbert-encoder",
+   "text": "Begrijpen waarom encoder-only modellen (ModernBERT / DeBERTa) 100x sneller zijn voor beslissingen dan generatieve decoders."
+  },
+  {
+   "id": "slm-constrained",
+   "text": "Small Language Models inzetten met constrained decoding (Outlines / GBNF grammars) voor 100% syntaxisgarantie."
+  }
+ ],
+ "sections": [
+  {
+   "id": "sec-01",
+   "title": "1. Herhaling: Encoders, SLM's en Constrained Decoding",
+   "md": "In je vorige sessies zag je hoe beslissingsmodellen drastisch sneller zijn dan generatieve AI. We hernemen kort het *waarom*, want dit drijft de economische wiskunde in de rest van deze les.\n\nEen **encoder-only** model (zoals **ModernBERT** of DeBERTa) leest alle inputtokens tegelijkertijd. Het heeft geen causale maskers (die verhinderen dat een token naar de toekomst kijkt) of autoregressieve lus. Eén enkele *forward pass* door het neurale netwerk berekent onmiddellijk de kansen voor alle klassen (exact zoals ook TypeSafe Jev doet). Omdat dit in één gigantische, parallelle matrixvermenigvuldiging gebeurt, maakt dit encoder-only architecturen voor beslissingen tot wel 100x sneller. Ze overzien de hele context onmiddellijk en spugen een berekende waarschijnlijkheid uit.\n\nWanneer je lokaal in je eigen infrastructuur wél tekst of JSON moet genereren (bijvoorbeeld als een Jev-equivalent niet toereikend is voor een complexe extractietaak), gebruik je een decoder-gebaseerd Small Language Model (SLM) zoals **Qwen2.5-0.5B** of Llama-3.2-1B. Omdat generatieve modellen uit zichzelf kunnen hallucineren (bijv. \"Hier is je JSON: ```json ...\"), passen we steevast **constrained decoding** toe.\n\n> [!pitfall] Regex vs Constrained Decoding\n> Een veelgemaakte fout in software engineering is proberen de output van een ongebreideld LLM achteraf te redden met regex-parsers. Regex repareert gebroken tekst nadat de tijd en rekenkracht al verspild zijn. Bovendien crasht het steevast op ontsnapte aanhalingstekens of onverwachte witruimte. Constrained decoding pakt dit fundamenteel anders aan: het stuurt de generatie *tijdens* het inferentieproces op token-niveau. Via logit-masking krijgen alle tokens die niet in je JSON-schema passen een waarschijnlijkheid van min oneindig ($-\\infty$). Fouten worden mathematisch onmogelijk gemaakt nog voor ze gegenereerd worden.\n\nDe twee industriestandaarden voor constrained decoding zijn de Python-library **Outlines** (ideaal voor vLLM of SGLang stacks) en **GBNF grammars** (voor C++/llama.cpp-gebaseerde stacks). Beide garanderen een output die je blindelings door `JSON.parse()` kan halen.",
+   "checks": [
+    {
+     "id": "c1-1",
+     "type": "type",
+     "skill": "slm-constrained",
+     "level": 2,
+     "prompt": "Hoe heet de Python library die we gebruiken voor constrained decoding (en niet regex!)?",
+     "explain": "De library heet Outlines.",
+     "answers": [
+      "Outlines",
+      "outlines"
+     ],
+     "lang": "code",
+     "errors": [
+      {
+       "match": "Outline",
+       "feedback": "Vergeet de 's' op het einde niet: Outlines.",
+       "tag": "outlines-s"
+      },
+      {
+       "match": "regex",
+       "feedback": "Regex is post-processing. We zoeken de library voor logit-masking tijdens de generatie.",
+       "tag": "regex-confusion"
+      }
+     ]
+    },
+    {
+     "id": "c1-2",
+     "type": "type",
+     "skill": "slm-constrained",
+     "level": 2,
+     "prompt": "Typ de naam van het compacte 0.5B model van Alibaba dat we als ultraklein SLM inzetten.",
+     "explain": "Qwen2.5-0.5B is ideaal voor razendsnelle lokale executie.",
+     "answers": [
+      "Qwen2.5-0.5B",
+      "qwen2.5-0.5b",
+      "Qwen 2.5-0.5B"
+     ],
+     "lang": "code",
+     "errors": [
+      {
+       "match": "qwen",
+       "feedback": "Specificeer ook de versie en de grootte (2.5-0.5B).",
+       "tag": "qwen-incomplete"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sec-02",
+   "title": "2. TTFT vs Time to Decision",
+   "md": "Wanneer we spreken over latentie bij LLM's, focust de AI-industrie vaak op **TTFT** (Time to First Token). Voor een consumenten-chatbot zoals ChatGPT is TTFT cruciaal: zodra het eerste woord na enkele honderden milliseconden op het scherm verschijnt, heeft de menselijke gebruiker het gevoel dat het model 'snel' nadenkt. Dit streaming-effect maskeert de werkelijke doorlooptijd.\n\nVoor backend software, API-routering en automatiseringsflows in n8n is TTFT echter compleet irrelevant. Je code kan niets doen met een halve JSON-string. Een `HTTP Request` node of een webhook-handler moet wachten tot de volledige payload binnen is voordat de executie verder kan. Hier telt uitsluitend de **Time to Decision (TTD)**.\n\nStel je voor dat je een webhook van een B2B-klant verwerkt die een harde timeout van 3.000 ms heeft. Als je LLM een TTFT van 500 ms heeft, maar 3.500 ms nodig heeft om de hele JSON op te bouwen, crasht je webhook genadeloos met een `504 Gateway Timeout`.\n\nVoor een autoregressief generatief model (zoals GPT-4o of Claude) bereken je de Time to Decision als volgt:\n$$TTD = TTFT + (N_{out} \\times TPOT)$$\n*(waarbij $N_{out}$ het aantal gegenereerde tokens is en $TPOT$ de Time Per Output Token).*\nZelfs een snelle TPOT van 20 ms tikt zwaar aan als je model 150 tokens aan JSON-structuur genereert (een extra vertraging van 3 volle seconden).\n\nVoor een non-autoregressief beslissingsmodel zoals TypeSafe Jev of een lokaal ModernBERT model is er simpelweg géén generatiefase. Het besluit is een pure wiskundige kansverdeling die berekend wordt in de allereerste, parallelle *forward pass*. Daardoor vervalt de iteratieve lus volledig en is de TTD exact gelijk aan de TTFT:\n$$TTD = TTFT$$\nDit betekent in de praktijk beslissingen in 50 tot 150 milliseconden, snel genoeg voor synchrone API-responses en realtime data-verwerking.",
+   "checks": [
+    {
+     "id": "c2-1",
+     "type": "mcq",
+     "skill": "ttft-vs-ttd",
+     "level": 2,
+     "prompt": "Waarom is TTFT (Time to First Token) een misleidende metriek voor API-gestuurde beslissingslogica?",
+     "explain": "Software leest niet token voor token zoals een mens, maar heeft de volledige (geparste) beslissing nodig om de logica voort te zetten.",
+     "options": [
+      "Omdat code pas verder kan draaien als het volledige antwoord is geproduceerd; de TTD is wat werkelijk telt.",
+      "Omdat TTFT uitsluitend van toepassing is op OpenRouter modellen en niet op lokale modellen.",
+      "Omdat generatieve LLM's nooit een eerste token produceren als het antwoord korter is dan 50 karakters.",
+      "Omdat TTFT altijd gelijk is aan nul bij autoregressieve generatie."
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c2-2",
+     "type": "numeric",
+     "skill": "ttft-vs-ttd",
+     "level": 2,
+     "prompt": "Voor een beslissing via GPT-4 is de TTFT 250 ms en genereert het model 15 tokens à 30 ms per token (TPOT). Wat is de Time to Decision (TTD) in ms?",
+     "explain": "TTD = 250 + (15 * 30) = 250 + 450 = 700 ms.",
+     "value": 700,
+     "tolerance": 0.1,
+     "unit": "ms"
+    }
+   ]
+  },
+  {
+   "id": "sec-03",
+   "title": "3. Economie van de Token: Zero Output Tokens",
+   "md": "Generatieve API's (zoals OpenAI, Anthropic en Google) rekenen kosten aan via een asymmetrische, dubbele structuur:\n$$\\text{Cost} = (Tokens_{in} \\times C_{in}) + (Tokens_{out} \\times C_{out})$$\n\nAls je de prijstabellen bekijkt, zie je dat $C_{out}$ steevast drie tot vijf keer duurder is dan $C_{in}$. Waarom is tekst schrijven zoveel duurder dan tekst lezen? Het antwoord ligt in de hardware-architectuur van GPU's. De outputfase (decoding) is **memory bandwidth bound**.\n\nTijdens het genereren van output moet de GPU voor élk nieuw token de volledige contextgeschiedenis (de opgebouwde *KV-cache* van Keys en Values) opnieuw inlezen vanuit het relatief trage videogeheugen (VRAM) naar de snelle rekenkernen (SRAM/Registers). Zelfs op een peperdure Nvidia H100 met HBM3-geheugen bots je genadeloos op deze bandbreedtelimiet. De GPU brengt de meeste tijd door met wachten op datatransport in plaats van daadwerkelijk te rekenen.\n\nDe inputfase (prefill) is daarentegen **compute bound**: de GPU kan gigantische, extreem efficiënte matrixvermenigvuldigingen parallel uitvoeren over alle inputtokens tegelijkertijd, zonder iteratief op het geheugen te wachten. De rekenkracht (TFLOPs) wordt maximaal benut.\n\nOmdat TypeSafe Jev en ModernBERT **geen output tokens genereren** (ze voeren slechts één compute-bound forward pass uit), is hun architectuur 100% compute bound en slaan ze de dure memory bandwidth bottleneck volledig over. De cloudprovider hoeft zijn kostbare GPU niet gedurende seconden te blokkeren voor één request.\n\nDit verklaart de radicale prijsbreuk: via OpenRouter kost Jev (`typesafe/jev-1.13`) exact **\\$0.042 per 1 miljoen input tokens** en letterlijk **\\$0.00** voor de output. Je betaalt enkel een fractie van een cent voor het supersnel inlezen van de context.",
+   "checks": [
+    {
+     "id": "c3-1",
+     "type": "mcq",
+     "skill": "cost-structure",
+     "level": 2,
+     "prompt": "Hardwarematig gezien: waarom rekenen leveranciers van generatieve modellen aanzienlijk meer aan voor output tokens dan voor input tokens?",
+     "explain": "De decoderingsfase vereist bij elk nieuw token dat de volledige KV-cache wordt ingeladen vanuit het VRAM, wat wordt beperkt door de geheugenbandbreedte.",
+     "options": [
+      "Decoding is memory bandwidth bound en uiterst inefficiënt; prefill is compute bound en profiteert van parallelle matrixoperaties.",
+      "Output tokens vereisen extra controle via RLHF, wat menselijke reviewers dwingt om live mee te lezen.",
+      "De OpenRouter API voegt een vaste premium belasting toe op generatieve tekst vanwege auteursrechten.",
+      "Het genereren van JSON-haakjes vereist Floating Point 64-bit berekeningen, wat prefill niet nodig heeft."
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c3-2",
+     "type": "numeric",
+     "skill": "cost-structure",
+     "level": 2,
+     "prompt": "Als je 10 miljoen tokens aan context naar TypeSafe Jev stuurt, hoeveel dollar betaal je dan in totaal? (Prijs is \\$0.042 per 1M).",
+     "explain": "10 * $0.042 = $0.42.",
+     "value": 0.42,
+     "tolerance": 0.001,
+     "unit": "$"
+    }
+   ]
+  },
+  {
+   "id": "sec-04",
+   "title": "4. Break-even Analyse: Zelf hosten vs Cloud API",
+   "md": "Gezien deze waanzinnige efficiëntie van non-autoregressieve modellen rijst op enterprise-niveau een belangrijke infrastructuurvraag. Als cloud API's zo goedkoop zijn, waarom zou je dan nog zelf hosten? Of omgekeerd: als modellen zo klein en efficiënt zijn, waarom blijf je dan per token betalen aan OpenRouter in plaats van zelf een ModernBERT lokaal te draaien op een gehuurde GPU?\n\nDit vereist een nuchtere **break-even analyse**. Laten we de wiskunde simpel en overzichtelijk houden:\n- Een krachtige cloud GPU huren (bijvoorbeeld een RTX 4090 op RunPod of vast op een eigen dedicated server) kost je ongeveer **\\$126 per maand**.\n- De serverless OpenRouter API voor Jev kost **\\$0.042 per 1 miljoen tokens**.\n\nWanneer is die eigen GPU financieel voordeliger dan de API?\n$$\\text{Break-even Tokens} = \\frac{\\text{Maandelijkse Serverkosten}}{\\text{Kosten per 1M tokens}}$$\n\n$$\\frac{\\$126}{\\$0.042} = 3000 \\text{ eenheden van 1M tokens}$$\n\nHet financiële omslagpunt ligt dus op **3 miljard tokens per maand**. Vanaf dat stratosferische volume is self-hosting goedkoper. Ter context: 3 miljard tokens komt overeen met ongeveer 3 miljoen forse klantendossiers (elk 1000 tokens) per maand.\n\nEn dan hebben we de operationele kosten (DevOps) nog niet meegerekend. Een eigen GPU-server vraagt onderhoud, beveiliging en gaat plat bij onverwachte verkeerspieken (traffic spikes). Bij een serverless API zoals OpenRouter schaalt de infrastructuur automatisch mee zonder dat jij er omkijken naar hebt.\n\nVoor nagenoeg alle KMO-workflows en B2B-automatiseringen die onder dit gigantische volume blijven, is de \\$0.042 API-kost van OpenRouter niet alleen makkelijker te onderhouden, maar ook puur economisch en operationeel de absoluut superieure keuze. Je betaalt enkel voor wat je gebruikt, zonder vaste overhead.",
+   "checks": [
+    {
+     "id": "c4-1",
+     "type": "cloze",
+     "skill": "break-even",
+     "level": 2,
+     "prompt": "Vul de termen voor de bottleneck aan:",
+     "text": "Tijdens de generatie van tekst zijn we beperkt door de verplaatsing van de KV-cache ({{memory bandwidth bound|memory bandwidth}}). De parallelle inleesfase van inputtokens en de werking van Jev is daarentegen {{compute bound}}.",
+     "explain": "Memory bandwidth is de bottleneck voor decoders; compute (rekenkracht) is de bottleneck voor prefill en encoders."
+    }
+   ]
+  },
+  {
+   "id": "sec-05",
+   "title": "5. Thibaud's Praktijk: Architectuur voor B2B-Automatisering",
+   "md": "Als automatiserings-engineer voor B2B-klanten werk je vaak met n8n, webhooks en API's. De inzichten uit deze les vertalen zich direct naar een competitief voordeel in jouw architectuurontwerpen.\n\nStel dat een klant vraagt om alle inkomende e-mails naar de algemene inbox automatisch te classificeren (Support, Sales, Facturatie, Spam) en de urgentie te bepalen. Traditioneel zou je een `OpenAI` node in n8n gebruiken met GPT-4o-mini. De latentie per mail ligt rond de 2 tot 3 seconden, en bij 10.000 mails per maand tikt de rekening voor input én output tokens gestaag aan. Als de LLM bovendien een afwijkend JSON-formaat genereert, blokkeert je flow en moet je in de error-logs duiken.\n\nDoor over te stappen op Jev via de OpenRouter API verander je de dynamiek compleet:\n1. **Robuustheid:** Je gebruikt een simpele `HTTP Request` node naar OpenRouter met de Jev payload (zoals we in les 2 en 5 bespreken). Omdat Jev de *Choice* en *Score* primitieven hanteert, krijg je altijd een strakke, voorspelbare datastructuur terug. Regex of fallback-logica in n8n is overbodig.\n2. **Snelheid:** De beslissing valt binnen de 100 ms. Dit stelt je in staat om dit soort validaties zelfs synchroon in te zetten, bijvoorbeeld vlak nadat een eindgebruiker op 'Submit' klikt in een webformulier op de website van je klant.\n3. **Marge voor je bedrijf:** Jouw inkoopkosten dalen naar een verwaarloosbare fractie. Je kunt je B2B-klanten een vaste, voordelige maandprijs aanbieden voor de AI-integratie, terwijl jouw infrastructuurkosten (via OpenRouter) nagenoeg nul zijn.\n\nDit illustreert het kernprincipe van System 1 in software: gebruik dure, trage generatieve LLM's uitsluitend wanneer er daadwerkelijk creatieve tekst of uitgebreide redenering geschreven moet worden. Voor al het overige — routering, classificatie, scoring en moderatie — grijp je naar getypeerde, compute-bound beslissingsmodellen.",
+   "checks": [
+    {
+     "id": "c5-1",
+     "type": "mcq",
+     "skill": "modernbert-encoder",
+     "level": 3,
+     "prompt": "Waarom levert de integratie van TypeSafe Jev via een HTTP Request in n8n een robuustere automatisering op dan het aanroepen van een GPT-4o prompt?",
+     "explain": "Jev gebruikt beslissingsprimitieven (zoals Choice) en levert wiskundig gegarandeerd een strakke structuur zonder tekstgeneratie-artefacten. Dit voorkomt dat je workflow crasht op foute JSON.",
+     "options": [
+      "Omdat Jev beslissingsprimitieven gebruikt en geen tekst genereert, wat resulteert in een wiskundig gegarandeerde datastructuur zonder regex-fallbacks.",
+      "Omdat n8n native geen ondersteuning biedt voor OpenAI-nodes en uitsluitend OpenRouter-pakketten accepteert.",
+      "Omdat GPT-4o niet kan beslissen of een e-mail spam of facturatie is.",
+      "Omdat TypeSafe Jev een ingebouwde webhook-server heeft die n8n volledig vervangt."
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c5-2",
+     "type": "numeric",
+     "skill": "cost-structure",
+     "level": 3,
+     "prompt": "Je B2B-klant verwerkt 500 mails per dag via n8n. Elke flow bevat een API call met 2000 tokens context. Met Jev (\\$0.042 per 1M input, \\$0.00 output) bereken je de dagelijkse kost in dollars.",
+     "explain": "500 mails * 2000 tokens = 1.000.000 tokens (1M). 1M tokens kost exact $0.042.",
+     "value": 0.042,
+     "tolerance": 0.001,
+     "unit": "$"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "numeric",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Een frontier LLM neemt 2.800 ms de tijd voor een databasoutering. ModernBERT klaart exact dezelfde beslissing in 70 ms. Hoeveel keer sneller is ModernBERT (relatieve factor)?",
+   "explain": "2800 / 70 = 40. Het model is 40 keer sneller.",
+   "value": 40,
+   "tolerance": 0.01,
+   "unit": "×",
+   "errors": [
+    {
+     "match": "2730",
+     "feedback": "Je berekende het absolute verschil (2800 - 70). De vraag vraagt hoeveel *keer* (relatief) sneller het is. Deel 2800 door 70.",
+     "tag": "math-sub-div"
+    }
+   ]
+  },
+  {
+   "id": "p02",
+   "type": "numeric",
+   "skill": "modernbert-encoder",
+   "level": 1,
+   "prompt": "Typ dit getal in decimale miljarden: ModernBERT heeft 149 miljoen parameters. Hoeveel miljard is dat? Gebruik een decimale PUNT.",
+   "explain": "149 miljoen = 0.149 miljard.",
+   "value": 0.149,
+   "tolerance": 0.0,
+   "errors": [
+    {
+     "match": "/,/",
+     "feedback": "Gebruik een punt in plaats van een komma (0.149), anders leest software het verkeerd in.",
+     "tag": "comma-decimal"
+    }
+   ]
+  },
+  {
+   "id": "p03",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Met welke open-source Python library dwingen we een lokaal SLM via logit-masking om uitsluitend syntactisch valabele JSON te genereren?",
+   "explain": "De library heet Outlines.",
+   "answers": [
+    "Outlines",
+    "outlines",
+    "Outlines library"
+   ],
+   "lang": "code",
+   "errors": [
+    {
+     "match": "Outline",
+     "feedback": "Let op de exacte library-naam, er hoort een 's' achteraan: Outlines.",
+     "tag": "outlines-s"
+    },
+    {
+     "match": "regex",
+     "feedback": "Regex repareert output achteraf. Outlines stuurt de generatie proactief tijdens de inferentie.",
+     "tag": "regex-confusion"
+    }
+   ]
+  },
+  {
+   "id": "p04",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Typ de volledige naam van het compacte 0.5B-model van Alibaba dat we veelal inzetten als we lokaal een SLM nodig hebben.",
+   "explain": "Qwen2.5-0.5B.",
+   "answers": [
+    "Qwen2.5-0.5B",
+    "qwen2.5-0.5b",
+    "Qwen 2.5-0.5B",
+    "Qwen2.5-0.5b"
+   ],
+   "lang": "code",
+   "errors": [
+    {
+     "match": "qwen",
+     "feedback": "Specificeer ook de versie en de exacte grootte, in het formaat X.Y-Z.ZB (2.5-0.5B).",
+     "tag": "qwen-incomplete"
+    }
+   ]
+  },
+  {
+   "id": "p05",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Naast Outlines in Python is er voor llama.cpp/C++ stacks een vergelijkbare manier om de output van een SLM te beperken tot een specifieke grammatica. Welk 4-letterig acroniem gebruiken we daarvoor?",
+   "explain": "GBNF (GGML BNF) grammars worden hiervoor gebruikt.",
+   "answers": [
+    "GBNF",
+    "gbnf"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p06",
+   "type": "type",
+   "skill": "modernbert-encoder",
+   "level": 1,
+   "prompt": "Welke architectuur heeft geen causale maskers of autoregressieve lus, en verwerkt de hele invoer in één enkele forward pass? (Typ 'encoder' of 'decoder').",
+   "explain": "Encoder-only modellen zoals ModernBERT werken in één pass.",
+   "answers": [
+    "encoder",
+    "Encoder",
+    "encoder-only",
+    "Encoder-only"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p07",
+   "type": "mcq",
+   "skill": "ttft-vs-ttd",
+   "level": 2,
+   "prompt": "Waar staat de formule $TTD = TTFT + (N_{out} \\times TPOT)$ voor?",
+   "explain": "Time to Decision is de som van de Time to First Token en de iteratieve tijd die nodig is om de rest van de tokens te genereren.",
+   "options": [
+    "Het berekent de Time to Decision voor een generatief model door de totale generatietijd op te tellen bij de initiële latentie.",
+    "Het berekent het financiële omslagpunt tussen het lokaal hosten van een GPU en het inkopen van inference via de OpenRouter API.",
+    "Het demonstreert wiskundig waarom encoder-only architecturen zoals ModernBERT fundamenteel ongeschikt zijn voor API-routering.",
+    "Het berekent de vertraging die ontstaat doordat beslissingsmodellen geen gebruik maken van een efficiënte autoregressieve lus."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p08",
+   "type": "numeric",
+   "skill": "ttft-vs-ttd",
+   "level": 2,
+   "prompt": "Een Claude model heeft een TTFT van 400 ms en een TPOT van 15 ms. Het genereert 20 output tokens voor een JSON. Wat is de TTD in ms?",
+   "explain": "400 + (20 * 15) = 400 + 300 = 700 ms.",
+   "value": 700,
+   "tolerance": 0.1,
+   "unit": "ms"
+  },
+  {
+   "id": "p09",
+   "type": "numeric",
+   "skill": "ttft-vs-ttd",
+   "level": 2,
+   "prompt": "TypeSafe Jev heeft een TTFT van 90 ms voor een bepaalde taak. Aangezien Jev non-autoregressief is, wat is dan de totale Time to Decision (TTD) in ms?",
+   "explain": "Voor een beslissingsmodel is er geen generatiefase. TTFT = TTD, dus 90 ms.",
+   "value": 90,
+   "tolerance": 0.1,
+   "unit": "ms"
+  },
+  {
+   "id": "p10",
+   "type": "numeric",
+   "skill": "cost-structure",
+   "level": 1,
+   "prompt": "Wat is exact de prijs via OpenRouter voor 1 miljoen input tokens voor TypeSafe Jev (`typesafe/jev-1.13`)? Typ het getal in dollars.",
+   "explain": "De prijs is $0.042 per miljoen tokens.",
+   "value": 0.042,
+   "tolerance": 0.0001,
+   "unit": "$"
+  },
+  {
+   "id": "p11",
+   "type": "numeric",
+   "skill": "cost-structure",
+   "level": 2,
+   "prompt": "Als je maandelijks 50 miljoen input tokens door Jev stuurt, hoeveel kost dat dan in dollars? (Prijs = \\$0.042 / 1M).",
+   "explain": "50 * 0.042 = 2.1 dollar.",
+   "value": 2.1,
+   "tolerance": 0.01,
+   "unit": "$"
+  },
+  {
+   "id": "p12",
+   "type": "mcq",
+   "skill": "cost-structure",
+   "level": 2,
+   "prompt": "Waarom is de outputfase (decoding) bij een LLM doorgaans de hardwarematige bottleneck, en dus duurder?",
+   "explain": "Bij elk token moet de KV-cache uit het tragere VRAM worden gehaald, wat beperkt wordt door de memory bandwidth van de videokaart.",
+   "options": [
+    "Het is 'memory bandwidth bound' omdat de volledige KV-cache bij elk token vanuit het VRAM naar de rekeneenheden moet worden overgeheveld.",
+    "Het is 'compute bound' omdat de GPU complexe differentiaalvergelijkingen moet oplossen voor tekstgeneratie.",
+    "Output-tokens worden via een trage 3G-verbinding teruggestuurd naar de client, wat de netwerkkosten verhoogt.",
+    "Het genereren van komma's en leestekens is niet geoptimaliseerd in moderne CUDA-cores."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p13",
+   "type": "type",
+   "skill": "cost-structure",
+   "level": 2,
+   "prompt": "Hoe noemen we de toestand waarbij de limiet niet het geheugentransport is, maar de snelheid van de matrixvermenigvuldigingen zelf (typisch bij prefill en Jev)?",
+   "explain": "Dit heet compute bound.",
+   "answers": [
+    "compute bound",
+    "Compute bound",
+    "computebound"
+   ],
+   "lang": "en"
+  },
+  {
+   "id": "p14",
+   "type": "mcq",
+   "skill": "cost-structure",
+   "level": 2,
+   "prompt": "Waarom heeft TypeSafe Jev letterlijk nul kosten voor output tokens?",
+   "explain": "Jev is een beslissingsmodel. Het leest de input in en levert in één keer een getypeerde kansverdeling af zonder autoregressief tokens te genereren.",
+   "options": [
+    "Jev genereert geen tekst en gebruikt geen autoregressieve decoder; de output is slechts de kans berekend tijdens de forward pass.",
+    "OpenRouter subsidieert de output tokens tijdelijk om marktaandeel te veroveren.",
+    "Jev comprimeert alle tekst tot één enkel zip-bestand dat gratis is om te versturen.",
+    "Beslissingsmodellen verbruiken nooit GPU-elektriciteit, waardoor de serverkosten nul zijn."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p15",
+   "type": "mcq",
+   "skill": "break-even",
+   "level": 2,
+   "prompt": "Wat berekent de formule (Maandelijkse Serverkosten / Kosten per 1M tokens)?",
+   "explain": "Het berekent het volume aan tokens waarbij een gehuurde GPU (lokaal) exact even duur is als het inkopen via de Cloud API.",
+   "options": [
+    "Het break-even volume waarbij self-hosting financieel interessanter wordt dan de cloud API gebruiken.",
+    "De absolute winstmarge van OpenRouter per verkochte megabyte.",
+    "Het aantal uren dat een GPU nodig heeft om zichzelf af te koelen.",
+    "De relatieve Brier-score van het gehoste model."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p16",
+   "type": "numeric",
+   "skill": "break-even",
+   "level": 2,
+   "prompt": "Stel dat een lichte GPU (L4) \\$84 per maand kost. De OpenRouter Jev API kost \\$0.042 per 1 miljoen tokens. Bij hoeveel miljard tokens per maand breek je financieel even? (Geef als miljarden, bv. 1.5).",
+   "explain": "84 / 0.042 = 2000 eenheden van 1 miljoen. 2000 miljoen = 2 miljard.",
+   "value": 2,
+   "tolerance": 0.01
+  },
+  {
+   "id": "p17",
+   "type": "mcq",
+   "skill": "break-even",
+   "level": 3,
+   "prompt": "Een KMO verwerkt maandelijks 500.000 tokens met Jev. Het break-even punt om ModernBERT lokaal te hosten ligt op 3 miljard tokens. Wat is de rationeelste beslissing voor de lead developer?",
+   "explain": "Omdat 500k ver onder de grens van 3 miljard ligt, is de cloud API gebruiken extreem veel goedkoper en makkelijker.",
+   "options": [
+    "Blijven bij de cloud API (OpenRouter), want het volume is veel te laag om de vaste kosten van self-hosting te rechtvaardigen.",
+    "ModernBERT direct lokaal hosten om de maandelijkse kosten van OpenRouter drastisch te verlagen.",
+    "Overstappen naar GPT-4o omdat beslissingsmodellen niet werken onder de 3 miljard tokens.",
+    "Alle infrastructuur uitschakelen en de reviews door mensen laten verwerken."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p18",
+   "type": "cloze",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Vul aan:",
+   "text": "Wanneer we Outlines gebruiken voor structured generation op een SLM, passen we op token-niveau {{logit masking|logit-masking}} toe om syntaxisgarantie af te dwingen.",
+   "explain": "Outlines manipuleert de kansen (logits) zodat illegale tekens een kans van 0 krijgen."
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "cloze",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Vervolledig de zin over constrained decoding libraries:",
+   "text": "Voor Python-applicaties gebruiken we de library {{Outlines}} (met een s), terwijl C++/llama.cpp-gebruikers werken met {{GBNF}} grammars.",
+   "explain": "Outlines en GBNF zijn de industriestandaarden voor 100% syntaxisgarantie bij SLM's."
+  },
+  {
+   "id": "m02",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Wat is de exacte typenaam van het efficiënte 0.5B param model van Alibaba dat we veel lokaal draaien?",
+   "explain": "Het is Qwen2.5-0.5B.",
+   "answers": [
+    "Qwen2.5-0.5B",
+    "qwen2.5-0.5b",
+    "Qwen2.5-0.5b"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m03",
+   "type": "type",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Modellen zoals ModernBERT en DeBERTa behoren tot een specifieke architectuurfamilie die de input in één pass kan lezen zonder auto-regressie. Typ de architectuurnaam: '...-only'.",
+   "explain": "Ze zijn encoder-only.",
+   "answers": [
+    "encoder",
+    "Encoder",
+    "encoder-only",
+    "Encoder-only"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m04",
+   "type": "numeric",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Een frontier LLM neemt 3.600 ms de tijd voor een routering. ModernBERT klaart dit in exact 60 ms. Hoeveel keer sneller is ModernBERT?",
+   "explain": "3600 / 60 = 60.",
+   "value": 60,
+   "tolerance": 0.01,
+   "unit": "×"
+  },
+  {
+   "id": "m05",
+   "type": "numeric",
+   "skill": "ttft-vs-ttd",
+   "level": 2,
+   "prompt": "TTFT = 300 ms. Het autoregressieve model genereert 20 output tokens. TPOT = 25 ms. Bereken de Time to Decision (TTD).",
+   "explain": "300 + (20 * 25) = 300 + 500 = 800 ms.",
+   "value": 800,
+   "tolerance": 0.1,
+   "unit": "ms"
+  },
+  {
+   "id": "m06",
+   "type": "numeric",
+   "skill": "ttft-vs-ttd",
+   "level": 2,
+   "prompt": "De TTFT voor Jev op een bepaalde webhook is 115 ms. Omdat Jev geen output tokens genereert, wat is dan de Time to Decision (TTD) in ms?",
+   "explain": "Voor non-autoregressieve modellen is TTD gelijk aan TTFT. Dus 115.",
+   "value": 115,
+   "tolerance": 0.1,
+   "unit": "ms"
+  },
+  {
+   "id": "m07",
+   "type": "mcq",
+   "skill": "ttft-vs-ttd",
+   "level": 3,
+   "prompt": "Waarom is TTD een objectievere benchmark voor B2B software dan TTFT?",
+   "explain": "Software leest niet met het oog; een JSON-object is pas bruikbaar als de laatste accolade geleverd is.",
+   "options": [
+    "Omdat microservices en parsers moeten wachten op de volledige payload voordat de logische flow kan doorgaan.",
+    "Omdat TTD een officiële ISO-standaard is en TTFT slechts een marketingterm.",
+    "Omdat TTFT altijd negatief kan zijn op snelle servers, wat de software doet crashen.",
+    "Omdat API's per seconde factureren en TTD de enige factor is in de abonnementskost."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m08",
+   "type": "cloze",
+   "skill": "ttft-vs-ttd",
+   "level": 2,
+   "prompt": "Vul het acroniem TTD volledig aan:",
+   "text": "In B2B flows optimaliseren we niet op TTFT, maar op Time to {{Decision}}.",
+   "explain": "TTD staat voor Time to Decision."
+  },
+  {
+   "id": "m09",
+   "type": "numeric",
+   "skill": "cost-structure",
+   "level": 2,
+   "prompt": "Je verwerkt maandelijks 25 miljoen input tokens via Jev op OpenRouter. De prijs is \\$0.042 per 1M tokens. Hoeveel dollar betaal je?",
+   "explain": "25 * $0.042 = $1.05.",
+   "value": 1.05,
+   "tolerance": 0.001,
+   "unit": "$"
+  },
+  {
+   "id": "m10",
+   "type": "type",
+   "skill": "cost-structure",
+   "level": 2,
+   "prompt": "De hardwarematige oorzaak van dure output-tokens is de KV-cache transfer, wat de generatie gelimiteerd maakt door het geheugen. Typ de Engelse term hiervoor (3 woorden).",
+   "explain": "Memory bandwidth bound.",
+   "answers": [
+    "memory bandwidth bound",
+    "Memory bandwidth bound",
+    "Memory Bandwidth Bound"
+   ],
+   "lang": "en"
+  },
+  {
+   "id": "m11",
+   "type": "mcq",
+   "skill": "cost-structure",
+   "level": 2,
+   "prompt": "Welke fase(n) in AI-inferentie is/zijn overwegend 'compute bound' (gelimiteerd door ruwe rekenkracht, niet geheugentransport)?",
+   "explain": "Prefill (inlezen context) en beslissingsmodellen rekenen parallel via efficiënte matrixvermenigvuldigingen.",
+   "options": [
+    "De prefill-fase en de forward pass van encoders/beslissingsmodellen.",
+    "De autoregressieve generatie van output tokens.",
+    "Uitsluitend het versturen van netwerkpakketten via de REST API.",
+    "Het downloaden van GBNF grammars naar de harde schijf."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m12",
+   "type": "numeric",
+   "skill": "cost-structure",
+   "level": 1,
+   "prompt": "Op OpenRouter is Jev beschikbaar. De prijs voor input tokens is \\$0.042 per 1M. Wat is de exacte prijs per 1 miljoen *output tokens* voor Jev?",
+   "explain": "Jev heeft geen generatieve outputfase, dus de kost voor outputs is wiskundig (en letterlijk) 0.",
+   "value": 0,
+   "tolerance": 0.0,
+   "unit": "$"
+  },
+  {
+   "id": "m13",
+   "type": "numeric",
+   "skill": "break-even",
+   "level": 2,
+   "prompt": "Een stevige lokale server kost je maandelijks \\$168. TypeSafe Jev in de cloud kost \\$0.042 per 1 miljoen tokens. Bij welk volume aan miljarden tokens per maand (TTM) breek je financieel even? (Geef als miljarden, bv. 2.5).",
+   "explain": "168 / 0.042 = 4000. Dat zijn 4000 eenheden van een miljoen, dus 4 miljard tokens.",
+   "value": 4,
+   "tolerance": 0.01
+  },
+  {
+   "id": "m14",
+   "type": "mcq",
+   "skill": "break-even",
+   "level": 3,
+   "prompt": "Waarom is self-hosting van beslissingsmodellen voor veel startup-teams financieel gezien een slechte investering, ondanks de hoge efficiëntie van ModernBERT?",
+   "explain": "De opstartkosten en vaste GPU-huur zijn hoog. Jev via OpenRouter is serverless en weegt financieel nauwelijks door zolang het bedrijf onder de 3 miljard tokens per maand blijft.",
+   "options": [
+    "Omdat hun token-volume zwaar onder het break-even punt (vaak meerdere miljarden tokens per maand) blijft, waardoor de vaste GPU-huur niet rendeert ten opzichte van een $0.042/1M API.",
+    "Omdat ModernBERT principieel niet kan draaien op servers die verbonden zijn met het internet.",
+    "Omdat OpenRouter startups dwingt om langetermijncontracten van 5 jaar te tekenen voor beslissingsmodellen.",
+    "Omdat Python geen support biedt voor cloud API calls."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m15",
+   "type": "cloze",
+   "skill": "break-even",
+   "level": 2,
+   "prompt": "Vul de formule aan:",
+   "text": "Je berekent het break-even volume door de maandelijkse vaste serverkost te {{delen}} door de kosten per 1M tokens van de API.",
+   "explain": "Serverkosten / API_kosten = break-even eenheden."
+  },
+  {
+   "id": "m16",
+   "type": "numeric",
+   "skill": "modernbert-encoder",
+   "level": 1,
+   "prompt": "Stel dat een groter encoder model 250 miljoen parameters heeft. Typ dit uit in miljarden met een decimale PUNT.",
+   "explain": "250 miljoen is 0.25 miljard.",
+   "value": 0.25,
+   "tolerance": 0.0
+  },
+  {
+   "id": "m17",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Naast Python's Outlines is er de GGML standaard voor C++/llama.cpp om de syntaxis van modellen sterk af te dwingen. Typ het acroniem (4 letters).",
+   "explain": "GBNF (GGML BNF).",
+   "answers": [
+    "GBNF",
+    "gbnf"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m18",
+   "type": "mcq",
+   "skill": "cost-structure",
+   "level": 3,
+   "prompt": "Waarom rekent OpenRouter \\$0.00 aan voor de output tokens van Jev?",
+   "explain": "Beslissingsmodellen produceren een probabilistische output zonder een sequentiële decoderingslus, dus het hardware-aspect (decoding) dat normaal geld kost, bestaat hier eenvoudigweg niet.",
+   "options": [
+    "Omdat er geen autoregressieve tekstgeneratie plaatsvindt; het model retourneert enkel getypeerde kansen in dezelfde forward pass.",
+    "Omdat de output altijd kleiner is dan 5 tokens, en OpenAI deze gratis weggeeft.",
+    "Omdat Jev getraind is via RLHF in plaats van RLCD.",
+    "Omdat Jev uitsluitend integer-getallen berekent en geen floats (kommagetallen)."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m19",
+   "type": "order",
+   "skill": "ttft-vs-ttd",
+   "level": 2,
+   "prompt": "Sleep de elementen in de juiste volgorde om de formule voor de Time to Decision (TTD) van een autoregressief model te construeren.",
+   "explain": "De formule is: TTFT + ( N_out \\times TPOT ).",
+   "tiles": [
+    "TTFT",
+    "+",
+    "(",
+    "N_out",
+    "\\times",
+    "TPOT",
+    ")"
+   ],
+   "join": " "
+  },
+  {
+   "id": "m20",
+   "type": "match",
+   "skill": "cost-structure",
+   "level": 2,
+   "prompt": "Verbind de iteratiefase of het architectuurtype met de bijbehorende hardware-bottleneck of economische eigenschap.",
+   "explain": "Decoding is gelimiteerd door geheugen, prefill/encoders door ruwe compute, en Jev elimineert generatiekosten volledig.",
+   "pairs": [
+    [
+     "Decoding (Output)",
+     "Memory bandwidth bound"
+    ],
+    [
+     "Prefill (Input)",
+     "Compute bound"
+    ],
+    [
+     "TypeSafe Jev",
+     "Zero output tokens"
+    ]
+   ]
+  }
+ ],
+ "production": {
+  "id": "prod-01",
+  "type": "explain",
+  "title": "Migratie en Kostenbesparing voor E-commerce",
+  "prompt": "Een Belgisch B2B e-commerce platform verwerkt 500.000 inkomende orders en reviews per dag. De huidige pipeline stuurt elke flow (gemiddeld 200 input tokens) naar een GPT-4o-mini prompt, dat een schema van 10 output tokens genereert om het bericht te classificeren.\n\nTarief GPT-4o-mini:\n- Input: \\$0.150 / 1M tokens\n- Output: \\$0.600 / 1M tokens\n\nTarief Jev (via OpenRouter):\n- Input: \\$0.042 / 1M tokens\n- Output: \\$0.000\n\n**Opdracht:**\n1. Bereken de kosten per dag en per maand (30 dagen) met GPT-4o-mini.\n2. Bereken de kosten per dag en per maand (30 dagen) indien je de logica migreert naar Jev.\n3. Noteer de maandelijkse kostenbesparing in dollars.\n4. Leg in één of twee zinnen uit waarom de Time to Decision (TTD) ook aanzienlijk zal verbeteren.",
+  "model": "Kosten GPT-4o-mini:\n- Input per dag: 500.000 * 200 = 100M tokens -> 100 * $0.150 = $15\n- Output per dag: 500.000 * 10 = 5M tokens -> 5 * $0.600 = $3\n- Totaal per dag = $18. Maandelijks (30 dagen) = $540.\n\nKosten Jev:\n- Input per dag: 100M tokens -> 100 * $0.042 = $4.20\n- Output per dag: 0\n- Totaal per dag = $4.20. Maandelijks (30 dagen) = $126.\n\nBesparing: $540 - $126 = $414 per maand.\n\nLatentieverbetering: Jev is een beslissingsmodel zonder autoregressieve decoder (non-generatief). De Time to Decision is hierdoor identiek aan de snelle initiële forward pass (TTFT), wat de trage TPOT (Time Per Output Token) iteraties uitsluit.",
+  "rubric": [
+   "Berekent de maandelijkse kosten van GPT-4o-mini correct op $540 (door input- en outputkosten per dag samen te tellen).",
+   "Berekent de maandelijkse kosten van Jev correct op $126 (enkel input tokens).",
+   "Berekent de maandelijkse absolute besparing accuraat op $414.",
+   "Verklaart dat Jev non-autoregressief is (geen generatielus/TPOT) en daarom een kortere Time to Decision heeft."
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-ttd-def",
+   "skill": "ttft-vs-ttd",
+   "front": "Wat is het verschil tussen TTFT en TTD in AI-inferentie?",
+   "back": "TTFT (Time to First Token) is wanneer het eerste teken verschijnt, wat goed is voor menselijke chats. TTD (Time to Decision) is de tijd totdat het antwoord volledig en parseerbaar is, wat telt voor API's en software."
+  },
+  {
+   "id": "c-memory-bound",
+   "skill": "cost-structure",
+   "front": "Waarom is de decodingfase (output tokens genereren) zo inefficiënt op een GPU?",
+   "back": "Omdat ze **memory bandwidth bound** is. Voor elk gegenereerd token moet de volledige KV-cache telkens opnieuw vanuit het videogeheugen (VRAM) naar de rekenkernen worden getransporteerd."
+  },
+  {
+   "id": "c-compute-bound",
+   "skill": "cost-structure",
+   "front": "Waarom is de prefill-fase (of een Jev forward-pass) enorm efficiënt?",
+   "back": "Het is **compute bound**. De GPU berekent alle inputtokens in massale, extreem parallelliseerbare matrixvermenigvuldigingen zonder te wachten op geheugentransport."
+  },
+  {
+   "id": "c-jev-cost",
+   "skill": "cost-structure",
+   "front": "Waarom rekent OpenRouter letterlijk $0.00 voor de output tokens van TypeSafe Jev?",
+   "back": "Jev is non-autoregressief. Het genereert geen tekst-tokens in een iteratieve lus, maar berekent een getypeerde kansverdeling tijdens de (initiële) forward pass."
+  },
+  {
+   "id": "c-outlines",
+   "skill": "slm-constrained",
+   "front": "Wat doen libraries zoals Outlines en GBNF?",
+   "back": "Ze passen **constrained decoding** toe via logit-masking. Zo dwingen ze een lokaal SLM (zoals Qwen2.5) mathematisch om 100% syntactisch correcte JSON of code te genereren, zonder fallible regex achteraf."
+  },
+  {
+   "id": "c-break-even",
+   "skill": "break-even",
+   "front": "Hoe bereken je the break-even point tussen de OpenRouter API en het lokaal hosten van een GPU?",
+   "back": "Vaste Serverkosten per maand (bv. $126) gedeeld door de API-prijs per volume (bv. $0.042 per 1M). Het omslagpunt ligt meestal op meerdere miljarden tokens."
+  }
+ ],
+ "sources": [
+  "TypeSafe AI Technical Blog (2026)",
+  "OpenRouter API Pricing (2026)",
+  "Outlines (structured generation documentation)"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-28",
+  "adaptedFor": "Extra nadruk gelegd op foutpatronen rond constrained decoding (Outlines) vs regex, en de theorie uitgebreid naar n8n/B2B context voor snellere transfer."
+ }
+}

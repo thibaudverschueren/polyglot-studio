@@ -1,0 +1,828 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "spanish",
+ "id": 4,
+ "roadmap": "es-a1-04-estar-hay",
+ "title": "Estar en hay: waar iets is en hoe het gaat",
+ "subtitle": "Het verschil tussen ser en estar, het Spaanse 'il y a' (hay) en de weg wijzen in de stad.",
+ "level": "A1",
+ "minutes": 45,
+ "summary": "In het Frans heb je enkel *être* en *il y a*. Het Spaans is preciezer: je gebruikt *ser* voor identiteit, *estar* voor toestand en locatie, en *hay* voor het louter bestaan van iets. In deze les leer je ze feilloos onderscheiden en wijs je de weg in de stad.",
+ "objectives": [
+  {
+   "id": "estar-vervoegen",
+   "text": "Je vervoegt het onregelmatige werkwoord estar (zich bevinden, voelen) vlot in de presente."
+  },
+  {
+   "id": "ser-estar",
+   "text": "Je kiest correct tussen ser (wat iets is / identiteit) en estar (waar of hoe iets is / toestand)."
+  },
+  {
+   "id": "hay-estar",
+   "text": "Je gebruikt hay (er is/zijn) bij onbepaalde zaken en estar bij bepaalde zaken."
+  },
+  {
+   "id": "plaatsbepaling",
+   "text": "Je beschrijft waar iets is met voorzetsels zoals cerca de, lejos de en al lado de, inclusief de contractie del."
+  }
+ ],
+ "vocab": [
+  {
+   "term": "estar",
+   "meaning": "zich bevinden; zijn (toestand)"
+  },
+  {
+   "term": "hay",
+   "meaning": "er is; er zijn"
+  },
+  {
+   "term": "la calle",
+   "meaning": "de straat"
+  },
+  {
+   "term": "la plaza",
+   "meaning": "het plein"
+  },
+  {
+   "term": "el banco",
+   "meaning": "de bank (financieel)"
+  },
+  {
+   "term": "la estación",
+   "meaning": "het station"
+  },
+  {
+   "term": "cerca de",
+   "meaning": "dichtbij"
+  },
+  {
+   "term": "lejos de",
+   "meaning": "ver van"
+  },
+  {
+   "term": "al lado de",
+   "meaning": "naast"
+  },
+  {
+   "term": "enfrente de",
+   "meaning": "tegenover"
+  }
+ ],
+ "sections": [
+  {
+   "id": "estar-vervoegen",
+   "title": "Hoe gaat het? Het werkwoord estar",
+   "md": "In les 1 leerde je al de vraag [[es:¿Qué tal?]] (Hoe gaat het?). Een nog vaker gebruikt alternatief is [[es:¿Cómo estás?]]. Het werkwoord is **estar**.\n\nEstar is onregelmatig in de ik-vorm en heeft **tildes** op bijna alle andere vormen. Die tildes zijn cruciaal: zonder tilde betekent *estas* bijvoorbeeld 'deze' in plaats van 'jij bent'.\n\n| Persoon | Vervoeging | Voorbeeld |\n|---|---|---|\n| yo | **estoy** | [[es:Estoy bien.]] (Het gaat goed met me.) |\n| tú | **estás** | [[es:¿Cómo estás?]] (Hoe gaat het met je?) |\n| él, ella, usted | **está** | [[es:Él está cansado.]] (Hij is moe.) |\n| nosotros/as | **estamos** | [[es:Estamos en casa.]] (We zijn thuis.) |\n| vosotros/as | **estáis** | [[es:¿Dónde estáis?]] (Waar zijn jullie?) |\n| ellos/as, ustedes | **están** | [[es:Están de vacaciones.]] (Ze zijn op vakantie.) |\n\n> [!pitfall] De klemtoon en de tilde\n> Volgens de Spaanse klemtoonregels valt de klemtoon bij woorden op -s of -n op de voorlaatste lettergreep (ES-tas, ES-tan). Maar bij dit werkwoord valt de klemtoon op de **laatste** lettergreep: es-TÁS, es-TÁN. Omdat dat de regel breekt, is de tilde verplicht.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "cloze",
+     "skill": "estar-vervoegen",
+     "level": 2,
+     "prompt": "Vul de juiste vorm van **estar** in (met tilde!).",
+     "explain": "*tú* -> *estás*. Zonder tilde is het een spelfout.",
+     "text": "Hola Marta, ¿cómo {{estás}}?",
+     "lang": "es"
+    }
+   ]
+  },
+  {
+   "id": "ser-estar",
+   "title": "Ser of estar? (Wat versus Hoe / Waar)",
+   "md": "In het Frans zeg je *je suis belge* en *je suis fatigué*. Het werkwoord is altijd *être*. Het Spaans heeft echter twee werkwoorden voor 'zijn'. Het verschil is heel logisch:\n\n**1. Ser = Identiteit en eigenschappen (Wat ben je?)**\nJe leerde **ser** in les 2. Het beschrijft de kern van iets of iemand: wie je bent, je nationaliteit, je beroep, of kenmerken die (vrijwel) permanent zijn.\n- [[es:Soy Thibaud.]] (Ik ben Thibaud.)\n- [[es:Es un coche rápido.]] (Het is een snelle auto.)\n\n**2. Estar = Toestand en locatie (Hoe of waar ben je?)**\nEstar komt van het Latijnse *stare* (staan). Het beschrijft waar iets zich bevindt of in welke toestand het verkeert (een resultaat of gevoel).\n- [[es:Estoy en Madrid.]] (Ik ben / bevind me in Madrid.)\n- [[es:El café está frío.]] (De koffie is koud — toestand.)\n\n> [!tip] Valse vrienden door het Frans\n> Omdat het Frans altijd *être* gebruikt, trappen we vaak in de val om overal *ser* te gebruiken. Check always: gaat het over een **locatie** of een **tijdelijke toestand**? Gebruik dan *estar*.",
+   "checks": [
+    {
+     "id": "c2",
+     "type": "mcq",
+     "skill": "ser-estar",
+     "level": 2,
+     "prompt": "Welk werkwoord past in deze zin? \"Ik ben ziek.\"",
+     "explain": "Ziek zijn is een toestand (hoe je je voelt), dus gebruik je *estar*.",
+     "options": [
+      "Estar (Estoy enfermo)",
+      "Ser (Soy enfermo)",
+      "Hay (Hay enfermo)",
+      "Tener (Tengo enfermo)"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c3",
+     "type": "cloze",
+     "skill": "ser-estar",
+     "level": 2,
+     "prompt": "Kies tussen de juiste vormen van **ser** en **estar** (hij-vorm).",
+     "explain": "*es belga* (identiteit/herkomst) vs *está en Madrid* (locatie).",
+     "text": "Diego {{es}} belga, pero ahora {{está}} en Madrid para el trabajo.",
+     "lang": "es"
+    }
+   ]
+  },
+  {
+   "id": "hay",
+   "title": "Hay: Er is / Er zijn",
+   "md": "Naast *ser* en *estar* is er nog een derde belangrijk concept: het bestaan of de aanwezigheid van iets aantonen. In het Frans zeg je *il y a*. In het Spaans gebruik je daarvoor het onveranderlijke woordje **hay** (spreek uit: *ai*, de h is stom!).\n\n**Hay** betekent 'er is' of 'er zijn'. Je hoeft het dus niet in het meervoud te zetten.\n\n- [[es:Hay un problema.]] (Er is een probleem. / Il y a un problème.)\n- [[es:Hay dos hoteles.]] (Er zijn twee hotels. / Il y a deux hôtels.)\n- [[es:Hay mucha gente.]] (Er is veel volk.)\n\nJe gebruikt het vaak om te vragen of iets überhaupt bestaat in de buurt:\n- [[es:¿Hay una farmacia por aquí?]] (Is er hier in de buurt een apotheek?)",
+   "checks": [
+    {
+     "id": "c4",
+     "type": "type",
+     "skill": "hay-estar",
+     "level": 2,
+     "prompt": "Vertaal: **Er zijn** drie banken in deze straat.",
+     "explain": "*Hay* is onveranderlijk en wordt ook voor meervoud ('er zijn') gebruikt.",
+     "answers": [
+      "Hay"
+     ],
+     "lang": "es"
+    }
+   ]
+  },
+  {
+   "id": "hay-of-estar",
+   "title": "Hay of estar? De gouden regel",
+   "md": "Dit is de grootste valkuil voor anderstaligen in het Spaans: wanneer kies je *hay* en wanneer kies je *estar* als je de locatie van iets aangeeft?\n\nDe regel is gelukkig wiskundig exact:\n\n**Gebruik HAY bij ONBEPAALDE zaken**\nAls je niet over een specifiek exemplaar spreekt. Je combineert *hay* met:\n- onbepaalde lidwoorden (*un, una*)\n- getallen (*dos, tres*)\n- hoeveelheden (*muchos, poco*)\n- geen lidwoord (*hay pan*)\n❌ FOUT: Hay el banco.\n✅ JUIST: [[es:Hay un banco.]] (Er is een bank / Il y a une banque.)\n\n**Gebruik ESTAR bij BEPAALDE zaken**\nAls je vraagt of vertelt waar iets of iemand specifiek is. Je combineert *estar* met:\n- bepaalde lidwoorden (*el, la, los, las*)\n- bezittelijke voornaamwoorden (*mi, tu*)\n- namen (*Thibaud, Madrid*)\n❌ FOUT: ¿Dónde hay el banco?\n✅ JUIST: [[es:¿Dónde está el banco?]] (Waar is de bank? / Où se trouve la banque?)\n\n> [!example] Vergelijk het verschil\n> Vraag je je af of er overleven mogelijk is? [[es:¿Hay un restaurante por aquí?]] (Is er een restaurant hier in de buurt?)\n> Heb je al gereserveerd en zoek je de weg? [[es:¿Dónde está el restaurante 'El Toro'?]] (Waar bevindt zich het restaurant El Toro?)",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "mcq",
+     "skill": "hay-estar",
+     "level": 2,
+     "prompt": "Welke zin is grammaticaal correct?",
+     "explain": "*Hay* mag nooit met een bepaald lidwoord (*el/la*) gecombineerd worden. Voor een specifieke locatie gebruik je *estar*.",
+     "options": [
+      "El banco está en la plaza.",
+      "Hay el banco en la plaza.",
+      "El banco hay en la plaza."
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c6",
+     "type": "cloze",
+     "skill": "hay-estar",
+     "level": 2,
+     "prompt": "Kies tussen **hay** of **está**.",
+     "explain": "*un problema* is onbepaald -> *hay*. *mi jefe* is specifiek -> *está*.",
+     "text": "¡{{Hay}} un problema grave! ¿Dónde {{está}} mi jefe?",
+     "lang": "es"
+    }
+   ]
+  },
+  {
+   "id": "plaatsbepaling",
+   "title": "Voorzetsels van plaats en de contractie 'del'",
+   "md": "Om de weg te wijzen combineer je *estar* of *hay* met voorzetsels van plaats. De belangrijkste zes zijn:\n\n- **cerca de** (dichtbij / près de)\n- **lejos de** (ver van / loin de)\n- **al lado de** (naast / à côté de)\n- **enfrente de** (tegenover / en face de)\n- **a la derecha de** (rechts van / à droite de)\n- **a la izquierda de** (links van / à gauche de)\n\nMerk op dat ze (bijna) allemaal eindigen op **de**.\n\n> [!rule] Contractie: de + el = del\n> Net zoals in het Frans *de + le = du* wordt, wordt in het Spaans **de + el = del**. Dit is verplicht! Andere combinaties (*de la, de los, de las*) trekken NIET samen.\n> - El coche está cerca **del** banco. (de + el)\n> - El banco está al lado **de la** estación. (geen contractie)",
+   "checks": [
+    {
+     "id": "c7",
+     "type": "type",
+     "skill": "plaatsbepaling",
+     "level": 2,
+     "prompt": "Vertaal: **dichtbij het** station (la estación).",
+     "explain": "*la estación* is vrouwelijk, dus geen contractie: *cerca de la*.",
+     "answers": [
+      "cerca de la"
+     ],
+     "lang": "es",
+     "errors": [
+      {
+       "match": "cerca del",
+       "feedback": "Let op: *estación* is vrouwelijk (*la*). Contractie geldt alleen voor *de + el*.",
+       "tag": "contractie"
+      }
+     ]
+    },
+    {
+     "id": "c8",
+     "type": "type",
+     "skill": "plaatsbepaling",
+     "level": 2,
+     "prompt": "Vul in: El hotel está al lado ___ (van het) banco.",
+     "explain": "de + el banco = del banco.",
+     "answers": [
+      "del"
+     ],
+     "lang": "es",
+     "errors": [
+      {
+       "match": "de el",
+       "feedback": "Net als in het Frans *du*, trekken we *de + el* altijd samen tot *del*.",
+       "tag": "contractie"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "estar-vervoegen",
+   "level": 1,
+   "prompt": "Welke vorm van *estar* hoort bij **tú**?",
+   "explain": "De jij-vorm krijgt een tilde, omdat de klemtoon afwijkt van de hoofdregel (hij valt op de laatste lettergreep).",
+   "options": [
+    "estás",
+    "estas",
+    "está",
+    "estáis"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "type",
+   "skill": "estar-vervoegen",
+   "level": 2,
+   "prompt": "Vertaal: **Ik ben** (ik bevind me / ik voel me).",
+   "explain": "De ik-vorm is onregelmatig: *estoy*.",
+   "answers": [
+    "estoy",
+    "yo estoy"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p03",
+   "type": "cloze",
+   "skill": "estar-vervoegen",
+   "level": 2,
+   "prompt": "Vul de juiste vorm in: Waar **zijn** jullie? (Spanje-vorm)",
+   "explain": "vosotros -> *estáis*.",
+   "text": "¿Dónde {{estáis}}?",
+   "lang": "es"
+  },
+  {
+   "id": "p04",
+   "type": "mcq",
+   "skill": "ser-estar",
+   "level": 1,
+   "prompt": "Wanneer gebruik je **estar** in plaats van **ser**?",
+   "explain": "Estar komt van *stare* (staan) en duidt op een locatie of een toestand. Identiteit, oorsprong of permanent beroep is altijd *ser*.",
+   "options": [
+    "Voor een locatie of een toestand.",
+    "Voor een beroep of nationaliteit.",
+    "Om te zeggen wat of wie iets is.",
+    "Om eigenschappen te beschrijven die permanent zijn."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p05",
+   "type": "cloze",
+   "skill": "ser-estar",
+   "level": 2,
+   "prompt": "Kies de juiste vormen van **ser** en **estar**.",
+   "explain": "Belg zijn = identiteit (ser). In Spanje zijn = locatie (estar).",
+   "text": "Yo {{soy}} belga, pero hoy {{estoy}} en España.",
+   "lang": "es"
+  },
+  {
+   "id": "p06",
+   "type": "type",
+   "skill": "ser-estar",
+   "level": 2,
+   "prompt": "Vertaal: **Wij zijn moe** (cansados).",
+   "explain": "Moe zijn is een toestand (hoe je je voelt), dus we gebruiken *estar*.",
+   "answers": [
+    "Estamos cansados.",
+    "Nosotros estamos cansados."
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "somos",
+     "feedback": "Moe zijn is een tijdelijke toestand, geen identiteit. Gebruik *estar*.",
+     "tag": "ser-estar"
+    }
+   ]
+  },
+  {
+   "id": "p07",
+   "type": "mcq",
+   "skill": "hay-estar",
+   "level": 1,
+   "prompt": "Met welk lidwoord mag je **hay** NOOIT combineren?",
+   "explain": "*Hay* is voor onbepaalde zaken (er is een). Voor bepaalde zaken (de/het) gebruik je *estar*.",
+   "options": [
+    "el, la, los, las (bepaald)",
+    "un, una, unos, unas (onbepaald)",
+    "cijfers zoals dos, tres",
+    "geen lidwoord"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p08",
+   "type": "cloze",
+   "skill": "hay-estar",
+   "level": 2,
+   "prompt": "Kies tussen **hay** of **está**.",
+   "explain": "Onbepaald (een bank) -> *hay*. Bepaald (de bank Santander) -> *está*.",
+   "text": "¿{{Hay}} un banco por aquí? Sí, el banco Santander {{está}} en la plaza.",
+   "lang": "es"
+  },
+  {
+   "id": "p09",
+   "type": "multi",
+   "skill": "hay-estar",
+   "level": 2,
+   "prompt": "Welke zinnen zijn **correct**?",
+   "explain": "*Está el hospital* en *hay un hospital* kloppen. *Hay el* en *está un* zijn foute combinaties.",
+   "options": [
+    "El hospital está lejos.",
+    "Hay un hospital cerca.",
+    "Hay el hospital cerca.",
+    "Un hospital está lejos."
+   ],
+   "answers": [
+    0,
+    1
+   ]
+  },
+  {
+   "id": "p10",
+   "type": "type",
+   "skill": "hay-estar",
+   "level": 2,
+   "prompt": "Vertaal: **Er zijn** veel problemen.",
+   "explain": "Voor 'er zijn' gebruik je het onveranderlijke woordje *hay*.",
+   "answers": [
+    "Hay muchos problemas."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p11",
+   "type": "type",
+   "skill": "plaatsbepaling",
+   "level": 2,
+   "prompt": "Vul in: dichtbij **het** station (*la estación*).",
+   "explain": "Geen contractie bij vrouwelijke woorden (de la).",
+   "answers": [
+    "de la"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p12",
+   "type": "cloze",
+   "skill": "plaatsbepaling",
+   "level": 2,
+   "prompt": "Vul het juiste voorzetsel in.",
+   "explain": "de + el hotel = del hotel.",
+   "text": "El banco está al lado {{del}} hotel.",
+   "lang": "es",
+   "errors": [
+    {
+     "match": "de el",
+     "feedback": "Maak de contractie! de + el = del.",
+     "tag": "contractie"
+    }
+   ]
+  },
+  {
+   "id": "p13",
+   "type": "order",
+   "skill": "plaatsbepaling",
+   "level": 2,
+   "prompt": "Zet de zin in de juiste volgorde: De bank is dichtbij het station.",
+   "explain": "El banco (onderwerp) está (werkwoord) cerca de (voorzetsel) la estación (plaats).",
+   "tiles": [
+    "El",
+    "banco",
+    "está",
+    "cerca",
+    "de",
+    "la",
+    "estación."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p14",
+   "type": "match",
+   "skill": "plaatsbepaling",
+   "level": 1,
+   "prompt": "Koppel de voorzetsels aan hun betekenis.",
+   "explain": "Klassieke tegenstellingen in locatie.",
+   "pairs": [
+    [
+     "cerca de",
+     "dichtbij"
+    ],
+    [
+     "lejos de",
+     "ver van"
+    ],
+    [
+     "a la derecha de",
+     "rechts van"
+    ],
+    [
+     "al lado de",
+     "naast"
+    ]
+   ]
+  },
+  {
+   "id": "p15",
+   "type": "speak",
+   "skill": "ser-estar",
+   "level": 2,
+   "prompt": "Spreek hardop uit: Ik ben Belg, maar ik bevind me in Spanje.",
+   "explain": "Ser voor de identiteit, estar voor de locatie.",
+   "text": "Soy belga pero estoy en España.",
+   "lang": "es"
+  },
+  {
+   "id": "p16",
+   "type": "dictation",
+   "skill": "hay-estar",
+   "level": 2,
+   "prompt": "Luister en noteer.",
+   "explain": "Vraagwoord met tilde, está met tilde.",
+   "text": "¿Dónde está la plaza?",
+   "lang": "es"
+  },
+  {
+   "id": "p17",
+   "type": "explain",
+   "skill": "hay-estar",
+   "level": 3,
+   "prompt": "Leg uit waarom de zin \"¿Dónde hay la estación?\" fout is en verbeter hem.",
+   "explain": "Kijk goed naar het lidwoord 'la'.",
+   "model": "Het woord 'la' is een bepaald lidwoord. 'Hay' mag je alleen gebruiken bij onbepaalde zaken (een, twee, veel). Voor een specifieke plaats moet je 'estar' gebruiken. De juiste zin is dus: ¿Dónde está la estación?",
+   "rubric": [
+    "Bepaalt lidwoord (la) vereist 'estar', niet 'hay'",
+    "Hay is voor onbepaalde zaken",
+    "Correcte zin is \"¿Dónde está la estación?\""
+   ]
+  },
+  {
+   "id": "p18",
+   "type": "type",
+   "skill": "estar-vervoegen",
+   "level": 2,
+   "prompt": "Vertaal: **Hoe gaat het met je?** (informeel)",
+   "explain": "¿Cómo estás? (Let op de tildes!)",
+   "answers": [
+    "¿Cómo estás?"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "como estas",
+     "feedback": "Twee tildes nodig! Cómo (vraagwoord) en estás (werkwoord eindigt op s met klemtoon achteraan).",
+     "tag": "tilde"
+    }
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "cloze",
+   "skill": "estar-vervoegen",
+   "level": 2,
+   "prompt": "Vul de juiste vorm van **estar** in.",
+   "explain": "Zij (meervoud) -> *están*. Met tilde!",
+   "text": "Ellos {{están}} en la oficina.",
+   "lang": "es",
+   "errors": [
+    {
+     "match": "estan",
+     "feedback": "Vergeet de tilde op de laatste lettergreep niet: están.",
+     "tag": "tilde"
+    }
+   ]
+  },
+  {
+   "id": "m02",
+   "type": "type",
+   "skill": "estar-vervoegen",
+   "level": 2,
+   "prompt": "Vertaal: **Hij is** (zich bevinden).",
+   "explain": "De hij-vorm is *está*. De tilde maakt het verschil met *esta* (deze).",
+   "answers": [
+    "está",
+    "él está"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "esta",
+     "feedback": "Zonder tilde betekent dit 'deze' (esta casa). Met tilde is het 'hij is' (él está).",
+     "tag": "tilde"
+    }
+   ]
+  },
+  {
+   "id": "m03",
+   "type": "type",
+   "skill": "estar-vervoegen",
+   "level": 2,
+   "prompt": "Vertaal: **Wij zijn** (zich bevinden).",
+   "explain": "De wij-vorm is *estamos*. Hier is geen tilde nodig omdat de klemtoon braaf de regel volgt (es-TA-mos).",
+   "answers": [
+    "estamos",
+    "nosotros estamos"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m04",
+   "type": "cloze",
+   "skill": "ser-estar",
+   "level": 2,
+   "prompt": "Vul de gepaste vormen van **ser** en **estar** in.",
+   "explain": "Een goede collega = eigenschap (ser). Moe = tijdelijke toestand (estar).",
+   "text": "Mi colega {{es}} muy bueno, pero hoy {{está}} cansado.",
+   "lang": "es"
+  },
+  {
+   "id": "m05",
+   "type": "cloze",
+   "skill": "ser-estar",
+   "level": 3,
+   "prompt": "Kies tussen de juiste vorm van **ser** en **estar** (wij).",
+   "explain": "Oorsprong (België) is vast = somos. Huidige locatie (Spanje) = estamos.",
+   "text": "Nosotros {{somos}} de Bélgica y ahora {{estamos}} en Valencia.",
+   "lang": "es"
+  },
+  {
+   "id": "m06",
+   "type": "type",
+   "skill": "ser-estar",
+   "level": 2,
+   "prompt": "Vertaal: **Ik ben een ingenieur.**",
+   "explain": "Beroep is een identiteit: *ser*. (Vergeet niet dat beroepen zonder lidwoord gaan, zie les 2).",
+   "answers": [
+    "Soy ingeniero.",
+    "Yo soy ingeniero."
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "estoy ingeniero",
+     "feedback": "Een beroep is een eigenschap/identiteit, geen toestand. Gebruik *ser* (soy).",
+     "tag": "ser-estar"
+    }
+   ]
+  },
+  {
+   "id": "m07",
+   "type": "cloze",
+   "skill": "hay-estar",
+   "level": 2,
+   "prompt": "Vul het Spaanse woord in voor 'er zijn'.",
+   "explain": "*Hay* betekent zowel er is als er zijn.",
+   "text": "{{Hay}} dos problemas con este servidor.",
+   "lang": "es"
+  },
+  {
+   "id": "m08",
+   "type": "mcq",
+   "skill": "hay-estar",
+   "level": 2,
+   "prompt": "Wat is het Spaanse equivalent voor de Franse zin: 'Où se trouve la banque ?'",
+   "explain": "Je vraagt naar de locatie van een specifieke bank (bepaald). Gebruik *estar*.",
+   "options": [
+    "¿Dónde está el banco?",
+    "¿Dónde hay un banco?",
+    "¿Dónde hay el banco?"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m09",
+   "type": "cloze",
+   "skill": "hay-estar",
+   "level": 3,
+   "prompt": "Kies tussen **hay** of de juiste vorm van **estar**.",
+   "explain": "*las llaves* is bepaald (de sleutels), dus gebruik *estar* in het meervoud (*están*).",
+   "text": "No sé dónde {{están}} las llaves del coche.",
+   "lang": "es",
+   "errors": [
+    {
+     "match": "hay",
+     "feedback": "*las llaves* is bepaald. Gebruik dus *estar*, in het meervoud (están).",
+     "tag": "hay-estar"
+    }
+   ]
+  },
+  {
+   "id": "m10",
+   "type": "type",
+   "skill": "hay-estar",
+   "level": 2,
+   "prompt": "Vertaal: **Is er** een bank?",
+   "explain": "Onbepaald (een bank) duidt op bestaan: *hay*.",
+   "answers": [
+    "¿Hay un banco?"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "está un banco",
+     "feedback": "Voor onbepaalde zaken (een, veel) gebruik je *hay*, niet *estar*.",
+     "tag": "hay-estar"
+    }
+   ]
+  },
+  {
+   "id": "m11",
+   "type": "cloze",
+   "skill": "plaatsbepaling",
+   "level": 2,
+   "prompt": "Maak de juiste contractie indien nodig.",
+   "explain": "de + el restaurante = del restaurante.",
+   "text": "El hotel está enfrente {{del}} restaurante.",
+   "lang": "es"
+  },
+  {
+   "id": "m12",
+   "type": "type",
+   "skill": "plaatsbepaling",
+   "level": 2,
+   "prompt": "Vertaal: **ver van de** straat (*la calle*).",
+   "explain": "Vrouwelijk, dus geen contractie: *lejos de la*.",
+   "answers": [
+    "lejos de la"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m13",
+   "type": "type",
+   "skill": "plaatsbepaling",
+   "level": 2,
+   "prompt": "Vertaal de voorzetseluitdrukking: **tegenover**.",
+   "explain": "Enfrente de.",
+   "answers": [
+    "enfrente de"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m14",
+   "type": "order",
+   "skill": "plaatsbepaling",
+   "level": 2,
+   "prompt": "Bouw de zin: Is er een apotheek hier in de buurt?",
+   "explain": "¿Hay una farmacia cerca de aquí?",
+   "tiles": [
+    "¿Hay",
+    "una",
+    "farmacia",
+    "cerca",
+    "de",
+    "aquí?"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m15",
+   "type": "cloze",
+   "skill": "plaatsbepaling",
+   "level": 3,
+   "prompt": "Vul de juiste voorzetsels in.",
+   "explain": "a la derecha DE + la estación (vrouwelijk) = de la.",
+   "text": "El banco está a la derecha {{de la}} estación.",
+   "lang": "es"
+  },
+  {
+   "id": "m16",
+   "type": "dictation",
+   "skill": "plaatsbepaling",
+   "level": 2,
+   "prompt": "Luister en noteer precies wat je hoort.",
+   "explain": "Let op het gebruik van *está* met tilde, en *del*.",
+   "text": "El banco está al lado del hotel.",
+   "lang": "es"
+  },
+  {
+   "id": "m17",
+   "type": "cloze",
+   "skill": "ser-estar",
+   "level": 3,
+   "prompt": "Kies in dit verhaaltje tussen **ser, estar en hay**.",
+   "explain": "een kantoor (onbepaald = hay) - Madrid (locatie = está) - mooi (eigenschap = es).",
+   "text": "{{Hay}} una oficina nueva. La oficina {{está}} en Madrid. El edificio {{es}} muy bonito.",
+   "lang": "es"
+  },
+  {
+   "id": "m18",
+   "type": "type",
+   "skill": "estar-vervoegen",
+   "level": 2,
+   "prompt": "Vertaal de vraag: **Waar bevindt zich de bank?**",
+   "explain": "¿Dónde está el banco? Let op de tildes op *dónde* en *está*.",
+   "answers": [
+    "¿Dónde está el banco?"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "donde esta el banco",
+     "feedback": "Twee tildes nodig: één op het vraagwoord (dónde) en één op het werkwoord (está).",
+     "tag": "tilde"
+    }
+   ]
+  },
+  {
+   "id": "m19",
+   "type": "type",
+   "skill": "hay-estar",
+   "level": 3,
+   "prompt": "Vertaal: **Er is geen probleem.**",
+   "explain": "De ontkenning *no* staat altijd vóór het werkwoord: No hay.",
+   "answers": [
+    "No hay un problema.",
+    "No hay problema."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m20",
+   "type": "type",
+   "skill": "plaatsbepaling",
+   "level": 2,
+   "prompt": "Vertaal: **Rechts van het** hotel.",
+   "explain": "a la derecha de + el = del hotel.",
+   "answers": [
+    "a la derecha del"
+   ],
+   "lang": "es"
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "es",
+  "minWords": 40,
+  "prompt": "Schrijf een kort bericht naar een Spaanse klant (40-60 woorden). Je wacht in de lobby van hun hoofdkantoor voor je afspraak. Vertel:\n1. Waar je bent (gebruik *estar*)\n2. Hoe je je voelt (bv. klaar voor de meeting / een beetje moe van de reis)\n3. Wat er in de buurt is (gebruik *hay* en een voorzetsel, bv. een café naast het kantoor).\nSluit professioneel af.",
+  "model": "Buenos días,\n\nYa estoy en la oficina, en la recepción. Estoy un poco cansado del viaje, pero estoy listo para la reunión. Veo que hay un café al lado del edificio, es perfecto.\n\nNos vemos pronto.\n\nThibaud",
+  "rubric": [
+   "Locatie uitgedrukt met 'estar' (bv. *estoy en la oficina*)",
+   "Gevoel of toestand uitgedrukt met 'estar' (bv. *estoy cansado* of *estoy bien*)",
+   "Aanwezigheid van iets in de buurt uitgedrukt met 'hay' (bv. *hay un café*)",
+   "Voorzetsel van plaats correct gebruikt (bv. *al lado del*, let op contractie)",
+   "Vlotte begroeting en afsluiting in zakelijke maar hartelijke context"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-estar",
+   "front": "Vervoeg **estar** in de presente.",
+   "back": "estoy, estás, está, estamos, estáis, están\n*(Let op de tildes!)*",
+   "skill": "estar-vervoegen"
+  },
+  {
+   "id": "c-ser-estar",
+   "front": "Wanneer gebruik je **ser** en wanneer **estar**?",
+   "back": "**ser**: identiteit, beroep, eigenschappen (Wat ben je?)\n**estar**: locatie, toestand, gevoel (Waar of hoe ben je?)",
+   "skill": "ser-estar"
+  },
+  {
+   "id": "c-hay-estar",
+   "front": "Wanneer gebruik je **hay** en wanneer **estar** voor locaties?",
+   "back": "**hay**: bij onbepaalde zaken (een, getallen, veel/weinig)\n**estar**: bij bepaalde zaken (de/het, mijn/jouw, namen)",
+   "skill": "hay-estar"
+  },
+  {
+   "id": "c-del",
+   "front": "Welke verplichte **contractie** bestaat er bij voorzetsels in het Spaans?",
+   "back": "**de + el = del**\n*(Zoals in het Frans de+le=du)*",
+   "skill": "plaatsbepaling"
+  },
+  {
+   "id": "c-cerca",
+   "front": "Vertaal: **dichtbij** en **ver van**.",
+   "back": "cerca de / lejos de",
+   "skill": "plaatsbepaling"
+  },
+  {
+   "id": "c-lado",
+   "front": "Vertaal: **naast**.",
+   "back": "al lado de",
+   "skill": "plaatsbepaling"
+  },
+  {
+   "id": "c-derecha",
+   "front": "Vertaal: **rechts van** en **links van**.",
+   "back": "a la derecha de / a la izquierda de",
+   "skill": "plaatsbepaling"
+  }
+ ],
+ "sources": [
+  "RAE y ASALE — *Ortografía de la lengua española* (2010)",
+  "Instituto Cervantes — *Plan curricular* (niveaus A1–B2)"
+ ],
+ "kind": "core",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-28",
+  "adaptedFor": "Thibaud was 7 dagen inactief. Deze les pikt de draad zachtjes op door in de theorie en de eerste oefeningen expliciet terug te grijpen naar 'ser' uit les 2, zodat hij dat contrast als hefboom kan gebruiken voor het nieuwe werkwoord 'estar'."
+ }
+}

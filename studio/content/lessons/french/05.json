@@ -1,0 +1,841 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "french",
+ "id": 5,
+ "roadmap": "fr-c1-05-rhetorique",
+ "title": "Rhétorique: litote, euphémisme, chiasme, connecteurs d'éloquence",
+ "subtitle": "Geef je betoog C2-allure met strategische stijlfiguren en formele connectoren.",
+ "level": "C1",
+ "minutes": 40,
+ "summary": "Op C2-niveau gaat het niet enkel om correctheid, maar om de overtuigingskracht van je taal. Door stijlfiguren zoals de litote en het chiasme in te zetten, geef je structuur en nuance aan je betoog. Daarbij leer je connecteurs d'éloquence gebruiken die je argumentatie direct meer autoriteit verlenen.",
+ "objectives": [
+  {
+   "id": "litote",
+   "text": "Je herkent en formuleert een litote om een boodschap subtiel te versterken."
+  },
+  {
+   "id": "euphemisme",
+   "text": "Je gebruikt een eufemisme om een harde realiteit diplomatiek of verzachtend te formuleren."
+  },
+  {
+   "id": "figures-rythme",
+   "text": "Je herkent en creëert een chiasme of anafoor om je betoog ritme en overtuigingskracht te geven."
+  },
+  {
+   "id": "connecteurs",
+   "text": "Je gebruikt connecteurs d'éloquence (partant, d'aucuns, nonobstant) om je argumentatie autoriteit te geven."
+  }
+ ],
+ "vocab": [
+  {
+   "term": "la litote",
+   "meaning": "stijlfiguur waarbij je iets ontkent om het tegendeel te benadrukken"
+  },
+  {
+   "term": "l'euphémisme (m)",
+   "meaning": "verzachtende uitdrukking"
+  },
+  {
+   "term": "le chiasme",
+   "meaning": "kruisstelling (structuur A-B-B-A)"
+  },
+  {
+   "term": "l'anaphore (f)",
+   "meaning": "herhaling van een woord aan het begin van opeenvolgende zinnen"
+  },
+  {
+   "term": "partant",
+   "meaning": "bijgevolg, dus (soutenu)"
+  },
+  {
+   "term": "nonobstant",
+   "meaning": "ondanks, desondanks (soutenu)"
+  },
+  {
+   "term": "d'aucuns",
+   "meaning": "sommigen (soutenu)"
+  },
+  {
+   "term": "remercier (un collaborateur)",
+   "meaning": "iemand ontslaan (eufemisme)"
+  },
+  {
+   "term": "un plan de sauvegarde de l'emploi (PSE)",
+   "meaning": "een collectief ontslag (eufemisme)"
+  }
+ ],
+ "sections": [
+  {
+   "id": "litote",
+   "title": "La litote : dire moins pour suggérer plus",
+   "md": "Een *litote* is de kunst van het understatement. Door iets te ontkennen, zeg je in feite het tegenovergestelde, maar dan krachtiger. In plaats van te zeggen *« C'est une excellente idée »*, zeg je *« Ce n'est pas une mauvaise idée »*.\n\nDe litote is in het Frans (en zeker in diplomatieke of formele contexten) enorm populair om subtiel te blijven en tegelijk stellig te zijn. Het toont aan dat je je emoties beheerst, wat in een zakelijke onderhandeling vaak effectiever is dan grote superlatieven gebruiken. In plaats van te roepen dat een kwartaalcijfer 'incroyable' is, kies je voor de onderkoelde litote. Het is een techniek die teruggaat tot de klassieke retorica en de bedoeling heeft om de toehoorder zelf de draagwijdte van de uitspraak te laten invullen.\n\nVoorbeelden in een zakelijke context:\n- [[fr:Ce résultat n'est pas sans importance.]] (Het is werkelijk zéér belangrijk.)\n- [[fr:Je ne vous cache pas que la situation est critique.]] (Ik zeg u zonder enige twijfel heel duidelijk dat...)\n- [[fr:Il n'est pas exclu que nous refusions cette offre.]] (De kans is zéér groot dat we resoluut weigeren.)\n- [[fr:Son intervention n'est pas passée inaperçue.]] (Zijn tussenkomst is enorm opgevallen en heeft indruk gemaakt.)\n\n> [!pitfall] Litote vs. Euphémisme\n> Een litote versterkt de boodschap door haar schijnbaar af te zwakken (vaak met een dubbele ontkenning). Een eufemisme verzacht een harde of onaangename waarheid. *« Il n'est pas idiot »* (hij is erg slim) is een litote. *« Il nous a quittés »* (hij is gestorven) is een eufemisme.",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "mcq",
+     "skill": "litote",
+     "level": 1,
+     "prompt": "Wat is het doel van een litote?",
+     "explain": "Een litote ontkent om de boodschap stellig maar subtiel te brengen.",
+     "options": [
+      "Een boodschap versterken door haar schijnbaar af te zwakken.",
+      "Een harde realiteit verzachten.",
+      "Twee tegengestelde ideeën kruisen.",
+      "Een woord herhalen voor ritme."
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c2",
+     "type": "cloze",
+     "skill": "litote",
+     "level": 2,
+     "prompt": "Vul in om de litote te vervolledigen (Het is erg belangrijk).",
+     "explain": "*Ce n'est pas sans importance* = het is zeer belangrijk.",
+     "text": "Ce détail n'est pas {{sans}} importance.",
+     "lang": "fr"
+    }
+   ]
+  },
+  {
+   "id": "euphemisme",
+   "title": "L'euphémisme : l'art de la diplomatie",
+   "md": "Het *euphémisme* vervangt een hard, schokkend of negatief woord door een verzachtende, vaak omfloerste uitdrukking. Het vermijdt een frontale botsing met je publiek. In de zakenwereld, HR en in de politiek is het alomtegenwoordig. Om publieke paniek of al te veel weerstand te vermijden, verpakken woordvoerders en directies hun boodschap in zulke termen.\n\nAls C2-spreker moet je ze perfect begrijpen om tussen de regels te kunnen lezen, én je moet ze strategisch kunnen inzetten om diplomatiek te blijven in precaire situaties.\n\nEnkele klassiekers die je dagelijks in *Le Monde* of *Les Échos* leest:\n- **un plan de sauvegarde de l'emploi** (vaak afgekort als PSE) = in werkelijkheid een groot, collectief ontslag (un licenciement collectif)\n- **remercier un collaborateur** = iemand ontslaan (licencier, renvoyer)\n- **une croissance négative** = een krimpende economie (une récession)\n- **les pays en voie de développement** = arme landen (les pays pauvres)\n- **un non-voyant** = een blinde (un aveugle)\n- **les personnes à mobilité réduite** = gehandicapten\n\n> [!tip] Remercier\n> Let extra goed op het werkwoord *remercier*. Uiteraard betekent het 'bedanken', maar in de context van HR is het dé standaardterm om iemand te ontslaan: *« La direction l'a remercié pour ses services. »* Dat klinkt zachter dan 'Il a été viré' of 'Il a été licencié', maar het resultaat is identiek.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "match",
+     "skill": "euphemisme",
+     "level": 1,
+     "prompt": "Koppel de harde werkelijkheid aan het Franse eufemisme.",
+     "explain": "Begrijp deze termen goed om de bedrijfstaal te doorzien.",
+     "pairs": [
+      [
+       "licencier (quelqu'un)",
+       "remercier"
+      ],
+      [
+       "une récession",
+       "une croissance négative"
+      ],
+      [
+       "un aveugle",
+       "un non-voyant"
+      ]
+     ]
+    },
+    {
+     "id": "c4",
+     "type": "type",
+     "skill": "euphemisme",
+     "level": 2,
+     "prompt": "Geef het HR-eufemisme (werkwoord, infinitief) voor **iemand ontslaan**.",
+     "explain": "Men gebruikt *remercier*.",
+     "answers": [
+      "remercier"
+     ],
+     "lang": "fr"
+    }
+   ]
+  },
+  {
+   "id": "chiasme-anaphore",
+   "title": "L'anaphore et le chiasme : sculpter le rythme",
+   "md": "Om een toespraak, een pleidooi of een overtuigende formele e-mail structuur en overtuigingskracht te geven, gebruik je structuurfiguren. Ze sturen het ritme van je betoog en zorgen dat je kernboodschap blijft hangen bij je publiek.\n\n**1. L'anaphore**\nDe anafoor herhaalt eenzelfde woord of woordgroep aan het absolute begin van opeenvolgende zinnen of zinsdelen. Het creëert een hamerend, ritmisch en bijna hypnotiserend effect. Grote redenaars gebruiken het aan het einde van hun discours om een climax te bereiken.\n- [[fr:Nous voulons la croissance. Nous voulons l'innovation. Nous voulons le succès.]]\n- Het beroemdste recente voorbeeld is het debat van 2012, waarbij François Hollande veertien keer zijn zin begon met: *« Moi président de la République... »*.\n\n**2. Le chiasme** (spreek uit met een k-klank: *ki-asme*)\nHet chiasme is een kruisstelling met een A-B-B-A structuur. Het brengt twee concepten samen en toont vaak een paradox, een spiegelbeeld of een onlosmakelijke band. Wanneer je een idee parallel opbouwt en dan kruist, wek je de illusie dat je betoog een sluitende logische cirkel vormt. Het dwingt de luisteraar om even na te denken over de relatie tussen de twee concepten.\n- [[fr:Il faut manger pour vivre, et non pas vivre pour manger.]] (A: manger - B: vivre - B: vivre - A: manger)\n- [[fr:L'absence de preuve n'est pas la preuve de l'absence.]] (Carl Sagan)\n- [[fr:Un pour tous, tous pour un.]] (Alexandre Dumas)\n\n> [!note] In de praktijk\n> Gebruik deze figuren uiterst spaarzaam in formele communicatie. Eén goed geplaatste anafoor in de inleiding of één sterk chiasme in de conclusie van je betoog blijft je toehoorder gegarandeerd bij. Gebruik je ze vaker, dan wordt je tekst te theatraal.",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "mcq",
+     "skill": "figures-rythme",
+     "level": 1,
+     "prompt": "Welke figuur is een structuur in de vorm A-B-B-A?",
+     "explain": "De kruisstelling A-B-B-A heet het chiasme.",
+     "options": [
+      "Le chiasme",
+      "L'anaphore",
+      "La litote",
+      "L'euphémisme"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c6",
+     "type": "cloze",
+     "skill": "figures-rythme",
+     "level": 2,
+     "prompt": "Vul de woorden aan die het chiasme vormen.",
+     "explain": "A (manger) - B (vivre) - B (vivre) - A (manger).",
+     "text": "Il faut {{manger}} pour {{vivre}}, et non pas {{vivre}} pour {{manger}}.",
+     "lang": "fr"
+    }
+   ]
+  },
+  {
+   "id": "partant-daucuns",
+   "title": "Les connecteurs d'éloquence (1) : Partant et D'aucuns",
+   "md": "Om je tekst niet alleen structuur, maar ook echte autoriteit en een C2-allure te geven, is het belangrijk dat je de zeer courante voegwoorden (*donc, mais, certains*) afwisselt met *connecteurs d'éloquence*. Dit is woordenschat die je in het gesproken, alledaagse Frans zelden hoort, maar die in geschreven zakelijke en juridische teksten absoluut noodzakelijk is om overtuigend en uiterst beleefd over te komen.\n\n**Partant** (= par conséquent, donc)\nEen zeer formeel woord om een logisch gevolg in te luiden. Je vindt het vaak terug in contracten, vonnissen en formele adviezen.\n- [[fr:Le contrat a été rompu unilatéralement ; partant, nous exigeons des dommages et intérêts.]] (Het contract is verbroken; bijgevolg/dan ook eisen we een schadevergoeding.)\n- [[fr:Il n'a pas respecté la procédure. Partant, sa plainte est irrecevable.]]\n\n**D'aucuns** (= certains, quelques-uns)\nDit voornaamwoord wordt uitsluitend in het meervoud gebruikt. Het is een majestueus, statig alternatief voor *certains* (sommigen). Door dit te gebruiken, neem je meteen een intellectuele, ietwat afstandelijke positie in.\n- [[fr:D'aucuns prétendent que cette réforme est inutile.]] (Sommigen beweren dat...)\n- [[fr:D'aucuns diront que c'est une folie, mais nous prenons le risque.]]\n\n> [!pitfall] D'aucuns\n> Let op de spelling! Omdat het woord meervoud is, schrijf je het áltijd met een 's' op het einde. Bovendien fungeert het vrijwel altijd als het onderwerp van de zin.",
+   "checks": [
+    {
+     "id": "c7",
+     "type": "type",
+     "skill": "connecteurs",
+     "level": 2,
+     "prompt": "Geef het zeer formele synoniem (startend met 'p') voor **par conséquent**.",
+     "explain": "*Partant* is uiterst formeel.",
+     "answers": [
+      "partant"
+     ],
+     "lang": "fr"
+    },
+    {
+     "id": "c8",
+     "type": "cloze",
+     "skill": "connecteurs",
+     "level": 2,
+     "prompt": "Vertaal: **Sommigen** beweren dat...",
+     "explain": "Gebruik het uiterst formele woord *d'aucuns*.",
+     "text": "D'{{aucuns}} prétendent que...",
+     "lang": "fr"
+    }
+   ]
+  },
+  {
+   "id": "nonobstant",
+   "title": "Les connecteurs d'éloquence (2) : Nonobstant",
+   "md": "**Nonobstant** (= malgré, cependant, néanmoins)\nDit prachtige, ietwat ouderwetse maar in formele contexten springlevende woord wordt nog steeds erg vaak gebruikt in juridische, academische en bestuurlijke teksten. Het is een sterke manier om een tegenstelling of een toegeving (concessie) aan te geven. Je kunt het op twee verschillende manieren in je zin bouwen:\n\n1. Als voorzetsel (met dezelfde functie als *malgré*), onmiddellijk gevolgd door een zelfstandig naamwoord:\n- [[fr:Nonobstant la crise économique, nos bénéfices ont augmenté.]] (Ondanks de economische crisis...)\n- [[fr:Nonobstant son jeune âge, il dirige l'entreprise d'une main de fer.]]\n- [[fr:Il a été élu, nonobstant les critiques de la presse.]]\n\n2. Als bijwoord (met dezelfde functie als *cependant* of *néanmoins*), vaak aan het begin of het einde van een zin, of na een komma:\n- [[fr:La tâche était immense ; il a nonobstant réussi.]]\n- [[fr:Il a échoué ; il a nonobstant fait de son mieux.]]\n\n> [!rule] Nonobstant que\n> Je kunt ook de voegwoordelijke uitdrukking *nonobstant que* gebruiken. Omdat het gaat om een toegeving (vergelijkbaar met *bien que*), volgt er daarna altijd een **subjonctif**: *« Nonobstant qu'il soit malade, il continue à travailler. »* In de praktijk is de constructie met een zelfstandig naamwoord echter veel eleganter en gebruikelijker.",
+   "checks": [
+    {
+     "id": "c9",
+     "type": "type",
+     "skill": "connecteurs",
+     "level": 2,
+     "prompt": "Wat is het formele synoniem (startend met 'n') voor **malgré**?",
+     "explain": "Je gebruikt *nonobstant*.",
+     "answers": [
+      "nonobstant"
+     ],
+     "lang": "fr"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "litote",
+   "level": 1,
+   "prompt": "Welke zin is een **litote**?",
+   "explain": "Een litote ontkent het tegendeel om iets sterk te beweren.",
+   "options": [
+    "Ce n'est pas une mauvaise idée.",
+    "C'est une idée géniale.",
+    "C'est une idée terrible.",
+    "C'est l'idée du siècle."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "mcq",
+   "skill": "litote",
+   "level": 2,
+   "prompt": "« Je ne vous cache pas que la situation est critique. » Wat bedoelt de spreker?",
+   "explain": "Deze litote drukt zonder omwegen uit dat de situatie zéér kritiek is.",
+   "options": [
+    "Ik zeg u heel eerlijk en duidelijk dat de situatie kritiek is.",
+    "De situatie valt al bij al nog wel mee.",
+    "Ik mag u eigenlijk niet vertellen dat het kritiek is.",
+    "Ik twijfel of de situatie echt kritiek is."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p03",
+   "type": "cloze",
+   "skill": "litote",
+   "level": 2,
+   "prompt": "Vervolledig de litote (Dit is zeer relevant).",
+   "explain": "*N'est pas sans...* = is zeer...",
+   "text": "Cette approche n'est pas {{sans}} intérêt.",
+   "lang": "fr"
+  },
+  {
+   "id": "p04",
+   "type": "type",
+   "skill": "litote",
+   "level": 3,
+   "prompt": "Hertaal deze gedachte naar een litote: **Il est possible que nous refusions.** (Gebruik *exclu*)",
+   "explain": "*Il n'est pas exclu que...*",
+   "answers": [
+    "Il n'est pas exclu que nous refusions",
+    "il n'est pas exclu que nous refusions",
+    "Il n'est pas exclu que nous refusions."
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "p05",
+   "type": "match",
+   "skill": "euphemisme",
+   "level": 1,
+   "prompt": "Koppel de harde realiteit aan het eufemisme.",
+   "explain": "In de politiek en zakenwereld zijn eufemismen de norm.",
+   "pairs": [
+    [
+     "un licenciement collectif",
+     "un plan de sauvegarde de l'emploi"
+    ],
+    [
+     "licencier (un employé)",
+     "remercier"
+    ],
+    [
+     "une récession",
+     "une croissance négative"
+    ],
+    [
+     "les pays pauvres",
+     "les pays en voie de développement"
+    ]
+   ]
+  },
+  {
+   "id": "p06",
+   "type": "type",
+   "skill": "euphemisme",
+   "level": 2,
+   "prompt": "Wat is het C2-eufemisme voor **licencier** (ontslaan)?",
+   "explain": "In HR-jargon gebruikt men *remercier*.",
+   "answers": [
+    "remercier"
+   ],
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "licencier",
+     "feedback": "Dat is de letterlijke term, we zoeken het eufemisme (bedanken).",
+     "tag": "no-euphemism"
+    }
+   ]
+  },
+  {
+   "id": "p07",
+   "type": "cloze",
+   "skill": "euphemisme",
+   "level": 2,
+   "prompt": "Vervolledig het eufemisme voor een krimpende economie.",
+   "explain": "Men spreekt van een 'negatieve groei'.",
+   "text": "Le ministre a annoncé une croissance {{négative}}.",
+   "lang": "fr"
+  },
+  {
+   "id": "p08",
+   "type": "mcq",
+   "skill": "euphemisme",
+   "level": 1,
+   "prompt": "Waarvoor staat de HR-afkorting **PSE**?",
+   "explain": "PSE is een eufemisme voor een massaontslag.",
+   "options": [
+    "Un plan de sauvegarde de l'emploi",
+    "Un plan de sortie d'entreprise",
+    "Une proposition de stage en entreprise",
+    "Un plan de sécurité économique"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p09",
+   "type": "mcq",
+   "skill": "figures-rythme",
+   "level": 1,
+   "prompt": "Wat is een **anaphore**?",
+   "explain": "Herhaling aan het begin van opeenvolgende zinnen of zinsdelen.",
+   "options": [
+    "De herhaling van hetzelfde woord aan het begin van zinnen.",
+    "De kruisstelling van twee tegengestelde ideeën.",
+    "Het ontkennen van het tegendeel.",
+    "Een verzachtende uitdrukking."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p10",
+   "type": "mcq",
+   "skill": "figures-rythme",
+   "level": 1,
+   "prompt": "Welke zin is een **chiasme**?",
+   "explain": "Het chiasme gebruikt structuur A-B-B-A.",
+   "options": [
+    "Il faut manger pour vivre, et non pas vivre pour manger.",
+    "Je ne dis pas que c'est faux.",
+    "La France est grande, la France est belle.",
+    "Il a été remercié hier matin."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p11",
+   "type": "order",
+   "skill": "figures-rythme",
+   "level": 2,
+   "prompt": "Bouw het bekende chiasme uit *Les Trois Mousquetaires* op.",
+   "explain": "A (Un) - B (tous) - B (tous) - A (un).",
+   "tiles": [
+    "Un",
+    "pour",
+    "tous,",
+    "tous",
+    "pour",
+    "un."
+   ]
+  },
+  {
+   "id": "p12",
+   "type": "cloze",
+   "skill": "figures-rythme",
+   "level": 2,
+   "prompt": "Vervolledig deze beroemde politieke anafoor.",
+   "explain": "De herhaling creëert een strak ritme.",
+   "text": "Moi {{président}} de la République, je ne serai pas le chef de la majorité. Moi {{président}} de la République, je ne traiterai pas mon Premier ministre en collaborateur.",
+   "lang": "fr"
+  },
+  {
+   "id": "p13",
+   "type": "type",
+   "skill": "connecteurs",
+   "level": 2,
+   "prompt": "Geef het formele synoniem (startend met 'p') voor **par conséquent / donc**.",
+   "explain": "*Partant* is uiterst formeel en juridisch.",
+   "answers": [
+    "partant",
+    "Partant"
+   ],
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "pourtant",
+     "feedback": "Pourtant betekent 'nochtans'. We zoeken 'bijgevolg'.",
+     "tag": "confusion-partant-pourtant"
+    }
+   ]
+  },
+  {
+   "id": "p14",
+   "type": "cloze",
+   "skill": "connecteurs",
+   "level": 2,
+   "prompt": "Vul in: 'De rechter heeft beslist; **bijgevolg** is de zaak gesloten.'",
+   "explain": "*Partant* = bijgevolg.",
+   "text": "Le juge a tranché ; {{partant}}, l'affaire est close.",
+   "lang": "fr"
+  },
+  {
+   "id": "p15",
+   "type": "type",
+   "skill": "connecteurs",
+   "level": 2,
+   "prompt": "Geef het formele synoniem (startend met 'n') voor **malgré**.",
+   "explain": "*Nonobstant* is het C2-woord voor ondanks.",
+   "answers": [
+    "nonobstant",
+    "Nonobstant"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "p16",
+   "type": "cloze",
+   "skill": "connecteurs",
+   "level": 2,
+   "prompt": "Vul in: '**Ondanks** zijn jonge leeftijd...'",
+   "explain": "*Nonobstant* fungeert hier als voorzetsel.",
+   "text": "{{Nonobstant}} son jeune âge, il excelle dans son domaine.",
+   "lang": "fr"
+  },
+  {
+   "id": "p17",
+   "type": "type",
+   "skill": "connecteurs",
+   "level": 2,
+   "prompt": "Hoe zeg je **sommigen** in het soutenu-register? (2 woorden)",
+   "explain": "*D'aucuns*, altijd in het meervoud.",
+   "answers": [
+    "d'aucuns",
+    "D'aucuns"
+   ],
+   "lang": "fr",
+   "errors": [
+    {
+     "match": "/d'aucun$/",
+     "feedback": "Vergeet de meervouds-s niet!",
+     "tag": "orthographe-s"
+    }
+   ]
+  },
+  {
+   "id": "p18",
+   "type": "dictation",
+   "skill": "connecteurs",
+   "level": 3,
+   "prompt": "Luister en typ de zin.",
+   "explain": "*Nonobstant* = ondanks.",
+   "text": "Nonobstant ces difficultés, nous avons réussi.",
+   "lang": "fr"
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "mcq",
+   "skill": "litote",
+   "level": 2,
+   "prompt": "Welke van deze uitspraken is een **litote**?",
+   "explain": "Een litote ontkent om te versterken. 'Il nous a quittés' is een eufemisme.",
+   "options": [
+    "Ce projet n'est pas sans risques.",
+    "Il nous a quittés de manière tragique.",
+    "La France entière pleure sa disparition.",
+    "Il a été remercié par la direction."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m02",
+   "type": "type",
+   "skill": "litote",
+   "level": 2,
+   "prompt": "Vertaal de litote: **Het is niet onbelangrijk.** (Begin met 'ce')",
+   "explain": "*Ce n'est pas sans importance.*",
+   "answers": [
+    "ce n'est pas sans importance",
+    "Ce n'est pas sans importance.",
+    "Ce n'est pas sans importance"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m03",
+   "type": "cloze",
+   "skill": "litote",
+   "level": 2,
+   "prompt": "Vul in (Het is zeer waarschijnlijk dat...).",
+   "explain": "*Il n'est pas exclu que...*",
+   "text": "Il n'est pas {{exclu}} que la Bourse réagisse mal.",
+   "lang": "fr"
+  },
+  {
+   "id": "m04",
+   "type": "cloze",
+   "skill": "litote",
+   "level": 2,
+   "prompt": "Maak hier een litote van (Dat is geen slecht idee).",
+   "explain": "Ce n'est pas une mauvaise idée.",
+   "text": "Ce {{n'est pas}} une mauvaise idée.",
+   "lang": "fr"
+  },
+  {
+   "id": "m05",
+   "type": "dictation",
+   "skill": "litote",
+   "level": 3,
+   "prompt": "Luister aandachtig en typ de uitspraak.",
+   "explain": "Let op *sans*.",
+   "text": "Ce résultat n'est pas sans importance.",
+   "lang": "fr"
+  },
+  {
+   "id": "m06",
+   "type": "cloze",
+   "skill": "euphemisme",
+   "level": 2,
+   "prompt": "Vul het eufemisme in (Hij werd ontslagen).",
+   "explain": "Il a été remercié.",
+   "text": "Suite à cette erreur de gestion, il a été {{remercié}}.",
+   "lang": "fr"
+  },
+  {
+   "id": "m07",
+   "type": "cloze",
+   "skill": "euphemisme",
+   "level": 2,
+   "prompt": "Vul het eufemisme in (massaontslag).",
+   "explain": "Un plan de sauvegarde de l'emploi.",
+   "text": "La direction prépare un plan de {{sauvegarde}} de l'emploi.",
+   "lang": "fr"
+  },
+  {
+   "id": "m08",
+   "type": "mcq",
+   "skill": "euphemisme",
+   "level": 1,
+   "prompt": "Wat betekent **une croissance négative** in diplomatieke taal?",
+   "explain": "Het is een eufemisme voor een krimpende economie (récession).",
+   "options": [
+    "Une récession",
+    "Une croissance faible mais positive",
+    "Une augmentation de la dette",
+    "Une inflation galopante"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "euphemisme",
+   "level": 2,
+   "prompt": "Typ het werkwoord dat in de zakenwereld als eufemisme voor ontslaan wordt gebruikt (infinitief).",
+   "explain": "*remercier*.",
+   "answers": [
+    "remercier"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m10",
+   "type": "dictation",
+   "skill": "euphemisme",
+   "level": 3,
+   "prompt": "Noteer wat de spreker hier dicteert.",
+   "explain": "Voltooid deelwoord akkoord met het direct object (l' = hem).",
+   "text": "La direction l'a remercié.",
+   "lang": "fr"
+  },
+  {
+   "id": "m11",
+   "type": "mcq",
+   "skill": "figures-rythme",
+   "level": 2,
+   "prompt": "Hoe noem je de structuur van « L'absence de preuve n'est pas la preuve de l'absence » ?",
+   "explain": "Structuur A-B-B-A = chiasme.",
+   "options": [
+    "Un chiasme",
+    "Une anaphore",
+    "Une litote",
+    "Un euphémisme"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m12",
+   "type": "type",
+   "skill": "figures-rythme",
+   "level": 2,
+   "prompt": "Hoe noem je de retorische figuur die begint met herhaling (bv. *Moi président, ...* )?",
+   "explain": "L'anaphore.",
+   "answers": [
+    "anaphore",
+    "l'anaphore",
+    "une anaphore"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m13",
+   "type": "order",
+   "skill": "figures-rythme",
+   "level": 2,
+   "prompt": "Bouw de zinnen op tot een sterke **anaphore**.",
+   "explain": "Herhaal *Nous voulons* telkens aan het begin.",
+   "tiles": [
+    "Nous",
+    "voulons",
+    "le",
+    "succès.",
+    "Nous",
+    "voulons",
+    "l'innovation."
+   ]
+  },
+  {
+   "id": "m14",
+   "type": "cloze",
+   "skill": "figures-rythme",
+   "level": 3,
+   "prompt": "Vervolledig het chiasme.",
+   "explain": "Kruisstelling A-B-B-A: Absence (A) - preuve (B) - preuve (B) - absence (A).",
+   "text": "L'absence de {{preuve}} n'est pas la {{preuve}} de l'absence.",
+   "lang": "fr"
+  },
+  {
+   "id": "m15",
+   "type": "type",
+   "skill": "connecteurs",
+   "level": 2,
+   "prompt": "Geef het C2-synoniem voor **malgré**.",
+   "explain": "*Nonobstant* is een prachtig, klassiek alternatief voor ondanks.",
+   "answers": [
+    "nonobstant",
+    "Nonobstant"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m16",
+   "type": "cloze",
+   "skill": "connecteurs",
+   "level": 2,
+   "prompt": "Vul het voegwoord in (Ondanks de crisis...).",
+   "explain": "*Nonobstant* fungeert in deze zin als voorzetsel.",
+   "text": "{{Nonobstant}} la crise, nos bénéfices augmentent.",
+   "lang": "fr"
+  },
+  {
+   "id": "m17",
+   "type": "cloze",
+   "skill": "connecteurs",
+   "level": 3,
+   "prompt": "Vul het formele woord voor **bijgevolg** in.",
+   "explain": "*Partant* is uiterst formeel en geliefd in de juridische wereld.",
+   "text": "Le contrat a été violé ; {{partant}}, nous exigeons des dommages et intérêts.",
+   "lang": "fr"
+  },
+  {
+   "id": "m18",
+   "type": "type",
+   "skill": "connecteurs",
+   "level": 3,
+   "prompt": "Vertaal **sommigen** in het formele register (met een apostrof).",
+   "explain": "*d'aucuns* krijgt altijd een -s, want het staat in het meervoud.",
+   "answers": [
+    "d'aucuns",
+    "D'aucuns"
+   ],
+   "lang": "fr"
+  },
+  {
+   "id": "m19",
+   "type": "dictation",
+   "skill": "connecteurs",
+   "level": 3,
+   "prompt": "Luister goed en typ de zin exact over.",
+   "explain": "D'aucuns (met -s) prétendent que...",
+   "text": "D'aucuns prétendent que cette réforme est inutile.",
+   "lang": "fr"
+  },
+  {
+   "id": "m20",
+   "type": "mcq",
+   "skill": "connecteurs",
+   "level": 3,
+   "prompt": "Welke zin is grammaticaal correct?",
+   "explain": "De voegwoordelijke uitdrukking *nonobstant que* wordt altijd gevolgd door de subjonctif.",
+   "options": [
+    "Nonobstant qu'il soit fatigué, il continue de travailler.",
+    "Nonobstant qu'il est fatigué, il continue de travailler.",
+    "Nonobstant qu'il était fatigué, il continue de travailler.",
+    "Nonobstant qu'il sera fatigué, il continue de travailler."
+   ],
+   "answer": 0
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "fr",
+  "minWords": 70,
+  "prompt": "**Votre mission : élever le style d'un brouillon** (70–100 mots).\n\nVous êtes chargé(e) de réviser un court discours pour votre PDG. Herschrijf de onderstaande tekst in het C2-register. Gebruik daarbij **minstens één anaphore, één litote**, en de connectoren **nonobstant** en **partant**.\n\n> Bonjour tout le monde. L'année a été dure, mais on a quand même fait du bon travail. On a réussi à garder nos clients et on a trouvé de nouveaux marchés. Donc, on peut être fiers. C'est vrai que certains disent qu'on va avoir des problèmes l'an prochain, mais je suis sûr qu'on va y arriver.",
+  "model": "Mesdames et Messieurs,\n\nL'année écoulée fut exigeante ; nonobstant ces défis, nos résultats ne sont pas négligeables. Nous avons fidélisé notre clientèle. Nous avons conquis de nouveaux marchés. Nous avons, en somme, démontré notre résilience. Partant, nous pouvons légitimement éprouver une grande fierté.\n\nD'aucuns prétendent que l'exercice prochain sera semé d'embûches. Je demeure pourtant convaincu que nous saurons triompher.",
+  "rubric": [
+   "Gebruik van de connector 'nonobstant' (ondanks/desondanks).",
+   "Gebruik van een litote (bv. ne sont pas négligeables, n'est pas sans mérite).",
+   "Gebruik van een anafoor (herhaling van bv. 'Nous avons...').",
+   "Gebruik van de connector 'partant' (bijgevolg/dus).",
+   "C2-register (geen 'on', 'dur', 'bon travail' of 'bonjour tout le monde')."
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-litote",
+   "front": "Wat is een **litote**?",
+   "back": "Iets ontkennen om het tegendeel krachtiger te zeggen (bv. *Ce n'est pas mal*).",
+   "skill": "litote"
+  },
+  {
+   "id": "c-euph",
+   "front": "Wat is het C2-eufemisme voor **licencier quelqu'un**?",
+   "back": "remercier quelqu'un",
+   "answers": [
+    "remercier",
+    "remercier quelqu'un"
+   ],
+   "lang": "fr",
+   "skill": "euphemisme"
+  },
+  {
+   "id": "c-pse",
+   "front": "Waarvoor staat de afkorting **PSE** (eufemisme in HR)?",
+   "back": "un plan de sauvegarde de l'emploi",
+   "answers": [
+    "un plan de sauvegarde de l'emploi",
+    "plan de sauvegarde de l'emploi"
+   ],
+   "lang": "fr",
+   "skill": "euphemisme"
+  },
+  {
+   "id": "c-chiasme",
+   "front": "Hoe noem je de A-B-B-A kruisstelling (bv. *manger pour vivre, vivre pour manger*)?",
+   "back": "le chiasme",
+   "answers": [
+    "le chiasme",
+    "un chiasme",
+    "chiasme"
+   ],
+   "lang": "fr",
+   "skill": "figures-rythme"
+  },
+  {
+   "id": "c-anaphore",
+   "front": "Hoe noem je de herhaling aan het begin van zinnen (*Moi président... Moi président...*)?",
+   "back": "l'anaphore",
+   "answers": [
+    "l'anaphore",
+    "une anaphore",
+    "anaphore"
+   ],
+   "lang": "fr",
+   "skill": "figures-rythme"
+  },
+  {
+   "id": "c-partant",
+   "front": "C2-synoniem voor **par conséquent, donc**?",
+   "back": "partant",
+   "answers": [
+    "partant"
+   ],
+   "lang": "fr",
+   "skill": "connecteurs"
+  },
+  {
+   "id": "c-nonobstant",
+   "front": "C2-synoniem voor **malgré**?",
+   "back": "nonobstant",
+   "answers": [
+    "nonobstant"
+   ],
+   "lang": "fr",
+   "skill": "connecteurs"
+  },
+  {
+   "id": "c-daucuns",
+   "front": "C2-synoniem voor **certains** (sommigen)?",
+   "back": "d'aucuns",
+   "answers": [
+    "d'aucuns"
+   ],
+   "lang": "fr",
+   "skill": "connecteurs"
+  }
+ ],
+ "sources": [
+  "Académie française — *Dire, ne pas dire*",
+  "Grevisse & Goosse, *Le Bon Usage* (16e éd.)",
+  "Le Monde — chroniques de style et rhétorique"
+ ],
+ "kind": "core",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-27",
+  "adaptedFor": "Tempo is rustig gehouden (geen oefenpogingen de afgelopen 7 dagen); de focus ligt op heldere, zakelijke toepassingen van deze retorische figuren, met directe relevantie voor zijn B2B-communicatie en -overtuigingskracht."
+ }
+}
