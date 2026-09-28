@@ -504,7 +504,10 @@ PS.views.bindAccount = (box, onDone) => {
 };
 
 /* ---------- Login gate (shown when cloud sync is configured but you are not signed in) ---------- */
-PS.needsGate = () => PS.cloud.configured() && !PS.cloud.signedIn() && !PS.store.get('polyglot_local_only');
+PS.needsGate = () => {
+  if (location.hash && location.hash.startsWith('#/lezen')) return false;
+  return PS.cloud.configured() && !PS.cloud.signedIn() && !PS.store.get('polyglot_local_only');
+};
 PS.renderGate = () => {
   const app = document.getElementById('app');
   app.innerHTML = `<div class="gate"><div class="gate-orbs" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>

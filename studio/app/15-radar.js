@@ -41,12 +41,41 @@ PS.radar = {
   date(d, month = 'short') { return d ? PS.fmtDate(new Date(`${d}T12:00`), { day: 'numeric', month }) : ''; },
   host(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } },
 
+  share(a) {
+    const url = `${location.origin}${location.pathname}#/lezen/${encodeURIComponent(a.id)}`;
+    const title = a.title;
+    const text = `${a.title} — ${a.subtitle ? a.subtitle.replace(/<[^>]+>/g, '') : 'Onder de motorkap in Polyglot Studio'}`;
+    if (navigator.share) {
+      navigator.share({ title, text, url }).catch((err) => {
+        if (err.name !== 'AbortError' && navigator.clipboard) {
+          navigator.clipboard.writeText(url).then(() => PS.toast(`${PS.icon('check', 'icon-s')} Link gekopieerd naar klembord!`));
+        }
+      });
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        PS.toast(`${PS.icon('check', 'icon-s')} Link gekopieerd naar klembord!`);
+      }).catch(() => {
+        prompt('Kopieer deze link:', url);
+      });
+    } else {
+      prompt('Kopieer deze link:', url);
+    }
+  },
+
   /* ---------- list ---------- */
   card(x) {
     const read = this.isRead(x.id);
-    return `<a class="card card-hover radar-card${read ? ' is-read' : ''}" href="#/lezen/${encodeURIComponent(x.id)}" data-topic="${PS.attr(x.topic)}">
-      <div class="radar-meta"><span class="chip chip-topic">${PS.esc(this.TOPIC[x.topic] || x.topic)}</span><span class="chip chip-line">${this.KIND[x.kind] || ''}</span>${this.saved(x.id) ? `<span class="chip chip-line">${PS.icon('star', 'icon-s')} Bewaard</span>` : ''}<span class="tiny muted" style="margin-left:auto">${this.date(x.date)} · ± ${x.minutes} min${read ? ' · gelezen' : ''}</span></div>
-      <div class="title">${PS.esc(x.title)}</div><div class="small muted">${x.subtitle || ''}</div>${x.tldr ? `<p class="small radar-tldr">${x.tldr}</p>` : ''}</a>`;
+    return `<div class="card card-hover radar-card${read ? ' is-read' : ''}" data-topic="${PS.attr(x.topic)}">
+      <div class="radar-meta"><span class="chip chip-topic">${PS.esc(this.TOPIC[x.topic] || x.topic)}</span><span class="chip chip-line">${this.KIND[x.kind] || ''}</span>${this.saved(x.id) ? `<span class="chip chip-line">${PS.icon('star', 'icon-s')} Bewaard</span>` : ''}
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+          <span class="tiny muted">${this.date(x.date)} · ± ${x.minutes} min${read ? ' · gelezen' : ''}</span>
+          <button type="button" class="btn btn-ghost btn-sm" data-card-share="${PS.attr(x.id)}" title="Deel artikel" style="padding:2px 6px;height:24px;border-radius:6px">${PS.icon('share', 'icon-s')}</button>
+        </div>
+      </div>
+      <a href="#/lezen/${encodeURIComponent(x.id)}" style="text-decoration:none;color:inherit;display:block">
+        <div class="title" style="margin-top:6px">${PS.esc(x.title)}</div><div class="small muted">${x.subtitle || ''}</div>${x.tldr ? `<p class="small radar-tldr">${x.tldr}</p>` : ''}
+      </a>
+    </div>`;
   },
   fillList(root) {
     const box = PS.$('[data-rlist]', root); if (!box) return;
@@ -56,6 +85,14 @@ PS.radar = {
     if (this.tab === 'bewaard') list = list.filter((x) => this.saved(x.id));
     box.innerHTML = list.length ? `<div class="stack">${list.map((x) => this.card(x)).join('')}</div>`
       : `<div class="empty">${PS.icon('bookOpen')}<p>${this.tab === 'bewaard' ? 'Nog niets bewaard: tik op “Bewaren” onderaan een artikel.' : 'Nog niets hier. Elke ochtend om 07:30 komt er een nieuw artikel bij.'}</p></div>`;
+    box.onclick = (e) => {
+      const btn = e.target.closest('[data-card-share]');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const it = (this.index || []).find((x) => x.id === btn.dataset.cardShare);
+      if (it) this.share(it);
+    };
   },
   fillQuestions(box) {
     const done = Object.fromEntries((this.index || []).filter((x) => x.request).map((x) => [x.request, x]));
@@ -103,7 +140,8 @@ PS.radar = {
       acts.innerHTML = `<button class="btn btn-line btn-sm${R.isRead(a.id) ? ' on' : ''}" data-ra="read">${PS.icon('check', 'icon-s')} ${R.isRead(a.id) ? 'Gelezen' : 'Markeer als gelezen'}</button>
         <button class="btn btn-line btn-sm${lk === 1 ? ' on' : ''}" data-ra="up">${PS.icon('thumbUp', 'icon-s')} Meer hierover</button>
         <button class="btn btn-line btn-sm${lk === -1 ? ' on' : ''}" data-ra="down">${PS.icon('thumbDown', 'icon-s')} Minder hierover</button>
-        <button class="btn btn-line btn-sm${R.saved(a.id) ? ' on' : ''}" data-ra="save">${PS.icon('star', 'icon-s')} ${R.saved(a.id) ? 'Bewaard' : 'Bewaren'}</button>`;
+        <button class="btn btn-line btn-sm${R.saved(a.id) ? ' on' : ''}" data-ra="save">${PS.icon('star', 'icon-s')} ${R.saved(a.id) ? 'Bewaard' : 'Bewaren'}</button>
+        <button class="btn btn-line btn-sm" data-ra="share">${PS.icon('share', 'icon-s')} Deel artikel</button>`;
     };
     paint();
     acts.onclick = (e) => {
@@ -112,6 +150,7 @@ PS.radar = {
       if (k === 'read') R.markRead(a.id);
       if (k === 'up' || k === 'down') { const v = R.like(a.id, k === 'up' ? 1 : -1); if (v) PS.toast(v === 1 ? 'Genoteerd: meer over dit soort onderwerpen.' : 'Genoteerd: minder over dit soort onderwerpen.'); }
       if (k === 'save') R.toggleSave(a.id);
+      if (k === 'share') R.share(a);
       paint(); if (PS.updateShell) PS.updateShell(location.hash);
     };
     const end = PS.$('[data-sources]', box);
@@ -127,6 +166,13 @@ PS.radar = {
     const x = (PS.C.data.radar || []).find((i) => !this.isRead(i.id));
     if (!x) { slot.innerHTML = ''; return; }
     slot.innerHTML = `<div class="section-head"><span class="h3">Onder de motorkap</span><a href="#/lezen">Alles lezen</a></div>${this.card(x)}`;
+    slot.onclick = (e) => {
+      const btn = e.target.closest('[data-card-share]');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      this.share(x);
+    };
   },
 };
 
@@ -146,10 +192,20 @@ PS.views.radar = () => {
 };
 
 PS.views.radarArticle = (id) => {
-  const html = `<div class="page page-article"><div class="lesson-top"><a class="back" href="#/lezen">${PS.icon('chevronLeft')} Onder de motorkap</a></div><div data-article><div class="empty"><span class="loader"></span></div></div></div>`;
+  const html = `<div class="page page-article"><div class="lesson-top" style="display:flex;justify-content:space-between;align-items:center"><a class="back" href="#/lezen">${PS.icon('chevronLeft')} Onder de motorkap</a><button type="button" class="btn btn-line btn-sm" data-share-top title="Deel artikel" style="display:none">${PS.icon('share', 'icon-s')} Deel</button></div><div data-article><div class="empty"><span class="loader"></span></div></div></div>`;
   const after = (root) => {
     const box = PS.$('[data-article]', root);
-    PS.radar.article(id).then((a) => { if (box.isConnected) PS.radar.renderArticle(box, a); })
+    const topShare = PS.$('[data-share-top]', root);
+    PS.radar.article(id).then((a) => {
+      if (box.isConnected) {
+        document.title = `${a.title} · Polyglot Studio`;
+        if (topShare) {
+          topShare.style.display = 'inline-flex';
+          topShare.onclick = () => PS.radar.share(a);
+        }
+        PS.radar.renderArticle(box, a);
+      }
+    })
       .catch((e) => { box.innerHTML = `<div class="empty">${PS.icon('alert')}<p>${PS.esc(e.message)}. Ben je offline, open het artikel dan later opnieuw.</p><a class="btn btn-line" href="#/lezen">Terug naar het overzicht</a></div>`; });
   };
   return { html, after };
