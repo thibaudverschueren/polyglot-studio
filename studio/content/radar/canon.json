@@ -1,0 +1,321 @@
+[
+ {
+  "id": "attention",
+  "topic": "ai",
+  "title": "Attention Is All You Need",
+  "by": "Vaswani e.a.",
+  "year": 2017,
+  "angle": "Het transformerblok: self-attention, multi-head, positiecodering — waarom het RNN's verving.",
+  "arxiv": "1706.03762",
+  "wiki": [
+   "Transformer (deep learning architecture)"
+  ]
+ },
+ {
+  "id": "chinchilla",
+  "topic": "ai",
+  "title": "Training Compute-Optimal Large Language Models (Chinchilla)",
+  "by": "Hoffmann e.a.",
+  "year": 2022,
+  "angle": "Hoeveel data per parameter? De scaling-wet die het trainen van LLM's veranderde.",
+  "arxiv": "2203.15556"
+ },
+ {
+  "id": "bitcoin",
+  "topic": "crypto",
+  "title": "Bitcoin: A Peer-to-Peer Electronic Cash System",
+  "by": "Satoshi Nakamoto",
+  "year": 2008,
+  "angle": "Proof-of-work, de longest-chain-regel en waarom dubbel uitgeven onpraktisch wordt.",
+  "wiki": [
+   "Bitcoin",
+   "Proof of work"
+  ],
+  "urls": [
+   "https://nakamotoinstitute.org/library/bitcoin/"
+  ]
+ },
+ {
+  "id": "gpu",
+  "topic": "chips",
+  "title": "Hoe een GPU rekent",
+  "by": "—",
+  "year": 2007,
+  "angle": "SIMT, warps, geheugenhiërarchie en tensor cores: waarom GPU's AI domineren.",
+  "wiki": [
+   "Graphics processing unit",
+   "CUDA",
+   "Single instruction, multiple threads"
+  ]
+ },
+ {
+  "id": "instructgpt",
+  "topic": "ai",
+  "title": "Training language models to follow instructions with human feedback (InstructGPT)",
+  "by": "Ouyang e.a.",
+  "year": 2022,
+  "angle": "RLHF stap voor stap: SFT, beloningsmodel en PPO — de basis van ChatGPT.",
+  "arxiv": "2203.02155"
+ },
+ {
+  "id": "raft",
+  "topic": "systems",
+  "title": "Raft: consensus die je kan begrijpen",
+  "by": "Ongaro & Ousterhout",
+  "year": 2014,
+  "angle": "Leider-verkiezing, logreplicatie en waarom consensus moeilijk is.",
+  "wiki": [
+   "Raft (algorithm)"
+  ],
+  "urls": [
+   "https://raft.github.io/"
+  ]
+ },
+ {
+  "id": "lora",
+  "topic": "ai",
+  "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+  "by": "Hu e.a.",
+  "year": 2021,
+  "angle": "Fine-tunen met een fractie van de parameters: waarom lage rang volstaat.",
+  "arxiv": "2106.09685"
+ },
+ {
+  "id": "tpu",
+  "topic": "chips",
+  "title": "In-Datacenter Performance Analysis of a Tensor Processing Unit",
+  "by": "Jouppi e.a.",
+  "year": 2017,
+  "angle": "Systolische arrays: hoe Google's TPU matrixvermenigvuldiging in hardware giet.",
+  "arxiv": "1704.04760",
+  "wiki": [
+   "Tensor Processing Unit",
+   "Systolic array"
+  ]
+ },
+ {
+  "id": "ethereum",
+  "topic": "crypto",
+  "title": "Ethereum-whitepaper",
+  "by": "Vitalik Buterin",
+  "year": 2014,
+  "angle": "Van Bitcoin-script naar een wereldcomputer: accounts, gas en smart contracts.",
+  "wiki": [
+   "Ethereum"
+  ],
+  "urls": [
+   "https://ethereum.org/en/whitepaper/"
+  ]
+ },
+ {
+  "id": "flashattention",
+  "topic": "ai",
+  "title": "FlashAttention",
+  "by": "Dao e.a.",
+  "year": 2022,
+  "angle": "Attention is geheugen-gebonden: tiling en recomputation om HBM-verkeer te besparen.",
+  "arxiv": "2205.14135"
+ },
+ {
+  "id": "process-node",
+  "topic": "chips",
+  "title": "Wat betekent 3 nanometer?",
+  "by": "—",
+  "year": 2022,
+  "angle": "Transistors, FinFET vs. gate-all-around en waarom ‘nanometer’ een marketingnaam werd.",
+  "wiki": [
+   "3 nm process",
+   "Multigate device",
+   "FinFET"
+  ]
+ },
+ {
+  "id": "dpo",
+  "topic": "ai",
+  "title": "Direct Preference Optimization",
+  "by": "Rafailov e.a.",
+  "year": 2023,
+  "angle": "RLHF zonder reinforcement learning: waarom een simpele verliesfunctie volstaat.",
+  "arxiv": "2305.18290"
+ },
+ {
+  "id": "zk",
+  "topic": "crypto",
+  "title": "Zero-knowledge proofs",
+  "by": "Goldwasser, Micali & Rackoff",
+  "year": 1985,
+  "angle": "Bewijzen zonder te onthullen: van het principe tot zk-SNARKs in rollups.",
+  "wiki": [
+   "Zero-knowledge proof",
+   "Non-interactive zero-knowledge proof"
+  ]
+ },
+ {
+  "id": "switch-moe",
+  "topic": "ai",
+  "title": "Switch Transformers: Mixture of Experts",
+  "by": "Fedus e.a.",
+  "year": 2021,
+  "angle": "Meer parameters zonder meer rekenwerk per token: routing naar experts.",
+  "arxiv": "2101.03961"
+ },
+ {
+  "id": "hbm",
+  "topic": "chips",
+  "title": "High Bandwidth Memory",
+  "by": "—",
+  "year": 2013,
+  "angle": "Waarom geheugenbandbreedte de echte bottleneck van AI-chips is en hoe gestapeld DRAM helpt.",
+  "wiki": [
+   "High Bandwidth Memory",
+   "Memory bandwidth"
+  ]
+ },
+ {
+  "id": "tls",
+  "topic": "systems",
+  "title": "Hoe HTTPS je verbinding beveiligt",
+  "by": "—",
+  "year": 1999,
+  "angle": "TLS-handshake, Diffie–Hellman en certificaten: wat er gebeurt vóór de eerste byte.",
+  "wiki": [
+   "Transport Layer Security",
+   "Diffie–Hellman key exchange"
+  ]
+ },
+ {
+  "id": "scaling-laws",
+  "topic": "ai",
+  "title": "Scaling Laws for Neural Language Models",
+  "by": "Kaplan e.a.",
+  "year": 2020,
+  "angle": "De machtswetten tussen rekenkracht, data en verlies — en wat Chinchilla eraan veranderde.",
+  "arxiv": "2001.08361"
+ },
+ {
+  "id": "spectre",
+  "topic": "chips",
+  "title": "Spectre: speculatieve uitvoering als lek",
+  "by": "Kocher e.a.",
+  "year": 2018,
+  "angle": "Branch prediction en caches als zijkanaal: waarom snelle CPU's geheimen lekten.",
+  "arxiv": "1801.01203",
+  "wiki": [
+   "Spectre (security vulnerability)",
+   "Branch predictor"
+  ]
+ },
+ {
+  "id": "rag",
+  "topic": "ai",
+  "title": "Retrieval-Augmented Generation",
+  "by": "Lewis e.a.",
+  "year": 2020,
+  "angle": "Een taalmodel koppelen aan een zoekindex: het idee achter RAG.",
+  "arxiv": "2005.11401"
+ },
+ {
+  "id": "rollups",
+  "topic": "crypto",
+  "title": "Rollups: hoe Ethereum schaalt",
+  "by": "—",
+  "year": 2021,
+  "angle": "Optimistic vs. zk-rollups, data availability en blobs (EIP-4844).",
+  "wiki": [
+   "Blockchain scalability"
+  ],
+  "urls": [
+   "https://ethereum.org/en/developers/docs/scaling/"
+  ]
+ },
+ {
+  "id": "speculative-decoding",
+  "topic": "ai",
+  "title": "Speculative Decoding",
+  "by": "Leviathan e.a.",
+  "year": 2022,
+  "angle": "Sneller genereren met een klein ‘gok’-model zonder kwaliteitsverlies.",
+  "arxiv": "2211.17192"
+ },
+ {
+  "id": "risc-v",
+  "topic": "chips",
+  "title": "RISC-V, ARM en x86",
+  "by": "—",
+  "year": 2010,
+  "angle": "Wat een instructieset is en waarom de keuze ertoe doet voor chips en software.",
+  "wiki": [
+   "RISC-V",
+   "Reduced instruction set computer",
+   "Instruction set architecture"
+  ]
+ },
+ {
+  "id": "ddpm",
+  "topic": "ai",
+  "title": "Denoising Diffusion Probabilistic Models",
+  "by": "Ho, Jain & Abbeel",
+  "year": 2020,
+  "angle": "Beelden maken door ruis stap voor stap weg te nemen.",
+  "arxiv": "2006.11239"
+ },
+ {
+  "id": "mapreduce",
+  "topic": "systems",
+  "title": "MapReduce",
+  "by": "Dean & Ghemawat",
+  "year": 2004,
+  "angle": "Rekenen op duizenden machines: map, shuffle, reduce en fouttolerantie.",
+  "wiki": [
+   "MapReduce"
+  ]
+ },
+ {
+  "id": "rope",
+  "topic": "ai",
+  "title": "RoFormer: Rotary Position Embedding",
+  "by": "Su e.a.",
+  "year": 2021,
+  "angle": "Positie coderen als rotatie: de positiecodering van bijna elk modern LLM.",
+  "arxiv": "2104.09864"
+ },
+ {
+  "id": "cache",
+  "topic": "chips",
+  "title": "Caches en de geheugenhiërarchie",
+  "by": "—",
+  "year": 1965,
+  "angle": "Waarom een CPU honderden keren sneller rekent dan hij uit het RAM kan lezen — en hoe caches dat verbergen.",
+  "wiki": [
+   "CPU cache",
+   "Memory hierarchy"
+  ]
+ },
+ {
+  "id": "mamba",
+  "topic": "ai",
+  "title": "Mamba: state space models",
+  "by": "Gu & Dao",
+  "year": 2023,
+  "angle": "Een alternatief voor attention met lineaire kost in de sequentielengte.",
+  "arxiv": "2312.00752"
+ },
+ {
+  "id": "deepseek-r1",
+  "topic": "ai",
+  "title": "DeepSeek-R1: redeneren via reinforcement learning",
+  "by": "DeepSeek-AI",
+  "year": 2025,
+  "angle": "Hoe RL met verifieerbare beloningen redeneergedrag deed ontstaan.",
+  "arxiv": "2501.12948"
+ },
+ {
+  "id": "modernbert",
+  "topic": "ai",
+  "title": "ModernBERT",
+  "by": "Warner e.a.",
+  "year": 2024,
+  "angle": "Een snelle, moderne encoder: waarom kleine classifiers in productie terug zijn.",
+  "arxiv": "2412.13663"
+ }
+]

@@ -1,0 +1,135 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "PISA: Log-Lineaire Aandacht door Hiërarchische Blokselectie",
+ "subtitle": "Hoe je de kwadratische bottleneck van block sparse attention doorbreekt door als een piramide in te zoomen op relevante data.",
+ "topic": "ai",
+ "minutes": 8,
+ "tldr": [
+  "Standaard self-attention vereist dat elk woord met elk ander woord wordt vergeleken, wat leidt tot een kwadratische rekenkost die lange contexten op LLM's bemoeilijkt.",
+  "Block sparse attention probeert dit op te lossen door blokken over te slaan, maar de selectie van wélke blokken relevant zijn, bleef ironisch genoeg een kwadratisch proces.",
+  "PISA lost dit selectieprobleem op door de context samen te voegen (pooling) tot een piramide van niveaus, waardoor de selectie stapsgewijs van grof naar fijn verloopt en de rekencomplexiteit daalt naar log-lineair.",
+  "Dankzij hardware-geoptimaliseerde Triton-kernels worden de zoektocht en scoreberekeningen bovendien gefuseerd, waardoor de gigantische scorematrix nooit fysiek in het geheugen van de videokaart opgeslagen hoeft te worden."
+ ],
+ "why": "Voor een handelsingenieur is de schaalbaarheid van taalmodellen niet alleen een technische, maar ook een economische puzzel. Als je n8n workflows bouwt die complete contracten of repositories als input krijgen, loop je direct tegen de gigantische inferentiekosten en hardware-limieten van LLM's aan. Deze kosten exploderen wiskundig door de kwadratische schaling van standaard self-attention. Waar innovaties zoals Flash Attention dit probleem eerder op het niveau van geheugenbeheer (VRAM) probeerden te verlichten, pakt deze paper het fundamenteler aan door de pure rekenstappen (FLOPs) te verminderen. Het doorbreken van deze rekenbarrière is een cruciale doorbraak die extreem grote contextvensters daadwerkelijk praktisch schaalbaar en betaalbaar maakt voor lokale AI-projecten.",
+ "sections": [
+  {
+   "title": "De kwadratische muur van self-attention",
+   "md": "Om te begrijpen waarom grote contextvensters zo problematisch zijn, moeten we kijken naar de kern van de transformer-architectuur: het *scaled dot-product attention* mechanisme. Elke keer als een model een tekst leest, worden woorden omgezet in wiskundige vectoren. Het model genereert voor elk token een Query ($Q$), een Key ($K$) en een Value ($V$).\n\nDe wiskundige kern van dit mechanisme bevat de berekening $QK^T$. Hierbij wordt de query-matrix vermenigvuldigd met de getransponeerde key-matrix. Simpel gezegd: voor élk woord in de tekst berekent het model een relevantiescore ten opzichte van élk ander woord. Als je tekst 1.000 tokens lang is, zijn dat een miljoen berekeningen. Verdubbel je de tekst, dan verviervoudigt het aantal berekeningen. Deze kwadratische groei, uitgedrukt als $O(N^2)$, creëert een harde limiet. Flash Attention loste het geheugenprobleem hiervan deels op door slimmer om te gaan met de interne cache van de videokaart, maar de onderliggende rekenkundige stappen bleven kwadratisch.\n\n:::sim attention {\"tokens\": [\"De\", \"kat\", \"zat\"], \"Q\": [[1, 0], [0, 1], [1, 1]], \"K\": [[1, 0], [0, 1], [1, 1]]}\n:::"
+  },
+  {
+   "title": "De paradox van block sparse attention",
+   "md": "Een bekende oplossing voor deze kwadratische muur is *block sparse attention*. In plaats van het rekenen op het niveau van individuele tokens, verdeel je de tekst in blokken (bijvoorbeeld van 64 tokens). Omdat de meeste tokens in een lang document volstrekt irrelevant zijn voor de huidige bewerking, hoef je uitsluitend de attention te berekenen voor een select aantal blokken. Hierdoor daalt het aantal zware berekeningen drastisch.\n\nDit introduceerde echter een nieuwe, paradoxale bottleneck. Om te weten wélke blokken je mag weglaten, moet je ze eerst een score geven. Voor deze 'block selection' moet alsnog elk query-blok vergeleken worden met elk key-blok. De uiteindelijke attention-matrix werd dus wel lichter, maar het voorbereidende selectieproces was nog steeds gebonden aan de gevreesde kwadratische rekentijd ($O(N^2)$). Bij extreem lange contexten wordt precies dit pre-selectieproces de primaire oorzaak van de traagheid."
+  },
+  {
+   "title": "Inzoomen via piramide-selectie (PISA)",
+   "md": "De onderzoekers lossen dit selectieprobleem op met de PISA-architectuur (*pyramid Top-K selection*). In plaats van blind alle paren op het meest gedetailleerde niveau te evalueren, bouwt PISA een zoekhiërarchie op van grof naar fijn.\n\n> [!note] Analogie: Dubbele bestanden zoeken op je harde schijf\n> Als je wilt weten welke bestanden op je computer duplicaten van elkaar zijn, ga je niet elk bestand met elk ander bestand vergelijken (wat een kwadratische all-to-all zoektocht zou zijn). Je vergelijkt eerst hoofdmappen op totale bestandsgrootte (grof). Binnen verdachte mappen vergelijk je submappen, en pas op het laatst vergelijk je de individuele bestanden met elkaar (fijn).\n\nDoor op de grove, samengevatte niveaus al massaal irrelevante paden uit te sluiten, hoeft het model op het meest fijnmazige detailniveau nog maar een zwaar gelimiteerde subset van relevante key-blokken per query-blok te scoren."
+  },
+  {
+   "title": "Hoe pooling een hiërarchie van keys bouwt",
+   "md": "Om de hiërarchische wiskundige vectoren te maken, gebruikt PISA een techniek genaamd *pooling*. Hierbij wordt de informatie van meerdere naburige keys rekenkundig samengevoegd tot één nieuwe, overkoepelende key die fungeert als een 'grove' samenvatting. Omdat dit proces iteratief wordt herhaald naar boven toe, ontstaat er een piramidestructuur met een diepte van $O(\\log N)$ niveaus.\n\nTijdens de generatiefase start het model bovenaan de piramide. Voor de beschikbare grove kandidaten wordt de relevantie gewogen met een *LogSumExp*-score. LogSumExp is een differentieerbare wiskundige functie die dient als een zachte, afvlakkende benadering van de maximum-operatie. Enkel de beste kandidaten (de Top-$K$) stromen door naar het volgende niveau omlaag.\n\nOmdat de piramide logaritmisch schaalt en er per niveau slechts een streng afgebakende set scores berekend wordt, keldert de algehele wiskundige complexiteit naar $O(N \\log N)$. Voor gigantische lappen tekst is dat theoretisch het verschil tussen miljarden operaties en slechts enkele miljoenen."
+  },
+  {
+   "title": "Hardware-optimalisatie via gefuseerde Triton-kernels",
+   "md": "Een sub-kwadratisch algoritme kan op papier veelbelovend zijn, maar in de fysieke werkelijkheid volledig vastlopen als de hardware er niet efficiënt mee overweg kan. In moderne videokaarten (GPU's) is de rekencapaciteit gigantisch, maar het transporteren van data van het tragere VRAM-geheugen naar de rekenkernen kost relatief veel tijd en stroom.\n\nAls PISA de selectie doorheen de piramide en de berekening van de LogSumExp-scores als afzonderlijke softwarestappen zou uitvoeren, zou de GPU continu tijdelijke matrices moeten wegschrijven naar het VRAM. Om dat te stoppen, programmeerden de auteurs specifieke, hardware-bewuste *kernels* in Triton (een krachtige taal voor GPU-programmering).\n\nDeze Triton-kernels fuseren (combineren) de hiërarchische routering en de scoreberekening tot één enkele, geïsoleerde beweging binnen het razendsnelle SRAM-cachegeheugen van de chip. Het indrukwekkende resultaat is dat de tussenliggende query-key scorematrix voor de blokselectie helemaal niet meer 'gematerialiseerd' (fysiek in het geheugen gebouwd) hoeft te worden."
+  }
+ ],
+ "numbers": [],
+ "caveats": "Omdat deze paper gloednieuw is en we ons baseren op de abstract, blijven er belangrijke methodologische details onderbelicht. De onderzoekers specificeren niet exact welke vorm van *pooling* (zoals mean-pooling of max-pooling) zij inzetten om de piramide van keys op te bouwen. Bovendien tonen ze aan dat PISA goed presteert op *commonsense reasoning* en uitmunt op *retrieval* (het opzoeken van feiten in tekst), maar over de prestaties op zuiver creatieve, generatieve taken zwijgt de samenvatting. Het risico van agressieve pooling is immers dat subtiele, genuanceerde taal-informatie in de grovere lagen van de piramide weggemiddeld wordt en zo verloren gaat.",
+ "glossary": [
+  {
+   "term": "Block sparse attention",
+   "def": "Een optimalisatie in transformermodellen waarbij tokens in groepen (blokken) worden opgedeeld, waarna de attention alleen wordt berekend voor de paren die naar verwachting de meeste relevante informatie bevatten."
+  },
+  {
+   "term": "Pooling",
+   "def": "Een bewerking die de dimensionaliteit van data verkleint door naburige waarden samen te vatten (bijvoorbeeld door het gemiddelde of maximum te nemen), veel gebruikt om een grove, overkoepelende representatie te maken."
+  },
+  {
+   "term": "LogSumExp",
+   "def": "Een wiskundige functie (de logaritme van de som van exponentiële functies) die een differentieerbare, soepele benadering geeft van de maximum-operatie, cruciaal voor neurale netwerken die leren via gradient descent."
+  },
+  {
+   "term": "Triton",
+   "def": "Een open-source programmeertaal ontworpen door OpenAI, waarmee ingenieurs direct en efficiënt kunnen programmeren voor de fysieke architectuur van AI-chips (zoals de GPU's van NVIDIA)."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom bleef conventionele 'block sparse attention' ondanks efficiëntiewinsten toch gelimiteerd door een kwadratische complexiteit?",
+   "options": [
+    "Omdat de blokgrootte kwadratisch moest toenemen om de exponentiële data van LLM's te kunnen verwerken.",
+    "Omdat de hardware de matrix eerst altijd volledig moest materialiseren voordat de blokken gesplitst konden worden.",
+    "Omdat het bepalen wélke specifieke blokken in de tekst relevant waren, nog steeds vereiste dat élk query-blok met élk key-blok vergeleken werd.",
+    "Omdat de padding-tokens in de transformer-architectuur onvermijdelijk kwadratische schaling veroorzaken in de loss-functie."
+   ],
+   "answer": 2,
+   "explain": "Hoewel sparse attention berekentijd bespaart in de uiteindelijke fase, eist het conventionele selectieproces nog steeds dat het model in eerste instantie alle combinaties ($N \\times N$) aftast om te weten wat weggelaten mag worden."
+  },
+  {
+   "id": "q2",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Wat is de exacte functie van de 'pooling'-techniek binnen de PISA-architectuur?",
+   "options": [
+    "Het verkleint het contextvenster door alle overbodige tekst direct weg te knippen voordat deze de encoder bereikt.",
+    "Het stuurt de overtollige keys door naar het tragere VRAM zodat de snelle SRAM uitsluitend queries berekent.",
+    "Het telt meerdere attention-heads bij elkaar op, wat een betere parallellisatie over de rekenkernen mogelijk maakt.",
+    "Het vat meerdere aangrenzende keys samen tot een nieuwe overkoepelende laag, wat resulteert in een grof-naar-fijn piramidestructuur."
+   ],
+   "answer": 3,
+   "explain": "PISA gebruikt pooling om informatie stapsgewijs samen te voegen. Door deze iteratieve verdunning ontstaat een piramide waarin het model eerst via de 'grove' samenvattingen snel naar de relevante secties kan routeren."
+  },
+  {
+   "id": "q3",
+   "type": "type",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Als de uiteindelijke rekencomplexiteit van PISA dankzij de piramide daalt naar $O(N \\log N)$, hoeveel wiskundige niveaus (diepte) van keys bouwt dit proces dan exact op? Geef je antwoord in the grote-O notatie (bv. O(X)).",
+   "answers": [
+    "O(log N)",
+    "O(logN)",
+    "O(log(N))"
+   ],
+   "explain": "Doordat op elk pooling-niveau de datafracties compacter worden, groeit de hoogte van de boomstructuur logaritmisch aan. Dit resulteert in $O(\\log N)$ hiërarchische niveaus."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Dit onderzoek legt bloot waarom de transformermodellen achter de schermen fysiek en financieel exploderen bij lange teksten, en toont hoe hardware-bewuste wiskunde ($O(N \\log N)$) dit oplost."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "Block Sparse Attention with Log-Linear Complexity",
+   "url": "https://arxiv.org/abs/2609.31093"
+  },
+  {
+   "n": 2,
+   "title": "Wikipedia — Attention (machine learning)",
+   "url": "https://en.wikipedia.org/wiki/Attention_%28machine_learning%29"
+  },
+  {
+   "n": 3,
+   "title": "Wikipedia — Transformer (deep learning)",
+   "url": "https://en.wikipedia.org/wiki/Transformer_%28deep_learning%29"
+  }
+ ],
+ "id": "2026-09-28-pisa-log-lineaire-aandacht-door-hierarchische-bl",
+ "kind": "paper",
+ "date": "2026-09-28",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-28",
+  "kind": "paper",
+  "candidate": "arxiv:2609.31093",
+  "signal": "14 upvotes op Hugging Face Daily Papers",
+  "significance": 4
+ }
+}

@@ -72,6 +72,7 @@ PS.S = {
       created: Date.now(),
       settings: { theme: 'auto', guided: true, greekKb: 'auto', pen: 'auto', ttsRate: 0.92, dailyGoal: 30, cloud: { url: '', key: '' }, sync: { last: 0, error: '', pulled: 0, pushed: 0 } },
       lessons: {}, cards: {}, events: [], days: {}, updated: Date.now(),
+      radar: { read: {}, likes: {}, saved: {}, requests: [] },
     };
   },
   save: PS.debounce(function () { PS.S.flush(); }, 250),

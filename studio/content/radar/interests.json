@@ -1,0 +1,161 @@
+{
+ "about": "Wat Thibaud ‘onder de motorkap’ wil begrijpen. Pas dit gerust aan: de ochtendrun leest het elke dag, samen met je 👍/👎 in de app.",
+ "topics": {
+  "ai": {
+   "label": "AI & LLM's",
+   "weight": 1.0,
+   "keywords": [
+    "LLM",
+    "transformer",
+    "reasoning",
+    "agent",
+    "reinforcement learning",
+    "RLHF",
+    "distillation",
+    "quantization",
+    "mixture of experts",
+    "long context",
+    "inference",
+    "small language model",
+    "decision model",
+    "routing",
+    "guardrails",
+    "structured output",
+    "ModernBERT",
+    "Jev",
+    "OpenRouter",
+    "multimodal",
+    "diffusion",
+    "world model",
+    "benchmark",
+    "open weights"
+   ]
+  },
+  "chips": {
+   "label": "Chips & hardware",
+   "weight": 1.0,
+   "keywords": [
+    "Apple silicon",
+    "M5",
+    "M4",
+    "A19",
+    "Neural Engine",
+    "GPU",
+    "NPU",
+    "TPU",
+    "HBM",
+    "unified memory",
+    "TSMC",
+    "2nm",
+    "3nm",
+    "chiplet",
+    "RISC-V",
+    "ARM",
+    "x86",
+    "Nvidia",
+    "Blackwell",
+    "Rubin",
+    "AMD",
+    "Qualcomm",
+    "cache",
+    "memory bandwidth",
+    "accelerator"
+   ]
+  },
+  "crypto": {
+   "label": "Blockchain & crypto",
+   "weight": 0.7,
+   "keywords": [
+    "Ethereum",
+    "EIP",
+    "rollup",
+    "zero-knowledge",
+    "zk",
+    "EVM",
+    "smart contract",
+    "exploit",
+    "consensus",
+    "Bitcoin",
+    "stablecoin"
+   ]
+  },
+  "systems": {
+   "label": "Systemen & software",
+   "weight": 0.7,
+   "keywords": [
+    "compiler",
+    "database",
+    "operating system",
+    "kernel",
+    "networking",
+    "distributed systems",
+    "WebAssembly",
+    "Rust",
+    "security",
+    "cryptography",
+    "post-quantum"
+   ]
+  },
+  "automation": {
+   "label": "Automation & agents",
+   "weight": 0.6,
+   "keywords": [
+    "n8n",
+    "workflow",
+    "MCP",
+    "tool use",
+    "agentic",
+    "API",
+    "webhook",
+    "browser agent"
+   ]
+  }
+ },
+ "arxiv": [
+  "cs.CL",
+  "cs.LG",
+  "cs.AI",
+  "cs.AR",
+  "cs.DC",
+  "cs.CR"
+ ],
+ "feeds": [
+  {
+   "name": "Apple Newsroom",
+   "url": "https://www.apple.com/newsroom/rss-feed.rss",
+   "topic": "chips"
+  },
+  {
+   "name": "Chips and Cheese",
+   "url": "https://chipsandcheese.com/feed",
+   "topic": "chips"
+  },
+  {
+   "name": "OpenAI",
+   "url": "https://openai.com/news/rss.xml",
+   "topic": "ai"
+  },
+  {
+   "name": "Google DeepMind",
+   "url": "https://deepmind.google/blog/rss.xml",
+   "topic": "ai"
+  },
+  {
+   "name": "Hugging Face",
+   "url": "https://huggingface.co/blog/feed.xml",
+   "topic": "ai"
+  },
+  {
+   "name": "Simon Willison",
+   "url": "https://simonwillison.net/atom/everything/",
+   "topic": "ai"
+  },
+  {
+   "name": "Ethereum Foundation",
+   "url": "https://blog.ethereum.org/en/feed.xml",
+   "topic": "crypto"
+  }
+ ],
+ "hn_min_points": 200,
+ "max_per_day": 2
+}

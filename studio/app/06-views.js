@@ -18,11 +18,11 @@ const statusChip = (t, id) => {
 /* ======================= Shell ======================= */
 PS.shell = () => {
   const app = document.getElementById('app');
-  const nav = [['#/', 'today', 'Vandaag'], ['#/paden', 'book', 'Leerpaden'], ['#/herhalen', 'repeat', 'Herhalen'], ['#/voortgang', 'chart', 'Voortgang']];
+  const nav = [['#/', 'today', 'Vandaag'], ['#/paden', 'book', 'Leerpaden'], ['#/herhalen', 'repeat', 'Herhalen'], ['#/lezen', 'bookOpen', 'Lezen'], ['#/voortgang', 'chart', 'Voortgang']];
   app.innerHTML = `<div class="shell">
     <aside class="sidebar">
       <a class="brand" href="#/"><span class="brand-mark">Π</span><span>Polyglot Studio<small>leren · oefenen · bewijzen</small></span></a>
-      <nav class="nav" aria-label="Hoofdmenu">${nav.map(([h, i, l]) => `<a href="${h}" data-nav="${h}">${PS.icon(i)}<span>${l}</span>${h === '#/herhalen' ? '<span class="count" data-due></span>' : ''}</a>`).join('')}</nav>
+      <nav class="nav" aria-label="Hoofdmenu">${nav.map(([h, i, l]) => `<a href="${h}" data-nav="${h}">${PS.icon(i)}<span>${l}</span>${h === '#/herhalen' ? '<span class="count" data-due></span>' : h === '#/lezen' ? '<span class="count" data-unread></span>' : ''}</a>`).join('')}</nav>
       <nav class="nav" aria-label="Leerpaden"><div class="nav-label">Sporen</div>${PS.C.tracks().map((t) => { const T = PS.C.track(t); return `<a href="#/pad/${t}" data-nav="#/pad/${t}" class="nav-track" data-track="${t}"><span class="glyph-s${T.glyphMono ? ' mono' : ''}">${T.glyph}</span><span>${ES(T.short)}</span><span class="mini-ring" data-ring="${t}"></span></a>`; }).join('')}</nav>
       <div class="sidebar-foot">
         <a href="#/instellingen" class="btn btn-ghost btn-sm" style="justify-content:flex-start">${PS.icon('sliders', 'icon-s')} Instellingen</a>
@@ -43,6 +43,7 @@ PS.updateShell = (route) => {
   const base = route.startsWith('#/pad') ? route.split('/').slice(0, 3).join('/') : route.startsWith('#/les') ? `#/pad/${route.split('/')[2]}` : '#/' + (route.split('/')[1] || '');
   PS.$$('[data-nav]').forEach((a) => a.setAttribute('aria-current', a.dataset.nav === base || (base === '#/' && a.dataset.nav === '#/') ? 'page' : 'false'));
   const due = PS.SRS.counts().today; PS.$$('[data-due]').forEach((x) => (x.textContent = due || ''));
+  const unread = PS.radar ? PS.radar.unread() : 0; PS.$$('[data-unread]').forEach((x) => (x.textContent = unread || ''));
   PS.C.tracks().forEach((t) => { const el = PS.$(`[data-ring="${t}"]`); if (el) el.innerHTML = PS.ring(PS.S.trackMastery(t), 22, 3); });
   const ss = PS.$('[data-syncstate]'); if (ss) ss.innerHTML = PS.sync && PS.sync.configured() ? `${PS.icon('cloud', 'icon-s')} Sync ${PS.S.s.settings.sync.last ? new Date(PS.S.s.settings.sync.last).toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' }) : '—'}` : '';
   const tabbar = PS.$('.tabbar'); if (tabbar) tabbar.hidden = route.startsWith('#/les/');
@@ -66,6 +67,7 @@ PS.render = () => {
     else if (parts[0] === 'voortgang') ({ html, after } = PS.views.progress());
     else if (parts[0] === 'instellingen') ({ html, after } = PS.views.settings());
     else if (parts[0] === 'coach') ({ html } = PS.views.coach());
+    else if (parts[0] === 'lezen') ({ html, after } = parts[1] ? PS.views.radarArticle(decodeURIComponent(parts[1])) : PS.views.radar());
     else { h = '#/'; ({ html, after } = PS.views.today()); }
   } catch (err) {
     console.error(err);
@@ -127,13 +129,13 @@ PS.views.today = () => {
   }).join('');
   const html = `<div class="page">${mobileBar(`<span class="streak" style="height:32px">${PS.icon('flame')} ${PS.S.streak()}</span>`)}
     <header class="hello"><div class="date">${PS.fmtDate()}</div><h1 class="display">${hello}, ${ES(name)}.</h1><p class="lede">${today.n ? `Vandaag al ${today.n} oefeningen gedaan${today.ms ? ` in ${Math.round(today.ms / 60000)} min` : ''}. Blijf gaan.` : 'Eerst ophalen wat je al kent, dan iets nieuws bouwen. Kleine stappen, elke dag.'}</p></header>
-    <div style="margin-top:20px">${plan}</div>${coach}
+    <div style="margin-top:20px">${plan}</div>${coach}<div data-radar-today></div>
     <div class="section-head"><span class="h3">Je lessen</span><a href="#/paden">Alle leerpaden</a></div>
     <div class="grid-2">${cards}</div>
     <div class="section-head"><span class="h3">Ritme</span><a href="#/voortgang">Voortgang</a></div>
     ${PS.views.rhythmCard()}
   </div>`;
-  return { html };
+  return { html, after: (root) => PS.radar && PS.radar.todayCard(root) };
 };
 
 PS.views.rhythmCard = () => {

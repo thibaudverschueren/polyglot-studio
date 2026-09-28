@@ -447,7 +447,7 @@ PS.ItemView = class {
   }
   finish(res) {
     this.done = true; this.result = res;
-    if (res.kind !== 'unavailable' && this.item.type !== 'card' && this.item.type !== 'flip') {
+    if (res.kind !== 'unavailable' && this.item.type !== 'card' && this.item.type !== 'flip' && !this.ctx.noLog) {
       let at = null;
       try { at = this.ans == null ? null : this.T.answerText ? this.T.answerText(this, this.ans) : this.ans; } catch (e) { at = null; }
       const long = this.item.type === 'explain' || this.item.type === 'code';

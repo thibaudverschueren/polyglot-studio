@@ -891,3 +891,36 @@ textarea.answer-input { min-height: 120px; resize: vertical; font-size: 17px; li
 @media print {
   .sidebar, .tabbar, .stepper, .next-bar { display: none !important; }
 }
+
+/* ---------- Onder de motorkap (lezen) ---------- */
+[data-topic="ai"] { --topic: var(--ai); --topic-soft: var(--ai-soft); }
+[data-topic="chips"] { --topic: var(--greek); --topic-soft: var(--greek-soft); }
+[data-topic="crypto"] { --topic: var(--solidity); --topic-soft: var(--solidity-soft); }
+[data-topic="systems"] { --topic: var(--jev); --topic-soft: var(--jev-soft); }
+[data-topic="automation"] { --topic: var(--automation); --topic-soft: var(--automation-soft); }
+.radar-tabs { margin-top: 18px; }
+.chips-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 18px; }
+.chip-on { background: var(--ink); color: var(--bg); }
+.chips-row .chip { cursor: pointer; }
+.chip-topic { background: var(--topic-soft, var(--surface-2)); color: var(--topic, var(--ink)); }
+.radar-card { display: block; padding: 18px 20px; }
+.radar-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.radar-card .title { font-family: var(--font-display); font-size: 21px; line-height: 1.25; margin: 10px 0 4px; color: var(--ink); }
+.radar-tldr { margin: 8px 0 0; color: var(--ink-2); line-height: 1.5; }
+.radar-card.is-read { opacity: 0.7; }
+.radar-q { display: flex; gap: 12px; align-items: flex-start; }
+.radar-eyebrow { color: var(--topic, var(--ink-3)); }
+.radar-title { font-size: clamp(30px, 5vw, 42px); line-height: 1.12; margin: 8px 0 10px; }
+.tldr { border-left: 4px solid var(--topic, var(--accent)); margin: 18px 0 10px; }
+.tldr ul { margin: 8px 0 0; padding-left: 20px; }
+.tldr li { margin: 7px 0; line-height: 1.55; }
+.article-body h2 { margin-top: 1.9em; }
+.glossary dt { font-weight: 700; margin-top: 12px; }
+.glossary dd { margin: 2px 0 0; color: var(--ink-2); }
+details.quote summary { cursor: pointer; color: var(--topic, var(--accent)); font-weight: 650; list-style: none; }
+details.quote q { display: block; margin-top: 6px; font-size: 13px; color: var(--ink-3); font-style: italic; min-width: 180px; }
+.radar-related { margin-top: 22px; line-height: 1.9; }
+.sources { padding-left: 22px; margin: 0; }
+.sources li { margin: 7px 0; line-height: 1.45; }
+.read-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 48px; }
+.read-actions .on { background: var(--topic-soft, var(--accent-soft)); box-shadow: inset 0 0 0 1.5px var(--topic, var(--accent)); }

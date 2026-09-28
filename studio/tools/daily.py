@@ -10,6 +10,7 @@ daily.py — the 07:30 loop of Polyglot Studio (called by ~/scripts/daily_orches
  5. build index.html · commit · push (GitHub Pages)
  6. Apple Reminders: 1 master + 1 subtask per track (today, all-day, no alarms)
  7. copy the server's nightly database backup to OneDrive (offsite_backup.py)
+ + 'Onder de motorkap' (radar.py): explainers of breakthroughs, classics and Thibaud's questions, after the lessons
 
   python3 daily.py            # full run
   python3 daily.py --dry-run  # plan only, no agy calls, no push, no reminders
@@ -220,7 +221,7 @@ def publish(report, today, push):
     report["errors"] += [x for x in res["problems"] if x not in report["errors"]]
     if not push:
         return
-    sh(["git", "add", "-A", "studio/content", "index.html", "sw.js", "manifest.webmanifest", "solc-worker.js"])
+    sh(["git", "add", "-A", "studio/content", "radar", "index.html", "sw.js", "manifest.webmanifest", "solc-worker.js"])
     new = [x for x in report["tasks"] if not x.get("published")]
     msg = f"Daily {today}: " + (", ".join(f"{x['kind']} {x['track']} {x['id']}" for x in new) or "rebuild")
     c = sh(["git", "commit", "-m", msg])
@@ -317,6 +318,24 @@ def main(argv):
                 if changed and push and r != rounds[-1]:
                     log("    ↑ tussentijds publiceren, zodat de lessen van vandaag al klaarstaan")
                     publish(report, today, push)
+
+            if cfg.get("RADAR", "1") == "1":  # reading section; the lessons go out first so they never wait for it
+                if push and report["tasks"]:
+                    publish(report, today, push)
+                log("[4b] Onder de motorkap")
+                try:
+                    import radar
+                    report["radar"] = radar.run(states, cfg, today, log=log, budget_s=float(cfg.get("RADAR_BUDGET_MIN", 30)) * 60)
+                except Exception as e:
+                    report["errors"].append(f"radar: {e}")
+                    log(f"    ✗ radar: {e}")
+        elif dry and cfg.get("RADAR", "1") == "1":
+            log("[4b] Onder de motorkap (plan)")
+            try:
+                import radar
+                radar.run(states, cfg, today, log=log, dry=True)
+            except Exception as e:
+                log(f"    ✗ radar: {e}")
 
         log("[5] Bouwen en publiceren")
         publish(report, today, push)

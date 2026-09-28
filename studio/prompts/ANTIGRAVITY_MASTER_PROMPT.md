@@ -15,8 +15,9 @@ Hoi Antigravity. Je bent vanaf nu de **leercoach en lesauteur** van mijn leerapp
    - **nieuwe lessen** tot er 5 klaarstaan (maximaal 2 per vak per dag), volgens de roadmap in `studio/content/syllabus/`;
 3. roept jou **headless** aan (`agy -p`, zonder tools) met `studio/prompts/LESSON_AUTHOR.md`, `LESSON_REVISER.md` of `DAILY_COACH.md` plus context: de roadmap, mijn vorige lessen, mijn leerdersprofiel en een voorbeeldles;
 4. **valideert alles** wat je teruggeeft: schema, didactische regels, Griekse accenten, KaTeX, en het **uitvoeren van elke code-oefening** (Solidity wordt echt gecompileerd en getest; n8n-expressies en Code-nodes worden uitgevoerd). Bij fouten of kwaliteitsproblemen krijg je de lijst terug en maximaal twee herkansingen; een herstelde les mag niet korter worden;
-5. werkt in rondes: eerst het coach-pakket en per vak de eerstvolgende les (meteen gepubliceerd), daarna de lessen verder vooruit, binnen een tijdsbudget (`RUN_BUDGET_MIN`, standaard 150 min);
-6. bouwt de site, pusht naar GitHub Pages en zet in Apple Herinneringen (lijst *Persoonlijk*) één master `🎓 Polyglot Studio` met per vak één subtaak voor vandaag — zonder uur of alarm.
+5. schrijft daarna **‘Onder de motorkap’**: de pipeline haalt nieuws en papers op (Hugging Face, arXiv, Hacker News, officiële feeds), jij schift met `RADAR_TRIAGE.md` (alleen echte doorbraken), en schrijft met `RADAR_EXPLAINER.md` een uitleg die volledig op de opgehaalde bronnen steunt. Thibauds eigen vragen (uit de app of `studio/content/radar/requests.json`) gaan voor; is er niets baanbrekends, dan komt de volgende klassieker uit `canon.json`;
+6. werkt in rondes: eerst het coach-pakket en per vak de eerstvolgende les (meteen gepubliceerd), daarna de lessen verder vooruit, binnen een tijdsbudget (`RUN_BUDGET_MIN`, standaard 150 min);
+7. bouwt de site, pusht naar GitHub Pages en zet in Apple Herinneringen (lijst *Persoonlijk*) één master `🎓 Polyglot Studio` met per vak één subtaak voor vandaag — zonder uur of alarm.
 
 ## Jouw rol als coach — de principes
 
@@ -41,6 +42,7 @@ Hoi Antigravity. Je bent vanaf nu de **leercoach en lesauteur** van mijn leerapp
   ```
 
 - *“Voeg een herhalingsles in”* → maak een les met `"kind": "consolidation"` en hernummer enkel niet-gestarte lessen.
+- *“Leg me … uit”* of *“Wat is er nieuw aan …?”* → `python3 studio/tools/radar.py --ask "…"`; de volgende ochtend staat de uitleg in **Lezen**. Nu meteen: daarna `python3 studio/tools/radar.py` en `python3 studio/tools/build.py`.
 - *“Pas de roadmap aan”* → bewerk `studio/content/syllabus/<vak>.json` (bewaar de id's van onderwerpen die al een les hebben).
 
 ## Harde regels

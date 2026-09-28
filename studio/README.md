@@ -19,6 +19,10 @@ Daarna: **retentiecheck** na een dag (*Beheerst*) en na een week (*Verankerd*). 
 
 De controle is streng maar eerlijk: accenten en de Griekse ς tellen (halve score als alleen dat fout is), typefouten worden enkel in Nederlands/Engels getolereerd, en bij code draait de app je code echt: **Solidity** wordt gecompileerd met solc 0.8.37 en getest op een ingebouwde EVM; **n8n-expressies en Code-nodes** draaien in een sandbox met `$json`, `$input`, `$('Node')`.
 
+## Onder de motorkap (Lezen)
+
+Naast de vakken staat een leesafdeling met uitleg van **doorbraken, papers en klassiekers**, en van **jouw eigen vragen**. Elk artikel heeft een samenvatting van 60 seconden, de volledige uitleg van het mechanisme, kerncijfers met letterlijke bronvermelding, kanttekeningen, begrippen, drie begripsvragen en de bronnen. De ochtendrun haalt zelf de bronnen op (Hugging Face Daily Papers, arXiv, Hacker News, Apple, OpenAI, DeepMind, Chips and Cheese, Ethereum …), laat Antigravity alleen echte doorbraken kiezen en controleert dat elk cijfer letterlijk in een bron staat. Met 👍/👎 stuur je bij wat hij kiest; je interesses staan in `studio/content/radar/interests.json`.
+
 ## Elke ochtend (07:30)
 
 ```
@@ -32,6 +36,7 @@ launchd → ~/scripts/run_daily.sh → ~/scripts/daily_orchestrator.py → studi
 5. bouwen → commit → push
 6. Apple Herinneringen: `🎓 Polyglot Studio` met één subtaak per vak, zonder uur of alarm
 7. kopie van de nachtelijke database-back-up naar OneDrive
++ na de lessen: ‘Onder de motorkap’ (max. 2 artikels, eigen tijdslimiet)
 
 Lessen waar je aan begonnen bent, worden nooit meer gewijzigd.
 

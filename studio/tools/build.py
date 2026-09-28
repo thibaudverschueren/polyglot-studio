@@ -96,6 +96,45 @@ def render_daily(D):
     return R
 
 
+def render_radar(A):
+    """An article of 'Onder de motorkap' → HTML fields (math placeholders are filled by render_math)."""
+    return {
+        "id": A.get("id"), "kind": A.get("kind"), "topic": A.get("topic"), "title": A.get("title", ""), "date": A.get("date"), "minutes": A.get("minutes"),
+        "subtitle": md.inline(A.get("subtitle", "")),
+        "tldr": [md.inline(x) for x in A.get("tldr", [])],
+        "why": md.render(A.get("why", "")),
+        "sections": [{"title": md.inline(x.get("title", "")), "html": md.render(x.get("md", ""))} for x in A.get("sections", [])],
+        "numbers": [{"value": md.inline(n.get("value", "")), "label": md.inline(n.get("label", "")), "quote": n.get("quote", ""), "source": n.get("source")} for n in A.get("numbers", [])],
+        "caveats": md.render(A.get("caveats", "")),
+        "glossary": [{"term": md.inline(g.get("term", "")), "def": md.inline(g.get("def", ""))} for g in A.get("glossary", [])],
+        "quiz": [render_item(i) for i in A.get("quiz", [])],
+        "related": [{"track": r.get("track"), "why": md.inline(r.get("why", ""))} for r in A.get("related", []) if isinstance(r, dict)],
+        "sources": [{"n": x.get("n"), "title": x.get("title", ""), "url": x.get("url", "")} for x in A.get("sources", [])],
+        "meta": {k: v for k, v in (A.get("meta") or {}).items() if k in ("request", "canon", "signal", "significance")},
+    }
+
+
+def render_radar_all(problems):
+    """All articles → (index for the list, {id: rendered JSON}). A broken article is skipped, never fatal."""
+    index, files = [], {}
+    for p in sorted(glob.glob(os.path.join(CONTENT, "radar", "items", "*.json"))):
+        try:
+            A = load(p)
+            md.MATH.clear()
+            md._MATH_INDEX.clear()
+            R, _ = render_math(render_radar(A))
+        except (Exception, SystemExit) as e:
+            problems.append(f"radar/{os.path.basename(p)}: {e}")
+            continue
+        body = json.dumps(R, ensure_ascii=False, separators=(",", ":"))
+        files[A["id"]] = body
+        index.append({"id": A["id"], "kind": A.get("kind"), "topic": A.get("topic"), "title": A.get("title", ""), "subtitle": R["subtitle"],
+                      "tldr": R["tldr"][0] if R["tldr"] else "", "minutes": A.get("minutes"), "date": A.get("date"),
+                      "request": (A.get("meta") or {}).get("request"), "v": hashlib.sha256(body.encode("utf-8")).hexdigest()[:8]})
+    index.sort(key=lambda x: (x.get("date") or "", x["id"]), reverse=True)
+    return index, files
+
+
 def render_math(obj):
     """Render all collected math with one KaTeX batch and substitute placeholders."""
     if not md.MATH:
@@ -182,6 +221,8 @@ def build(lenient=False, out_dir=REPO, today=None):
 
     content = {"tracks": tracks, "syllabus": syllabus, "lessons": lessons, "daily": daily, "profile": profile, "cloud": cloud_cfg}
     content, n_math = render_math(content)
+    radar, radar_files = render_radar_all(problems)
+    content["radar"] = radar[:6]  # newest articles, for the Today card (also offline)
 
     css = open(os.path.join(APP, "styles.css"), encoding="utf-8").read()
     katex_css = open(os.path.join(HERE, "vendor", "katex.min.css"), encoding="utf-8").read()
@@ -249,12 +290,20 @@ def build(lenient=False, out_dir=REPO, today=None):
         "start_url": "./", "scope": "./", "display": "standalone", "background_color": "#f6f5f1", "theme_color": "#f6f5f1",
         "icons": [{"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"}, {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}],
         "categories": ["education"]}, ensure_ascii=False, indent=2))
+    rdir = os.path.join(out_dir, "radar")
+    os.makedirs(rdir, exist_ok=True)
+    for aid, body in radar_files.items():
+        write(os.path.join(rdir, f"{aid}.json"), body)
+    write(os.path.join(rdir, "index.json"), json.dumps(radar, ensure_ascii=False, separators=(",", ":")))
+    for f in os.listdir(rdir):  # articles that no longer exist
+        if f.endswith(".json") and f != "index.json" and f[:-5] not in radar_files:
+            os.remove(os.path.join(rdir, f))
     worker = os.path.join(HERE, "solc-worker.js")
     if os.path.exists(worker):
         shutil.copy(worker, os.path.join(out_dir, "solc-worker.js"))
     size = os.path.getsize(os.path.join(out_dir, "index.html"))
     per = {t: len(tracks[t]["lessons"]) for t in TRACKS}
-    print(f"✓ index.html {size / 1024:.0f} KB · version {version} · lessons {per} · {n_math} formulas · {len(daily)} daily pack(s)")
+    print(f"✓ index.html {size / 1024:.0f} KB · version {version} · lessons {per} · {n_math} formulas · {len(daily)} daily pack(s) · {len(radar)} artikel(s)")
     return {"version": version, "lessons": per, "problems": problems, "size": size}
 
 

@@ -37,6 +37,23 @@ self.addEventListener('fetch', (e) => {
     })());
     return;
   }
+  // Onder de motorkap: the list is fetched fresh (cached copy offline); an article URL carries ?v=<hash>, so cache-first is safe
+  if (sameOrigin && /\/radar\/index\.json$/.test(url.pathname)) {
+    e.respondWith((async () => {
+      const cache = await caches.open(ASSETS);
+      try { const res = await fetch(req, { cache: 'no-cache' }); if (res.ok) cache.put(req, res.clone()); return res; }
+      catch (err) { return (await cache.match(req)) || Response.error(); }
+    })());
+    return;
+  }
+  if (sameOrigin && /\/radar\/[^/]+\.json$/.test(url.pathname)) {
+    e.respondWith((async () => {
+      const cache = await caches.open(ASSETS);
+      const hit = await cache.match(req); if (hit) return hit;
+      const res = await fetch(req); if (res.ok) cache.put(req, res.clone()); return res;
+    })());
+    return;
+  }
   // worker + manifest can change between builds: serve the cached copy, refresh it in the background
   if (sameOrigin && /solc-worker\.js$|manifest\.webmanifest$/.test(url.pathname)) {
     e.respondWith((async () => {

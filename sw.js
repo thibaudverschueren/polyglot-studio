@@ -1,7 +1,7 @@
-/* Polyglot Studio service worker — version 7904c5baef
+/* Polyglot Studio service worker — version c7e328ba0a
    index.html: network-first (daily content updates), cache fallback when offline.
    Static assets (fonts, audio, icons, compiler): cache-first. GitHub API: never cached. */
-const VERSION = '7904c5baef';
+const VERSION = 'c7e328ba0a';
 const CORE = `polyglot-core-${VERSION}`;
 const ASSETS = 'polyglot-assets-v1';
 const PRECACHE = ['./', 'index.html', 'manifest.webmanifest', 'icons/apple-touch-icon.png', 'icons/icon-192.png', 'icons/favicon.svg'].concat(["assets/katex/fonts/KaTeX_AMS-Regular.woff2", "assets/katex/fonts/KaTeX_Caligraphic-Bold.woff2", "assets/katex/fonts/KaTeX_Caligraphic-Regular.woff2", "assets/katex/fonts/KaTeX_Fraktur-Bold.woff2", "assets/katex/fonts/KaTeX_Fraktur-Regular.woff2", "assets/katex/fonts/KaTeX_Main-Bold.woff2", "assets/katex/fonts/KaTeX_Main-BoldItalic.woff2", "assets/katex/fonts/KaTeX_Main-Italic.woff2", "assets/katex/fonts/KaTeX_Main-Regular.woff2", "assets/katex/fonts/KaTeX_Math-BoldItalic.woff2", "assets/katex/fonts/KaTeX_Math-Italic.woff2", "assets/katex/fonts/KaTeX_SansSerif-Bold.woff2", "assets/katex/fonts/KaTeX_SansSerif-Italic.woff2", "assets/katex/fonts/KaTeX_SansSerif-Regular.woff2", "assets/katex/fonts/KaTeX_Script-Regular.woff2", "assets/katex/fonts/KaTeX_Size1-Regular.woff2", "assets/katex/fonts/KaTeX_Size2-Regular.woff2", "assets/katex/fonts/KaTeX_Size3-Regular.woff2", "assets/katex/fonts/KaTeX_Size4-Regular.woff2", "assets/katex/fonts/KaTeX_Typewriter-Regular.woff2"]);
@@ -34,6 +34,23 @@ self.addEventListener('fetch', (e) => {
       } catch (err) {
         return (await cache.match('index.html')) || (await cache.match('./')) || Response.error();
       }
+    })());
+    return;
+  }
+  // Onder de motorkap: the list is fetched fresh (cached copy offline); an article URL carries ?v=<hash>, so cache-first is safe
+  if (sameOrigin && /\/radar\/index\.json$/.test(url.pathname)) {
+    e.respondWith((async () => {
+      const cache = await caches.open(ASSETS);
+      try { const res = await fetch(req, { cache: 'no-cache' }); if (res.ok) cache.put(req, res.clone()); return res; }
+      catch (err) { return (await cache.match(req)) || Response.error(); }
+    })());
+    return;
+  }
+  if (sameOrigin && /\/radar\/[^/]+\.json$/.test(url.pathname)) {
+    e.respondWith((async () => {
+      const cache = await caches.open(ASSETS);
+      const hit = await cache.match(req); if (hit) return hit;
+      const res = await fetch(req); if (res.ok) cache.put(req, res.clone()); return res;
     })());
     return;
   }

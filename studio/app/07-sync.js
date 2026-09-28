@@ -127,7 +127,7 @@ PS.sync = {
   soon: PS.debounce(() => { if (PS.sync.configured()) PS.sync.now(false); }, 15000),
   exportState() {
     const s = PS.S.s;
-    return { v: 2, device: s.device, updated: Date.now(), lessons: s.lessons, cards: s.cards, days: s.days, drills: s.drills || {}, settings: { guided: s.settings.guided } };
+    return { v: 2, device: s.device, updated: Date.now(), lessons: s.lessons, cards: s.cards, days: s.days, drills: s.drills || {}, radar: s.radar || {}, settings: { guided: s.settings.guided } };
   },
   async now(verbose) {
     if (!this.configured() || this.busy || !navigator.onLine) return false;
@@ -221,6 +221,15 @@ PS.sync = {
       else { a.ms = Math.max(a.ms || 0, v.ms || 0); if ((v.n || 0) > (a.n || 0)) { a.n = v.n; a.sc = v.sc; } }
     }
     s.drills = Object.assign({}, o.drills || {}, s.drills || {});
+    if (o.radar) { /* reading state: earliest read, latest like/save wins, questions are a union (cancel wins) */
+      const r = (s.radar = s.radar || {}); r.read = r.read || {}; r.likes = r.likes || {}; r.saved = r.saved || {}; r.requests = r.requests || [];
+      for (const [k, v] of Object.entries(o.radar.read || {})) if (!r.read[k] || v < r.read[k]) { r.read[k] = v; changed = true; }
+      ['likes', 'saved'].forEach((f) => { for (const [k, v] of Object.entries(o.radar[f] || {})) if (v && (!r[f][k] || (v.at || 0) > (r[f][k].at || 0))) { r[f][k] = v; changed = true; } });
+      for (const q of o.radar.requests || []) {
+        const mine = r.requests.find((x) => x.id === q.id);
+        if (!mine) { r.requests.push(Object.assign({}, q)); changed = true; } else if (q.cancelled && !mine.cancelled) { mine.cancelled = q.cancelled; changed = true; }
+      }
+    }
     return changed;
   },
 };

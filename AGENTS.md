@@ -12,7 +12,9 @@ Persoonlijke leerapp van Thibaud: **Nieuwgrieks, Frans C1–C2, Spaans A0–B2, 
 | `studio/content/lessons/<track>/NN.json` | lessen (contract: `studio/schema/lesson.schema.json`) |
 | `studio/content/syllabus/<track>.json` | roadmaps: het volledige leertraject per vak |
 | `studio/content/daily/<datum>.json` | coach-pakketten (alleen als Supabase niet is ingesteld) |
-| `studio/prompts/` | prompts voor de dagelijkse Antigravity-run |
+| `studio/prompts/` | prompts voor de dagelijkse Antigravity-run (lessen, coach, en `RADAR_*` voor ‘Onder de motorkap’) |
+| `studio/content/radar/` | ‘Onder de motorkap’: `interests.json` (onderwerpen), `canon.json` (klassiekers), `requests.json` (vragen), `items/` (artikels) |
+| `radar/` | **gebouwde** artikels + `index.json` voor de app — nooit met de hand bewerken |
 | `studio/tools/` | build, validatie, codeverificatie, leerdersmodel, dagelijkse run |
 | `studio/cloud/` | databaseschema (`supabase.sql`), app-config en [setup-gids](studio/cloud/SETUP.md) |
 | `assets/` | KaTeX-fonts, Solidity-compiler (soljson 0.8.37) |
@@ -25,6 +27,9 @@ python3 studio/tools/validate.py                       # schema + didactische re
 node studio/tools/verify_code.js studio/content/lessons/*/*.json   # voert alle code-oefeningen uit
 python3 studio/tools/build.py                          # bouwt index.html (strikt)
 python3 ~/scripts/daily_orchestrator.py --dry-run      # toont het plan van de ochtendrun
+python3 studio/tools/radar.py --dry-run                # ‘Onder de motorkap’: vragen, kandidaten, plan
+python3 studio/tools/radar.py --ask "Hoe werkt …?"     # vraag in de wachtrij zetten
+python3 studio/tools/radar.py --classic attention      # één klassieker nu schrijven
 ```
 
 ## Harde regels
