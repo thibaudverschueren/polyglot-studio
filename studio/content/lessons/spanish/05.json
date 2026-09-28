@@ -1,0 +1,917 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "spanish",
+ "id": 5,
+ "roadmap": "es-a1-05-irregulares",
+ "title": "Onregelmatige presente: tener, ir, hacer, poder en querer",
+ "subtitle": "De zwaargewichten, de 'schoenwerkwoorden' en twee gouden combinaties (tener que, ir a) voor verplichtingen en plannen",
+ "level": "A1",
+ "minutes": 40,
+ "summary": "Veelgebruikte werkwoorden zijn vaak onregelmatig. Je leert de belangrijkste onregelmatige vormen uit je hoofd, snapt het mechanisme achter de klinkerwissel (e→ie, o→ue), en je drukt je eerste plannen (gaan) en verplichtingen (moeten) uit. Net als in het Frans gebruik je *tener* (avoir) voor leeftijd en honger.",
+ "objectives": [
+  {
+   "id": "irregulares",
+   "text": "Je vervoegt de meest frequente onregelmatige werkwoorden (ir, hacer, salir, conocer)."
+  },
+  {
+   "id": "expresiones-tener",
+   "text": "Je drukt fysieke sensaties (honger, kou) en leeftijd uit met het werkwoord tener."
+  },
+  {
+   "id": "klinkerwissel",
+   "text": "Je herkent en vervoegt klinkerwisselende werkwoorden (e→ie, o→ue, e→i) zonder in de valkuil van de wij/jullie-vorm te trappen."
+  },
+  {
+   "id": "tener-ir",
+   "text": "Je vormt verplichtingen (tener que) en plannen voor de nabije toekomst (ir a) met een infinitief."
+  }
+ ],
+ "vocab": [
+  {
+   "term": "tener",
+   "meaning": "hebben"
+  },
+  {
+   "term": "ir",
+   "meaning": "gaan"
+  },
+  {
+   "term": "hacer",
+   "meaning": "doen; maken"
+  },
+  {
+   "term": "poder",
+   "meaning": "kunnen; mogen"
+  },
+  {
+   "term": "querer",
+   "meaning": "willen; houden van"
+  },
+  {
+   "term": "salir",
+   "meaning": "vertrekken; uitgaan"
+  },
+  {
+   "term": "conocer",
+   "meaning": "kennen; leren kennen"
+  },
+  {
+   "term": "pedir",
+   "meaning": "vragen; bestellen"
+  },
+  {
+   "term": "volver",
+   "meaning": "terugkeren"
+  },
+  {
+   "term": "tener hambre",
+   "meaning": "honger hebben"
+  }
+ ],
+ "sections": [
+  {
+   "id": "irregulares",
+   "title": "De onregelmatige zwaargewichten",
+   "md": "In het Spaans (en in nagenoeg elke andere Romaanse taal) zijn de meest gebruikte werkwoorden vaak de meest onregelmatige. Het goede nieuws: dit zijn woorden die je zo vaak gaat horen en zeggen, dat de onregelmatige vorm heel snel natuurlijk aanvoelt. Bovendien is er een patroon: heel vaak is **alleen de ik-vorm (yo)** onregelmatig. De rest van het rijtje volgt braaf de normale regels van de `-er` of `-ir` werkwoorden.\n\nLaten we kijken naar vier essentiële werkwoorden: *ir* (gaan), *hacer* (doen/maken), *salir* (vertrekken/uitgaan) en *conocer* (kennen/leren kennen).\n\n| | ir (gaan) | hacer (doen/maken) | salir (uitgaan/vertrekken) | conocer (kennen) |\n|---|---|---|---|---|\n| **yo** | **voy** | **hago** | **salgo** | **conozco** |\n| **tú** | vas | haces | sales | conoces |\n| **él/usted** | va | hace | sale | conoce |\n| **nosotros** | vamos | hacemos | salimos | conocemos |\n| **vosotros** | vais | hacéis | salís | conocéis |\n| **ellos/ustedes** | van | hacen | salen | conocen |\n\nMerk op hoeveel dit op het Frans lijkt:\n* Bij *hacer* heb je een volkomen onregelmatige ik-vorm, net als in het Frans (*je fais* vs *tu fais*). Hier is het *yo hago*, maar daarna wordt het weer regelmatig met *haces, hace*.\n* Bij *conocer* zie je net als bij *je connais / tu connais* een kleine spellingwijziging. In het Spaans is de regel: werkwoorden die eindigen op een klinker + `-cer` of `-cir` krijgen een `z` vóór de `c` in de ik-vorm. Dat doen ze om de klank te behouden. Zo krijg je [[es:conozco]]. (Als je 'conoco' zou schrijven, zou je het als 'ko-no-ko' uitspreken, en dat klinkt fout).\n* *salir* krijgt een extra 'g' in de ik-vorm: *salgo*. Dit zie je ook bij andere werkwoorden zoals *poner* (zetten/leggen) dat *pongo* wordt.\n* *ir* is een buitenbeentje, net als het Franse *aller*. *Voy, vas, va, vamos, van*.\n\n> [!tip] Let op de tildes bij vosotros\n> [[es:hacéis]], [[es:salís]] en [[es:conocéis]] krijgen een tilde. Waarom? Ze eindigen op een -s, en de klemtoon valt op de laatste lettergreep. Volgens de basisregels zou de klemtoon op de voorlaatste moeten vallen. Omdat dit afwijkt, is de tilde verplicht.\n> Let op: *vais* bestaat maar uit één lettergreep (een *monosílabo*). Woorden van één lettergreep krijgen in het Spaans **geen** tilde, tenzij het is om twee woorden uit elkaar te houden (zoals *tú* en *tu*). Daarom is *vais* zonder tilde.\n\nEen paar voorbeelden in de praktijk:\n* [[es:Salgo del trabajo a las cinco.]] (Ik vertrek om vijf uur van het werk.)\n* [[es:¿Conoces a nuestro nuevo cliente?]] (Ken jij onze nieuwe klant?)\n* [[es:Hago la factura esta tarde.]] (Ik maak de factuur vanmiddag.)",
+   "checks": [
+    {
+     "id": "c1",
+     "type": "type",
+     "skill": "irregulares",
+     "level": 1,
+     "prompt": "Vertaal: **Ik doe / ik maak** (yo).",
+     "explain": "*hacer* heeft een onregelmatige ik-vorm: *hago*.",
+     "answers": [
+      "hago"
+     ],
+     "lang": "es"
+    },
+    {
+     "id": "c2",
+     "type": "cloze",
+     "skill": "irregulares",
+     "level": 2,
+     "prompt": "Vul de juiste vorm van **ir** in (nosotros).",
+     "explain": "*nosotros* van *ir* = *vamos*.",
+     "text": "Mañana {{vamos}} al cine.",
+     "lang": "es"
+    }
+   ]
+  },
+  {
+   "id": "expresiones-tener",
+   "title": "Tener: hebben, zijn én een klinkerwissel",
+   "md": "Het werkwoord **tener** (hebben) is een absoluut sleutelwoord, net als *avoir* in het Frans. Het combineert een onregelmatige ik-vorm (*tengo*, net als *salgo* of *hago*) met een fenomeen dat we 'klinkerwissel' noemen (daarover in de volgende sectie meer) voor de vormen van tú, él/ella/usted en ellos/ellas/ustedes.\n\n| | tener (hebben) |\n|---|---|\n| **yo** | **tengo** |\n| **tú** | **tienes** |\n| **él/usted** | **tiene** |\n| **nosotros** | tenemos |\n| **vosotros** | tenéis |\n| **ellos/ustedes**| **tienen** |\n\n### Net als het Frans: Tener voor leeftijd en sensaties\nIn het Nederlands gebruiken we het werkwoord 'zijn' voor leeftijd of hoe we ons fysiek voelen. Wij zeggen 'Ik ben 20 jaar' en 'Ik heb het koud'.\nIn het Spaans werkt dit **exact zoals in het Frans**: je *hebt* jaren, en je *hebt* kou of honger. Ze gebruiken dus altijd **tener**.\n\n*   **Leeftijd:** Net als *J'ai 22 ans* zeg je [[es:Tengo 22 años.]].\n\n> [!pitfall] De tilde op de ñ is geen versiering!\n> Zonder de tilde schrijf je *anos*, wat letterlijk 'anussen' betekent. 'Ik heb 22 anussen' is niet de beste openingszin op een netwerkevent. Gebruik dus altijd de ñ.\n\n*   **Honger / dorst:** Net als *J'ai faim* en *J'ai soif*, zeg je in het Spaans: [[es:Tengo hambre.]] en [[es:Tengo sed.]].\n*   **Kou / warmte:** Net als *J'ai froid* en *J'ai chaud*, wordt dit: [[es:Tengo frío.]] (let op de tilde op frí-o, om de tweeklank te breken) en [[es:Tengo calor.]].\n*   **Slaap / angst:** [[es:Tengo sueño.]] (Ik ben moe / ik heb slaap) en [[es:Tengo miedo.]] (Ik ben bang).\n*   **Gelijk hebben:** [[es:Tienes razón.]] (*Tu as raison.*)\n\nGebruik voor deze uitdrukkingen dus nooit het werkwoord *ser* of *estar*! *Soy frío* betekent dat je een kille persoonlijkheid hebt, niet dat je het koud hebt.",
+   "checks": [
+    {
+     "id": "c3",
+     "type": "type",
+     "skill": "expresiones-tener",
+     "level": 1,
+     "prompt": "Vertaal: **Ik heb dorst.**",
+     "explain": "Zoals *j'ai soif*: *tengo sed*.",
+     "answers": [
+      "Tengo sed.",
+      "Tengo sed"
+     ],
+     "lang": "es"
+    },
+    {
+     "id": "c4",
+     "type": "cloze",
+     "skill": "expresiones-tener",
+     "level": 2,
+     "prompt": "Vul het woord voor **jaren** in.",
+     "explain": "*años* (met ñ!).",
+     "text": "¿Cuántos {{años}} tienes?",
+     "lang": "es",
+     "errors": [
+      {
+       "match": "anos",
+       "feedback": "Zonder tilde (ñ) betekent dit 'anussen'. Gebruik altijd de ñ voor *años*.",
+       "tag": "enye"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "klinkerwissel",
+   "title": "De klinkerwissel: de laars",
+   "md": "Een van de meest kenmerkende trekjes van het Spaanse werkwoordensysteem is de **klinkerwissel** of klinkerbreking. Veel Spaanse werkwoorden veranderen hun stamklinker als de klemtoon erop valt.\n\nHistorisch gezien waren sommige klinkers in het Volkslatijn 'kort'. Als daar de klemtoon op viel, 'braken' ze als het ware in tweeën en werden ze een tweeklank.\n\nWe onderscheiden drie grote groepen klinkerwissels:\n\n1.  **e → ie**: Bijvoorbeeld [[es:querer]] (willen), [[es:pensar]] (denken, geloven), [[es:empezar]] (beginnen), [[es:entender]] (begrijpen).\n2.  **o → ue**: Bijvoorbeeld [[es:poder]] (kunnen, mogen), [[es:volver]] (terugkeren), [[es:dormir]] (slapen), [[es:costar]] (kosten).\n3.  **e → i**: (Dit gebeurt uitsluitend bij sommige werkwoorden op `-ir`): Bijvoorbeeld [[es:pedir]] (vragen, bestellen).\n\nLaten we naar de vervoeging van *poder* (kunnen) kijken om het patroon te zien:\n\n*   yo **puedo** (PU-e-do)\n*   tú **puedes** (PU-e-des)\n*   él/usted **puede** (PU-e-de)\n*   nosotros p**o**demos (po-DE-mos)\n*   vosotros p**o**déis (po-DÉIS)\n*   ellos/ustedes **pueden** (PU-e-den)\n\n> [!rule] De gouden regel voor wij en jullie\n> Waarom is het *puedo* maar *podemos*? Dat heeft alles met de klemtoon te maken.\n> Bij *yo, tú, él* en *ellos* valt de klemtoon op de stam van het werkwoord. De klinker moet de 'druk' opvangen en breekt (o wordt ue).\n> Bij *nosotros* (po-DE-mos) en *vosotros* (po-DÉIS) valt de klemtoon echter op de **uitgang** (-emos, -éis), niet op de stam. De stamklinker 'o' is onbeklemtoond, staat niet onder druk, en blijft dus gewoon een 'o'.\n>\n> Daarom is er bij wij en jullie **nóóit** een klinkerwissel. Trek je een lijn om de vormen mét klinkerwissel, dan krijg je de vorm van een laars of schoen. Daarom noemen Spaanse taalleraren dit *el verbo bota* (het laars-werkwoord). Trap niet in de val en zeg nooit 'piensamos' of 'puedemos'.\n\nVoorbeelden:\n*   [[es:¿Qué quieres hacer hoy?]] (Wat wil je vandaag doen?) — *querer*, e→ie\n*   [[es:El cliente pide un descuento.]] (De klant vraagt een korting.) — *pedir*, e→i\n*   [[es:No podemos ir mañana.]] (We kunnen morgen niet gaan.) — *poder*, o→ue, maar *nosotros* dus géén wissel!",
+   "checks": [
+    {
+     "id": "c5",
+     "type": "type",
+     "skill": "klinkerwissel",
+     "level": 2,
+     "prompt": "Vertaal: **Ik wil** (*querer*).",
+     "explain": "e → ie, klemtoon op de stam: *quiero*.",
+     "answers": [
+      "quiero",
+      "Quiero"
+     ],
+     "lang": "es"
+    },
+    {
+     "id": "c6",
+     "type": "mcq",
+     "skill": "klinkerwissel",
+     "level": 2,
+     "prompt": "Welke vorm van *pensar* (wij denken) is correct?",
+     "explain": "Bij *nosotros* valt de klemtoon op de uitgang, dus is er géén klinkerwissel.",
+     "options": [
+      "pensamos",
+      "piensamos",
+      "pensáis",
+      "piensen"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "tener-ir",
+   "title": "Twee gouden combinaties met een infinitief",
+   "md": "Met wat je tot nu toe kent, en specifiek de werkwoorden *ir* en *tener*, kun je je expressiemogelijkheden enorm vergroten. Je kunt nu heel eenvoudig de toekomst voorspellen en verplichtingen uitdrukken, zonder nieuwe vervoegingen te leren. Je combineert *ir* of *tener* gewoon met het hele werkwoord (de infinitief). Dit heten in de taalkunde 'perifrases'.\n\n### 1. Ir a + infinitief (Plannen en de nabije toekomst)\nOm te zeggen wat je **gaat** doen, gebruik je het werkwoord *ir* + het voorzetsel **a** + de infinitief. Dit is structureel en inhoudelijk exact de Franse *futur proche* (aller + infinitief).\nHet enige verschil: in het Spaans is het kleine woordje 'a' absoluut verplicht!\n\n*   [[es:Voy a trabajar.]] (Ik ga werken. / *Je vais travailler.*)\n*   [[es:Vamos a salir esta noche.]] (Wij gaan vanavond uit. / *Nous allons sortir.*)\n*   [[es:¿Qué vas a hacer mañana?]] (Wat ga je morgen doen?)\n\nJe gebruikt dit in de dagelijkse, zakelijke en informele communicatie constant. In Spanje en Latijns-Amerika wordt de *ir a* + infinitief constructie in de spreektaal veel vaker gebruikt dan de echte toekomende tijd, zeker voor plannen in de nabije toekomst.\n\n### 2. Tener que + infinitief (Verplichtingen)\nOm te zeggen wat je **moet** doen, gebruik je het werkwoord *tener* + **que** + de infinitief.\nDenk aan het Franse *J'ai à faire ça* of het Engelse *I have to*. Het is de meest neutrale en meest voorkomende manier om een verplichting uit te drukken.\n\n*   [[es:Tengo que estudiar el mercado.]] (Ik moet de markt bestuderen.)\n*   [[es:Tienes que comer algo, tienes hambre.]] (Jij moet iets eten, je hebt honger.)\n*   [[es:Tenemos que volver al hotel.]] (Wij moeten terugkeren naar het hotel.)\n\n> [!pitfall] Vergeet de verbindingsoordjes niet!\n> Een veelgemaakte fout bij beginners (zeker met Franse of Engelse invloed) is het weglaten van *a* bij *ir* en *que* bij *tener*.\n> 'Voy comer' is fout. Het moet zijn: **Voy a comer**.\n> 'Tengo trabajar' is fout. Het moet zijn: **Tengo que trabajar**.",
+   "checks": [
+    {
+     "id": "c7",
+     "type": "order",
+     "skill": "tener-ir",
+     "level": 2,
+     "prompt": "Bouw de zin: **Ik ga werken.**",
+     "explain": "ir + a + infinitief.",
+     "tiles": [
+      "Voy",
+      "a",
+      "trabajar."
+     ],
+     "lang": "es"
+    },
+    {
+     "id": "c8",
+     "type": "cloze",
+     "skill": "tener-ir",
+     "level": 2,
+     "prompt": "Vul aan: **Zij moet studeren.**",
+     "explain": "tener + que + infinitief.",
+     "text": "Ella tiene {{que}} estudiar.",
+     "lang": "es"
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "irregulares",
+   "level": 1,
+   "prompt": "Wat is de juiste vorm van **ir** voor *tú* (jij)?",
+   "explain": "yo voy, tú vas.",
+   "options": [
+    "vas",
+    "vais",
+    "vayas",
+    "voy"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "type",
+   "skill": "irregulares",
+   "level": 2,
+   "prompt": "Vertaal: **ik vertrek / ik ga uit** (*salir*).",
+   "explain": "Onregelmatige ik-vorm: *salgo*.",
+   "answers": [
+    "salgo",
+    "Salgo"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p03",
+   "type": "type",
+   "skill": "irregulares",
+   "level": 2,
+   "prompt": "Vertaal: **ik ken** (*conocer*).",
+   "explain": "Werkwoorden op -cer krijgen vaak een z voor de c in de ik-vorm: *conozco*.",
+   "answers": [
+    "conozco",
+    "Conozco"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "conoco",
+     "feedback": "Vergeet de z niet: conoZco.",
+     "tag": "irregular-yo"
+    }
+   ]
+  },
+  {
+   "id": "p04",
+   "type": "dictation",
+   "skill": "irregulares",
+   "level": 2,
+   "prompt": "Luister en schrijf wat je hoort.",
+   "explain": "*hacer* -> ik-vorm *hago*.",
+   "text": "Hago mucho deporte.",
+   "lang": "es"
+  },
+  {
+   "id": "p05",
+   "type": "cloze",
+   "skill": "expresiones-tener",
+   "level": 1,
+   "prompt": "Vul de vorm voor **tú** in (*tener*).",
+   "explain": "e→ie wissel in de stam: *tienes*.",
+   "text": "¿Tú {{tienes}} un coche?",
+   "lang": "es"
+  },
+  {
+   "id": "p06",
+   "type": "type",
+   "skill": "expresiones-tener",
+   "level": 2,
+   "prompt": "Vertaal: **Ik heb het koud.**",
+   "explain": "Net als *j'ai froid*: *tengo frío*. Let op de tilde op de i.",
+   "answers": [
+    "Tengo frío.",
+    "Tengo frío"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "tengo frio",
+     "feedback": "Vergeet de tilde op de i niet om de tweeklank te breken: frí-o.",
+     "tag": "acc-frio"
+    }
+   ]
+  },
+  {
+   "id": "p07",
+   "type": "mcq",
+   "skill": "expresiones-tener",
+   "level": 1,
+   "prompt": "Tengo 22 ___.",
+   "explain": "De ñ is verplicht, anders schrijf je een obsceen woord.",
+   "options": [
+    "años",
+    "anos",
+    "añes",
+    "aneos"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p08",
+   "type": "type",
+   "skill": "expresiones-tener",
+   "level": 2,
+   "prompt": "Vertaal: **Ik heb honger.**",
+   "explain": "Net als *j'ai faim*: *tengo hambre*.",
+   "answers": [
+    "Tengo hambre.",
+    "Tengo hambre",
+    "tengo hambre"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "klinkerwissel",
+   "level": 2,
+   "prompt": "Vertaal: **Ik kan** (*poder*).",
+   "explain": "o→ue wissel: *puedo*.",
+   "answers": [
+    "Puedo.",
+    "puedo",
+    "Puedo"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p10",
+   "type": "cloze",
+   "skill": "klinkerwissel",
+   "level": 2,
+   "prompt": "Vul *querer* in voor **nosotros**.",
+   "explain": "Bij wij/jullie is er nóóit een klinkerwissel: *queremos*.",
+   "text": "Nosotros {{queremos}} viajar a España.",
+   "lang": "es",
+   "errors": [
+    {
+     "match": "quieremos",
+     "feedback": "Let op: bij nosotros valt de klemtoon op de uitgang, dus er is GEEN klinkerwissel (queremos).",
+     "tag": "bota-nosotros"
+    }
+   ]
+  },
+  {
+   "id": "p11",
+   "type": "type",
+   "skill": "klinkerwissel",
+   "level": 2,
+   "prompt": "Vertaal: **U vraagt/bestelt** (usted, *pedir*).",
+   "explain": "e→i wissel: *pide*.",
+   "answers": [
+    "Usted pide.",
+    "pide",
+    "Pide",
+    "usted pide"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p12",
+   "type": "match",
+   "skill": "klinkerwissel",
+   "level": 2,
+   "prompt": "Koppel het werkwoord aan zijn onregelmatigheid.",
+   "explain": "Verschillende patronen in de tegenwoordige tijd.",
+   "pairs": [
+    [
+     "querer",
+     "klinkerwissel e→ie"
+    ],
+    [
+     "poder",
+     "klinkerwissel o→ue"
+    ],
+    [
+     "pedir",
+     "klinkerwissel e→i"
+    ],
+    [
+     "salir",
+     "alleen een onregelmatige yo-vorm"
+    ]
+   ]
+  },
+  {
+   "id": "p13",
+   "type": "type",
+   "skill": "klinkerwissel",
+   "level": 2,
+   "prompt": "Vertaal: **hij keert terug** (*volver*).",
+   "explain": "o→ue wissel: *vuelve*.",
+   "answers": [
+    "vuelve",
+    "Vuelve"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p14",
+   "type": "mcq",
+   "skill": "tener-ir",
+   "level": 2,
+   "prompt": "Welke zin is de correcte vertaling van 'Ik ga werken'?",
+   "explain": "ir + a + infinitief. Vergeet de 'a' niet!",
+   "options": [
+    "Voy a trabajar.",
+    "Voy trabajar.",
+    "Voy a trabajo."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p15",
+   "type": "type",
+   "skill": "tener-ir",
+   "level": 2,
+   "prompt": "Vertaal: **Wij gaan eten** (*comer*).",
+   "explain": "ir (nosotros) + a + infinitief -> *vamos a comer*.",
+   "answers": [
+    "Vamos a comer.",
+    "Vamos a comer",
+    "vamos a comer"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p16",
+   "type": "order",
+   "skill": "tener-ir",
+   "level": 2,
+   "prompt": "Bouw de zin: **Ik moet nu meteen vertrekken.**",
+   "explain": "tener que + infinitief.",
+   "tiles": [
+    "Tengo",
+    "que",
+    "salir",
+    "ahora",
+    "mismo."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "p17",
+   "type": "cloze",
+   "skill": "tener-ir",
+   "level": 2,
+   "prompt": "Vul in: **Jij moet studeren.**",
+   "explain": "tienes + que.",
+   "text": "Tú {{tienes que}} estudiar.",
+   "lang": "es"
+  },
+  {
+   "id": "p18",
+   "type": "explain",
+   "skill": "klinkerwissel",
+   "level": 3,
+   "prompt": "Waarom verandert de o in *poder* in een ue bij *puedo*, maar niet bij *podemos*?",
+   "explain": "Test of je het mechanisme achter de klinkerwissel snapt.",
+   "model": "De klinkerwissel gebeurt alleen wanneer de klemtoon op de stam valt (PU-e-do). Bij 'podemos' valt de klemtoon op de uitgang (po-DE-mos), dus blijft de stamklinker ongewijzigd.",
+   "rubric": [
+    "Verwijst naar de klemtoon.",
+    "Bij *puedo* valt de klemtoon op de stam (o/ue).",
+    "Bij *podemos* valt de klemtoon op de uitgang (e)."
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "type",
+   "skill": "irregulares",
+   "level": 2,
+   "prompt": "Vertaal: **U doet / U maakt** (usted, *hacer*).",
+   "explain": "Alleen de ik-vorm is onregelmatig. *usted hace*.",
+   "answers": [
+    "Hace.",
+    "hace",
+    "Usted hace.",
+    "usted hace"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m02",
+   "type": "cloze",
+   "skill": "irregulares",
+   "level": 2,
+   "prompt": "Vul de vorm in voor **vosotros** (*ir*).",
+   "explain": "vais (één lettergreep, dus geen tilde).",
+   "text": "¿Adónde {{vais}} vosotros?",
+   "lang": "es",
+   "errors": [
+    {
+     "match": "vaís",
+     "feedback": "vais is maar één lettergreep en krijgt dus geen tilde.",
+     "tag": "tilde-monosilabo"
+    }
+   ]
+  },
+  {
+   "id": "m03",
+   "type": "type",
+   "skill": "irregulares",
+   "level": 2,
+   "prompt": "Vertaal: **Jij kent** (*conocer*).",
+   "explain": "Alleen de ik-vorm is onregelmatig. *tú conoces*.",
+   "answers": [
+    "Conoces.",
+    "conoces",
+    "Tú conoces.",
+    "tú conoces"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m04",
+   "type": "type",
+   "skill": "irregulares",
+   "level": 2,
+   "prompt": "Vertaal: **Wij vertrekken** (*salir*).",
+   "explain": "Regelmatige wij-vorm voor een -ir werkwoord: *salimos*.",
+   "answers": [
+    "Salimos.",
+    "salimos",
+    "Nosotros salimos.",
+    "nosotros salimos"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m05",
+   "type": "multi",
+   "skill": "irregulares",
+   "level": 2,
+   "prompt": "Welke werkwoorden hebben een onregelmatige ik-vorm eindigend op **-go**?",
+   "explain": "hago, salgo, tengo. (conocer wordt conozco, querer wordt quiero).",
+   "options": [
+    "hacer",
+    "salir",
+    "tener",
+    "conocer",
+    "querer"
+   ],
+   "answers": [
+    0,
+    1,
+    2
+   ]
+  },
+  {
+   "id": "m06",
+   "type": "type",
+   "skill": "expresiones-tener",
+   "level": 2,
+   "prompt": "Vertaal: **Ik heb** (*tener*).",
+   "explain": "Onregelmatige ik-vorm met -go: *tengo*.",
+   "answers": [
+    "Tengo.",
+    "tengo",
+    "Yo tengo.",
+    "yo tengo"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m07",
+   "type": "type",
+   "skill": "expresiones-tener",
+   "level": 3,
+   "prompt": "Vertaal: **Zij hebben het warm** (ellos).",
+   "explain": "tener calor + klinkerwissel: *tienen calor*.",
+   "answers": [
+    "Tienen calor.",
+    "tienen calor",
+    "Ellos tienen calor.",
+    "ellos tienen calor"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m08",
+   "type": "cloze",
+   "skill": "expresiones-tener",
+   "level": 2,
+   "prompt": "Vul in: **Ik heb dorst.**",
+   "explain": "avoir soif -> tener sed.",
+   "text": "Tengo {{sed}}.",
+   "lang": "es"
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "expresiones-tener",
+   "level": 3,
+   "prompt": "Vertaal: **Wij zijn 30 jaar** (getal in cijfers mag).",
+   "explain": "avoir 30 ans -> tener 30 años. Geen klinkerwissel bij wij (tenemos).",
+   "answers": [
+    "Tenemos 30 años.",
+    "tenemos 30 años",
+    "Tenemos treinta años.",
+    "tenemos treinta años"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "anos",
+     "feedback": "Zonder tilde op de ñ betekent dit 'anus'. Gebruik de ñ voor 'años' (jaren).",
+     "tag": "enye"
+    },
+    {
+     "match": "tienemos",
+     "feedback": "Bij nosotros is er nóóit een klinkerwissel. Het is tenemos.",
+     "tag": "bota-nosotros"
+    }
+   ]
+  },
+  {
+   "id": "m10",
+   "type": "type",
+   "skill": "klinkerwissel",
+   "level": 2,
+   "prompt": "Vertaal: **Jij kunt / jij mag** (*poder*).",
+   "explain": "o→ue wissel: *puedes*.",
+   "answers": [
+    "Puedes.",
+    "puedes",
+    "Tú puedes.",
+    "tú puedes"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m11",
+   "type": "cloze",
+   "skill": "klinkerwissel",
+   "level": 2,
+   "prompt": "Vul de ik-vorm (yo) in van *pensar*.",
+   "explain": "e→ie wissel: *pienso*.",
+   "text": "Yo {{pienso}} que sí.",
+   "lang": "es"
+  },
+  {
+   "id": "m12",
+   "type": "type",
+   "skill": "klinkerwissel",
+   "level": 3,
+   "prompt": "Vertaal: **Wij slapen** (*dormir*).",
+   "explain": "Geen klinkerwissel bij wij: *dormimos*.",
+   "answers": [
+    "Dormimos.",
+    "dormimos",
+    "Nosotros dormimos.",
+    "nosotros dormimos"
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "/due/",
+     "feedback": "Bij nosotros en vosotros valt de klemtoon op de uitgang. Er is dan nóóit een klinkerwissel: dormimos.",
+     "tag": "bota-nosotros"
+    }
+   ]
+  },
+  {
+   "id": "m13",
+   "type": "type",
+   "skill": "klinkerwissel",
+   "level": 2,
+   "prompt": "Vertaal: **Zij vragen/bestellen** (ellos, *pedir*).",
+   "explain": "e→i wissel: *piden*.",
+   "answers": [
+    "Piden.",
+    "piden",
+    "Ellos piden.",
+    "ellos piden"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m14",
+   "type": "type",
+   "skill": "klinkerwissel",
+   "level": 2,
+   "prompt": "Vertaal: **Hij wil** (*querer*).",
+   "explain": "e→ie wissel: *quiere*.",
+   "answers": [
+    "Quiere.",
+    "quiere",
+    "Él quiere.",
+    "él quiere"
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m15",
+   "type": "cloze",
+   "skill": "klinkerwissel",
+   "level": 2,
+   "prompt": "Vul in: **Jullie kunnen** (*vosotros*).",
+   "explain": "Geen klinkerwissel, wél een tilde op de uitgang: *podéis*.",
+   "text": "Vosotros {{podéis}} entrar.",
+   "lang": "es",
+   "errors": [
+    {
+     "match": "puedeis",
+     "feedback": "Bij vosotros is er nóóit een klinkerwissel (podéis).",
+     "tag": "bota-nosotros"
+    },
+    {
+     "match": "podeis",
+     "feedback": "Klemtoon op de uitgang (po-DÉIS), eindigt op -s: vergeet de tilde op de e niet!",
+     "tag": "tilde"
+    }
+   ]
+  },
+  {
+   "id": "m16",
+   "type": "mcq",
+   "skill": "tener-ir",
+   "level": 2,
+   "prompt": "Wat is de juiste vertaling voor: **Zij gaat lezen**?",
+   "explain": "ir + a + infinitief.",
+   "options": [
+    "Va a leer.",
+    "Va leer.",
+    "Ella voy a leer.",
+    "Vaya leer."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m17",
+   "type": "type",
+   "skill": "tener-ir",
+   "level": 3,
+   "prompt": "Vertaal: **Jij moet vertrekken.**",
+   "explain": "tener que + salir -> tienes que salir.",
+   "answers": [
+    "Tienes que salir.",
+    "tienes que salir",
+    "Tú tienes que salir."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m18",
+   "type": "order",
+   "skill": "tener-ir",
+   "level": 3,
+   "prompt": "Bouw de zin: **Wij gaan een koffie bestellen.**",
+   "explain": "ir a + infinitief.",
+   "tiles": [
+    "Vamos",
+    "a",
+    "pedir",
+    "un",
+    "café."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m19",
+   "type": "type",
+   "skill": "tener-ir",
+   "level": 2,
+   "prompt": "Vertaal: **Ik ga slapen.**",
+   "explain": "ir a + dormir -> voy a dormir.",
+   "answers": [
+    "Voy a dormir.",
+    "voy a dormir",
+    "Yo voy a dormir."
+   ],
+   "lang": "es"
+  },
+  {
+   "id": "m20",
+   "type": "type",
+   "skill": "tener-ir",
+   "level": 3,
+   "prompt": "Vertaal: **Wij moeten werken.**",
+   "explain": "tener que + trabajar (en let op: geen klinkerwissel bij nosotros!).",
+   "answers": [
+    "Tenemos que trabajar.",
+    "tenemos que trabajar",
+    "Nosotros tenemos que trabajar."
+   ],
+   "lang": "es",
+   "errors": [
+    {
+     "match": "/tiene/",
+     "feedback": "Bij nosotros is er geen klinkerwissel (tenemos).",
+     "tag": "bota-nosotros"
+    }
+   ]
+  }
+ ],
+ "production": {
+  "type": "write",
+  "lang": "es",
+  "minWords": 40,
+  "prompt": "**Stuur een WhatsAppje** naar je Spaanse vriend Carlos (tú). Vertel dat je honger hebt en iets wilt eten. Zeg dat je vandaag moet werken tot 18:00, maar dat je daarna naar het centrum gaat (*el centro*). Vraag of jullie samen kunnen uitgaan om te eten (*cenar*). (40–60 woorden). Gebruik minstens: *tener hambre*, *querer*, *tener que*, *ir a* en *salir*.",
+  "model": "¡Hola Carlos! Tengo mucha hambre y quiero comer algo rico. Hoy tengo que trabajar hasta las seis, pero después voy a ir al centro. ¿Podemos salir a cenar esta noche? ¡Tengo muchas ganas de verte! Un abrazo.",
+  "rubric": [
+   "Begroeting en informele afsluiting",
+   "Correct gebruik van *tener hambre* (zonder estar of ser)",
+   "Klinkerwissel correct in *quiero* (niet quero)",
+   "Verplichting gevormd met *tener que* + infinitief",
+   "Toekomstplan gevormd met *voy a* + infinitief"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-yo-hacer",
+   "front": "Ik doe / ik maak (*hacer*)",
+   "back": "hago",
+   "answers": [
+    "hago"
+   ],
+   "lang": "es",
+   "skill": "irregulares"
+  },
+  {
+   "id": "c-yo-salir",
+   "front": "Ik vertrek / ik ga uit (*salir*)",
+   "back": "salgo",
+   "answers": [
+    "salgo"
+   ],
+   "lang": "es",
+   "skill": "irregulares"
+  },
+  {
+   "id": "c-yo-conocer",
+   "front": "Ik ken (*conocer*)",
+   "back": "conozco",
+   "answers": [
+    "conozco"
+   ],
+   "lang": "es",
+   "skill": "irregulares"
+  },
+  {
+   "id": "c-tener-hambre",
+   "front": "honger hebben (letterlijk, net als het Frans)",
+   "back": "tener hambre",
+   "answers": [
+    "tener hambre"
+   ],
+   "lang": "es",
+   "skill": "expresiones-tener"
+  },
+  {
+   "id": "c-anos",
+   "front": "Hoe druk je je leeftijd uit?",
+   "back": "Met **tener** (net als *avoir* in het Frans). Bijv.: *Tengo 20 años.* (Vergeet de ñ niet!)",
+   "skill": "expresiones-tener"
+  },
+  {
+   "id": "c-bota",
+   "front": "Bij welke personen is er **nooit** een klinkerwissel in de tegenwoordige tijd?",
+   "back": "Bij **nosotros** en **vosotros**, want daar valt de klemtoon op de uitgang en niet op de stam.",
+   "skill": "klinkerwissel"
+  },
+  {
+   "id": "c-ir-a",
+   "front": "Hoe zeg je: **Ik ga studeren**?",
+   "back": "Voy a estudiar. (*ir a* + infinitief)",
+   "answers": [
+    "Voy a estudiar.",
+    "voy a estudiar"
+   ],
+   "lang": "es",
+   "skill": "tener-ir"
+  },
+  {
+   "id": "c-tener-que",
+   "front": "Hoe zeg je: **Ik moet studeren**?",
+   "back": "Tengo que estudiar. (*tener que* + infinitief)",
+   "answers": [
+    "Tengo que estudiar.",
+    "tengo que estudiar"
+   ],
+   "lang": "es",
+   "skill": "tener-ir"
+  },
+  {
+   "id": "c-pedir-ei",
+   "front": "vragen, bestellen (e→i)",
+   "back": "pedir",
+   "answers": [
+    "pedir"
+   ],
+   "lang": "es",
+   "skill": "klinkerwissel"
+  }
+ ],
+ "sources": [
+  "RAE y ASALE — *Ortografía de la lengua española* (2010)",
+  "Instituto Cervantes — *Plan curricular* (niveaus A1–B2)"
+ ],
+ "kind": "core",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-28",
+  "adaptedFor": "Thibaud heeft 7 dagen niet geoefend. De theorie is extra duidelijk opgebouwd met de focus op de parallel met het Frans om hem weer efficiënt op gang te trekken."
+ }
+}

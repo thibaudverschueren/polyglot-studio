@@ -1,0 +1,567 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "jev",
+ "id": 5,
+ "roadmap": "jev-04-epistemic-calibration",
+ "kind": "core",
+ "title": "Epistemische Kalibratie en Onzekerheid",
+ "subtitle": "Kostenmatrices, asymmetrische risico's en de optimale beslissingsdrempel voor AI-modellen",
+ "level": "gevorderd",
+ "minutes": 45,
+ "summary": "Betrouwbare software neemt niet zomaar blindelings de meest waarschijnlijke beslissing; het weegt onzekerheid af tegen asymmetrische bedrijfskosten. In deze les leer je hoe je overconfidence herkent via reliability diagrams, en hoe je een exacte wiskundige beslissingsdrempel berekent op basis van een False Positive / False Negative kostenmatrix.",
+ "objectives": [
+  {
+   "id": "slm-constrained",
+   "text": "Small Language Models inzetten met constrained decoding (Outlines) voor 100% syntaxisgarantie."
+  },
+  {
+   "id": "modernbert-encoder",
+   "text": "Begrijpen waarom encoder-only modellen (ModernBERT) sneller zijn voor beslissingen dan generatieve decoders."
+  },
+  {
+   "id": "reliability-diagram",
+   "text": "Betrouwbaarheidsdiagrammen interpreteren om overconfidence in classificatiemodellen te detecteren."
+  },
+  {
+   "id": "cost-matrix",
+   "text": "Een kostenmatrix opstellen voor asymmetrische fouten (False Positives vs False Negatives)."
+  },
+  {
+   "id": "decision-threshold",
+   "text": "Gekalibreerde beslissingsdrempels berekenen via de formule met asymmetrische kosten."
+  },
+  {
+   "id": "post-hoc-calibration",
+   "text": "Post-hoc kalibratie (Temperature/Platt scaling) en Bayesiaanse onzekerheid toepassen in software agent architectuur."
+  }
+ ],
+ "sections": [
+  {
+   "id": "sec-01",
+   "title": "1. Herhaling: Snelheid, Syntaxis en de Decimale Punt",
+   "md": "Uit je eerdere sessies bleken twee concepten cruciaal voor we verdergaan met de wiskunde van kalibratie: snelheid en syntaxisgarantie.\n\nTen eerste: **Snelheid**. Generatieve decoders (zoals GPT-4o) zijn traag omdat ze token voor token genereren (autoregressief). Modellen zoals **ModernBERT** (149 miljoen parameters, oftewel 0.149 miljard) zijn *encoder-only*. Ze verwerken de hele tekst in één bidirectionele pas en voorspellen direct de logit-categorie. Omdat ze geen iteratieve generatielus hebben, zijn ze tot 100x sneller voor binaire of categorische beslissingen.\n\nTen tweede: **Syntaxisgarantie**. Als je besluit om lokaal met een open-source Small Language Model (SLM) te werken (zoals het uitstekende **Qwen2.5-0.5B**), genereert dit model van nature tekst. Om te garanderen dat je 100% betrouwbare JSON of specifieke keuzes terugkrijgt zonder parse-fouten, gebruik je de Python library **Outlines**. Outlines forceert de output via *logit masking*.\n\n> [!note] Datastandaarden in AI\n> In programmeer- en AI-contexten gebruiken we voor decimale getallen *altijd* een internationale decimale punt, nooit een komma. Je schrijft dus `0.149` in plaats van `0,149`."
+  },
+  {
+   "id": "sec-02",
+   "title": "2. De Illusie van Zekerheid: Overconfidence",
+   "md": "Wanneer een classificatiemodel (zoals Jev, ModernBERT of een lokaal SLM) voorspelt dat een factuur frauduleus is met een waarschijnlijkheid van $P=0.90$, betekent dit idealiter dat van alle facturen die precies deze score krijgen, exact 90% daadwerkelijk fraude is. Deze eigenschap heet **epistemische kalibratie**.\n\nGeneratieve LLM's die getraind zijn met RLHF (zoals Claude of GPT) zijn zelden intrinsiek goed gekalibreerd. Omdat ze getraind zijn om mensen te pleasen, lijden ze vaak aan **overconfidence**: het model is 95% zeker van zijn zaak, maar heeft het in werkelijkheid slechts 60% van de keren bij het rechte eind.\n\nWe visualiseren dit met een **reliability diagram** (betrouwbaarheidsdiagram):\n- De **X-as** toont de voorspelde waarschijnlijkheid (predicted probability).\n- De **Y-as** toont de werkelijke empirische frequentie (true frequency).\n\nLigt de curve *onder* de perfecte diagonaal? Dan is het model overconfident. Het belooft meer zekerheid dan het waarmaakt. Ligt de curve er *boven*? Dan is het model underconfident (het is vaker juist dan het zelf denkt)."
+  },
+  {
+   "id": "sec-03",
+   "title": "3. De Asymmetrische Kostenmatrix",
+   "md": "Waarom is kalibratie de heilige graal in B2B-automatisering? Omdat in de echte wereld fouten zelden gelijkwaardig zijn. Een wiskundige **kostenmatrix** classificeert fouten asymmetrisch in twee kampen:\n\n1. **False Positive (FP - Type I fout):** Een onterecht alarm. \n   *Voorbeeld:* Je fraudefilter blokkeert de transactie van een trouwe, legitieme klant. Dit leidt tot frictie en supportkosten. Stel de kost op €10.\n2. **False Negative (FN - Type II fout):** Een gemiste detectie. \n   *Voorbeeld:* Het filter merkt een frauduleuze lening niet op. Het geld wordt overgemaakt naar de scammer en is definitief weg. Stel de kost op €1.500.\n\nBij standaard LLM-prompting proberen we de balans te zoeken met instructies als `\"Wees extreem streng op fraude\"`. Dat is subjectief, wiskundig onprecies en moeilijk te testen. Met Jev en gekalibreerde kansen doen we iets veel beters: we berekenen exact waar de drempel moet liggen."
+  },
+  {
+   "id": "sec-04",
+   "title": "4. De Optimale Beslissingsdrempel",
+   "md": "In klassieke machine learning staat de afkapwaarde (decision threshold) standaard op 50% ($t=0.50$). Als de risico's asymmetrisch zijn, is dat een dure vergissing. De verwachte kosten minimaliseer je met de volgende wiskundige formule:\n\n$$t = \\frac{C_{FP}}{C_{FP} + C_{FN}}$$\n\nWaar $C_{FP}$ de verwachte financiële kost van een False Positive is, en $C_{FN}$ de kost van een False Negative.\n\n> [!example] De Afkapwaarde Berekenen\n> We nemen de kosten uit de vorige sectie: $C_{FP} = 10$ en $C_{FN} = 1500$.\n> De optimale drempel is $t = \\frac{10}{10 + 1500} = \\frac{10}{1510} \\approx 0.0066$.\n\nDit betekent dat je het alarm al moet laten afgaan zodra de AI voorspelt dat de kans op fraude groter is dan **0.66%** ($P > 0.0066$). \n\nHier valt de puzzel in elkaar: als je AI-model *niet* zuiver gekalibreerd is (en 0.1% voorspelt terwijl het werkelijke risico 2% is), negeer je de wiskundige drempel en verlies je alsnog duizenden euro's."
+  },
+  {
+   "id": "sec-05",
+   "title": "5. Post-Hoc Kalibratie en System 2 Fallback",
+   "md": "Wat als je toch een krachtig, maar ongekalibreerd open-source model gebruikt in productie? Dan repareer je de onzekerheid achteraf via **post-hoc kalibratie**:\n\n- **Platt Scaling:** Je traint een lichte logistische regressie bovenop de ruwe logit-outputs van het neurale netwerk, zodat de outputs beter afgestemd raken op de werkelijke distributie.\n- **Temperature Scaling:** Wanneer een model stelselmatig overconfident is, deel je alle logits door een constante temperatuurwaarde $T > 1$ voordat je de softmax berekent. Dit 'verzacht' de waarschijnlijkheden en drukt extreme scores (99.9%) terug naar realistische waarden (bijv. 85%).\n\n> [!rule] Bayesiaanse Routing in Agent Workflows\n> Zelfs met een perfect gekalibreerd model botst je software op grensgevallen (edge cases). Stel dat je drempel $t=0.01$ is en het model voorspelt $P=0.0098$.\n> Omdat dit binnen de statistische foutmarge (hoge entropie) valt, bouw je in n8n een routering in: escaleer dit ene grensgeval naar een traag, redenerend **System 2 model** (zoals Claude 3.5 Sonnet met *chain-of-thought*) of plan een handmatige taak in voor een menselijke medewerker."
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Typ de naam van de open-source Python library die logit masking gebruikt om JSON syntaxis 100% te garanderen bij lokale SLM's. Let op de exacte spelling.",
+   "explain": "De library heet Outlines.",
+   "answers": [
+    "Outlines",
+    "outlines"
+   ],
+   "lang": "code",
+   "errors": [
+    {
+     "match": "Outline",
+     "feedback": "Bijna! De library is meervoud: Outlines.",
+     "tag": "spelling-outlines"
+    }
+   ]
+  },
+  {
+   "id": "p02",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Wat is de exacte naam van het compacte 0.5B model van Alibaba dat ideaal is voor lokale besluitvorming? Typ 'Qwen2.5-0.5B'.",
+   "explain": "Dit snelle model heet Qwen2.5-0.5B.",
+   "answers": [
+    "Qwen2.5-0.5B",
+    "qwen2.5-0.5B",
+    "qwen2.5-0.5b"
+   ],
+   "lang": "code",
+   "errors": [
+    {
+     "match": "Qwen",
+     "feedback": "Probeer de volledige, specifieke versie (inclusief 2.5 en 0.5B) in te vullen.",
+     "tag": "incomplete-name"
+    }
+   ]
+  },
+  {
+   "id": "p03",
+   "type": "numeric",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "ModernBERT-base heeft circa 149 miljoen parameters. Hoeveel miljard is dat? Geef je antwoord als een decimaal getal (bv. 1.23).",
+   "explain": "149 miljoen parameters is 0.149 miljard. Zorg dat je in AI altijd een decimale punt gebruikt.",
+   "value": 0.149,
+   "tolerance": 0.001,
+   "errors": [
+    {
+     "match": "/,/",
+     "feedback": "In programmeer- en AI-context gebruiken we altijd een punt als decimaal scheidingsteken, geen komma.",
+     "tag": "decimal-comma"
+    }
+   ]
+  },
+  {
+   "id": "p04",
+   "type": "mcq",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Waarom haalt ModernBERT een extreme beslissingssnelheid (< 50 ms) ten opzichte van traditionele LLM's?",
+   "explain": "ModernBERT is een encoder-only architectuur; het verwerkt alle input bidirectioneel in één voorwaartse pas zonder de trage, iteratieve generatie van tokens.",
+   "options": [
+    "Omdat het een encoder-only model is dat de autoregressieve generatielus volledig overslaat.",
+    "Omdat het alleen op supercomputers van Google kan draaien.",
+    "Omdat het getraind is op een extreem klein corpus zonder enige wiskundige capaciteiten.",
+    "Omdat het weigert beslissingen te nemen als de context langer is dan 10 tokens."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p05",
+   "type": "mcq",
+   "skill": "reliability-diagram",
+   "level": 2,
+   "prompt": "Wat toont een reliability diagram precies aan?",
+   "explain": "Een reliability diagram visualiseert de mate van epistemische kalibratie door de verwachte kans (predicted probability) af te zetten tegen de werkelijke frequentie (true frequency).",
+   "options": [
+    "De correlatie tussen de voorspelde waarschijnlijkheid (X-as) en de werkelijke empirische frequentie (Y-as).",
+    "Het aantal gegenereerde tokens per seconde tegenover de temperatuur.",
+    "De GPU-temperatuur tegenover het stroomverbruik tijdens inferentie.",
+    "Het aantal False Positives vergeleken met het aantal unieke gebruikers in de database."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p06",
+   "type": "numeric",
+   "skill": "reliability-diagram",
+   "level": 3,
+   "prompt": "Een model voorspelt systematisch spam met $P=0.95$. In werkelijkheid is slechts 55% van die gevallen spam (de werkelijke frequentie is 0.55). Wat is het absolute verschil (de kalibratiekloof) tussen belofte en werkelijkheid?",
+   "explain": "De voorspelde waarschijnlijkheid is 0.95, de werkelijke frequentie is 0.55. Het verschil is 0.95 - 0.55 = 0.40. (Een zwaar overconfident model).",
+   "value": 0.4,
+   "tolerance": 0.01
+  },
+  {
+   "id": "p07",
+   "type": "mcq",
+   "skill": "reliability-diagram",
+   "level": 2,
+   "prompt": "Als de kalibratiecurve in een reliability diagram sterk ónder de perfecte diagonaal loopt, waaraan lijdt het model dan?",
+   "explain": "Als de curve eronder ligt, voorspelt het model hogere kansen dan empirisch gemeten wordt; het belooft meer zekerheid dan het waarmaakt. Dit heet overconfidence.",
+   "options": [
+    "Overconfidence",
+    "Underconfidence",
+    "Gradient Exploding",
+    "Catastrophic Forgetting"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p08",
+   "type": "type",
+   "skill": "cost-matrix",
+   "level": 2,
+   "prompt": "Wat is de vakterm voor een Type I fout in classificatie, zoals een onterecht alarm dat afgaat voor een eerlijke klant?",
+   "explain": "Dit noemen we een False Positive (FP).",
+   "answers": [
+    "False Positive",
+    "false positive",
+    "False positive",
+    "FP"
+   ],
+   "lang": "en"
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "cost-matrix",
+   "level": 2,
+   "prompt": "Wat is de vakterm voor een Type II fout, zoals een frauduleuze lening die we compleet missen?",
+   "explain": "Dit noemen we een False Negative (FN).",
+   "answers": [
+    "False Negative",
+    "false negative",
+    "False negative",
+    "FN"
+   ],
+   "lang": "en"
+  },
+  {
+   "id": "p10",
+   "type": "mcq",
+   "skill": "cost-matrix",
+   "level": 2,
+   "prompt": "In een medische triage-applicatie voorspelt een AI of iemand een levensbedreigende aandoening heeft. Wat levert waarschijnlijk de hoogste kosten ($C$) op?",
+   "explain": "Een zieke persoon ten onrechte naar huis sturen (False Negative) kan fataal zijn, wat zwaarder doorweegt dan een gezonde persoon onderwerpen aan een extra scan (False Positive).",
+   "options": [
+    "Een False Negative (de aandoening missen en de patiënt naar huis sturen).",
+    "Een False Positive (een gezonde patiënt onnodig onderwerpen aan een extra scan).",
+    "Een True Negative (de patiënt is gezond en er is terecht geen actie ondernomen).",
+    "Beide fouten leveren standaard exact dezelfde kosten op in een medische context."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p11",
+   "type": "numeric",
+   "skill": "decision-threshold",
+   "level": 2,
+   "prompt": "Stel $C_{FP} = €20$ en $C_{FN} = €80$. Bereken de optimale beslissingsdrempel (decision threshold) $t$.",
+   "explain": "$t = 20 / (20 + 80) = 20 / 100 = 0.20$.",
+   "value": 0.2,
+   "tolerance": 0.01
+  },
+  {
+   "id": "p12",
+   "type": "numeric",
+   "skill": "decision-threshold",
+   "level": 2,
+   "prompt": "Stel een gemiste fraude ($C_{FN}$) kost €400, en een valse beschuldiging ($C_{FP}$) kost €100. Bereken de optimale drempel $t$.",
+   "explain": "$t = 100 / (100 + 400) = 100 / 500 = 0.20$.",
+   "value": 0.2,
+   "tolerance": 0.01
+  },
+  {
+   "id": "p13",
+   "type": "numeric",
+   "skill": "decision-threshold",
+   "level": 3,
+   "prompt": "Stel de kosten van een False Positive zijn €5, maar de kosten van een False Negative bedragen €995. Vanaf welke waarschijnlijkheid $P$ (als een decimaal) moet je alarm slaan?",
+   "explain": "$t = 5 / (5 + 995) = 5 / 1000 = 0.005$. Vanaf $P > 0.005$ slaat het alarm aan.",
+   "value": 0.005,
+   "tolerance": 0.0001
+  },
+  {
+   "id": "p14",
+   "type": "mcq",
+   "skill": "post-hoc-calibration",
+   "level": 2,
+   "prompt": "Wat is de wiskundige functie van 'Temperature scaling' ($T > 1$) voor kalibratie?",
+   "explain": "Door de logits te delen door een constante $T$ groter dan 1 vóór softmax, worden de pieken afgevlakt. Extreme kansen (99.9%) worden naar de middenmoot getrokken (verzacht).",
+   "options": [
+    "Het deelt de ruwe logits om overconfident uitkomsten te 'verzachten' zonder de categorische rangorde aan te tasten.",
+    "Het verhoogt de onzekerheid zó sterk dat de output willekeurig (random noise) wordt.",
+    "Het dwingt de GPU-ventilator om op een lagere temperatuur te draaien.",
+    "Het traint de weging van het attention-mechanisme opnieuw vanaf nul."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p15",
+   "type": "type",
+   "skill": "post-hoc-calibration",
+   "level": 2,
+   "prompt": "Welke post-hoc techniek traint een lichte logistische regressie bovenop de logit-outputs om de kansen statistisch af te stemmen?",
+   "explain": "Dit proces noemen we Platt scaling.",
+   "answers": [
+    "Platt scaling",
+    "platt scaling",
+    "Platt Scaling",
+    "Platt"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "p16",
+   "type": "cloze",
+   "skill": "post-hoc-calibration",
+   "level": 2,
+   "prompt": "Vul de ontbrekende term in voor het afhandelen van Bayesiaanse onzekerheid.",
+   "explain": "Edge cases vallen buiten het bereik van betrouwbare System 1 automatisering en behoeven deliberatie.",
+   "text": "Wanneer een AI-voorspelling een hoge Bayesiaanse onzekerheid vertoont (heel dicht bij de afkapwaarde), is de beste fallback het routeren naar een traag, deliberatief {{System 2|system 2|menselijk}} model of analist."
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "cloze",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Vul de ontbrekende termen in over syntaxisgarantie.",
+   "explain": "Outlines gebruikt logit masking op het niveau van de tokenizer om structuur af te dwingen.",
+   "text": "De library {{Outlines|outlines}} gebruikt {{logit}} masking om te garanderen dat een lokaal model altijd geldige JSON produceert."
+  },
+  {
+   "id": "m02",
+   "type": "cloze",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Vul het architectuurtype in dat beslissingen accelereert.",
+   "explain": "Encoder-only modellen zoals ModernBERT hebben geen generatielus, waardoor ze superieur zijn in beslissingssnelheid.",
+   "text": "In tegenstelling tot LLM's is ModernBERT een {{encoder-only|encoder}} model, wat de trage generatielus vermijdt."
+  },
+  {
+   "id": "m03",
+   "type": "numeric",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Hoeveel miljard parameters bevat ModernBERT-base als het totaal op 149 miljoen parameters ligt? (Gebruik een punt).",
+   "explain": "149 miljoen is gelijk aan 0.149 miljard.",
+   "value": 0.149,
+   "tolerance": 0.001
+  },
+  {
+   "id": "m04",
+   "type": "cloze",
+   "skill": "reliability-diagram",
+   "level": 2,
+   "prompt": "Vul het ontbrekende concept in.",
+   "explain": "Een model dat zichzelf enorm overschat lijdt aan overconfidence.",
+   "text": "Een model dat systematisch 90% zeker is, maar slechts in 60% van de gevallen de juiste beslissing neemt, lijdt aan {{overconfidence}}."
+  },
+  {
+   "id": "m05",
+   "type": "type",
+   "skill": "reliability-diagram",
+   "level": 2,
+   "prompt": "Hoe noemt men de grafiek die de voorspelde waarschijnlijkheid (X-as) afzet tegen de werkelijke empirische frequentie (Y-as)?",
+   "explain": "Dit is het reliability diagram.",
+   "answers": [
+    "reliability diagram",
+    "Reliability diagram",
+    "betrouwbaarheidsdiagram"
+   ],
+   "lang": "en"
+  },
+  {
+   "id": "m06",
+   "type": "cloze",
+   "skill": "cost-matrix",
+   "level": 2,
+   "prompt": "Vul de juiste classificatietermen (in het Engels) in.",
+   "explain": "False Positive is onterecht alarm; False Negative is een gemiste kans.",
+   "text": "In de kostenmatrix is een onterecht alarm een {{False Positive|false positive|FP}}, en een gemiste detectie een {{False Negative|false negative|FN}}."
+  },
+  {
+   "id": "m07",
+   "type": "numeric",
+   "skill": "decision-threshold",
+   "level": 2,
+   "prompt": "Stel $C_{FP} = €10$ en $C_{FN} = €90$. Bereken de wiskundig optimale beslissingsdrempel.",
+   "explain": "$10 / (10 + 90) = 10 / 100 = 0.10$.",
+   "value": 0.1,
+   "tolerance": 0.01
+  },
+  {
+   "id": "m08",
+   "type": "numeric",
+   "skill": "decision-threshold",
+   "level": 3,
+   "prompt": "Stel dat een onterechte blokkering €300 kost, en een gemiste fraude €700 kost. Vanaf welke uitgerekende waarschijnlijkheid $P$ weiger je de klant?",
+   "explain": "$300 / (300 + 700) = 300 / 1000 = 0.30$.",
+   "value": 0.3,
+   "tolerance": 0.01
+  },
+  {
+   "id": "m09",
+   "type": "numeric",
+   "skill": "decision-threshold",
+   "level": 3,
+   "prompt": "In extreme B2B contracten is een false positive soms €1 waard, maar een false negative €99. Wat is in theorie de optimale drempel (decimaal)?",
+   "explain": "$1 / (1 + 99) = 1 / 100 = 0.01$.",
+   "value": 0.01,
+   "tolerance": 0.001
+  },
+  {
+   "id": "m10",
+   "type": "numeric",
+   "skill": "decision-threshold",
+   "level": 2,
+   "prompt": "Een ticketroutering vergt $C_{FP} = €50$ en $C_{FN} = €150$. Wat is de drempel $t$?",
+   "explain": "$50 / (50 + 150) = 50 / 200 = 0.25$.",
+   "value": 0.25,
+   "tolerance": 0.01
+  },
+  {
+   "id": "m11",
+   "type": "type",
+   "skill": "post-hoc-calibration",
+   "level": 2,
+   "prompt": "Welke techniek traint een lichte logistische regressie bovenop logit-scores om betere kalibratie te forceren?",
+   "explain": "Dit proces is Platt scaling.",
+   "answers": [
+    "Platt scaling",
+    "platt scaling",
+    "Platt"
+   ],
+   "lang": "en"
+  },
+  {
+   "id": "m12",
+   "type": "cloze",
+   "skill": "post-hoc-calibration",
+   "level": 2,
+   "prompt": "Vul de grensgeval-strategie in.",
+   "explain": "Je forceert System 1 niet; je besteedt complexe twijfel uit aan een trager proces.",
+   "text": "Wanneer de Jev onzekerheid rond de beslissingsdrempel te hoog wordt, stuur je deze payload voor deliberatie door naar een autoregressief {{System 2|system 2}} AI-model of analist."
+  },
+  {
+   "id": "m13",
+   "type": "numeric",
+   "skill": "reliability-diagram",
+   "level": 3,
+   "prompt": "Als een AI in 20% van de voorspellingen daadwerkelijk correct is (Y-as), maar telkens $P=0.85$ (X-as) voorspelt. Hoe groot is de onzekerheidskloof wiskundig (absoluut verschil)?",
+   "explain": "$0.85 - 0.20 = 0.65$.",
+   "value": 0.65,
+   "tolerance": 0.01
+  },
+  {
+   "id": "m14",
+   "type": "mcq",
+   "skill": "slm-constrained",
+   "level": 1,
+   "prompt": "Waarom kiezen we in lokale architecturen vaak voor een SLM zoals Qwen2.5-0.5B in combinatie met Outlines, en niet zomaar de ruwe model-API?",
+   "explain": "Zonder Outlines levert een SLM onbetrouwbare output die code kan doen crashen; Outlines dwingt perfecte logit syntaxis af.",
+   "options": [
+    "Zonder maskering garandeert een SLM geen syntactisch correcte output, wat stroomafwaarts parsing crashes veroorzaakt in workflows.",
+    "Omdat Qwen2.5-0.5B uitsluitend Chinees spreekt tenzij je Outlines als vertaalmodule inlaadt.",
+    "Omdat we daarmee vermijden dat we een GPU moeten aanschaffen."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m15",
+   "type": "mcq",
+   "skill": "cost-matrix",
+   "level": 2,
+   "prompt": "In een spamfilter voor belangrijke juridische documenten wil je koste wat kost vermijden dat een échte klantmail onterecht in de spambox belandt. De prijs van het handmatig verwijderen van wat extra spam uit de inbox neem je op de koop toe. Wat geldt hier in de kostenmatrix?",
+   "explain": "De onterechte alarmbel (FP) om een echte mail in spam te steken is catastrofaal vergeleken met de kleine overlast van spam (FN).",
+   "options": [
+    "De kosten van een False Positive ($C_{FP}$) zijn exponentieel groter dan de kosten van een False Negative ($C_{FN}$).",
+    "De kosten van een False Negative ($C_{FN}$) zijn exponentieel groter dan de kosten van een False Positive ($C_{FP}$).",
+    "De kosten van een False Positive en een False Negative zijn in deze context wiskundig exact gelijk.",
+    "De kostenmatrix kan in dit specifieke geval niet worden berekend omdat het om teksten gaat."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m16",
+   "type": "mcq",
+   "skill": "decision-threshold",
+   "level": 3,
+   "prompt": "Stel je beslissingsdrempel op basis van je asymmetrische kosten ligt exact op $t=0.04$ (4%). Het Jev-model berekent na een scan een gekalibreerde fraudekans van $P=0.03$ (3%). Wat doet je software architectuur?",
+   "explain": "Omdat de P (0.03) kleiner is dan de kritieke drempel (0.04), vlagt de code dit NIET als fraude. Het wordt behandeld als een legitieme status.",
+   "options": [
+    "De software laat de transactie door als zijnde legitiem, aangezien de kans onder de kritieke pijndrempel ligt.",
+    "De software blokkeert de transactie, want bij asymmetrische kosten vlag je altijd alles boven de 1%.",
+    "De software stuurt het model automatisch door naar Platt scaling om de 3% naar 100% te pushen."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m17",
+   "type": "mcq",
+   "skill": "post-hoc-calibration",
+   "level": 2,
+   "prompt": "Wat is het wezenlijke verschil tussen Platt scaling en Temperature scaling bij post-hoc kalibratie?",
+   "explain": "Temperature scaling is een simpele logit-deler zonder parameters (werkt goed tegen globale overconfidence), terwijl Platt scaling een extra ML-model (logistische regressie) traint om de kans te mappen.",
+   "options": [
+    "Platt scaling traint een logistische regressie op de outputs; Temperature scaling deelt simpelweg de logits door een constante factor.",
+    "Platt scaling werkt enkel lokaal op MacBooks; Temperature scaling vereist OpenRouter integratie.",
+    "Platt scaling verhoogt de onzekerheid; Temperature scaling verlaagt de temperatuur in het datacenter."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m18",
+   "type": "type",
+   "skill": "cost-matrix",
+   "level": 2,
+   "prompt": "Typ de afkorting of volledige term voor de fout waarbij de AI weigert een actie te ondernemen, terwijl het event daadwerkelijk plaatsvond (een gemiste kans).",
+   "explain": "Dit is een False Negative.",
+   "answers": [
+    "False Negative",
+    "false negative",
+    "FN",
+    "fn"
+   ],
+   "lang": "en"
+  }
+ ],
+ "production": {
+  "type": "explain",
+  "prompt": "Je configureert een Jev classificatie-workflow voor een B2B FinTech platform. Het model moet beslissen of een aangevraagde zakenlening 'frauduleus' is.\n\n- Een **False Positive** (een legitieme, goede zakelijke klant onterecht afwijzen) kost het bedrijf €400 in verloren rente en reputatieschade.\n- Een **False Negative** (een frauduleuze lening goedkeuren) kost het bedrijf gemiddeld €19.600 doordat de hoofdsom verdwijnt.\n\nOpdracht:\n1. Bereken de optimale wiskundige beslissingsdrempel (decision threshold). Toon je berekening expliciet.\n2. Beschrijf hoe je in je workflow-architectuur omgaat met leningen waarbij het AI-model een gekalibreerde $P(\\text{fraude})$ voorspelt die exact rond die drempelwaarde (binnen een foutmarge van ±0.5%) ligt.",
+  "model": "1. Berekening drempel:\n$C_{FP} = 400$\n$C_{FN} = 19600$\n$t = \\frac{400}{400 + 19600} = \\frac{400}{20000} = 0.02$\nDe afkapwaarde is 2%. We weigeren (of escaleren) elke lening zodra het model voorspelt dat de fraudekans hoger is dan 2%.\n\n2. Afhandeling grensgevallen (Bayesiaanse onzekerheid):\nVoor leningen met een voorspelling tussen 1.5% en 2.5% is de model-entropie (onzekerheid) te hoog vergeleken met het gigantische asymmetrische risico. In plaats van een blinde geautomatiseerde beslissing, bouwen we een routering (fallback) in: deze aanvragen sturen we ófwel naar een menselijke kredietanalist, ófwel naar een trager System 2 redeneermodel (zoals o1-preview) voor een deliberatieve risico-analyse.",
+  "rubric": [
+   "De correcte identificatie van de FP (€400) en FN (€19.600) kosten.",
+   "De wiskundige formule C_FP / (C_FP + C_FN) correct uitgewerkt tot een drempel van 0.02 (2%).",
+   "Het expliciete besef dat alles boven 2% kans geflagd of geweigerd moet worden.",
+   "Het toepassen van een escalatie-fallback (naar mens of System 2) bij onzekerheid (grensgevallen rond de drempel)."
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-outlines",
+   "skill": "slm-constrained",
+   "front": "Waarom gebruik je de Python library 'Outlines' bij SLM's?",
+   "back": "Om via logit masking een absolute garantie te krijgen dat de modeloutput 100% voldoet aan een Regex of JSON-schema. Het voorkomt parse-crashes."
+  },
+  {
+   "id": "c-encoder-speed",
+   "skill": "modernbert-encoder",
+   "front": "Waarom is een encoder-only model zoals ModernBERT sneller dan een LLM voor beslissingen?",
+   "back": "Het slaat de autoregressieve generatielus over. Het model leest de context in één keer bidirectioneel en spuugt in de eerste pass direct de classificatie-logits uit."
+  },
+  {
+   "id": "c-overconf",
+   "skill": "reliability-diagram",
+   "front": "Wat houdt het in als een AI-model lijdt aan 'overconfidence'?",
+   "back": "Het model belooft wiskundig meer zekerheid dan het statistisch waarmaakt. (Bv. 95% zeker zijn, maar empirisch slechts in 60% van de gevallen de waarheid spreken)."
+  },
+  {
+   "id": "c-reliab-diag",
+   "skill": "reliability-diagram",
+   "front": "Wat staat er op de assen van een reliability diagram?",
+   "back": "X-as: de door het model voorspelde waarschijnlijkheid (predicted probability).\nY-as: de werkelijke, empirische frequentie (true frequency)."
+  },
+  {
+   "id": "c-fp",
+   "skill": "cost-matrix",
+   "front": "Wat is in een beslissingsworkflow een False Positive?",
+   "back": "Een onterecht alarm (Type I fout). Bijvoorbeeld: een gezonde patiënt ten onrechte doorsturen voor chemo, of een betrouwbare klant blokkeren wegens 'fraude'."
+  },
+  {
+   "id": "c-threshold-form",
+   "skill": "decision-threshold",
+   "front": "Hoe bereken je de optimale beslissingsdrempel ($t$) als je de asymmetrische FP- en FN-kosten kent?",
+   "back": "$t = \\frac{C_{FP}}{C_{FP} + C_{FN}}$"
+  },
+  {
+   "id": "c-platt",
+   "skill": "post-hoc-calibration",
+   "front": "Wat is Platt scaling in de context van AI-kalibratie?",
+   "back": "Een post-hoc techniek waarbij je een eenvoudige logistische regressie traint over de ruwe output logits om de voorspelde kansen zuiverder te kalibreren."
+  },
+  {
+   "id": "c-temp",
+   "skill": "post-hoc-calibration",
+   "front": "Hoe kalibreert Temperature scaling ($T > 1$) overconfident modellen?",
+   "back": "Het deelt alle ruwe logit-scores door de temperatuurwaarde $T$ alvorens de softmax toe te passen. Dit 'verzacht' en plet de extreem zelfverzekerde kansen."
+  }
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-28",
+  "adaptedFor": "Extra herhaling toegevoegd voor de exacte 'Outlines' spelling, Qwen2.5-0.5B nomenclatuur (gebaseerd op eerdere fouten) én foutafhandeling in praktijkvragen (/,/) om het gebruik van de decimale punt (0.149 i.p.v. 0,149) in te slijpen. Gezien de 100% masteryscore in les 1 is uitleg over Jev's primitieven beknopt gehouden."
+ }
+}
