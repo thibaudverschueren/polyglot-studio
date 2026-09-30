@@ -1,0 +1,148 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Disaggregated Quantization: De splitsing van LLM-inferentie",
+ "subtitle": "Hoe je AI sneller en accurater maakt door het verwerken van de prompt en het genereren van het antwoord architecturaal los te koppelen.",
+ "topic": "ai",
+ "minutes": 9,
+ "tldr": [
+  "LLM-inferentie bestaat uit twee fases met compleet tegengestelde bottlenecks: de 'prefill' (lezen) is compute-bound, terwijl 'decode' (schrijven) memory-bound is.",
+  "Standaard compressie (kwantisatie) van de interne gewichten dwingt je daardoor altijd tot een compromis: ofwel tragere verwerking van de input, ofwel een minder intelligent gegenereerd antwoord.",
+  "Disaggregated Quantization (DQ) lost dit op door rekenformaten en/of gewichten te specialiseren per fase: Format Disaggregation deelt dezelfde gewichten maar wisselt het berekeningsformaat, terwijl Full Disaggregation voor de prefill en de decode aparte, gespecialiseerde gewichten traint.",
+  "Dankzij Offloaded Disaggregated Prefill (ODP) worden de extra modelgewichten tijdens het lezen slim en asynchroon vanaf de SSD gestreamd, wat bij lange prompts de time-to-first-token versnelt ten opzichte van weight-only inferentie zónder het kostbare videogeheugen (VRAM) extra te belasten."
+ ],
+ "why": "Voor een handelsingenieur is de hardwarematige efficiëntie van AI-modellen net zo cruciaal als de wiskundige theory erachter. Wanneer je complexe bedrijfsautomatisaties bouwt (bijvoorbeeld in n8n) waarbij enorme documenten of langlopende iteratieve agent-sessies verwerkt moeten worden, loop je direct tegen hardwarelimieten en exploderende inferentiekosten aan. Deze paper legt de vinger precies op de zere plek: het feit dat het verwerken van lange documenten (prefill) stagneert op pure rekenkracht, terwijl het spuwen van het antwoord (decode) stagneert op datatransfersnelheid (bandbreedte). Door de interne architectuur van open-source LLM's letterlijk in tweeën te splitsen, toont deze theorie hoe we gigantische lappen tekst merkbaar sneller kunnen parsen zonder op intelligentie in te leveren. Dit maakt krachtige, lokale inferentie in enterprise-omgevingen drastisch goedkoper en schaalbaarder.",
+ "sections": [
+  {
+   "title": "De asymmetrie tussen lezen en schrijven",
+   "md": "Wanneer een LLM een taak uitvoert, gebeuren er twee fundamenteel andere processen in de hardware. Eerst leest het model de volledige input — de *prompt* — en verwerkt deze tot een tijdelijke wiskundige representatie in het geheugen (de KV-cache). Dit heet de **prefill**-fase. Omdat alle $T$ tokens van je prompt in één keer beschikbaar zijn, kan de GPU ze parallel verwerken met enorme, gebundelde matrixvermenigvuldigingen. Voor parameters van $H \\times H$ en activaties van formaat $T \\times H$, schaalt de dataverplaatsing via $\\mathcal{O}(H^2 + TH)$. De vereiste rekenstappen (FLOPs) stijgen echter veel drastischer via $\\mathcal{O}(TH^2)$. Bij stevige prompts (waarbij $T$ enorm groot is) is het datatransport voltooid lang voordat de processor klaar is met rekenen. De prefill-fase is hierdoor streng *compute-bound*.\n\nNa het parsen start de **decode**-fase. Het model genereert nu autoregressief, strikt woord voor woord, het antwoord ($T=1$). Omdat voor élk vers gegenereerd woord letterlijk het volledige gigabyte-zware neuraal netwerk uit het videogeheugen (DRAM) gehaald moet worden om per datapuntje slechts één simpele vermenigvuldiging te doen, staan de rekenkernen massaal te wachten op nieuwe input. De geheugenbus is verzadigd. Decode is hierdoor per definitie *memory-bound*."
+  },
+  {
+   "title": "Het klassieke compromis in kwantisatie",
+   "md": "Om LLM-inferentie werkbaar te houden, verlagen architecten de datadecimalen, bijvoorbeeld van logge 16-bit getallen naar 4-bit. Dit noemt men *kwantisatie*. Tot voor kort zat je hierbij vast in een hardwarematig compromis.\n\nRicht je alle optimalisaties op de logge decode-fase, dan druk je de gewichten plat naar bijvoorbeeld extreme 2-bit of 3-bit formaten. Deze vliegen moeiteloos over de verzadigde geheugenbus waardoor de generatiesnelheid spectaculair stijgt. Echter, pure *weight-only* kwantisatie kan de prefill-fase niet versnellen met 4-bit matrixkernen. Je kunt door middel van on-the-fly omrekening (autocast) naar NVFP4 het rekenwerk wel versnellen, maar dit gaat ten koste van de redeneerscherpte en intelligentie van het model.\n\nOptimaliseer je omgekeerd op de prefill, dan kies je formaten die hardwarematig perfect renderen op de chip (zoals NVFP4). Om dit te doen, moet je echter óók het vluchtige werkgeheugen (de activaties) kwantiseren. Zodra je decode-fase start met complexe wiskundige vragen, zorgt dit verlies van scherpte in je activaties voor stiekeme fouten in de redenatie. Eén rigide netwerkformaat dwong je dus onherroepelijk tot een verlies in doorloopsnelheid, óf een verlies in intelligentie."
+  },
+  {
+   "title": "Disaggregated Quantization (DQ)",
+   "md": "De auteurs van deze paper doorbreken deze hardware-paradox door in te grijpen op het design zelf: **Disaggregated Quantization (DQ)**. Aangezien de fases totaal verschillende noden hebben, optimaliseren ze onafhankelijk. De theorie wordt gestaafd in twee primaire lagen:\n\n1. **Format disaggregation**: Het model hanteert dezelfde wegingen voor beide fasen, maar het berekeningsformaat kantelt dynamisch. Tijdens prefill rekent de chip compromisloos in volle NVFP4. Zodra de eerste decode-stappen aanbreken, wordt de compressie voor *activaties* brutaal uitgezet. De GPU houdt deze vluchtige getallen zuiverder. Zonder ook maar één byte extra videogeheugen te belasten, resulteert dit direct in scherpere scores op logisch-complexe (decode-heavy) taken.\n2. **Full disaggregation**: Bij deze diepere laag worden twee fysiek gescheiden neurale wegingen voor de twee fasen getraind. Het prefill-model ontvangt brede NVFP4-parameters voor vlekkeloze en razendsnelle matrixwiskunde, terwijl de decode-laag 2-bit uitgeholde 'weight-only' paramaters krijgt voor soepele bandbreedte. Via een proces dat *Quantization-Aware Distillation (QADD)* heet, worden deze gesplitste helften getraind om de kwaliteit en redeneervaardigheden van het onverkleinde origineel zo dicht mogelijk te benaderen."
+  },
+  {
+   "title": "De VRAM-paradox oplossen via de SSD",
+   "md": "Hoe superieur de splitsing in *full disaggregation* wiskundig ook mag zijn, fysiek stuit je direct op de VRAM-paradox. Twee aparte netwerken simultaan inladen in het peperdure, schaarse videogeheugen (VRAM) van GPU's is voor lokale inferentie pure kapitaalvernietiging. Omdat prefill-gewichten nadat de prompt verwerkt is volledig passief worden, bedachten de ingenieurs **Offloaded Disaggregated Prefill (ODP)**.\n\nIn de ODP-structuur huizen de prefill-gewichten helemaal niet meer in het kostbare VRAM, maar simpelweg op je reguliere, goedkope SSD. Zodra Thibaud een smart contract van 50 pagina's naar het model stuurt, beginnen de SSD-blokken asynchroon te overstromen naar de processor.\n\n> [!tip] Rekenwerk camoufleert laadtijden\n> Door gebruik te maken van asynchrone hardwarebuffers, overlappen het laadproces en het wiskundige rekenproces elkaar. Terwijl de GPU matrixvermenigvuldigingen forceert op blok A, schuift de PCIe-bus blok B alvast in het buffer.\n\nVanaf een prompt van ruwweg 8.000 tokens neemt het massale wiskundige rekenwerk meer tijd in beslag dan het laden vanaf de SSD, waardoor de rekentijd (in seconden) de laadtijd overstijgt en maskeert. De tijdswinst wordt pas merkbaar bij lange prompts (vanaf ~8K tokens) ten opzichte van tragere weight-only prefill, terwijl kortere contexten juist vertraging oplopen door de SSD-overdracht — dit alles zónder de bittere nadelen van verhoogd operationeel werkgeheugen of gedegradeerde prestaties."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "1.78x",
+   "label": "versnelling van time-to-first-token op 8K context met ODP vergeleken met weight-only",
+   "quote": "On the same 27B model, ODP delivers a 1.78x time-to-first-token speedup over the weight-only baseline at 8K prompt length in llama.cpp.",
+   "source": 1
+  },
+  {
+   "value": "32.5",
+   "label": "verbetering in MMLU-Pro nauwkeurigheid door een NVFP4 prefiller op een 1-bit decoder",
+   "quote": "With released Qwen3.8-27B GGUF decoders, training an NVFP4 prefiller improves 1-bit accuracy by 32.5 points on MMLU-Pro and 35.3 on MMMU-Pro without modifying the decode checkpoint.",
+   "source": 1
+  }
+ ],
+ "caveats": "Hoewel de resultaten spectaculair opschalen voor standaard dense LLM's en lokale oplossingen zoals llama.cpp, steken de onderzoekers de kwetsbaarheden in hun paper niet onder stoelen of banken. De ODP-streaming valt volledig in duigen bij complexere Mixture-of-Experts (MoE) architecturen. Omdat in MoE per stap telkens maar een ragfijn netwerkpercentage geactiveerd wordt, daalt de netto rekentijd zodanig dat de vertraging van SSD's niet meer kan worden weggebufferd achter rekenwerk. Voorts baseren de proeven zich primair op statische vraag-en-antwoord interacties. Bij meervoudige (multi-turn) interacties of in extreem 'agentic' gebruik ontstaat er echter het risico van 'cache-policy dependence'. Hierbij krijgen tokens in de KV-cache andere wiskundige representaties afhankelijk van of ze tijdens een nieuwe prefill opnieuw worden opgebouwd of eerder woord voor woord tijdens de decode-fase zijn opgeslagen, wat tot subtiele inconsistenties in het gedrag kan leiden.",
+ "glossary": [
+  {
+   "term": "Prefill",
+   "def": "De eerste stap in LLM-inferentie waarbij het model de complete initiële invoer (prompt) gelijktijdig verwerkt tot een wiskundige context (KV-cache)."
+  },
+  {
+   "term": "Decode",
+   "def": "De opeenvolgende generatiefase van een taalmodel waarin nieuwe tokens strikt sequentiëel, één voor één, berekend en uitgevoerd worden."
+  },
+  {
+   "term": "Compute-bound",
+   "def": "Een situatie waarbij de totale prestaties beperkt worden door de maximale rekenkracht (wiskundige bewerkingen per seconde) van de actieve processorkernen."
+  },
+  {
+   "term": "Memory-bound",
+   "def": "Een situatie waarbij een systeem zijn potentiële snelheid niet kan benutten omdat de doorstroombandbreedte van het geheugen naar de processor verzadigd is."
+  },
+  {
+   "term": "NVFP4",
+   "def": "Een hardwarematig geoptimaliseerd 4-bit numeriek dataformaat, ontworpen om extreme snelheden te garanderen bij grootschalige neurale matrixvermenigvuldigingen."
+  },
+  {
+   "term": "Offloading",
+   "def": "Een informaticaproces waarbij parameters tijdelijk worden overgeheveld naar een goedkopere datadrager, zoals SSD, om superieure en duurdere VRAM vrij te houden."
+  },
+  {
+   "term": "Quantization-Aware Distillation (QADD)",
+   "def": "Een specifieke machinale leertechniek waarbij het nieuwe lichte netwerk gedurende de compressie direct feedback krijgt van het zware bronmodel om signaalverlies af te blokken."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom vormt specifiek de decode-fase in standaard taalmodellen doorgaans een 'memory-bound' bottleneck?",
+   "options": [
+    "Omdat de hardware onvoldoende wiskundige krachten heeft om het exponentieel verzwarende algoritme voor autoregressieve tokens te bolwerken.",
+    "Omdat de veranderende generatie van nieuwe tekst output-caches direct laat wegschrijven via tragere interfaces op de harde schijven.",
+    "Omdat voor elk minuscuul gegenereerd woord het hele miljardenmodel integraal en zwaar uit het werkgeheugen opgehaald dient te worden.",
+    "Omdat de gewichten op het RAM per prompt steeds opnieuw uniek versleuteld moeten worden voordat de processor erbij mag komen."
+   ],
+   "answer": 2,
+   "explain": "Tijdens de generatieve decode sturen GPU's telkens het resultaat van het vorige woord in. Voor dat volgende woord moeten wéér integraal alle honderden gigabytes modelparameters de bus passeren, enkel om per parameter één kleine berekening toe te voegen."
+  },
+  {
+   "id": "q2",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Wat is het voornaamste technische voordeel van 'format disaggregation' ten opzichte van algemene, alles-in-één modelcompressie?",
+   "options": [
+    "Het reduceert de afmetingen van de gewichten in de netwerk-kern structureel met een derde tot de helft waardoor extra ruimte ontstaat in het serverrack.",
+    "Het garandeert hogere validiteit op logisch zware taken, puur en alleen doordat activaties tijdens de woordgeneratie vrijgesteld worden van kwantisatie.",
+    "Het verbreekt de link met hardwarematige NVFP-standaarden zodat ook oudere generatie GPU's de tokens soepeler in parallel kunnen wegschrijven.",
+    "Het snijdt de verweesde prefill-parameters in kleine blokken en buffert deze zodat het MoE-systeem de bandbreedte drastisch opdrijft."
+   ],
+   "answer": 1,
+   "explain": "Bij format disaggregation laat de ingenieur de VRAM grootte exact hetzelfde. Wel blokkeert men de afrondingen en kwantisering van de vluchtige data (activaties) tijdens redeneer-heavy momenten in de decode, waardoor logische foutenmarges kleiner worden."
+  },
+  {
+   "id": "q3",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Hoe minimaliseert Offloaded Disaggregated Prefill (ODP) de verwachte prestatiekloof die ontstaat wanneer parameters vanaf de structureel tragere SSD moeten stromen?",
+   "options": [
+    "Door een geavanceerd netwerk te trainen dat 1-bit compressies integreert waardoor bestandsgrootte van de ODP-sets naar fracties van hun oude formaten verschrompelen.",
+    "Door met asynchrone buffersystemen de SSD laadtijd van komende blokken naadloos te camoufleren achter het massieve rekenwerk van de voorgaande blokken.",
+    "Door voor elke prompt een speciale pre-evaluatie module het script te laten scannen, waarna uitsluitend hoogst benodigde lagen naar het RAM geschreven worden.",
+    "Door de rekenstroom deels om te leggen naar het werkgeheugen (RAM) van een aparte slave-computer, wat de pure VRAM kost splitst in helften."
+   ],
+   "answer": 1,
+   "explain": "ODP laadt parameters van SSD, niet ineens, maar in ketens. De pure datatransfer van datablok twee naar VRAM gebeurt stiekem in exact dezelfde tijdspanne als de chip nodig heeft om de gigantische matrix-vermenigvuldigingen (compute-bound) in datablok één succesvol uit te voeren."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Optimalisatie van de pure fysieke grenzen en architectuur binnen LLM's bepaalt rechtstreeks de return on investment voor lokale en bedrijfsmatige AI-agents."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "Disaggregated Quantization: Specializing LLM Prefill and Decode (arXiv 2609.26333)",
+   "url": "https://arxiv.org/abs/2609.26333"
+  }
+ ],
+ "id": "2026-09-30-disaggregated-quantization-de-splitsing-van-llm",
+ "kind": "paper",
+ "date": "2026-09-30",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-30",
+  "kind": "paper",
+  "candidate": "arxiv:2609.26333",
+  "signal": "71 upvotes op Hugging Face Daily Papers",
+  "significance": 4
+ }
+}
