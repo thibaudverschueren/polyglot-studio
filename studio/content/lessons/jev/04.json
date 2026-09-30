@@ -16,7 +16,7 @@
   },
   {
    "id": "cost-structure",
-   "text": "Kostenstructuur analyseren: de impact van $0.042/1M input tokens en nul output tokens."
+   "text": "Kostenstructuur analyseren: de impact van \\$0.042/1M input tokens en nul output tokens."
   },
   {
    "id": "break-even",
@@ -56,7 +56,7 @@
        "tag": "outlines-s"
       },
       {
-       "match": "regex",
+       "match": "/regex/i",
        "feedback": "Regex is post-processing. We zoeken de library voor logit-masking tijdens de generatie.",
        "tag": "regex-confusion"
       }
@@ -77,7 +77,7 @@
      "lang": "code",
      "errors": [
       {
-       "match": "qwen",
+       "match": "/qwen$/i",
        "feedback": "Specificeer ook de versie en de grootte (2.5-0.5B).",
        "tag": "qwen-incomplete"
       }
@@ -221,18 +221,39 @@
    ]
   },
   {
-   "id": "p02",
+   "id": "p01b",
    "type": "numeric",
    "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Een frontier LLM neemt 2.500 ms de tijd voor een beslissing. Jev doet dit in 100 ms. Hoeveel keer sneller is Jev in deze vergelijking?",
+   "explain": "Deel de lange tijd door de korte: 2500 / 100 = 25.",
+   "value": 25,
+   "tolerance": 0.01,
+   "unit": "×",
+   "errors": [
+    {
+     "match": "2400",
+     "feedback": "Je berekende het absolute verschil (2500 - 100). De vraag vraagt hoeveel *keer* (relatief) sneller het is. Je moet delen.",
+     "tag": "math-sub-div"
+    }
+   ]
+  },
+  {
+   "id": "p02",
+   "type": "type",
+   "skill": "modernbert-encoder",
    "level": 1,
-   "prompt": "Typ dit getal in decimale miljarden: ModernBERT heeft 149 miljoen parameters. Hoeveel miljard is dat? Gebruik een decimale PUNT.",
-   "explain": "149 miljoen = 0.149 miljard.",
-   "value": 0.149,
-   "tolerance": 0.0,
+   "prompt": "Typ dit getal in decimale miljarden (zoals in code): ModernBERT heeft 149 miljoen parameters. Hoeveel miljard is dat?",
+   "explain": "149 miljoen = 0.149 miljard. In code gebruik je altijd een punt.",
+   "answers": [
+    "0.149",
+    ".149"
+   ],
+   "lang": "code",
    "errors": [
     {
      "match": "/,/",
-     "feedback": "Gebruik een punt in plaats van een komma (0.149), anders leest software het verkeerd in.",
+     "feedback": "Gebruik een decimale PUNT (0.149), geen komma. In code (en hier) is een komma een scheidingsteken.",
      "tag": "comma-decimal"
     }
    ]
@@ -257,7 +278,7 @@
      "tag": "outlines-s"
     },
     {
-     "match": "regex",
+     "match": "/regex/i",
      "feedback": "Regex repareert output achteraf. Outlines stuurt de generatie proactief tijdens de inferentie.",
      "tag": "regex-confusion"
     }
@@ -279,7 +300,7 @@
    "lang": "code",
    "errors": [
     {
-     "match": "qwen",
+     "match": "/qwen$/i",
      "feedback": "Specificeer ook de versie en de exacte grootte, in het formaat X.Y-Z.ZB (2.5-0.5B).",
      "tag": "qwen-incomplete"
     }
@@ -323,7 +344,7 @@
    "options": [
     "Het berekent de Time to Decision voor een generatief model door de totale generatietijd op te tellen bij de initiële latentie.",
     "Het berekent het financiële omslagpunt tussen het lokaal hosten van een GPU en het inkopen van inference via de OpenRouter API.",
-    "Het demonstreert wiskundig waarom encoder-only architecturen zoals ModernBERT fundamenteel ongeschikt zijn voor API-routering.",
+    "Het demonstreert wiskundig waarom encoder-only architecturen zoals ModernBERT fundamenteel ongeschikt voor API-routering zijn.",
     "Het berekent de vertraging die ontstaat doordat beslissingsmodellen geen gebruik maken van een efficiënte autoregressieve lus."
    ],
    "answer": 0
@@ -356,7 +377,7 @@
    "skill": "cost-structure",
    "level": 1,
    "prompt": "Wat is exact de prijs via OpenRouter voor 1 miljoen input tokens voor TypeSafe Jev (`typesafe/jev-1.13`)? Typ het getal in dollars.",
-   "explain": "De prijs is $0.042 per miljoen tokens.",
+   "explain": "De prijs is \\$0.042 per miljoen tokens.",
    "value": 0.042,
    "tolerance": 0.0001,
    "unit": "$"
@@ -464,6 +485,21 @@
    "prompt": "Vul aan:",
    "text": "Wanneer we Outlines gebruiken voor structured generation op een SLM, passen we op token-niveau {{logit masking|logit-masking}} toe om syntaxisgarantie af te dwingen.",
    "explain": "Outlines manipuleert de kansen (logits) zodat illegale tekens een kans van 0 krijgen."
+  },
+  {
+   "id": "p19",
+   "type": "mcq",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Waarom mag je nooit vertrouwen op regex voor het extraheren van JSON uit de output van een lokaal LLM, maar moet je Outlines of GBNF inzetten?",
+   "explain": "Regex fungeert als pleister ná de generatie. Als het LLM al ontsnapte karakters of halvegare JSON verzint, loopt je regex vast. Outlines/GBNF voorkomen via logit masking al tijdens het genereren dat foute tekens überhaupt gekozen kunnen worden.",
+   "options": [
+    "Regex repareert fouten achteraf en crasht op edge-cases; constrained decoding verbiedt ongeldige tokens mathematisch nog vóór ze gegenereerd worden.",
+    "Regex werkt alleen op Windows, terwijl Outlines cross-platform is.",
+    "Regex is eigendom van OpenAI, waardoor lokale SLM's licentiekosten moeten betalen per match.",
+    "Regex gebruikt te veel VRAM tijdens de prefill fase van de LLM inferentie."
+   ],
+   "answer": 0
   }
  ],
  "mastery": [
@@ -631,7 +667,7 @@
    "prompt": "Waarom is self-hosting van beslissingsmodellen voor veel startup-teams financieel gezien een slechte investering, ondanks de hoge efficiëntie van ModernBERT?",
    "explain": "De opstartkosten en vaste GPU-huur zijn hoog. Jev via OpenRouter is serverless en weegt financieel nauwelijks door zolang het bedrijf onder de 3 miljard tokens per maand blijft.",
    "options": [
-    "Omdat hun token-volume zwaar onder het break-even punt (vaak meerdere miljarden tokens per maand) blijft, waardoor de vaste GPU-huur niet rendeert ten opzichte van een $0.042/1M API.",
+    "Omdat hun token-volume zwaar onder het break-even punt (vaak meerdere miljarden tokens per maand) blijft, waardoor de vaste GPU-huur niet rendeert ten opzichte van een \\$0.042/1M API.",
     "Omdat ModernBERT principieel niet kan draaien op servers die verbonden zijn met het internet.",
     "Omdat OpenRouter startups dwingt om langetermijncontracten van 5 jaar te tekenen voor beslissingsmodellen.",
     "Omdat Python geen support biedt voor cloud API calls."
@@ -649,13 +685,23 @@
   },
   {
    "id": "m16",
-   "type": "numeric",
+   "type": "type",
    "skill": "modernbert-encoder",
    "level": 1,
-   "prompt": "Stel dat een groter encoder model 250 miljoen parameters heeft. Typ dit uit in miljarden met een decimale PUNT.",
+   "prompt": "Stel dat een encoder model 250 miljoen parameters heeft. Typ dit uit als miljard met een decimale PUNT (zoals je in code zou doen).",
    "explain": "250 miljoen is 0.25 miljard.",
-   "value": 0.25,
-   "tolerance": 0.0
+   "answers": [
+    "0.25",
+    ".25"
+   ],
+   "lang": "code",
+   "errors": [
+    {
+     "match": "/,/",
+     "feedback": "Gebruik een punt, geen komma.",
+     "tag": "comma-decimal"
+    }
+   ]
   },
   {
    "id": "m17",
@@ -733,9 +779,9 @@
   "prompt": "Een Belgisch B2B e-commerce platform verwerkt 500.000 inkomende orders en reviews per dag. De huidige pipeline stuurt elke flow (gemiddeld 200 input tokens) naar een GPT-4o-mini prompt, dat een schema van 10 output tokens genereert om het bericht te classificeren.\n\nTarief GPT-4o-mini:\n- Input: \\$0.150 / 1M tokens\n- Output: \\$0.600 / 1M tokens\n\nTarief Jev (via OpenRouter):\n- Input: \\$0.042 / 1M tokens\n- Output: \\$0.000\n\n**Opdracht:**\n1. Bereken de kosten per dag en per maand (30 dagen) met GPT-4o-mini.\n2. Bereken de kosten per dag en per maand (30 dagen) indien je de logica migreert naar Jev.\n3. Noteer de maandelijkse kostenbesparing in dollars.\n4. Leg in één of twee zinnen uit waarom de Time to Decision (TTD) ook aanzienlijk zal verbeteren.",
   "model": "Kosten GPT-4o-mini:\n- Input per dag: 500.000 * 200 = 100M tokens -> 100 * $0.150 = $15\n- Output per dag: 500.000 * 10 = 5M tokens -> 5 * $0.600 = $3\n- Totaal per dag = $18. Maandelijks (30 dagen) = $540.\n\nKosten Jev:\n- Input per dag: 100M tokens -> 100 * $0.042 = $4.20\n- Output per dag: 0\n- Totaal per dag = $4.20. Maandelijks (30 dagen) = $126.\n\nBesparing: $540 - $126 = $414 per maand.\n\nLatentieverbetering: Jev is een beslissingsmodel zonder autoregressieve decoder (non-generatief). De Time to Decision is hierdoor identiek aan de snelle initiële forward pass (TTFT), wat de trage TPOT (Time Per Output Token) iteraties uitsluit.",
   "rubric": [
-   "Berekent de maandelijkse kosten van GPT-4o-mini correct op $540 (door input- en outputkosten per dag samen te tellen).",
-   "Berekent de maandelijkse kosten van Jev correct op $126 (enkel input tokens).",
-   "Berekent de maandelijkse absolute besparing accuraat op $414.",
+   "Berekent de maandelijkse kosten van GPT-4o-mini correct op \\$540 (door input- en outputkosten per dag samen te tellen).",
+   "Berekent de maandelijkse kosten van Jev correct op \\$126 (enkel input tokens).",
+   "Berekent de maandelijkse absolute besparing accuraat op \\$414.",
    "Verklaart dat Jev non-autoregressief is (geen generatielus/TPOT) en daarom een kortere Time to Decision heeft."
   ]
  },
@@ -761,7 +807,7 @@
   {
    "id": "c-jev-cost",
    "skill": "cost-structure",
-   "front": "Waarom rekent OpenRouter letterlijk $0.00 voor de output tokens van TypeSafe Jev?",
+   "front": "Waarom rekent OpenRouter letterlijk \\$0.00 voor de output tokens van TypeSafe Jev?",
    "back": "Jev is non-autoregressief. Het genereert geen tekst-tokens in een iteratieve lus, maar berekent een getypeerde kansverdeling tijdens de (initiële) forward pass."
   },
   {
@@ -774,7 +820,7 @@
    "id": "c-break-even",
    "skill": "break-even",
    "front": "Hoe bereken je the break-even point tussen de OpenRouter API en het lokaal hosten van een GPU?",
-   "back": "Vaste Serverkosten per maand (bv. $126) gedeeld door de API-prijs per volume (bv. $0.042 per 1M). Het omslagpunt ligt meestal op meerdere miljarden tokens."
+   "back": "Vaste Serverkosten per maand (bv. \\$126) gedeeld door de API-prijs per volume (bv. \\$0.042 per 1M). Het omslagpunt ligt meestal op meerdere miljarden tokens."
   }
  ],
  "sources": [
@@ -784,7 +830,8 @@
  ],
  "meta": {
   "author": "antigravity",
-  "created": "2026-09-28",
-  "adaptedFor": "Extra nadruk gelegd op foutpatronen rond constrained decoding (Outlines) vs regex, en de theorie uitgebreid naar n8n/B2B context voor snellere transfer."
+  "created": "2026-09-30",
+  "adaptedFor": "Gerichte remediëring toegevoegd voor 'slm-constrained' en 'modernbert-encoder'. Specifieke errors-feedback (Outline zonder 's', regex-verwarring, komma i.p.v. punt bij decimalen, en aftrekken i.p.v. delen bij relatieve snelheid) ingebouwd op basis van je recente testresultaten.",
+  "notes": "herzien 2026-09-30; oorspronkelijk 2026-09-28 door antigravity"
  }
 }

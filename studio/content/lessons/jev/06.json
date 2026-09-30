@@ -1,0 +1,616 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "jev",
+ "id": 6,
+ "roadmap": "jev-06-routing-and-gating",
+ "kind": "core",
+ "title": "Beslissingsroutering en Feature Gating",
+ "subtitle": "Dynamische dispatching en AI feature flags met strenge latentie-budgetten",
+ "level": "praktijk",
+ "minutes": 45,
+ "summary": "In synchrone applicaties betekent wachten klantverlies. Deze les leert je hoe je inkomende acties in minder dan 100 ms dynamisch routeert of applicatiefuncties in-/uitschakelt met behulp van TypeSafe Jev primitieven, semantische caching en constrained SLM's.",
+ "objectives": [
+  {
+   "id": "dynamic-dispatching",
+   "text": "Dynamische dispatching ontwerpen voor support, CRM en e-commerce."
+  },
+  {
+   "id": "feature-gating",
+   "text": "Feature gating implementeren op basis van continue gebruikerssentiment- of intentiescores."
+  },
+  {
+   "id": "latency-budgets",
+   "text": "Latentie-budgetten van < 100ms garanderen in synchrone webapps."
+  },
+  {
+   "id": "slm-constrained",
+   "text": "Small Language Models inzetten met constrained decoding voor 100% syntaxisgarantie (Herhaling)."
+  },
+  {
+   "id": "modernbert-encoder",
+   "text": "Begrijpen waarom encoder-only modellen sneller zijn voor beslissingen dan decoders (Herhaling)."
+  }
+ ],
+ "sections": [
+  {
+   "id": "sec-01",
+   "title": "1. Herhaling: Snelheid en Syntaxisgarantie",
+   "md": "Omdat we in deze les strenge latentie-budgetten van minder dan 100 milliseconden gaan bespreken, blikken we kort terug op twee belangrijke valkuilen uit de vorige lessen.\n\nWaarom is **ModernBERT** (een *encoder-only* model met circa 149 miljoen oftewel 0.149 miljard parameters) zoveel sneller dan GPT-4o? Een encoder verwerkt de input parallel en neemt een beslissing in exact één *forward pass*. Een autoregressieve decoder (zoals GPT of Claude) genereert tokens één voor één (sequentieel), wat iteratieve geheugentoegang (KV-cache) vereist. Deze architectuur blaast je latentie-budget direct op.\n\nAls je lokaal een generatief *Small Language Model* (SLM) inzet, zoals Alibaba's populaire **Qwen2.5-0.5B**, heb je standaard geen garantie op geldige JSON-output. Daarvoor gebruiken we de Python-bibliotheek **Outlines** (let op de 's'!). Outlines dwingt via *logit masking* 100% syntaxisgarantie af: het maskeert wiskundig de probabiliteit ($p = 0$) van elk token dat niet in je JSON-schema past. Zonder Outlines crasht je routing onherroepelijk op een verdwaalde markdown backtick."
+  },
+  {
+   "id": "sec-02",
+   "title": "2. Dynamische Dispatching & Intent Routing",
+   "md": "Bij **intent routing** analyseer je een ongestructureerd inkomend bericht (zoals een e-mail of supportchat) om het *direct* naar de juiste API-route of afdeling te sturen. \n\nStel dat je een live chat widget beheert voor e-commerce. Je wilt dat een AI-agent standaard antwoordt, tenzij de klant over een beschadigd product begint: dan moet de chat escaleren naar een mens (Human-in-the-loop). Dit is wiskundig een **Choice** primitief in Jev.\n\nJe definieert een vaste, categorische set opties (bv. `[\"support\", \"sales\", \"facturatie\", \"smalltalk\"]`). Jev berekent een *softmax* kansverdeling over deze opties.\n\nAls $P(\\text{support}) > 0.80$, stuurt je backend een webhook naar Zendesk. Echter, probabilistische modellen zijn niet onfeilbaar. Wat als geen enkele optie een duidelijke winnaar is? In robuuste software definieer je altijd een **fallback route**: als $max(P) < 0.60$, negeer je de voorspelling en valt de routering terug op een algemene inbox of handmatige triage door een menselijke medewerker."
+  },
+  {
+   "id": "sec-03",
+   "title": "3. AI Feature Gating",
+   "md": "Traditionele *feature flags* (of *feature toggles*) zijn statisch en binair. Je activeert een nieuwe interface voor \"alle gebruikers met een ID dat eindigt op 0\", of voor \"premium accounts\". Met beslissingsmodellen introduceren we **AI Feature Gating**: het dynamisch in- of uitschakelen van applicatielogica op basis van een continue semantische score.\n\nStel dat je frustratie bij klanten wilt detecteren tijdens het invullen van een lang webformulier. We gebruiken de **Score** primitief in Jev om agressie te beoordelen op een ordinale rubriek van 1 tot 10. Het model berekent een continue verwachtingswaarde $\\mathbb{E}[S]$.\n\nZodra $\\mathbb{E}[S] > 7.5$, triggert je backend direct een variabele `bypass_chatbot = true` of `show_calm_down_banner = true`. De eigenlijke applicatieregels blijven robuuste, hardcoded `if/else`-statements. Wat modern is, is de *drempelwaarde*: die wordt nu aangestuurd door een getypeerde, gekalibreerde score uit System 1."
+  },
+  {
+   "id": "sec-04",
+   "title": "4. Semantische Caching en Latentie-budgetten",
+   "md": "In synchrone webapplicaties—waar de gebruiker naar het scherm staart te wachten op een reactie—geldt een ijzeren wet: een actie voelt pas *instant* aan als de responstijd (TTFB of *Time To First Byte*) onder de 100 milliseconden ligt.\n\nWe kunnen het ons dus niet veroorloven om een dispatching-vraagstuk naar een trage LLM te sturen die er 2.500 ms over doet. Van dat 100 ms budget gaat er vaak al 20 ms naar netwerkoverhead en databasetransacties, waardoor er nog maar **80 ms** resteert voor de AI-beslissing.\n\nOm deze 80 ms te garanderen gebruiken we lokale encoder-modellen of Jev. We kunnen dit nog verder versnellen via **semantische caching**. Hierbij bereken je extreem snel ($< 5$ ms) een lichtgewicht vector embedding van het inkomende bericht. Als de cosinus-similariteit met een eerder gerouteerd bericht in je Redis-cache $> 0.99$ is, herbruik je de opgeslagen beslissing in 1 ms, *zonder* de volwaardige decision engine aan te roepen."
+  },
+  {
+   "id": "sec-05",
+   "title": "5. Interactieve Simulator: Decision Engine",
+   "md": "In de onderstaande interactieve simulator kun je de beslissingsarchitectuur live uittesten. Let goed op de latentie-verschillen in milliseconden.\n\n:::sim decision-engine {}\n:::\n\nMerk op hoe Jev en lokaal gedraaide ModernBERT steevast onder het budget van 100 ms blijven, terwijl een typische autoregressieve frontier LLM (System 2) al snel meerdere seconden nodig heeft. Dit bewijst de absolute noodzaak van een System 1 architectuur voor routering en dynamische feature gating. Speel met de inputs om de kantelpunten voor je *fallback routes* (zoals menselijke escalatie bij lage betrouwbaarheid) nauwkeurig af te stellen."
+  }
+ ],
+ "practice": [
+  {
+   "id": "prac-01",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 1,
+   "prompt": "Hoe heet de populaire Python-library die structured generation en 100% syntaxisgarantie afdwingt via logit masking? (Let op de exacte spelling!)",
+   "explain": "Outlines gebruikt logit masking om te verzekeren dat de gegenereerde output van een lokaal SLM wiskundig exact aan een JSON-schema voldoet.",
+   "answers": [
+    "Outlines",
+    "outlines"
+   ],
+   "lang": "code",
+   "errors": [
+    {
+     "match": "/outline$/i",
+     "feedback": "Vergeet de 's' op het einde niet: het is Outlines.",
+     "tag": "spelling-outlines"
+    }
+   ]
+  },
+  {
+   "id": "prac-02",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 1,
+   "prompt": "Welk compact open-source SLM van 0.5B parameters van Alibaba is ideaal voor lokale besluitvorming?",
+   "explain": "Qwen2.5-0.5B is een uitzonderlijk capabel en compact (500 miljoen parameters) model van Alibaba.",
+   "answers": [
+    "Qwen2.5-0.5B",
+    "qwen2.5-0.5b",
+    "Qwen"
+   ],
+   "lang": "code",
+   "errors": [
+    {
+     "match": "/claude/i",
+     "feedback": "Claude is een groot closed-source model van Anthropic, geen compact lokaal model van Alibaba.",
+     "tag": "wrong-model"
+    }
+   ]
+  },
+  {
+   "id": "prac-03",
+   "type": "numeric",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "ModernBERT-base telt circa 149 miljoen parameters. Hoeveel miljard parameters is dat? (Geef als decimaal getal, bv. 0.5)",
+   "explain": "149 miljoen is 149 gedeeld door 1000 miljoen = 0.149 miljard.",
+   "value": 0.149,
+   "tolerance": 0.001,
+   "errors": [
+    {
+     "match": "/149/",
+     "feedback": "Kijk goed naar de komma: 149 miljoen is 0.149 miljard.",
+     "tag": "decimal-shift"
+    }
+   ]
+  },
+  {
+   "id": "prac-04",
+   "type": "mcq",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Waarom is een encoder (ModernBERT) fundamenteel sneller voor beslissingen dan een generatieve decoder (Llama-3)?",
+   "explain": "Een encoder verwerkt alle tokens parallel in één beslissings-pass. Decoders zijn autoregressief en moeten tokens na elkaar voorspellen via herhaalde geheugentoegang.",
+   "options": [
+    "Een encoder berekent de output in exact één forward pass, terwijl decoders autoregressief en sequentieel werken.",
+    "Een encoder bevat geen attention-lagen en werkt puur met lineaire regressie.",
+    "Generatieve decoders zijn kunstmatig vertraagd door veiligheidsfilters van de EU AI Act.",
+    "Encoders draaien uitsluitend in het werkgeheugen (RAM) in plaats van op een GPU."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "prac-05",
+   "type": "cloze",
+   "skill": "latency-budgets",
+   "level": 2,
+   "prompt": "Vul de gouden standaard latentie in.",
+   "text": "Om in synchrone webapps interacties als *instant* te doen aanvoelen, moet de TTFB (Time To First Byte) onder de {{100}} milliseconden liggen.",
+   "explain": "Minder dan 100 ms is de cognitieve drempel waarbij het menselijk brein geen vertraging opmerkt."
+  },
+  {
+   "id": "prac-06",
+   "type": "type",
+   "skill": "dynamic-dispatching",
+   "level": 2,
+   "prompt": "Je bouwt een ticket-systeem dat e-mails verdeelt over 'Sales', 'Support' of 'Fraude'. Welke Jev-primitief gebruik je hiervoor?",
+   "explain": "Wanneer je uit een gedefinieerde set categorieën de best passende moet kiezen via een softmax verdeling, gebruik je de Choice primitief.",
+   "answers": [
+    "Choice",
+    "choice"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "prac-07",
+   "type": "type",
+   "skill": "feature-gating",
+   "level": 2,
+   "prompt": "Je bepaalt de agressie van een chatbericht op een rubriek van 1 tot 10 voor feature gating. Welke Jev-primitief gebruik je?",
+   "explain": "De Score primitief berekent de verwachtingswaarde (E[S]) over een geordende numerieke rubriek.",
+   "answers": [
+    "Score",
+    "score"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "prac-08",
+   "type": "mcq",
+   "skill": "feature-gating",
+   "level": 2,
+   "prompt": "Wat is het wezenlijke verschil tussen traditionele feature flags en AI feature gating?",
+   "explain": "Traditionele flags leunen op binaire of hardcoded datavelden; AI gating koppelt dezelfde boolean toggles aan complexe, continue intenties of sentiment-scores (zoals E[S] > 7.5).",
+   "options": [
+    "Bij AI gating wordt de feature ingeschakeld op basis van een continue AI-score of intentie, in plaats van uitsluitend hardcoded regels zoals User ID.",
+    "Traditionele flags werken met boolean variabelen, terwijl AI gating vereist dat de code tijdens runtime herschreven wordt.",
+    "AI feature gating kan alleen aan de client-zijde (frontend) worden berekend.",
+    "Traditionele flags zijn altijd gratis, AI gating is altijd een dure cloud-dienst."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "prac-09",
+   "type": "type",
+   "skill": "latency-budgets",
+   "level": 2,
+   "prompt": "Hoe noemen we de cache-techniek waarbij je extreem snel (< 5 ms) een beslissing ophaalt op basis van embedding-similariteit?",
+   "explain": "Dit heet semantische caching (of semantic caching).",
+   "answers": [
+    "Semantische caching",
+    "semantische caching",
+    "semantische hash",
+    "semantic caching"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "prac-10",
+   "type": "numeric",
+   "skill": "latency-budgets",
+   "level": 3,
+   "prompt": "Het TTFB-budget van je webapp is 100 ms. Netwerkoverhead kost 15 ms, en je database query kost 5 ms. Hoeveel milliseconden blijven er maximaal over voor je TypeSafe AI-model?",
+   "explain": "100 ms - (15 + 5) ms = 80 ms.",
+   "value": 80,
+   "tolerance": 0,
+   "unit": "ms"
+  },
+  {
+   "id": "prac-11",
+   "type": "cloze",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Vul de mechanismen voor structured generation in.",
+   "text": "De open-source bibliotheek {{Outlines}} gebruikt {{logit masking|logit-masking}} om ongeldige tokens (die je JSON breken) wiskundig op $p=0$ te zetten.",
+   "explain": "Outlines dwingt via logit masking de 100% syntaxisgarantie af."
+  },
+  {
+   "id": "prac-12",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Hoe heet de wiskundige techniek waarmee Outlines op het laatste moment bepaalde tokens 'verbiedt' om het JSON-schema te beschermen?",
+   "explain": "De techniek waarbij de logit scores (of probabiliteiten) gemodificeerd/gemaskeerd worden, noemt men logit masking.",
+   "answers": [
+    "logit masking",
+    "Logit masking",
+    "logit-masking"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "prac-13",
+   "type": "mcq",
+   "skill": "dynamic-dispatching",
+   "level": 3,
+   "prompt": "Wat doe je best bij dynamische dispatching als de kans voor elke afdeling (Support, Sales, etc.) ver onder de 0.50 ligt (bv. max(P) = 0.38)?",
+   "explain": "Omdat probabilistische modellen kunnen falen bij sterk ambigue input, voorzie je altijd een veilige fallback route om foute AI-gokken op te vangen.",
+   "options": [
+    "Je stuurt het ticket naar een 'fallback route', zoals een algemene inbox of triage door een menselijke medewerker.",
+    "Je forceert Jev om een generatieve uitleg te schrijven waarom de input onduidelijk is.",
+    "Je negeert het bericht en geeft de verzender een 404-foutmelding.",
+    "Je routeert het willekeurig naar een afdeling om toch aan de SLA te voldoen."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "prac-14",
+   "type": "cloze",
+   "skill": "slm-constrained",
+   "level": 1,
+   "prompt": "Vul de juiste versie/grootte in.",
+   "text": "Het populaire 0.5 miljard parameter model van Alibaba schrijven we officieel als Qwen2.5-{{0.5B|0,5B}}.",
+   "explain": "De toevoeging 0.5B (Billion parameters) benadrukt dat het om een extreem compact model gaat dat efficiënt lokaal draait."
+  },
+  {
+   "id": "prac-15",
+   "type": "numeric",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Een typisch encoder-only model zoals de ModernBERT-base variant is piepklein ten opzichte van LLM's. 149 miljoen parameters is gelijk aan ... miljard.",
+   "explain": "Delen door 1000 levert 0.149 op.",
+   "value": 0.149,
+   "tolerance": 0.001
+  },
+  {
+   "id": "prac-16",
+   "type": "type",
+   "skill": "dynamic-dispatching",
+   "level": 2,
+   "prompt": "Je wil een webhook routeren op basis van de vraag: \"Bevat dit bericht een sql-injection payload (ja/nee)?\". Welke Jev-primitief roep je aan?",
+   "explain": "De Noul primitief is expliciet bedoeld voor binaire / boolean probabiliteiten ($P(\\text{true})$).",
+   "answers": [
+    "Noul",
+    "noul"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "prac-17",
+   "type": "type",
+   "skill": "latency-budgets",
+   "level": 1,
+   "prompt": "Wat is de 4-letterige IT-afkorting voor de tijd van het HTTP-verzoek tot het ontvangen van de eerste databyte (Time To First Byte)?",
+   "explain": "TTFB is de primaire graadmeter voor de snelheid van je backend en de ervaren wachttijd van je gebruiker.",
+   "answers": [
+    "TTFB",
+    "ttfb"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "prac-18",
+   "type": "mcq",
+   "skill": "feature-gating",
+   "level": 3,
+   "prompt": "Bij feature gating via de Score primitief gebruiken we $\\mathbb{E}[S]$ > drempelwaarde. Wat representeert $\\mathbb{E}[S]$ wiskundig?",
+   "explain": "E[S] is de verwachtingswaarde (Expected Value) van de continue score, verkregen door de probabiliteiten per rubriekklasse in aanmerking te nemen.",
+   "options": [
+    "De gekalibreerde verwachtingswaarde (Expected Value) van de score-rubriek.",
+    "De absolute entropy in de softmax-laag van het model.",
+    "De error-rate van het model gemeten in standaardafwijkingen.",
+    "Het resterende aantal seconden tot de feature flag vervalt."
+   ],
+   "answer": 0
+  }
+ ],
+ "production": {
+  "type": "explain",
+  "prompt": "Je ontwerpt de automatische supportflow voor een B2B SaaS-platform. Zodra een klant via de website een ticket aanmaakt, wil je in minder dan 100 ms een beslissing nemen:\n\n1. Is dit fraude/spam?\n2. Zo nee, gaat dit naar 'Technische Support', 'Facturatie' of 'Accountmanagement'?\n3. Als de klant een zeer agressieve of gefrustreerde indruk geeft (op een schaal van 1 tot 10), activeer je direct in hun UI een *feature flag* (een knop om met een medewerker te chatten).\n\nBeschrijf je beslissingsarchitectuur. Benoem expliciet:\n- Welke van de drie Jev-primitieven (Noul, Choice, Score) je waar inzet.\n- Hoe je omgaat met onzekerheid (wat als het AI-model twijfelt over de afdeling?).\n- Hoe je het krappe latentie-budget van 100 ms technisch bewaakt (verwijs naar semantische caching en modeltypes).",
+  "model": "1. Ik gebruik eerst de **Noul** primitief om spam of fraude te detecteren ($P(\\text{true})$).\n2. Voor de routering naar Technische Support, Facturatie of Accountmanagement gebruik ik de **Choice** primitief, die een softmax kansverdeling geeft.\n3. Voor het detecteren van de klantfrustratie gebruik ik de **Score** primitief op een rubriek van 1 tot 10. Als de verwachtingswaarde $\\mathbb{E}[S] > 8$, activeer ik de feature flag voor live-escalatie.\n4. **Onzekerheid / Fallback**: Als max(P) in de Choice-stap kleiner is dan bv. 0.60, roep ik een *fallback route* aan, en stuur ik het ticket tijdelijk naar een menselijke dispatcher.\n5. **Latentie-budget**: Ik vermijd zware autoregressieve LLM's, en kies voor lokale snelle encoder-modellen of Jev. Aanvullend activeer ik *semantische caching*: voor veelvoorkomende identieke vragen (cosinus similariteit > 99%) haal ik de dispatching uit de Redis-cache in 1 ms.",
+  "rubric": [
+   "Noul wordt correct en logisch ingezet voor de binaire spam/fraude check.",
+   "Choice wordt correct ingezet voor categorische routing naar de 3 afdelingen.",
+   "Score (met verwijzing naar verwachtingswaarde) stuurt de agressie/feature flag aan.",
+   "Een expliciete fallback-strategie is voorzien voor lage AI-waarschijnlijkheden (lage betrouwbaarheid).",
+   "Latentie wordt succesvol beheerd door het vermijden van decoders en/of de inzet van semantische caching (Redis)."
+  ]
+ },
+ "mastery": [
+  {
+   "id": "mast-01",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Je host een lokaal SLM en wil absoluut zeker zijn dat het getypeerde JSON retourneert. Welke Python-library garandeert dit door ongeldige logits af te knijpen? (Denk aan het meervoud!)",
+   "explain": "De library heet Outlines.",
+   "answers": [
+    "Outlines",
+    "outlines"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "mast-02",
+   "type": "numeric",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Verschuif de komma juist: de 149 miljoen parameters van de ModernBERT encoder staat gelijk aan hoeveel miljard parameters? Geef als decimaal getal.",
+   "explain": "149 miljoen / 1.000 miljoen = 0.149 miljard.",
+   "value": 0.149,
+   "tolerance": 0
+  },
+  {
+   "id": "mast-03",
+   "type": "cloze",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Vul in hoe de encoder wiskundig werkt.",
+   "text": "Een encoder zoals ModernBERT neemt razendsnel classificatie-beslissingen omdat hij alles berekent in één `{{forward pass}}`, zonder iteratief en sequentieel tokens te genereren.",
+   "explain": "De forward pass garandeert een constante, uiterst lage executietijd, ongeacht de grootte van je gedefinieerde JSON-schema."
+  },
+  {
+   "id": "mast-04",
+   "type": "type",
+   "skill": "dynamic-dispatching",
+   "level": 2,
+   "prompt": "Met welke Jev-primitief stuur je een webhook met hoogste softmax-probabiliteit door naar 'Sales', 'Support' of 'IT'?",
+   "explain": "Voor routering tussen $K$ discrete opties is de Choice primitief gemaakt.",
+   "answers": [
+    "Choice",
+    "choice"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "mast-05",
+   "type": "mcq",
+   "skill": "latency-budgets",
+   "level": 2,
+   "prompt": "Waarom is dynamische dispatching via typische generatieve LLM's ongeschikt voor realtime synchrone webapps?",
+   "explain": "Webapps vereisen een TTFB (Time to First Byte) rond de 100ms. Een autoregressieve LLM doet er al gauw 1500+ ms over, wat de gebruikersinterface bevriest.",
+   "options": [
+    "De autoregressieve latentie van >1500ms overschrijdt ruim het TTFB-budget van 100ms.",
+    "Webapps kunnen principieel geen HTTP POST-requests sturen naar grote generatieve AI-modellen.",
+    "Generatieve LLM's produceren per definitie uitsluitend ruwe bytes en weigeren JSON te outputten.",
+    "OpenRouter verbiedt in haar SLA het gebruik van LLM's voor dispatching doeleinden."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "mast-06",
+   "type": "cloze",
+   "skill": "feature-gating",
+   "level": 3,
+   "prompt": "Vul de notatie in van de verwachtingswaarde.",
+   "text": "Bij AI feature gating op basis van een ordinale Score primitief activeer je UI-elementen zodra de verwachtingswaarde `{{E[S]}}` een gekalibreerde drempel overschrijdt.",
+   "explain": "E[S] staat voor de Expected Value (of \\mathbb{E}[S]) over de rubrieksscore S."
+  },
+  {
+   "id": "mast-07",
+   "type": "numeric",
+   "skill": "latency-budgets",
+   "level": 3,
+   "prompt": "Je stricte interne SLA voor TTFB is 200 ms. Netwerkoverhead kost je 12 ms, en de database updates kosten 33 ms. Hoeveel milliseconden blijven er netto maximaal over voor het AI beslissingsmodel?",
+   "explain": "200 - (12 + 33) = 200 - 45 = 155 ms.",
+   "value": 155,
+   "tolerance": 0,
+   "unit": "ms"
+  },
+  {
+   "id": "mast-08",
+   "type": "mcq",
+   "skill": "dynamic-dispatching",
+   "level": 3,
+   "prompt": "Wat is softwarematig de meest betrouwbare strategie (fallback) als een Jev-Choice primitief voor ticket routing faalt om een hoge zekerheid (max $P = 0.40$) te geven?",
+   "explain": "Onzekerheid verberg je niet. Als het model niet met hoge betrouwbaarheid kan beslissen, stuur je het door naar een mens (Human in the Loop).",
+   "options": [
+    "Je stuurt het bericht naar een algemene inbox (fallback) voor verificatie door een mens.",
+    "Je kiest alsnog willekeurig een departement, want statistisch kom je meestal wel goed uit.",
+    "Je blokkeert de browser van de gebruiker met een 500 Internal Server Error.",
+    "Je dwingt de gebruiker via een pop-up om de vraag in exact vijf woorden te herformuleren."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "mast-09",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 1,
+   "prompt": "Waarvoor staat de afkorting SLM in het actuele AI-landschap? (Typ de 3 woorden in het Engels)",
+   "explain": "Small Language Model, in contrast tot Large Language Model.",
+   "answers": [
+    "Small Language Model",
+    "small language model"
+   ],
+   "lang": "en"
+  },
+  {
+   "id": "mast-10",
+   "type": "type",
+   "skill": "slm-constrained",
+   "level": 1,
+   "prompt": "Typ de exacte en volledige naam van Alibaba's hypercompacte 0.5B (vijfhonderd miljoen parameters) model dat sterk is in lokale routering.",
+   "explain": "Qwen2.5-0.5B.",
+   "answers": [
+    "Qwen2.5-0.5B",
+    "qwen2.5-0.5b"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "mast-11",
+   "type": "type",
+   "skill": "latency-budgets",
+   "level": 2,
+   "prompt": "Hoe heet de routering-optimalisatie waarbij we lokaal snel een embedding berekenen en de bijbehorende beslissing uit Redis ophalen als de overlap >0.99 is?",
+   "explain": "Dit principe noemt men semantische caching.",
+   "answers": [
+    "Semantische caching",
+    "semantische caching",
+    "semantische hash",
+    "Semantic caching",
+    "semantic caching"
+   ],
+   "lang": "nl"
+  },
+  {
+   "id": "mast-12",
+   "type": "mcq",
+   "skill": "latency-budgets",
+   "level": 2,
+   "prompt": "Welk mechanisme verklaart de wiskundige winst van semantische caching bij dynamische dispatching?",
+   "explain": "Met embeddings kan je binnen 1-3 ms controleren of je een vergelijkbare routering al in cache hebt, waardoor de inference call (80ms) overgeslagen kan worden.",
+   "options": [
+    "Door nieuwe input-embeddings te vergelijken (cosinus) met eerder berekende intents in de cache, bespaar je een trage en relatief dure inference pass van de decision engine.",
+    "Door een simpele SHA-256 hash van het bericht te maken sluit je SQL-injecties razendsnel uit, wat de latency halveert.",
+    "Door het bericht te vertalen naar machinecode (bytecode) kan de browser zelf de dispatching offline afhandelen.",
+    "Semantische caching dwingt het model om over te stappen van floating-point 32-bit (FP32) naar FP8, wat VRAM bespaart."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "mast-13",
+   "type": "type",
+   "skill": "feature-gating",
+   "level": 2,
+   "prompt": "Welke Jev-primitief (Noul, Choice, Score) is wiskundig perfect om een frauderisico in te schatten op een ordinale schaal van 1 tot 10?",
+   "explain": "Voor continue verwachtingswaarden op een geordende rubriek gebruik je Score.",
+   "answers": [
+    "Score",
+    "score"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "mast-14",
+   "type": "type",
+   "skill": "feature-gating",
+   "level": 2,
+   "prompt": "Welke primitief roep je in een API aan om met een ja/nee-beslissing een experimentele beta-feature vlag vlag (true/false) vrij te geven?",
+   "explain": "Noul is de gekalibreerde boolean primitief.",
+   "answers": [
+    "Noul",
+    "noul"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "mast-15",
+   "type": "cloze",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Vul de techniek in voor structuur-garantie.",
+   "text": "Om de wiskundige onvoorspelbaarheid van text generation te temmen, forceert de Python library Outlines geldige JSON via de techniek van `{{logit masking|logit-masking}}`.",
+   "explain": "Logit masking is het dynamisch filteren of 'wegstrepen' van logits tijdens generatie."
+  },
+  {
+   "id": "mast-16",
+   "type": "cloze",
+   "skill": "modernbert-encoder",
+   "level": 2,
+   "prompt": "Vul de fundamentele bottle-neck van traditionele LLM's in.",
+   "text": "Een klassieke decoder (GPT/Claude) is inherent traag en rekenintensief omdat hij tekst iteratief en `{{autoregressief}}` genereert.",
+   "explain": "Autoregressief genereren (woord voor woord, gebaseerd op vorige woorden) is de voornaamste oorzaak van hoge latentie."
+  },
+  {
+   "id": "mast-17",
+   "type": "mcq",
+   "skill": "slm-constrained",
+   "level": 2,
+   "prompt": "Wat doet logit masking wiskundig tijdens het inferentieproces op een lokaal SLM?",
+   "explain": "Het past de voorspelde probabilities aan en forceert $P=0$ voor tokens die het gewenste syntax-schema zouden breken.",
+   "options": [
+    "Het reduceert systematisch de waarschijnlijkheid ($P$) van schendende of illegale tokens (in het JSON-schema) naar nul, nog voor ze geselecteerd worden.",
+    "Het verbergt de ruwe broncode van je model in het geheugen zodat de gewichten niet gestolen kunnen worden.",
+    "Het verwijdert stopwoorden uit je tekstuele prompt voordat het vector-embedding proces begint.",
+    "Het activeert een mask over de logits in de attention head zodat er meerdere taken tegelijk uitgevoerd worden."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "mast-18",
+   "type": "numeric",
+   "skill": "latency-budgets",
+   "level": 1,
+   "prompt": "Om een webinterface op psychologisch niveau 'instant' te laten aanvoelen bij een gebruiker, moet de TTFB idealiter ruim onder de ... milliseconden liggen.",
+   "explain": "100 ms is de gouden grens voor 'onmiddellijke' interactie.",
+   "value": 100,
+   "tolerance": 0
+  },
+  {
+   "id": "mast-19",
+   "type": "type",
+   "skill": "latency-budgets",
+   "level": 1,
+   "prompt": "Je wil analyseren waarom je app loom aanvoelt. Naar welke 4-letterige metriek kijk je om de tijd tussen de request en eerste byte vast te stellen?",
+   "explain": "TTFB (Time To First Byte).",
+   "answers": [
+    "TTFB",
+    "ttfb"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "mast-20",
+   "type": "numeric",
+   "skill": "feature-gating",
+   "level": 3,
+   "prompt": "Om de effectiviteit van je AI gating achteraf te valideren meet je de Brier score. Wat is de kwadratische afwijking $(p - y)^2$ van een voorspelling $p = 0.40$ wanneer de werkelijke uitkomst $y = 0$ is?",
+   "explain": "$(0.40 - 0.0)^2 = (0.40)^2 = 0.16$.",
+   "value": 0.16,
+   "tolerance": 0.001
+  }
+ ],
+ "cards": [
+  {
+   "id": "c-outlines",
+   "skill": "slm-constrained",
+   "front": "Wat is het fundamentele doel van de Python-library **Outlines** bij lokale SLM's?",
+   "back": "Het garanderen van 100% geldige gestructureerde output (zoals JSON). Dit wordt wiskundig afgedwongen door middel van *logit masking* (kansen van illegale tokens op 0 forceren)."
+  },
+  {
+   "id": "c-encoder-speed",
+   "skill": "modernbert-encoder",
+   "front": "Waarom is een encoder-model (zoals ModernBERT) 100x sneller dan een generatieve decoder?",
+   "back": "Een encoder verwerkt alle input parallel en classificeert in exact één enkele *forward pass*. Een decoder is *autoregressief* en moet tokens traag, serieel (één voor één) genereren."
+  },
+  {
+   "id": "c-intent-routing",
+   "skill": "dynamic-dispatching",
+   "front": "Hoe functioneert *intent routing* wiskundig in Jev?",
+   "back": "Door inkomende ongestructureerde data te matchen op een vaste set categorieën (met de **Choice** primitief). Het model produceert een softmax kansverdeling, waardoor je webhooks dynamisch kan verdelen over de juiste kanalen."
+  },
+  {
+   "id": "c-feature-gating",
+   "skill": "feature-gating",
+   "front": "Hoe werkt **AI Feature Gating** via de Score primitief?",
+   "back": "Je berekent een continue AI-verwachtingswaarde $\\mathbb{E}[S]$ op een rubric (bv. 1 tot 10 voor agressie). Overschrijdt de score een harde drempel, dan springt een feature flag voor die gebruiker op 'true'."
+  },
+  {
+   "id": "c-sem-cache",
+   "skill": "latency-budgets",
+   "front": "Wat is **semantische caching** in dynamische dispatching?",
+   "back": "Je genereert lokaal snel een vector-embedding van een bericht. Als dit bericht >99% gelijkt op een eerder bericht in je Redis-cache, herbruik je direct de opgeslagen beslissing zonder het zwaardere decision model te bevragen (kosten- en latentiebesparing)."
+  },
+  {
+   "id": "c-ttfb-budget",
+   "skill": "latency-budgets",
+   "front": "Wat is het kritieke latentie-budget (TTFB) voor interacties in synchrone webapps?",
+   "back": "Om de interactie voor de gebruiker psychologisch *instant* te doen lijken, moet de Time To First Byte (TTFB) strak onder de **100 milliseconden** (100 ms) blijven."
+  }
+ ],
+ "sources": [
+  "TypeSafe AI: Decision Modeling Primitives Documentation (2026)",
+  "Outlines: Generative Model structured output via logit masking (2024)",
+  "ModernBERT: Encoder-only models for classification and decision-making (2025)"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-09-30",
+  "adaptedFor": "Aangepast op basis van je recente fouten. Les 6 opent met gerichte herhalingsoefeningen op Outlines (spelling en logit masking) en Qwen/ModernBERT (parameteraantallen en encoder-snelheid) voordat we dit als fundament leggen onder krappe TTFB latentie-budgetten."
+ }
+}
