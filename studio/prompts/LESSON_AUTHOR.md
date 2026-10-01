@@ -110,7 +110,11 @@ Daarom:
 
 Stappen: `deploy` (+ `args`, `as`, `value`, `alias`, `reverts`), `call` (+ `on`, `args`, `as`, `value`, `reverts` = true | foutnaam | tekstfragment, `returns`, `emits`, `gasLt`, `tx`), `expect` met `call`/`balance`/`slot`/`slotsUsed` en een vergelijking `eq|ne|gt|gte|lt|lte`, `fund`, `warp` (seconden), `roll` (blokken). Zonder `deploy`-stap wordt `contract` automatisch gedeployed. Waarden: getallen, `"1 ether"`, `"5 gwei"`, accountnamen, `"$alias"`. Hulpcontracten (bv. een aanvaller) zet je in `extraSources` (`{"Attacker.sol": "…"}`) of in hetzelfde bestand.
 
-**AI (`ai`)** — wiskunde in KaTeX, correcte formules en getallen (vermeld papers + jaar). Veel `numeric`-items met `tolerance`. Vertaal telkens naar kosten, capaciteit of strategie (handelsingenieur). Gebruik de simulators waar ze bestaan.
+**AI (`ai`)** — wiskunde in KaTeX gecombineerd met **concrete Python-implementaties** (PyTorch, Hugging Face `transformers`, `datasets`, `peft`, `bitsandbytes`, `pydantic`). Leg elk mechanisme zowel theoretisch als in werkende Python-code uit. Behandel systematisch:
+- **Trainen van AI in Python**: DataLoader batching, tensor shapes `(B, T, d)`, forward pass, causal loss over shift logits, autograd `loss.backward()`, gradient accumulation, AdamW optimizer step, SFT (Supervised Fine-Tuning) en LoRA/QLoRA adapter training.
+- **Gebruiken van AI in Python**: Hugging Face pipelines, `AutoModelForCausalLM`, `generate()` parameters (temperature, top_p, top_k), KV-cache tensor beheer, embeddings & vector similarity search (`sentence-transformers`), en structured outputs met Pydantic (`instructor`).
+- **Architecturale visuals**: Voeg bij structurele concepten visuele diagrammen toe via Markdown-afbeeldingen (`![Alt](assets/diagrams/... "Caption")` of heldere schema's).
+- **Didactische items**: Gebruik `numeric`-items voor geheugen- en rekencapaciteit, `cloze` voor code invuloefeningen in Python, `order` voor de stappen in de trainingsloop of inferentiecyclus, en `type`/`match` voor PyTorch functies en tensor shapes. Vertaal altijd naar kosten, capaciteit en strategie (handelsingenieur). Gebruik de interactieve simulators waar ze bestaan.
 
 **Automation (`automation`)** — n8n 1.x-terminologie (Edit Fields/Set, Split Out, Aggregate, Merge, Code, HTTP Request, Webhook, Respond to Webhook, Error Trigger, AI Agent …). Twee uitvoerbare itemtypes:
 

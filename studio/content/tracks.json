@@ -39,11 +39,11 @@
   "ai": {
     "title": "AI & Large Language Models",
     "short": "AI",
-    "subtitle": "De wiskunde en engineering achter moderne LLM's — van tokenizer tot inference-economie.",
+    "subtitle": "Trainen, gebruiken en doorgronden in Python — van PyTorch-tensors en autograd tot LoRA, inferentie en transformer-architectuur.",
     "glyph": "∇",
     "lang": "en",
     "levels": "Gevorderd",
-    "goal": "Doel: moderne LLM-systemen tot op de formule begrijpen, doorrekenen (compute, geheugen, kosten) en kritisch beoordelen — als ingenieur én als strateeg."
+    "goal": "Doel: moderne LLM-systemen tot op de formule én de Python-code (PyTorch, Hugging Face, LoRA, inferentie) doorgronden, trainen en bouwen — met visuele schema's, tensor-inzicht en compute-calculaties."
   },
   "automation": {
     "title": "Workflow Automation & API Engineering",

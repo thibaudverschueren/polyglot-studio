@@ -97,6 +97,16 @@ def inline(text, greek_say=True):
     # whitelisted raw tags
     t = ALLOWED_TAGS.sub(lambda m: keep(m.group(0).lower().replace(" ", "")), t)
     # escape the rest
+    # images: ![alt](url) or ![alt](url "title")
+    def img_rep(m):
+        alt = m.group(1)
+        src = m.group(2)
+        title = m.group(3) or ""
+        cap = title or alt
+        cap_html = f'<figcaption>{_html.escape(cap, quote=False)}</figcaption>' if cap else ''
+        return keep(f'<figure class="figure"><img src="{_html.escape(src, quote=True)}" alt="{_html.escape(alt, quote=True)}" loading="lazy">{cap_html}</figure>')
+    t = re.sub(r"!\[([^\]]*)\]\(([^)\s]+)(?:\s+[\"']([^\"']*)[\"'])?\)", img_rep, t)
+    # escape the rest
     t = _html.escape(t, quote=False)
     # links
     t = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", lambda m: f'<a href="{m.group(2)}" target="_blank" rel="noopener">{m.group(1)}</a>', t)
@@ -284,6 +294,17 @@ def render(md, _depth=0):
                     i += 1
                 i += 1
             out.append(f'<div class="sim" data-sim="{name}" data-opts=\'{_html.escape(opts, quote=True)}\'></div>')
+            continue
+
+        # Block image: ![alt](url) or ![alt](url "caption")
+        im = re.match(r"^!\[([^\]]*)\]\(([^)\s]+)(?:\s+[\"']([^\"']*)[\"'])?\)$", stripped)
+        if im:
+            flush_para()
+            alt, src, title = im.group(1), im.group(2), im.group(3)
+            cap = title or alt
+            cap_html = f'<figcaption>{inline(cap, greek_say=False)}</figcaption>' if cap else ''
+            out.append(f'<figure class="figure"><img src="{_html.escape(src, quote=True)}" alt="{_html.escape(alt, quote=True)}" loading="lazy">{cap_html}</figure>')
+            i += 1
             continue
 
         hm = re.match(r"^(#{1,4})\s+(.*)$", stripped)

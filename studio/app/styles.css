@@ -828,6 +828,30 @@ textarea.answer-input { min-height: 120px; resize: vertical; font-size: 17px; li
 .fn-btn.pay { background: rgba(252, 165, 165, 0.16); color: #fca5a5; }
 .fn-out { font-family: var(--font-mono); font-size: 12.5px; color: #7dd3fc; }
 
+/* ---------- Figures & Diagrams ---------- */
+.figure {
+  margin: 1.6em 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.figure img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--r-l);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-1);
+}
+.figure figcaption {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-3);
+  text-align: center;
+  max-width: 620px;
+}
+
 /* ---------- Simulators ---------- */
 .sim { margin: 1.4em 0; border-radius: var(--r-l); background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
 .sim-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--line); }

@@ -1,10 +1,11 @@
 {
  "track": "ai",
- "goal": "Moderne LLM-systemen tot op de formule begrijpen, doorrekenen (compute, geheugen, kosten) en kritisch beoordelen — als ingenieur én als strateeg.",
+ "goal": "Moderne LLM-systemen tot op de formule én de Python-code (PyTorch, Hugging Face, training loops, LoRA, inferentie) doorgronden, trainen en bouwen — met visuele architectuurschema's, diep tensor-inzicht en compute-calculaties.",
  "principles": [
-  "Elke les combineert wiskunde (KaTeX), een interactieve simulator en rekenopdrachten met numerieke controle.",
-  "Cijfers en claims met bronvermelding (paper + jaar); geen marketingtaal.",
-  "Vertaal altijd naar gevolgen voor product, kost en strategie (handelsingenieur)."
+  "Elke les combineert theorie en wiskunde (KaTeX), visuele architectuurschema's/diagrammen en concrete Python-implementaties (PyTorch, Hugging Face transformers, peft).",
+  "Zowel trainen (training loops, loss calculation, backprop, autograd, optimizer, SFT, LoRA) als gebruiken (inference pipelines, KV-cache tensors, embeddings, structured outputs) worden in Python tot op de regel code ontleed.",
+  "Geen black-box code: begrijp wat er met tensors in VRAM en GPU-registers gebeurt bij elke stap (shapes, gradients, memory allocation).",
+  "Cijfers en claims met bronvermelding (paper + jaar); vertaal altijd naar gevolgen voor product, kost en strategie (handelsingenieur)."
  ],
  "modules": [
   {
