@@ -1849,7 +1849,12 @@
    }
   ],
   "model": "Twee geneste lussen (bestellingen → producten), expliciete `Number(...)`-conversies, afronden met `Math.round(x * 100) / 100` en `String(email).trim().toLowerCase()`. Een lege `line_items`-array levert vanzelf nul items op.",
-  "rubric": []
+  "rubric": [
+   "Iteert over `$input.all()` en haalt de webhook body uit `item.json.body`",
+   "Zet `quantity` en `unit_price` om naar numerieke waarden via `Number()`",
+   "Berekent `line_total` correct en afgerond op 2 decimalen",
+   "Normaliseert het e-mailadres met `.trim().toLowerCase()` en verpakt het resultaat in `{ json: ... }`"
+  ]
  },
  "cards": [
   {

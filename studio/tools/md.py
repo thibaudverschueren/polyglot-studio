@@ -99,13 +99,12 @@ def inline(text, greek_say=True):
     # escape the rest
     # images: ![alt](url) or ![alt](url "title")
     def img_rep(m):
-        alt = m.group(1)
-        src = m.group(2)
-        title = m.group(3) or ""
-        cap = title or alt
+        alt = m.group("alt")
+        src = m.group("src")
+        cap = m.group("t1") or m.group("t2") or alt
         cap_html = f'<figcaption>{_html.escape(cap, quote=False)}</figcaption>' if cap else ''
         return keep(f'<figure class="figure"><img src="{_html.escape(src, quote=True)}" alt="{_html.escape(alt, quote=True)}" loading="lazy">{cap_html}</figure>')
-    t = re.sub(r"!\[([^\]]*)\]\(([^)\s]+)(?:\s+[\"']([^\"']*)[\"'])?\)", img_rep, t)
+    t = re.sub(r"!\[(?P<alt>[^\]]*)\]\((?P<src>[^\s)]+)(?:\s+(?:\"(?P<t1>[^\"]*)\"|'(?P<t2>[^']*)'))?\)", img_rep, t)
     # escape the rest
     t = _html.escape(t, quote=False)
     # links
@@ -297,11 +296,12 @@ def render(md, _depth=0):
             continue
 
         # Block image: ![alt](url) or ![alt](url "caption")
-        im = re.match(r"^!\[([^\]]*)\]\(([^)\s]+)(?:\s+[\"']([^\"']*)[\"'])?\)$", stripped)
+        im = re.match(r"^!\[(?P<alt>[^\]]*)\]\((?P<src>[^\s)]+)(?:\s+(?:\"(?P<t1>[^\"]*)\"|'(?P<t2>[^']*)'))?\)$", stripped)
         if im:
             flush_para()
-            alt, src, title = im.group(1), im.group(2), im.group(3)
-            cap = title or alt
+            alt = im.group("alt")
+            src = im.group("src")
+            cap = im.group("t1") or im.group("t2") or alt
             cap_html = f'<figcaption>{inline(cap, greek_say=False)}</figcaption>' if cap else ''
             out.append(f'<figure class="figure"><img src="{_html.escape(src, quote=True)}" alt="{_html.escape(alt, quote=True)}" loading="lazy">{cap_html}</figure>')
             i += 1

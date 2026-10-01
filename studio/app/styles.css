@@ -975,6 +975,7 @@ textarea.answer-input { min-height: 120px; resize: vertical; font-size: 17px; li
 .glossary dt { font-weight: 700; margin-top: 12px; }
 .glossary dd { margin: 2px 0 0; color: var(--ink-2); }
 details.quote summary { cursor: pointer; color: var(--topic, var(--accent)); font-weight: 650; list-style: none; }
+details.quote summary::-webkit-details-marker { display: none; }
 details.quote q { display: block; margin-top: 6px; font-size: 13px; color: var(--ink-3); font-style: italic; min-width: 180px; }
 .radar-related { margin-top: 22px; line-height: 1.9; }
 .sources { padding-left: 22px; margin: 0; }

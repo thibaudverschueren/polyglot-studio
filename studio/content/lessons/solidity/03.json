@@ -52,7 +52,7 @@
   {
    "id": "storage",
    "title": "Opslag van mappings (Onder de motorkap)",
-   "md": "Waarom heeft een mapping geen lengte en kan je er niet over itereren? Dat heeft te maken met hoe de EVM storage gebruikt.\n\nStel, je contract declareert `balances` als allereerste variabele op **slot 0** (dus $p = 0$).\nAls je `balances[alice] = 100;` uitvoert, wordt die `100` **niet** in slot 0 bewaard. Het declaratieslot $p$ blijft volledig leeg!\n\nSolidity berekent de werkelijke opslaglocatie door de sleutel en het slotnummer te hashen met de functie `keccak256`:\n\n$$\\text{locatie} = \\text{keccak256}(\\text{key} \\cdot p)$$\n\nOmdat de totale opslagruimte astronomisch groot is ($2^{256}$ slots), is de kans op een botsing (collision) vrijwel nul. Maar omdat de EVM nergens een centraal overzicht bijhoudt van welke slots gevuld zijn, kan het contract onmogelijk weten of de hash van `alice` of `bob` ooit gebruikt is. \n\nDaarom kan je een mapping niet itereren: je zou theoretsich $2^{256}$ hashes moeten controleren om te zien of ze niet `0` zijn.",
+   "md": "Waarom heeft een mapping geen lengte en kan je er niet over itereren? Dat heeft te maken met hoe de EVM storage gebruikt.\n\nStel, je contract declareert `balances` als allereerste variabele op **slot 0** (dus $p = 0$).\nAls je `balances[alice] = 100;` uitvoert, wordt die `100` **niet** in slot 0 bewaard. Het declaratieslot $p$ blijft volledig leeg!\n\nSolidity berekent de werkelijke opslaglocatie door de sleutel en het slotnummer te hashen met de functie `keccak256`:\n\n$$\\text{locatie} = \\text{keccak256}(\\text{key} \\cdot p)$$\n\nOmdat de totale opslagruimte astronomisch groot is ($2^{256}$ slots), is de kans op een botsing (collision) vrijwel nul. Maar omdat de EVM nergens een centraal overzicht bijhoudt van welke slots gevuld zijn, kan het contract onmogelijk weten of de hash van `alice` of `bob` ooit gebruikt is. \n\nDaarom kan je een mapping niet itereren: je zou theoretisch $2^{256}$ hashes moeten controleren om te zien of ze niet `0` zijn.",
    "checks": [
     {
      "id": "c2",
@@ -337,8 +337,8 @@
    "prompt": "Maak een functie `setBalance(uint256 b)` die het saldo van de aanroeper (`msg.sender`) instelt op `b`.",
    "explain": "Wijs b toe aan balances[msg.sender].",
    "contract": "Bank",
-   "starter": "contract Bank {\n    mapping(address => uint256) public balances;\n\n    // TODO: schrijf setBalance(uint256 b)\n}",
-   "solution": "contract Bank {\n    mapping(address => uint256) public balances;\n\n    function setBalance(uint256 b) external {\n        balances[msg.sender] = b;\n    }\n}",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Bank {\n    mapping(address => uint256) public balances;\n\n    // TODO: schrijf setBalance(uint256 b)\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Bank {\n    mapping(address => uint256) public balances;\n\n    function setBalance(uint256 b) external {\n        balances[msg.sender] = b;\n    }\n}",
    "tests": [
     {
      "name": "setBalance werkt",
@@ -516,8 +516,8 @@
    "prompt": "Schrijf de functie `levelUp()` die het `level` van `msg.sender` met 1 verhoogt.",
    "explain": "Gebruik `players[msg.sender].level += 1;`.",
    "contract": "Game",
-   "starter": "contract Game {\n    struct Player {\n        uint256 level;\n    }\n    mapping(address => Player) public players;\n    \n    // TODO: function levelUp()\n}",
-   "solution": "contract Game {\n    struct Player {\n        uint256 level;\n    }\n    mapping(address => Player) public players;\n    \n    function levelUp() external {\n        players[msg.sender].level += 1;\n    }\n}",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Game {\n    struct Player {\n        uint256 level;\n    }\n    mapping(address => Player) public players;\n    \n    // TODO: function levelUp()\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Game {\n    struct Player {\n        uint256 level;\n    }\n    mapping(address => Player) public players;\n    \n    function levelUp() external {\n        players[msg.sender].level += 1;\n    }\n}",
    "tests": [
     {
      "name": "levelUp werkt",
@@ -688,8 +688,8 @@
    "prompt": "Schrijf `addScore(uint256 s)` die de waarde `s` toevoegt aan de array.",
    "explain": "Gebruik `scores.push(s)`.",
    "contract": "ScoreBoard",
-   "starter": "contract ScoreBoard {\n    uint256[] public scores;\n\n    // TODO: addScore(uint256 s)\n}",
-   "solution": "contract ScoreBoard {\n    uint256[] public scores;\n\n    function addScore(uint256 s) external {\n        scores.push(s);\n    }\n}",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract ScoreBoard {\n    uint256[] public scores;\n\n    // TODO: addScore(uint256 s)\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract ScoreBoard {\n    uint256[] public scores;\n\n    function addScore(uint256 s) external {\n        scores.push(s);\n    }\n}",
    "tests": [
     {
      "name": "addScore pusht naar de array",
@@ -734,8 +734,8 @@
    "prompt": "Schrijf `markRead(uint256 id)` die het veld `read` op `true` zet voor het boek met dit ID.",
    "explain": "books[id].read = true",
    "contract": "Library",
-   "starter": "contract Library {\n    struct Book {\n        string title;\n        bool read;\n    }\n    mapping(uint256 => Book) public books;\n\n    // Hulpfunctie (niet aanpassen)\n    function isRead(uint256 id) external view returns (bool) {\n        return books[id].read;\n    }\n\n    // TODO: markRead(uint256 id)\n}",
-   "solution": "contract Library {\n    struct Book {\n        string title;\n        bool read;\n    }\n    mapping(uint256 => Book) public books;\n\n    function isRead(uint256 id) external view returns (bool) {\n        return books[id].read;\n    }\n\n    function markRead(uint256 id) external {\n        books[id].read = true;\n    }\n}",
+   "starter": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Library {\n    struct Book {\n        string title;\n        bool read;\n    }\n    mapping(uint256 => Book) public books;\n\n    // Hulpfunctie (niet aanpassen)\n    function isRead(uint256 id) external view returns (bool) {\n        return books[id].read;\n    }\n\n    // TODO: markRead(uint256 id)\n}",
+   "solution": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Library {\n    struct Book {\n        string title;\n        bool read;\n    }\n    mapping(uint256 => Book) public books;\n\n    function isRead(uint256 id) external view returns (bool) {\n        return books[id].read;\n    }\n\n    function markRead(uint256 id) external {\n        books[id].read = true;\n    }\n}",
    "tests": [
     {
      "name": "markRead zet de bool op true",

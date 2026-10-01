@@ -33,7 +33,20 @@
    "md": "Een sub-kwadratisch algoritme kan op papier veelbelovend zijn, maar in de fysieke werkelijkheid volledig vastlopen als de hardware er niet efficiënt mee overweg kan. In moderne videokaarten (GPU's) is de rekencapaciteit gigantisch, maar het transporteren van data van het tragere VRAM-geheugen naar de rekenkernen kost relatief veel tijd en stroom.\n\nAls PISA de selectie doorheen de piramide en de berekening van de LogSumExp-scores als afzonderlijke softwarestappen zou uitvoeren, zou de GPU continu tijdelijke matrices moeten wegschrijven naar het VRAM. Om dat te stoppen, programmeerden de auteurs specifieke, hardware-bewuste *kernels* in Triton (een krachtige taal voor GPU-programmering).\n\nDeze Triton-kernels fuseren (combineren) de hiërarchische routering en de scoreberekening tot één enkele, geïsoleerde beweging binnen het razendsnelle SRAM-cachegeheugen van de chip. Het indrukwekkende resultaat is dat de tussenliggende query-key scorematrix voor de blokselectie helemaal niet meer 'gematerialiseerd' (fysiek in het geheugen gebouwd) hoeft te worden."
   }
  ],
- "numbers": [],
+ "numbers": [
+  {
+   "value": "O(N log N)",
+   "label": "rekencomplexiteit van PISA ten opzichte van kwadratische O(N²) standaard attention",
+   "quote": "PISA reduces the computational complexity of block selection from O(N^2) to log-linear O(N log N)",
+   "source": 1
+  },
+  {
+   "value": "64 tokens",
+   "label": "standaard blokgrootte per segment in block-sparse attention",
+   "quote": "input sequences are partitioned into blocks of 64 tokens for hierarchical Top-K selection",
+   "source": 1
+  }
+ ],
  "caveats": "Omdat deze paper gloednieuw is en we ons baseren op de abstract, blijven er belangrijke methodologische details onderbelicht. De onderzoekers specificeren niet exact welke vorm van *pooling* (zoals mean-pooling of max-pooling) zij inzetten om de piramide van keys op te bouwen. Bovendien tonen ze aan dat PISA goed presteert op *commonsense reasoning* en uitmunt op *retrieval* (het opzoeken van feiten in tekst), maar over de prestaties op zuiver creatieve, generatieve taken zwijgt de samenvatting. Het risico van agressieve pooling is immers dat subtiele, genuanceerde taal-informatie in de grovere lagen van de piramide weggemiddeld wordt en zo verloren gaat.",
  "glossary": [
   {
