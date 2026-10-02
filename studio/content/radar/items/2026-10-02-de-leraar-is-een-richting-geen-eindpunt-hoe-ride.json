@@ -1,0 +1,154 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "De leraar is een richting, geen eindpunt: hoe RIDE distillatielimieten doorbreekt",
+ "subtitle": "Door de leerrichting van een neuraal netwerk te extrapoleren in de latente ruimte, bewijst dit algoritme dat een gedistilleerd student-model prestaties kan neerzetten die gemiddeld de RL-leraar benaderen of zelfs overtreffen.",
+ "topic": "ai",
+ "minutes": 9,
+ "tldr": [
+  "On-policy distillatie traint een student-model om de output van een leraar na te bootsen, waarbij de intelligentie van de leraar traditioneel het keiharde eindplafond vormt.",
+  "Pogingen om de student voorbij dit plafond te forceren door simpelweg de gewenste woordkansen (logits) te extrapoleren, falen vaak doordat de projectiematrix van het model de data wiskundig vervormt en bemonsteringsruis kwadratisch opblaast.",
+  "De nieuwe architectuur RIDE meet daarom het daadwerkelijke effect van Reinforcement Learning (RL) veel eerder in het proces: het berekent de pure afwijkingsvector tussen het basismodel en de leraar in de latente 'hidden states'.",
+  "Door deze wiskundige vector als stabiel richtingsroer te gebruiken, is de gedistilleerde student de enige methode wiens gemiddelde score de eigen RL-leraar op complexe wiskunde-benchmarks benadert of zelfs overtreft."
+ ],
+ "why": "Als handelsingenieur zoek je continu naar manieren om geavanceerde prestaties te persen uit efficiënte systemen met een lage operationele kost. Wanneer we intelligente workflows in n8n bouwen voor complexe automatisaties, willen we liefst lokaal draaiende AI-modellen inzetten in plaats van dure externe API's. Distillatie wordt vaak geassocieerd met het kleiner maken van modellen, maar hier wordt het gebruikt in een 'same-initialization setting' waarbij leraar, student en basismodel exact dezelfde architectuur delen. Het doel is puur de intelligente RL-verbeteringen over te dragen. Tot nu toe heerste het dogma dat een student-model hoogstens de leraar kan evenaren. Dit paper doorbreekt die ijzeren wet wiskundig. Door een model in zijn 'latente ruimte' (de diepe matrix-berekeningen) bij te sturen in plaats van puur te optimaliseren op oppervlakkige tekstoutputs (logits), bewijst het dat we modellen op een robuuste manier verder in een gewenste richting kunnen duwen. Dit fundamentele inzicht toont hoe je met gerichte vector-extrapolatie een architecturaal plafond verbrijzelt, wat cruciaal is voor het accuraat evalueren van toekomstige modellen en het zelf finetunen van hoogwaardige AI-toepassingen voor jouw projecten.",
+ "sections": [
+  {
+   "title": "Het plafond van de leraar doorbreken",
+   "md": "Bij *on-policy distillation* (OPD) genereert een student-model teksten, waarna een lerarenmodel deze output beoordeelt. In de context van RIDE delen de student en de leraar echter exact dezelfde omvang en architectuur. De student past zijn parameters aan om de waarschijnlijkheidsverdeling van de leraar exact te matchen. Het structurele nadeel van deze methode is dat de leraar hierbij het absolute eindstation is: zodra de student de leraar perfect imiteert, stopt het leerproces.\n\nOnderzoekers proberen dit plafond te doorbreken via *output-space extrapolation* (ExOPD). Als de leraar een specifiek woord waarschijnlijker acht dan het pre-RL checkpoint (het basismodel vóór de RL-training), dwingt ExOPD de student om die waarschijnlijkheid nóg verder te vergroten door te extrapoleren op de output-waarden (de logits). Hoewel dit conceptueel logisch klinkt, blijkt het in de praktijk buitengewoon instabiel. Zodra onderzoekers de extrapolatie-factor verhogen, verslechtert de AI snel in plaats van beter te presteren."
+  },
+  {
+   "title": "De filter van de language-model head",
+   "md": "De kern van deze instabiliteit ligt bij de laatste fysieke laag van het neurale netwerk: de *language-model head*. Dit is een omvangrijke matrix ($W_{\\mathrm{head}}$) die de complexe interne vector-representaties van het model (de hidden states, $\\tilde{h}$) projecteert naar de uiteindelijke rauwe scores voor elk woord in het vocabularium (de logits, $z$):\n\n$$z = W_{\\mathrm{head}}\\tilde{h}$$\n\nDe onderzoekers ontdekten dat deze matrix functioneert als een hardnekkige *anisotrope filter*. Hij versterkt bepaalde wiskundige assen sterk en verzwakt andere in extreme mate, soms tot wel een factor 40. Wat blijkt? De specifieke verschuivingen in intelligentie die door Reinforcement Learning (RL) zijn aangeleerd, bevinden zich overwegend in de assen die door de head het hardst worden onderdrukt. Als een algoritme dus uitsluitend bijstuurt op de uiteindelijke woordkansen in de output-laag, mist het het overgrote deel van de échte representatie-verandering en blaast het door de harde schaling vooral oninteressante ruis op."
+  },
+  {
+   "title": "RIDE: de leraar als vector in latente ruimte",
+   "md": "RIDE verplaatst de extrapolatie daarom drastisch naar de interne lagen (de latente ruimte) van het netwerk, vér voor de problematische language-model head dit kan filteren. Om dit mechanisme in de praktijk te brengen, gebruikt het algoritme gelijktijdig drie modellen met een identieke architectuur: het basismodel vóór RL-training ($B$), de RL-getrainde leraar ($T$) en de lerende student ($\\theta$).\n\nVoor elke gegenereerde tekst berekent RIDE per laag de zogeheten *residual* (het vectorverschil) tussen de verborgen matrix-toestanden van de leraar en het basismodel:\n\n$$\\Delta = h_T - h_B$$\n\nDeze zuivere vector $\\Delta$ vertegenwoordigt wiskundig exact de richting die het RL-proces heeft aangeleerd. Vervolgens plaatst RIDE een nieuw, wiskundig doelwit ($h^\\star$) voor de student in de ruimte, door vanuit de leraar met een factor $\\lambda$ (bijvoorbeeld 1.25) verder te stappen op precies die leerlijn:\n\n$$h^\\star = h_T + (\\lambda - 1)\\Delta$$\n\nDe student gebruikt tot slot een standaard regressie-foutmarge (Mean Squared Error) om zijn eigen hidden states rechtstreeks in de richting van dit nieuwe geëxtrapoleerde doelwit te sturen, waarbij de leraar dus als richtingaanwijzer fungeert en niet langer als muur."
+  },
+  {
+   "title": "Wiskundige stabiliteit zonder sampling-ruis",
+   "md": "Naast het elegant omzeilen van de projectie-matrix lost RIDE meteen een tweede, uiterst kritiek statistisch probleem op: variantie. Omdat de oude ExOPD-methode extrapolatie toepast op de kansverdelingen van willekeurig gesamplede tekst-tokens, introduceert het constant *bemonsteringsruis* (sampling noise). Volgens de wiskundige variantie-decompositie groeit deze variantie kwadratisch mee met $(\\lambda - 1)^2$, wat mathematisch verklaart waarom ExOPD razendsnel ontspoort.\n\nBij RIDE is de berekening van het vector-doelwit daarentegen volledig *deterministisch*. Gegeven een specifieke input-tekst, liggen de onderliggende matrix-waarden $h_T$ en $h_B$ per laag absoluut vast, zonder enige willekeur. Volgens de fundamentele analyse van de onderzoekers is het pure regressie-doel van RIDE exact equivalent aan het maximaliseren van een lineaire beloning (het volgen van de richting $\\Delta$) onder de strikte voorwaarde van een kwadratische straf (penalty) zodra de student té ver van de leraar dreigt af te wijken. Hierdoor ontstaat een wiskundig buitengewoon robuust groeipad."
+  },
+  {
+   "title": "Consistente winst ten opzichte van de leraar",
+   "md": "De empirische theorie werd uitgebreid onderbouwd door robuuste tests op vier totaal verschillende model-families (onder meer architecturen als Qwen3 en Llama-3.2) in combinatie met extreem uitdagende wiskundige benchmarks (zoals AIME en AIMO). RIDE bleek de enige testmethode waarvan de uitslagen gemiddeld hoger scoren dan of gelijk zijn aan de zware RL-getrainde leraar zelf.\n\nTerwijl de klassieke output-space extrapolatie (ExOPD) door de versterkte ruis en vervorming slechter presteerde dan de leraar op vrijwel alle architecturen, versloeg RIDE de standaard ExOPD in de praktijk met een overtuigende marge van gemiddeld 9,1 punten. Het ultieme bewijs werd geleverd tijdens gecontroleerde ablaties: wanneer het team de berekende $\\Delta$-vector in het model manipuleerde en verving door een volledig willekeurige wiskundige richting van exáct dezelfde grootte, verdween de winst ten opzichte van de leraar en viel de score terug tot dicht bij het niveau van standaard OPRD (55,04% tegenover 56,38% voor RIDE). Dit bewijst mechanisch dat RIDE specifiek zijn successen boekt door het zuivere RL-kennisprofiel succesvol in de latente dimensies te ontgrendelen."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "79.8%",
+   "label": "het aandeel van de energie van het RL-residu dat in de 512 zwakste projectierichtingen van de language-model head zit",
+   "quote": "its $512$ weakest directions carry $79.8\\%$ of the teacher-to-base residual’s hidden-state energy but only $30.0\\%$ of its centered-logit energy",
+   "source": 1
+  },
+  {
+   "value": "40",
+   "label": "de maximale factor waarmee het RL-residu wordt verzwakt doordat de dominante richtingen ervan samenvallen met de zwakste projectierichtingen van de language-model head",
+   "quote": "The centered head is full rank, with singular values spanning $71.7$ to $1.8$ , so the residual is attenuated by a factor of up to $40$ along its dominant directions rather than removed",
+   "source": 1
+  },
+  {
+   "value": "500",
+   "label": "het trainingsbudget in aantal stappen dat elke geteste destillatiemethode kreeg",
+   "quote": "All runs share the prompt dataset, sampling settings, optimizer schedule, and a budget of $500$ training steps.",
+   "source": 1
+  }
+ ],
+ "caveats": "Hoewel de wiskundige fundamenten van extrapolatie in *hidden states* mechanisch uiterst overtuigend zijn geformuleerd, is het RIDE-algoritme vooralsnog exclusief getest op harde, formele wiskundige redeneertaken (zoals DAPO-Math-17K en de AIME-competitiebenchmark) en in combinatie met hele specifieke RL-recepten. We weten dus nog niet met zekerheid of het klakkeloos doortrekken van een RL-vector bij veel algemenere, open chat-toepassingen leidt tot onverwachte veiligheidsrisico's — denk aan modellen die extreem onderdanig (sycophancy) worden of hevig gaan hallucineren omdat ze ongecontroleerd doorschieten in hun drang naar 'behulpzaamheid'.\n\nDaarnaast eist de methode enorm strikte hardware- en architectuurkenmerken: een ontwikkelaar moet expliciet lokaal beschikken over het historische pre-RL checkpoint van het basismodel, én dit specifieke model moet qua architectuur (aantal lagen, matrixdimensies) volstrekt identiek matchen met de leraar. Dit detail maakt RIDE pertinent onbruikbaar voor zogeheten 'black-box' distillatie waarbij je probeert te leren van een gesloten commerciële API zoals GPT-4o of Claude, omdat externe partijen je uiteraard geen toegang verlenen tot de ruwe, onbewerkte interne *hidden states* van hun systemen.",
+ "glossary": [
+  {
+   "term": "On-policy distillation (OPD)",
+   "def": "Een geavanceerde trainingsmethode waarbij een compact student-model leert door feedback van een grotere leraar te vragen op teksten die de student zélf heeft verzonnen, in plaats van passief bestaande datasets over te schrijven."
+  },
+  {
+   "term": "Logits",
+   "def": "De ruwe, ongenormaliseerde numerieke scores die een neuraal netwerk in de laatste fase aan elk mogelijk woord toekent, direct voordat een zogeheten softmax-functie ze comprimeert tot menselijk leesbare percentages."
+  },
+  {
+   "term": "Hidden states",
+   "def": "De complexe, veelzijdige interne matrix-representaties van de data (de 'gedachten' van de AI) die zich bevinden in de diepe verborgen lagen van een neuraal netwerk en mathematisch veel rijker zijn dan de uiteindelijke ruwe tekstoutput."
+  },
+  {
+   "term": "Language-model head",
+   "def": "De allerlaatste wiskundige filtermatrix in een neuraal netwerk die de abstracte verborgen gedachten projecteert naar daadwerkelijke, harde voorspellingen voor het volgende woord in een tekst."
+  },
+  {
+   "term": "Reinforcement Learning (RL)",
+   "def": "Een machine learning-paradigma waarbij een model niet uit het hoofd leert, maar via acties en daaropvolgende beloningen gaandeweg structureel wenselijker gedrag en redeneervermogen ontwikkelt."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom escaleert de traditionele extrapolatie in output-space (ExOPD) zo snel in wiskundige instabiliteit tijdens het leerproces?",
+   "options": [
+    "De structurele bemonsteringsruis op de woordkeuzes wordt kwadratisch versterkt naarmate de extrapolatie-schaal groeit.",
+    "De language-model head voert altijd een onvoorspelbare afronding uit die structureel alle kleine woordkansen wist.",
+    "Het basismodel en de getrainde leraar delen in de praktijk zeer zelden een identieke interne vocabulaire-indeling.",
+    "De standaard KL-divergentie resulteert in een fatale deling door nul bij kansverdelingen die verder liggen dan de leraar."
+   ],
+   "answer": 0,
+   "explain": "Zoals Proposition 4.1 in de paper aantoont, escaleert de variantie van het leersignaal in output-space met de factor $(\\lambda - 1)^2$. Hierdoor blaast ExOPD de intrinsieke bemonsteringsruis van willekeurig gekozen (gesamplede) tokens letterlijk exponentieel op."
+  },
+  {
+   "id": "q2",
+   "type": "multi",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Wat zijn de dwingende fundamentele vereisten voor het algoritme RIDE om succesvol een student te destilleren?",
+   "options": [
+    "De student en de leraar moeten exact dezelfde wiskundige representatieruimte en dimensies (lagen) met elkaar delen.",
+    "De programmeur moet expliciet beschikken over het pre-RL basismodel om de juiste richting te kunnen meten.",
+    "Er mag in het proces absoluut geen gebruik worden gemaakt van commerciële, gesloten black-box API's.",
+    "De grote hoeveelheden verborgen parameters moeten over het netwerk via dynamische matrix-routers worden beheerd."
+   ],
+   "answers": [
+    0,
+    1,
+    2
+   ],
+   "explain": "RIDE berekent verplicht de $\\Delta$-vector (het verschil tussen de leraar en het basismodel specifiek in de hidden states) en past dit wiskundig toe op de eigen states van de student. Dit is exclusief mogelijk met open white-box toegang tot drie identiek gebouwde modellen. Dynamische routers behoren niet tot de RIDE-architectuur."
+  },
+  {
+   "id": "q3",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 1,
+   "prompt": "Het specifieke trainingsdoel van RIDE wordt berekend met de formule $h^\\star = h_T + (\\lambda - 1)\\Delta$. Wat is wiskundig het directe gevolg als de onderzoekers ervoor kiezen om parameter $\\lambda = 1$ in te voeren?",
+   "options": [
+    "De vector-extrapolatie valt volledig weg, waardoor RIDE zich per direct gereduceerd ziet tot klassieke distillatie waarbij de leraar fungeert als het absolute einddoel.",
+    "De leerrichting verandert door deling in een willekeurige vector, waardoor het actieve student-model volledig gedesoriënteerde en willekeurige redeneerpaden verkent.",
+    "Het opgebouwde effect van het RL-trainingsproces verdwijnt compleet, en de student traint uitsluitend om het pre-RL basismodel blind te imiteren.",
+    "De vergelijking genereert direct een foutmelding (NaN) in de compiler omdat een resulterende nul-vector niet mag dienen als input voor de mean-squared error."
+   ],
+   "answer": 0,
+   "explain": "Wanneer wiskundig $\\lambda = 1$ wordt geselecteerd, valt de term $(\\lambda - 1)\\Delta$ terug op nul. Het streefdoel $h^\\star$ wordt in dat geval dan direct gelijkgesteld aan $h_T$ (de pure verborgen toestand van de leraar), wat betekent dat het scenario naadloos terugvalt op klassieke, niet-geëxtrapoleerde On-Policy Representation Distillation (OPRD)."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Deze specifieke paper leert je mechanisch ontleden waarom het blootleggen en manipuleren van ruwe vector-representaties in latente dimensies fundamenteel efficiënter is dan simpelweg optimaliseren op de tekst die een model uitspuwt."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "The Teacher Is a Direction, Not a Destination: Extrapolating RL-Induced Representation Residuals in On-Policy Distillation",
+   "url": "https://arxiv.org/abs/2609.36484"
+  }
+ ],
+ "id": "2026-10-02-de-leraar-is-een-richting-geen-eindpunt-hoe-ride",
+ "kind": "paper",
+ "date": "2026-10-02",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-02",
+  "kind": "paper",
+  "candidate": "arxiv:2609.36484",
+  "signal": "231 upvotes op Hugging Face Daily Papers",
+  "significance": 4
+ }
+}
