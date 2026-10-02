@@ -66,5 +66,16 @@
     "levels": "Fundament → Productie-architect",
     "icon": "cpu",
     "goal": "Doel: Jev en snelle beslissingsmodellen (OpenRouter, lokale SLM's en constrained classifiers) doorgronden, benchmarken en integreren in software en workflows — met de juiste balans tussen snelheid, kosten, privacy en determinisme."
+  },
+  "routing": {
+    "title": "Netwerken & Autonomous Routing",
+    "short": "Routing",
+    "subtitle": "Van IP-pakketten, BGP/OSPF en bufferbloat tot on-router reasoning LLM's die netwerkproblemen autonoom diagnosticeren en herstellen.",
+    "glyph": "⇄",
+    "glyphMono": true,
+    "lang": "en",
+    "levels": "Fundament → Router-engineer",
+    "icon": "share-2",
+    "goal": "Doel: netwerkarchitectuur, routering (RIB/FIB, OSPF, BGP) en edge gateways (NAT, DHCP, DNS, bufferbloat) tot in detail doorgronden — met als einddoel het bouwen van een applicatiespecifieke reasoning LLM die autonoom netwerkstoringen op routers oplost."
   }
 }

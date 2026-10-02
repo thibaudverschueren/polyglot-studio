@@ -1,0 +1,745 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "routing",
+ "id": 4,
+ "roadmap": "routing-08-bgp-fundamentals-asn",
+ "kind": "core",
+ "title": "BGP & Internet Interconnectie: AS-Nummers & Peering",
+ "subtitle": "Het protocol dat het wereldwijde internet verbindt: Path Vector, eBGP vs iBGP en Best Path Selection",
+ "level": "expert",
+ "minutes": 50,
+ "summary": "BGP (Border Gateway Protocol) verbindt tienduizenden autonome systemen tot één wereldwijd internet. Leer hoe path vector routering, TCP poort 179, eBGP versus iBGP en het 9-staps Best Path Selection algoritme bepalen hoe data over de planeet reist, en hoe RPKI internetkapingen voorkomt.",
+ "objectives": [
+  {
+   "id": "asn-and-path-vector",
+   "text": "Je verklaart de structuur van Autonomous Systems (16-bit en 32-bit ASN's) en het Path Vector loop-preventiemechanisme."
+  },
+  {
+   "id": "ebgp-vs-ibgp-mechanics",
+   "text": "Je analyseert de verschillen tussen eBGP en iBGP peering op het gebied van TTL, next-hop verwerking en split-horizon regels."
+  },
+  {
+   "id": "bgp-fsm-session",
+   "text": "Je doorloopt en diagnosticeert de 6 BGP Finite State Machine toestanden (Idle tot Established) over TCP poort 179."
+  },
+  {
+   "id": "best-path-selection",
+   "text": "Je past het 9-staps BGP Best Path Selection algoritme deterministisch toe op concurrerende route-advertenties."
+  },
+  {
+   "id": "bgp-anomalies-and-security",
+   "text": "Je herkent en analyseert de risico's van route flapping, flap dampening en BGP route hijacking incidenten."
+  }
+ ],
+ "sections": [
+  {
+   "id": "as-en-path-vector-fundament",
+   "title": "Autonome Systemen (ASN) & Het Path Vector Principe",
+   "md": "Het wereldwijde internet is geen homogeen netwerk, maar een federatie van tienduizenden onafhankelijke netwerken. Zo'n zelfstandig beheerd netwerk heet een **Autonomous System (AS)** (RFC 1930). Een AS is een verzameling van IP-prefixen onder het beheer van één enkele administratieve entiteit (zoals Proximus, Google, Belnet of Cloudflare) met een uniform en coherent routeringsbeleid.\n\n### De Structuur van AS-Nummers (ASN)\nElk autonoom systeem wordt wereldwijd geïdentificeerd door een uniek **Autonomous System Number (ASN)**, toegewezen door internetautoriteit IANA via regionale registraties zoals RIPE NCC (Europa) en ARIN (Noord-Amerika):\n- **16-bit ASN's** (klassiek bereik 1 t/m 65 535): Publieke ASN's lopen van 1 t/m 64 511. Het bereik **64 512 t/m 65 534** is gereserveerd voor **privé-gebruik** (vergelijkbaar met RFC 1918 private IP-adressen voor interne bedrijfsnetwerken). ASN 0 en 65 535 zijn gereserveerd.\n- **32-bit ASN's** (RFC 4893 / 6793): Omdat de 16-bit nummers uitgeput raakten, werd de adresruimte uitgebreid naar 4 miljard nummers (1 t/m 4 294 967 295). Het private 32-bit bereik loopt van **4 200 000 000 t/m 4 294 967 294**. 32-bit ASN's worden genoteerd als plat getal (*asplain*, bv. `196614`) of als punt-notatie (*asdot*, bv. `3.6`, waarbij $3 \\times 65\\,536 + 6 = 196\\,614$).\n\n### Het Path Vector Principe & Loop-Preventie\nBGP is geen Distance Vector (geen hop count) en geen Link-State (geen Dijkstra topologiekaart). BGP is een **Path Vector** protocol:\n- Een BGP-router deelt niet de interne status van zijn links, maar adverteert bereikbare IP-prefixen samen met een reeks pad-attributen.\n- Het allerbelangrijkste attribuut is het **AS-PATH**: een geordende lijst van alle autonome systemen die een route heeft doorkruist.\n\n```\n[ Bestemming 8.8.8.0/24 in AS 15169 (Google) ]\n                     │\n                     ▼\n        [ AS 3356 (Lumen Transit) ]\n          AS-PATH: 3356 15169\n                     │\n                     ▼\n        [ AS 2611 (Belnet Onderwijs) ]\n          AS-PATH: 2611 3356 15169\n                     │\n                     ▼\n        [ AS 64500 (Jouw Campus Router) ]\n```\n\n### eBGP Loop-Preventie Mechanisme\nHoe voorkomt BGP dat routes oneindig tussen providers rondcirkelen? Zodra een router een route-update ontvangt via eBGP, scant hij direct de lijst met ASN's in het **AS-PATH**. Ziet de router zijn **eigen ASN** in de lijst staan? Dan concludeert hij dat het pakket al eerder door zijn netwerk is gereisd. De update wordt **per direct stilzwijgend geweigerd en gedropt**! Dit is het universele, uiterst krachtige loop-preventiemechanisme van het wereldwijde internet.",
+   "checks": [
+    {
+     "id": "c01",
+     "type": "mcq",
+     "skill": "asn-and-path-vector",
+     "level": 1,
+     "prompt": "Hoe voorkomt een BGP-router dat er routeringslussen ontstaan wanneer routes tussen verschillende autonome systemen worden uitgewisseld?",
+     "explain": "In eBGP inspecteert de router het AS-PATH attribuut; als zijn eigen ASN daarin voorkomt, wordt de route direct geweigerd.",
+     "options": [
+      "De router controleert het AS-PATH; als zijn eigen ASN daarin staat, weigert hij de route",
+      "De router verlaagt de TTL van de BGP UPDATE met 1 en dropt het bericht zodra TTL nul bereikt",
+      "De router voert elke 30 seconden een globale Dijkstra herberekening uit over alle ASN's",
+      "De router stuurt een ICMP Loop-Detected pakket terug naar het oorspronkelijke Origin AS"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c02",
+     "type": "type",
+     "skill": "asn-and-path-vector",
+     "level": 2,
+     "prompt": "In welk RFC-notatieformaat wordt het 32-bit ASN 196614 geschreven wanneer dit als '3.6' wordt weergegeven?",
+     "explain": "De punt-notatie voor 32-bit ASN's heet 'asdot' (in tegenstelling tot het platte decimale 'asplain').",
+     "answers": [
+      "asdot",
+      "ASDOT",
+      "Asdot"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ebgp-vs-ibgp-architectuur",
+   "title": "eBGP vs. iBGP: TTL, Next-Hop & Split Horizon",
+   "md": "BGP opereert in twee fundamenteel verschillende smaken, afhankelijk van waar de naburige router zich bevindt:\n1. **eBGP (External BGP)**: Peering tussen twee verschillende autonome systemen (bv. jouw bedrijfsnetwerk AS 64500 en provider Proximus AS 5432).\n2. **iBGP (Internal BGP)**: Peering tussen twee routers binnen hetzelfde autonome systeem (bv. twee core routers binnen AS 64500).\n\n### Peering over TCP Poort 179\nIn tegenstelling tot OSPF (dat via IP-protocol 89 en multicast buren automatisch ontdekt) kent BGP **geen automatische buurdetectie**. Elke peer moet handmatig worden geconfigureerd met zijn IP-adres en AS-nummer (`neighbor X.X.X.X remote-as Y`). BGP bouwt vervolgens een betrouwbare sessie op over **TCP poort 179**.\n\n### Kritische Verschillen tussen eBGP en iBGP\n\n| Eigenschap | eBGP (External) | iBGP (Internal) |\n|---|---|---|\n| Relatie | Verschillende AS'en | Zelfde AS |\n| IP TTL van pakketten | Standaard **TTL = 1** (directe kabel vereist) | Standaard **TTL = 255** (routeerbaar over IGP) |\n| Peering IP | Fysieke interface IP van de link | Meestal **Loopback interface** IP (voor redundantie) |\n| Next-Hop Gedrag | Overschrijft NEXT_HOP altijd met **zichzelf** | Behoudt standaard de **originele externe NEXT_HOP**! |\n| Loop-preventie | Weigert routes met eigen ASN in AS-PATH | **iBGP Split Horizon**: stuurt iBGP-routes nooit door naar iBGP peers |\n| Schaalbaarheid | Point-to-point peering | Vereist **Full-Mesh** of **Route Reflectors (RR)** |\n\n> [!pitfall] De Beruchte 'Inaccessible Next-Hop' Valkuil in iBGP\n> Wanneer Randrouter R1 via eBGP een prefix `1.1.1.0/24` leert van ISP-1, staat het NEXT_HOP attribuut ingesteld op het interface-IP van de ISP (bv. `198.51.100.1`). R1 adverteert deze prefix door naar interne router R2 via iBGP. Omdat iBGP de NEXT_HOP **niet** wijzigt, blijft de next-hop voor R2 `198.51.100.1`. Als R2 dit externe IP-adres niet kent in zijn interne OSPF-tabel, kan hij de next-hop niet oplossen. De route wordt gemarkeerd als *inaccessible* en nooit geïnstalleerd in de FIB! Oplossing: configureer op randrouter R1 altijd `neighbor <R2-IP> next-hop-self`.\n\n### iBGP Split Horizon & Route Reflectors\nOmdat het AS-PATH niet verandert wanneer een route binnen hetzelfde AS reist, kan AS-PATH geen lussen voorkomen in iBGP. Daarom geldt de **iBGP Split Horizon regel**: *een router mag een route die hij via iBGP geleerd heeft NOOIT doorsturen naar een andere iBGP peer*.\n\nHet gevolg hiervan is dat alle iBGP-routers in een AS onderling een volledige vermaasdheid (**Full Mesh**) aan TCP-sessies moeten onderhouden: $\\frac{N(N-1)}{2}$ sessies. Bij 20 routers zijn dit 190 sessies! Om dit schaalbaarheidsprobleem op te lossen gebruikt men **BGP Route Reflectors (RR)**: een centrale router die routes van iBGP clients gecontroleerd mag doorsturen naar andere iBGP clients, beschermd tegen lussen door twee nieuwe attributen: `ORIGINATOR_ID` en `CLUSTER_LIST`.",
+   "checks": [
+    {
+     "id": "c03",
+     "type": "cloze",
+     "skill": "ebgp-vs-ibgp-mechanics",
+     "level": 2,
+     "prompt": "Vul de juiste BGP parameters in:",
+     "explain": "BGP draait over TCP poort 179. Om te voorkomen dat interne routers een onbereikbare externe next-hop erven, gebruikt men het commando next-hop-self.",
+     "text": "BGP peers zetten hun communicatie op over TCP poort {{179}}. Om te zorgen dat interne iBGP-routers het IP-adres van de lokale randrouter als next-hop gebruiken, configureer je het commando neighbor ... {{next-hop-self|next hop self}}."
+    },
+    {
+     "id": "c04",
+     "type": "multi",
+     "skill": "ebgp-vs-ibgp-mechanics",
+     "level": 2,
+     "prompt": "Welke van de volgende uitspraken zijn WAAR over het verschil tussen eBGP en iBGP?",
+     "explain": "eBGP heeft standaard TTL 1 en wijzigt de next-hop; iBGP behoudt standaard de next-hop en mag routes geleerd via iBGP niet dooradverteren naar andere iBGP buren (split horizon).",
+     "options": [
+      "eBGP-pakketten hebben standaard een IP TTL van 1",
+      "iBGP adverteert routes die via iBGP zijn geleerd standaard NOOIT door naar andere iBGP peers",
+      "eBGP vereist een full-mesh aan sessies tussen alle aangesloten providers",
+      "iBGP wijzigt standaard het NEXT_HOP attribuut naar zijn eigen IP-adres"
+     ],
+     "answers": [
+      0,
+      1
+     ]
+    }
+   ]
+  },
+  {
+   "id": "bgp-fsm-statemachine",
+   "title": "De BGP Finite State Machine: Van Idle naar Established",
+   "md": "Het opbouwen en onderhouden van een BGP-sessie wordt bestuurd door een deterministische **Finite State Machine (FSM)** met 6 toestanden (RFC 4271):\n\n```\n[ Idle ] ──(Start / ConnectRetry)──> [ Connect ] ──(TCP Ok)──> [ OpenSent ]\n   ▲                                     │                         │\n   │                                (TCP Faalt)               (OPEN Ok)\n   │                                     ▼                         ▼\n   └──(Fout / Timeout)────────────── [ Active ]              [ OpenConfirm ]\n                                                                   │\n                                                              (KEEPALIVE Ok)\n                                                                   ▼\n                                                             [ Established ] ◄── (Sessie Up!)\n```\n\n1. **Idle**: De initiële toestand. De router initialiseert BGP bronnen, weigert inkomende BGP-verbindingen, start de `ConnectRetry` timer (standaard 120s) en probeert vervolgens een TCP-verbinding op te zetten naar de peer.\n2. **Connect**: De router probeert de 3-way TCP handshake te voltooien naar poort 179 van de peer. Slaagt de TCP-verbinding? Dan stuurt de router een **OPEN**-bericht en gaat hij direct naar `OpenSent`. Mislukt de TCP-handshake of verloopt de timer? Dan gaat hij naar `Active`.\n3. **Active**: De router probeert actief opnieuw een TCP-verbinding te initiëren.\n   > [!pitfall] De Gevreesde 'Active' Status in Productie\n   > Als een BGP-sessie in `show ip bgp summary` continu blijft hangen in de status **Active** (of flapt tussen Connect en Active), betekent dit dat **de TCP-verbinding op poort 179 faalt**! Dit is voor 99% een Layer 3/Layer 4 probleem: een firewall of ACL die TCP poort 179 blokkeert, een typefout in het IP-adres van de buur, of het ontbreken van een route naar het peering-IP.\n4. **OpenSent**: De TCP-verbinding is tot stand gebracht. De router heeft zijn OPEN-bericht verzonden en wacht nu op het OPEN-bericht van de buur. Het OPEN-bericht bevat: BGP versie (4), ASN van de zender, Hold Time, en het 32-bit BGP Router ID.\n5. **OpenConfirm**: De router heeft het OPEN-bericht van de buur ontvangen en gevalideerd. Beide routers onderhandelen de **Hold Time** (de laagste waarde van beide routers wordt gekozen; standaard 180s, met keepalives om de 60s). De router stuurt een **KEEPALIVE** en wacht op de KEEPALIVE van de buur.\n6. **Established**: De KEEPALIVE is ontvangen! De peering-sessie is volledig operationeel. Vanaf nu wisselen de routers **UPDATE** (prefixen toevoegen of intrekken), **KEEPALIVE** en eventuele **NOTIFICATION** (bij fouten) pakketten uit.",
+   "checks": [
+    {
+     "id": "c05",
+     "type": "order",
+     "skill": "bgp-fsm-session",
+     "level": 2,
+     "prompt": "Rangschik de 6 BGP Finite State Machine toestanden in de juiste volgorde vanaf het begin tot een werkende sessie:",
+     "explain": "De BGP FSM doorloopt: Idle -> Connect -> Active (bij TCP retry) of direct OpenSent -> OpenConfirm -> Established.",
+     "tiles": [
+      "Idle",
+      "Connect",
+      "Active",
+      "OpenSent",
+      "OpenConfirm",
+      "Established"
+     ]
+    },
+    {
+     "id": "c06",
+     "type": "cloze",
+     "skill": "bgp-fsm-session",
+     "level": 2,
+     "prompt": "Vul in over BGP FSM diagnostiek:",
+     "explain": "Als een BGP-sessie in Active blijft hangen, slaagt de TCP 3-way handshake op poort 179 niet; de enige operationele status waarin routes worden uitgewisseld is Established.",
+     "text": "Wanneer een BGP-buurschap vastzit in de status {{Active|active}}, wijst dit meestal op een geblokkeerde TCP poort 179. Pas wanneer de toestand {{Established|established}} wordt bereikt, kunnen er UPDATE-berichten met routeringsinformatie worden uitgewisseld."
+    }
+   ]
+  },
+  {
+   "id": "bgp-best-path-selection-algoritme",
+   "title": "Het 9-Staps BGP Best Path Selection Algoritme",
+   "md": "In een multi-homed netwerk kan een router voor exact hetzelfde IP-prefix meerdere concurrerende routes ontvangen van verschillende providers en peers. BGP installeert echter slechts **één beste pad** in de routeringstabel.\n\nOm dit pad te kiezen voert BGP een strikt deterministisch, stapsgewijs eliminatieproces uit. Zodra een criterium een duidelijke winnaar oplevert, **stopt de evaluatie onmiddellijk**!\n\n### De 9 Beslissingsstappen (Cisco / Standaard Volgorde)\n\n1. **Hoogste Weight** (Cisco-specifiek):\n   - Lokale waarde op de router zelf (bereik 0 tot 65 535). Wordt **nooit** geadverteerd naar buren.\n   - Standaard: 32 768 voor lokaal geïnjecteerde routes, 0 voor routes geleerd van buren. **Hoogste wint**.\n2. **Hoogste Local Preference (LOCAL_PREF)**:\n   - AS-wijd attribuut, verzonden via iBGP. Wordt **nooit** geadverteerd over eBGP naar andere AS'en.\n   - Standaardwaarde: **100**. Dit is hét primaire instrument om **uitgaand dataverkeer** van het gehele netwerk te sturen. **Hoogste wint**.\n3. **Lokaal Geïnitieerde Route**:\n   - Routes lokaal gegenereerd via `network` of `aggregate-address` winnen van `redistribute`, en die winnen van routes geleerd via BGP.\n4. **Kortste AS-PATH**:\n   - De route met het **minste aantal AS-hops** in het AS-PATH wint. Dit is het belangrijkste instrument om **inkomend dataverkeer** te beïnvloeden via *AS-PATH Prepending*.\n5. **Laagste Origin Code**:\n   - Voorkeur: **IGP (i)** wint van **EGP (e)**, en EGP wint van **Incomplete (?)** (redistributie).\n6. **Laagste Multi-Exit Discriminator (MED)**:\n   - Niet-transitief attribuut, gesuggereerd aan een naburig AS om verkeer over meerdere parallelle links tussen dezelfde twee AS'en te sturen. **Laagste wint**.\n7. **eBGP Boven iBGP**:\n   - Routes geleerd via eBGP hebben voorrang op routes geleerd via iBGP. Dit volgt het *hot-potato routing* principe: dump verkeer zo snel mogelijk buiten je eigen netwerk.\n8. **Laagste IGP Metriek naar de NEXT_HOP**:\n   - De router kiest de exit-router die intern het dichtstbij is volgens het lokale IGP (OSPF/IS-IS cost naar de next-hop loopback).\n9. **Laagste BGP Router ID**:\n   - De ultieme tie-breaker: de route afkomstig van de peer met het numeriek laagste 32-bit BGP Router ID wint.",
+   "checks": [
+    {
+     "id": "c07",
+     "type": "numeric",
+     "skill": "best-path-selection",
+     "level": 2,
+     "prompt": "Wat is de standaardwaarde van het Local Preference (LOCAL_PREF) attribuut in BGP wanneer een route binnenkomt op een router zonder specifieke beleidsregels?",
+     "explain": "De standaardwaarde voor Local Preference is altijd 100.",
+     "value": 100,
+     "abs": 0
+    },
+    {
+     "id": "c08",
+     "type": "order",
+     "skill": "best-path-selection",
+     "level": 2,
+     "prompt": "Rangschik de eerste 4 criteria van het BGP Best Path Selection algoritme in de juiste evaluatievolgorde:",
+     "explain": "De evaluatievolgorde start met Weight (lokaal), dan Local Preference (AS-wijd), lokaal geïnitieerd, en vervolgens de lengte van het AS-PATH.",
+     "tiles": [
+      "Hoogste Weight",
+      "Hoogste Local Preference",
+      "Lokaal geïnitieerde route",
+      "Kortste AS-PATH"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "route-flapping-en-hijacking",
+   "title": "BGP Kwetsbaarheden: Flapping, Hijacking & RPKI",
+   "md": "Omdat BGP oorspronkelijk ontworpen werd in een tijd waarin het internet bestond uit een selecte groep vertrouwde academische instellingen, bevat het protocol van nature geen ingebouwde cryptografische authenticatie van route-aankondigingen. Dit leidt tot ernstige kwetsbaarheden.\n\n### 1. BGP Route Flapping & Flap Dampening\nWanneer een fysieke inter-domein link instabiel is en herhaaldelijk up en down flapt, genereert de router continu BGP **UPDATE** (met withdrawal en heraankondiging) berichten naar al zijn peers. Binnen seconden moet het hele wereldwijde internet deze route herberekenen, wat leidt tot zware CPU-belasting van core routers.\n- **Route Flap Dampening (RFC 2439)**: Routers kennen een strafscore (*penalty*, bv. 1 000) toe telkens wanneer een route flapt.\n- Overschrijdt de boete een drempelwaarde (*suppress threshold*, bv. 2 000), dan wordt de route **onderdrukt** en niet langer gebruikt of doorgeadverteerd.\n- Via een exponentiële **half-life timer** (bv. 15 minuten) ebt de boete langzaam weg. Zakt de score onder de *reuse threshold* (bv. 750), dan wordt de route weer actief.\n\n### 2. BGP Route Hijacking & De Rol van LPM\nBij een **BGP Route Hijack** kondigt een autonoom systeem (per ongeluk door een configuratiefout of kwaadwillend voor spionage/fraude) een IP-reeks aan die aan een andere organisatie toebehoort.\n\n> [!warning] Waarom Verslaat een Hijack Altijd het Legitieme Pad?\n> De routeringsbeslissing in de **Data Plane** wordt altijd beheerst door **Longest Prefix Match (LPM)**: de meest specifieke route wint ALTIJD, vóórdat er überhaupt naar BGP Best Path attributen wordt gekeken! Als legitieme eigenaar AS 15169 de prefix `198.51.100.0/22` adverteert, en een kaper AS 666 kondigt `198.51.100.0/24` aan, dan zal **100% van al het wereldwijde verkeer** naar de kaper vloeien. Omdat `/24` specifieker is dan `/22`, wint de kaper direct in de forwarding-hardware (FIB)!\n\nHistorische voorbeelden illustreren de impact:\n- **2008 Pakistan Telecom & YouTube**: Om YouTube lokaal te censureren kondigde Pakistan Telecom `208.65.153.0/24` aan (terwijl YouTube `208.65.152.0/22` adverteerde). Binnen enkele minuten werd twee derde van al het wereldwijde YouTube-verkeer naar Pakistan gezogen, waardoor YouTube wereldwijd platging.\n- **2018 Amazon Route 53 DNS Hijack**: Een kaper kondigde Amazon DNS-IP's aan om verkeer naar myetherwallet.com te onderscheppen en cryptocurrencies te stelen.\n\n### 3. RPKI & Route Origin Authorizations (ROA)\nOm BGP-kapingen definitief uit te bannen is **RPKI (Resource Public Key Infrastructure)** ontwikkeld. RPKI gebruikt een cryptografische hiërarchie van x.509 certificaten, beheerd door de Regional Internet Registries (zoals RIPE NCC):\n- De rechtmatige eigenaar van een IP-blok ondertekent een digitaal certificaat genaamd een **ROA (Route Origin Authorization)**.\n- Een ROA specificeert: het **geautoriseerde Origin ASN**, de **IP-prefix**, en de **maximale prefixlengte (MaxLength)**.\n- Routers downloaden gevalideerde ROA-tabellen via een lokale validator cache (zoals Routinator) en kennen aan elke binnenkomende BGP-aankondiging een validatiestatus toe:\n  1. **Valid**: De prefix matcht de ROA en het Origin ASN klopt.\n  2. **Invalid**: De prefix matcht, maar het Origin ASN klopt niet OF de geadverteerde prefix is langer dan MaxLength (dit duidt direct op een hijack!).\n  3. **NotFound / Unknown**: Er bestaat geen ROA voor deze prefix.\n- Met **RPKI Invalid Drop** weigeren internetrouters alle routes met de status `Invalid` per direct. Hiermee worden kapingen automatisch en wereldwijd geneutraliseerd.",
+   "checks": [
+    {
+     "id": "c09",
+     "type": "mcq",
+     "skill": "bgp-anomalies-and-security",
+     "level": 2,
+     "prompt": "Waarom slaagt een BGP route hijack waarbij een kaper 10.10.10.0/24 aankondigt, terwijl de legitieme eigenaar 10.10.0.0/16 aankondigt met een veel korter AS-PATH?",
+     "explain": "Longest Prefix Match (LPM) in de data plane heeft absolute voorrang boven alle BGP attributen; een /24 prefix is specifieker dan /16 en wint daarom altijd.",
+     "options": [
+      "Omdat routers in de forwarding plane altijd voorrang geven aan de meest specifieke prefix (Longest Prefix Match)",
+      "Omdat de kaper automatisch een hogere Weight en Local Preference toewijst aan de geadverteerde route",
+      "Omdat BGP routers automatisch alle routes weigeren die langer zijn dan 2 hops in het AS-PATH",
+      "Omdat het Origin attribuut van de /24 prefix altijd de waarde 'IGP' forceert over het netwerk"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c10",
+     "type": "cloze",
+     "skill": "bgp-anomalies-and-security",
+     "level": 2,
+     "prompt": "Vul aan over RPKI beveiliging:",
+     "explain": "Een ROA (Route Origin Authorization) legt vast welk Origin ASN een prefix mag aankondigen. Blijkt de aankondiging niet te kloppen, dan krijgt deze de status Invalid en wordt gedropt.",
+     "text": "In het RPKI-beveiligingssysteem publiceert een netwerkeigenaar een digitaal ondertekende {{ROA|Route Origin Authorization}}, waarin het geautoriseerde Origin ASN en de maximale prefixlengte worden vastgelegd. Als een kaper een afwijkend ASN adverteert, markeren routers de route als {{Invalid|invalid}} en weigeren deze."
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "asn-and-path-vector",
+   "level": 1,
+   "prompt": "Waarom wordt BGP geclassificeerd als een 'Path Vector' protocol in plaats van Distance Vector of Link-State?",
+   "explain": "BGP adverteert prefixen met een reeks pad-attributen, waaronder het AS-PATH (de lijst van doorkruiste autonome systemen), in plaats van kale afstanden of link-state kaarten.",
+   "options": [
+    "Omdat het bereikbare prefixen adverteert vergezeld van de volledige lijst van doorkruiste autonome systemen (AS-PATH)",
+    "Omdat het vectoren van link-bandbreedtes berekent via het Bellman-Ford algoritme",
+    "Omdat het pakketpaden dynamisch stuurt op basis van GPS-coördinaten van datacenters",
+    "Omdat het uitsluitend werkt met symmetrische point-to-point glasvezelverbindingen"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "type",
+   "skill": "asn-and-path-vector",
+   "level": 2,
+   "prompt": "In welk notatieformaat wordt een 32-bit ASN weergegeven wanneer het simpelweg als één groot decimaal getal (zoals 65536) wordt geschreven (in tegenstelling tot asdot)?",
+   "explain": "Het ongeformatteerde decimale formaat voor 32-bit ASN's heet 'asplain'.",
+   "answers": [
+    "asplain",
+    "ASPLAIN",
+    "Asplain"
+   ]
+  },
+  {
+   "id": "p03",
+   "type": "cloze",
+   "skill": "asn-and-path-vector",
+   "level": 2,
+   "prompt": "Vul het private ASN-bereik in:",
+   "explain": "Klassieke 16-bit private ASN's lopen van 64512 tot en met 65534 en mogen niet op het openbare internet worden gerouteerd.",
+   "text": "Het officiële bereik voor private 16-bit Autonomous System Numbers loopt van ASN {{64512|64.512}} tot en met {{65534|65.534}}."
+  },
+  {
+   "id": "p04",
+   "type": "multi",
+   "skill": "ebgp-vs-ibgp-mechanics",
+   "level": 2,
+   "prompt": "Welke eigenschappen zijn specifiek van toepassing op eBGP (External BGP) peering sessies?",
+   "explain": "eBGP verbindt verschillende AS'en, gebruikt standaard TTL 1 en herschrijft het NEXT_HOP attribuut naar zijn eigen IP.",
+   "options": [
+    "De peers bevinden zich in verschillende autonome systemen",
+    "IP-pakketten voor de sessie hebben standaard een TTL van 1",
+    "De router herschrijft het NEXT_HOP attribuut standaard naar zijn eigen interface-IP",
+    "iBGP Split Horizon blokkeert het doorsturen van eBGP routes naar interne routers"
+   ],
+   "answers": [
+    0,
+    1,
+    2
+   ]
+  },
+  {
+   "id": "p05",
+   "type": "cloze",
+   "skill": "ebgp-vs-ibgp-mechanics",
+   "level": 2,
+   "prompt": "Vul in over iBGP next-hop configuratie:",
+   "explain": "Standaard behoudt iBGP het externe IP als next-hop; 'next-hop-self' dwingt de edge router zijn eigen loopback/interface IP in te stellen.",
+   "text": "Omdat een randrouter het externe IP-adres van een eBGP-peer standaard ongewijzigd doorgeeft aan iBGP-peers, configureer je op de randrouter het commando `neighbor <peer> {{next-hop-self|next hop self}}`."
+  },
+  {
+   "id": "p06",
+   "type": "numeric",
+   "skill": "ebgp-vs-ibgp-mechanics",
+   "level": 2,
+   "prompt": "Wat is de standaard IP Time-to-Live (TTL) waarde van eBGP-pakketten wanneer er geen 'ebgp-multihop' is geconfigureerd?",
+   "explain": "Standaard gebruikt eBGP een IP TTL van exact 1, waardoor buren direct fysiek verbonden moeten zijn.",
+   "value": 1,
+   "abs": 0
+  },
+  {
+   "id": "p07",
+   "type": "match",
+   "skill": "ebgp-vs-ibgp-mechanics",
+   "level": 2,
+   "prompt": "Koppel de BGP peering-termen aan hun betekenis:",
+   "explain": "eBGP heeft TTL 1; iBGP heeft TTL 255; Route Reflectors lossen de iBGP full-mesh eis op; next-hop-self overschrijft de externe next-hop voor interne peers.",
+   "pairs": [
+    [
+     "eBGP TTL",
+     "Standaard 1 — vereist directe fysieke koppeling"
+    ],
+    [
+     "iBGP TTL",
+     "Standaard 255 — routeerbaar via onderliggend IGP"
+    ],
+    [
+     "Route Reflector",
+     "Doorbreekt de iBGP full-mesh verplichting door routes door te sturen"
+    ],
+    [
+     "Next-Hop-Self",
+     "Vervangt het externe next-hop IP door het eigen IP voor iBGP buren"
+    ]
+   ]
+  },
+  {
+   "id": "p08",
+   "type": "order",
+   "skill": "bgp-fsm-session",
+   "level": 2,
+   "prompt": "Rangschik de 6 toestanden van de BGP Finite State Machine in de juiste chronologische volgorde:",
+   "explain": "De BGP sessieopbouw verloopt via Idle -> Connect -> Active -> OpenSent -> OpenConfirm -> Established.",
+   "tiles": [
+    "Idle",
+    "Connect",
+    "Active",
+    "OpenSent",
+    "OpenConfirm",
+    "Established"
+   ]
+  },
+  {
+   "id": "p09",
+   "type": "cloze",
+   "skill": "bgp-fsm-session",
+   "level": 2,
+   "prompt": "Vul het transportprotocol en poortnummer van BGP in:",
+   "explain": "BGP gebruikt TCP op poort 179 voor betrouwbare sessie-opbouw.",
+   "text": "BGP maakt voor zijn transport gebruik van het protocol {{TCP|tcp}} op poort {{179}}."
+  },
+  {
+   "id": "p10",
+   "type": "mcq",
+   "skill": "bgp-fsm-session",
+   "level": 2,
+   "prompt": "Een netwerkengineer ziet dat een nieuwe BGP-sessie continu heen en weer flapt tussen de status 'Connect' en 'Active'. Wat is de meest waarschijnlijke oorzaak?",
+   "explain": "Flappen tussen Connect en Active betekent dat de TCP 3-way handshake niet slaagt, meestal veroorzaakt door een firewall of ACL die TCP poort 179 blokkeert.",
+   "options": [
+    "Er is een Layer 3 of Layer 4 blokkade (zoals een firewall die TCP poort 179 tegenhoudt of een onbereikbaar IP)",
+    "Er is een mismatch in de geconfigureerde BGP Autonomous System Numbers in het OPEN-pakket",
+    "De geconfigureerde Hold Time op router A is kleiner dan 30 seconden",
+    "De routers hebben verschillende routeringsprotocollen geactiveerd op hun loopback interfaces"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p11",
+   "type": "order",
+   "skill": "best-path-selection",
+   "level": 3,
+   "prompt": "Rangschik de eerste 4 beslissingscriteria van het BGP Best Path Selection algoritme:",
+   "explain": "De volgorde is: Hoogste Weight, Hoogste Local Preference, Lokaal geïnitieerde route, Kortste AS-PATH.",
+   "tiles": [
+    "Hoogste Weight",
+    "Hoogste Local Preference",
+    "Lokaal geïnitieerde route",
+    "Kortste AS-PATH"
+   ]
+  },
+  {
+   "id": "p12",
+   "type": "numeric",
+   "skill": "best-path-selection",
+   "level": 2,
+   "prompt": "Wat is de standaardwaarde van het BGP Local Preference (LOCAL_PREF) attribuut?",
+   "explain": "De standaardwaarde voor Local Preference is 100.",
+   "value": 100,
+   "abs": 0
+  },
+  {
+   "id": "p13",
+   "type": "mcq",
+   "skill": "best-path-selection",
+   "level": 2,
+   "prompt": "Welke techniek gebruikt een netwerkbeheerder om inkomend dataverkeer vanaf het internet naar zijn eigen netwerk over een specifieke upstream provider te ontmoedigen?",
+   "explain": "AS-PATH prepending voegt het eigen ASN meermalen toe aan de route-advertentie naar de backup provider, waardoor het pad langer lijkt en externen de andere provider verkiezen.",
+   "options": [
+    "AS-PATH Prepending (het eigen ASN meermaals toevoegen om het pad kunstmatig langer te maken)",
+    "Het instellen van een hogere Local Preference op de inkomende eBGP sessie",
+    "Het configureren van een lagere Weight op de uitgaande interface naar de provider",
+    "Het filteren van alle TCP poort 179 pakketten op de secundaire transitlink"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p14",
+   "type": "type",
+   "skill": "best-path-selection",
+   "level": 2,
+   "prompt": "Welk BGP attribuut is specifiek voor Cisco, geldt uitsluitend lokaal op de individuele router en wordt NOOIT geadverteerd naar andere routers?",
+   "explain": "Weight is een Cisco-specifiek lokaal attribuut (0 tot 65535) en het allereerste beslissingscriterium in BGP best path.",
+   "answers": [
+    "Weight",
+    "weight"
+   ]
+  },
+  {
+   "id": "p15",
+   "type": "mcq",
+   "skill": "bgp-anomalies-and-security",
+   "level": 2,
+   "prompt": "Waarom verslaat een gekaapte route met prefix /24 altijd een legitieme route met prefix /22 op het wereldwijde internet?",
+   "explain": "De hardware switching forwarding engine (FIB) past altijd Longest Prefix Match (LPM) toe; een /24 prefix is specifieker dan een /22 prefix en wint gegarandeerd.",
+   "options": [
+    "Omdat routers in de data plane altijd routeren op basis van Longest Prefix Match (LPM)",
+    "Omdat BGP routes met een korter masker automatisch markeert als gedempt (suppressed)",
+    "Omdat /24 subnetten standaard een lagere administratieve afstand (AD) krijgen dan /22",
+    "Omdat de kaper altijd een korter AS-PATH adverteert dan de legitieme eigenaar"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p16",
+   "type": "cloze",
+   "skill": "bgp-anomalies-and-security",
+   "level": 2,
+   "prompt": "Vul in over RPKI route-authenticatie:",
+   "explain": "In RPKI publiceert de IP-houder een ROA (Route Origin Authorization) om het geautoriseerde Origin ASN vast te leggen.",
+   "text": "Om BGP route hijacking te voorkomen, publiceert de legitieme eigenaar van een IP-blok een cryptografisch ondertekend certificaat genaamd een {{ROA|Route Origin Authorization}}, waarin het geautoriseerde {{Origin ASN|origin ASN|ASN}} wordt vastgelegd."
+  },
+  {
+   "id": "p17",
+   "type": "multi",
+   "skill": "bgp-anomalies-and-security",
+   "level": 2,
+   "prompt": "Welke validatiestatussen kan een BGP prefix krijgen wanneer een router RPKI Route Origin Validation uitvoert?",
+   "explain": "RPKI kent drie officiële validatiestatussen: Valid, Invalid en NotFound (ook wel Unknown genoemd).",
+   "options": [
+    "Valid",
+    "Invalid",
+    "NotFound (Unknown)",
+    "Suspended",
+    "Flapping"
+   ],
+   "answers": [
+    0,
+    1,
+    2
+   ]
+  },
+  {
+   "id": "p18",
+   "type": "type",
+   "skill": "bgp-anomalies-and-security",
+   "level": 2,
+   "prompt": "Welk mechanisme (RFC 2439) kent een boete toe aan BGP routes die herhaaldelijk up en down flappen om internetbrede herberekeningen te onderdrukken?",
+   "explain": "Route Flap Dampening onderdrukt instabiele routes op basis van een penalty en timers.",
+   "answers": [
+    "Route Flap Dampening",
+    "Flap Dampening",
+    "BGP Flap Dampening",
+    "dampening"
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "type",
+   "skill": "asn-and-path-vector",
+   "level": 2,
+   "prompt": "Tot welke specifieke familie van routeringsprotocollen behoort BGP, waarbij routes worden geadverteerd vergezeld van een reeks doorkruiste autonome domeinen?",
+   "explain": "BGP is een Path Vector protocol.",
+   "answers": [
+    "Path Vector",
+    "path vector",
+    "Path-Vector",
+    "path-vector"
+   ]
+  },
+  {
+   "id": "m02",
+   "type": "cloze",
+   "skill": "asn-and-path-vector",
+   "level": 2,
+   "prompt": "Vul in over eBGP loop-preventie:",
+   "explain": "Als een router zijn eigen ASN ontdekt in het AS-PATH attribuut, weigert hij de update onmiddellijk om lussen te voorkomen.",
+   "text": "Wanneer een router via eBGP een route-update ontvangt en zijn eigen {{ASN|AS-nummer|autonoom systeemnummer}} in het AS-PATH attribuut ziet staan, {{dropt|weigert|negeert}} hij de route direct ter preventie van routeringslussen."
+  },
+  {
+   "id": "m03",
+   "type": "mcq",
+   "skill": "asn-and-path-vector",
+   "level": 1,
+   "prompt": "Hoeveel bits telt een modern BGP Autonomous System Number (ASN) volgens RFC 6793?",
+   "explain": "Moderne ASN's zijn 32-bit (4 bytes) getallen.",
+   "options": [
+    "32 bits (4 bytes)",
+    "16 bits (2 bytes)",
+    "64 bits (8 bytes)",
+    "128 bits (16 bytes)"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m04",
+   "type": "numeric",
+   "skill": "ebgp-vs-ibgp-mechanics",
+   "level": 2,
+   "prompt": "In een autonoom systeem met 7 interne routers zonder Route Reflectors, hoeveel afzonderlijke iBGP sessies moeten er worden geconfigureerd om een volledige Full-Mesh op te bouwen? Gebruik N(N-1)/2.",
+   "explain": "Aantal sessies = N*(N-1)/2 = 7 * 6 / 2 = 21 sessies.",
+   "value": 21,
+   "abs": 0
+  },
+  {
+   "id": "m05",
+   "type": "cloze",
+   "skill": "ebgp-vs-ibgp-mechanics",
+   "level": 2,
+   "prompt": "Vul in over de iBGP split-horizon regel:",
+   "explain": "De iBGP split-horizon regel verbiedt het doorsturen van routes geleerd via iBGP naar andere iBGP buren.",
+   "text": "Volgens de iBGP split-horizon regel mag een router een route die hij via een iBGP-sessie heeft geleerd {{nooit|niet}} doorsturen naar een andere {{iBGP|ibgp}} peer."
+  },
+  {
+   "id": "m06",
+   "type": "type",
+   "skill": "ebgp-vs-ibgp-mechanics",
+   "level": 2,
+   "prompt": "Welk specifiek netwerkapparaat doorbreekt de noodzaak voor een iBGP full-mesh door iBGP routes gecontroleerd door te sturen naar client-routers?",
+   "explain": "Een BGP Route Reflector (RR) herhaalt iBGP routes naar zijn clients.",
+   "answers": [
+    "Route Reflector",
+    "BGP Route Reflector",
+    "RR"
+   ]
+  },
+  {
+   "id": "m07",
+   "type": "mcq",
+   "skill": "ebgp-vs-ibgp-mechanics",
+   "level": 2,
+   "prompt": "Waarom kan een router standaard geen eBGP-peering opbouwen naar het loopback IP-adres van een direct verbonden buur zonder de optie 'ebgp-multihop'?",
+   "explain": "Omdat eBGP standaard een TTL van 1 gebruikt; het bereiken van de loopback via de fysieke interface kost 2 hops, waardoor het pakket wordt gedropt.",
+   "options": [
+    "Omdat eBGP-pakketten standaard een TTL van 1 hebben en het bereiken van de loopback 2 hops vergt",
+    "Omdat loopback interfaces geen TCP poort 179 ondersteunen volgens de BGP specificatie",
+    "Omdat het AS-PATH attribuut loopback adressen automatisch classificeert als private IP's",
+    "Omdat eBGP uitsluitend werkt over ongefragmenteerde Layer 2 Ethernet broadcast frames"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m08",
+   "type": "order",
+   "skill": "bgp-fsm-session",
+   "level": 2,
+   "prompt": "Rangschik de laatste 3 toestanden van de BGP Finite State Machine op weg naar een volledig actieve sessie:",
+   "explain": "Nadat TCP staat volgt: OpenSent (eigen OPEN verstuurd), OpenConfirm (OPEN buur ontvangen, wacht op KEEPALIVE), Established (KEEPALIVE ontvangen).",
+   "tiles": [
+    "OpenSent",
+    "OpenConfirm",
+    "Established"
+   ]
+  },
+  {
+   "id": "m09",
+   "type": "cloze",
+   "skill": "bgp-fsm-session",
+   "level": 2,
+   "prompt": "Vul in over BGP timer-onderhandeling:",
+   "explain": "Tijdens de uitwisseling van OPEN berichten kiezen beide partijen altijd de kleinste/laagste Hold Time waarde.",
+   "text": "Tijdens het uitwisselen van de OPEN-berichten onderhandelen twee BGP-routers over de Hold Time en kiezen zij altijd de {{laagste|kleinste|minimum}} waarde van beide routers."
+  },
+  {
+   "id": "m10",
+   "type": "mcq",
+   "skill": "bgp-fsm-session",
+   "level": 2,
+   "prompt": "In welke toestand bevindt een BGP-router zich wanneer de TCP 3-way handshake is geslaagd en hij zijn OPEN-bericht heeft verzonden, maar nog wacht op het OPEN-bericht van de buur?",
+   "explain": "In de toestand OpenSent is het lokale OPEN-bericht verzonden en wacht de router op het OPEN-bericht van de peer.",
+   "options": [
+    "OpenSent",
+    "OpenConfirm",
+    "Connect",
+    "Active"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m11",
+   "type": "order",
+   "skill": "best-path-selection",
+   "level": 2,
+   "prompt": "Zet de volgende 4 opeenvolgende stappen uit het BGP Best Path Selection algoritme in de juiste volgorde:",
+   "explain": "Na Weight, Local Pref en lokaal pad volgt: Kortste AS-PATH, Laagste Origin code, Laagste MED, en daarna eBGP boven iBGP.",
+   "tiles": [
+    "Kortste AS-PATH",
+    "Laagste Origin code",
+    "Laagste MED",
+    "eBGP boven iBGP"
+   ]
+  },
+  {
+   "id": "m12",
+   "type": "numeric",
+   "skill": "best-path-selection",
+   "level": 2,
+   "prompt": "Router R1 ontvangt twee routes naar 10.0.0.0/8: Route A heeft Local Preference 150 en AS-PATH lengte 4. Route B heeft Local Preference 100 en AS-PATH lengte 1. Welke Local Preference waarde heeft de winnende route?",
+   "explain": "Local Preference wordt eerder geëvalueerd dan de lengte van het AS-PATH. Route A met Local Preference 150 wint direct van Route B met 100.",
+   "value": 150,
+   "abs": 0
+  },
+  {
+   "id": "m13",
+   "type": "cloze",
+   "skill": "best-path-selection",
+   "level": 2,
+   "prompt": "Vul in over verkeerssturing via BGP:",
+   "explain": "Local Preference bepaalt uitgaand verkeer (hogere waarde wint); AS-PATH prepending beïnvloedt inkomend verkeer.",
+   "text": "Om het uitgaande dataverkeer van een geheel autonoom systeem via een specifieke provider te sturen, verhoog je het attribuut {{Local Preference|local-preference|LOCAL_PREF}} op de routes van die provider."
+  },
+  {
+   "id": "m14",
+   "type": "mcq",
+   "skill": "best-path-selection",
+   "level": 2,
+   "prompt": "Twee concurrerende BGP routes hebben gelijke Weight, Local Preference, AS-PATH lengte, Origin en MED. Route X is geleerd via eBGP en Route Y via iBGP. Welke route wint?",
+   "explain": "Stap 7 in BGP Best Path prefereert eBGP boven iBGP ('hot-potato routing').",
+   "options": [
+    "Route X wint, want routes geleerd via eBGP hebben voorrang op routes geleerd via iBGP",
+    "Route Y wint, want interne iBGP routes worden als betrouwbaarder beschouwd",
+    "De router splitst het verkeer automatisch via Equal-Cost Multi-Path (ECMP)",
+    "Beide routes worden verworpen omdat er een BGP loop-conflict optreedt"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m15",
+   "type": "type",
+   "skill": "bgp-anomalies-and-security",
+   "level": 2,
+   "prompt": "Welke techniek past een beheerder toe om inkomend verkeer van andere netwerken te ontmoedigen door het eigen ASN meermaals aan het AS-PATH toe te voegen?",
+   "explain": "AS-PATH prepending maakt het geadverteerde pad kunstmatig langer om inkomend verkeer af te wenden.",
+   "answers": [
+    "AS-PATH prepending",
+    "AS Path Prepending",
+    "prepending",
+    "AS-PATH Prepending"
+   ]
+  },
+  {
+   "id": "m16",
+   "type": "cloze",
+   "skill": "bgp-anomalies-and-security",
+   "level": 2,
+   "prompt": "Vul de RPKI validatiestatus in:",
+   "explain": "Als het Origin ASN in de BGP route niet overeenkomt met het geregistreerde ASN in de ROA, krijgt de route de status Invalid.",
+   "text": "Wanneer een router met RPKI validatie een route ontvangt waarvan het Origin ASN niet matcht met het geautoriseerde ASN in de ROA, krijgt deze route de validatiestatus {{Invalid|invalid}}."
+  },
+  {
+   "id": "m17",
+   "type": "numeric",
+   "skill": "bgp-anomalies-and-security",
+   "level": 2,
+   "prompt": "In 2008 kaapte Pakistan Telecom wereldwijd YouTube (208.65.152.0/22) door een specifiekere prefix aan te kondigen. Welke prefixlengte (/prefix) kondigde de kaper aan? Vul het getal in.",
+   "explain": "Pakistan Telecom kondigde 208.65.153.0/24 aan, wat specifieker was dan YouTube's /22.",
+   "value": 24,
+   "abs": 0
+  },
+  {
+   "id": "m18",
+   "type": "mcq",
+   "skill": "bgp-anomalies-and-security",
+   "level": 2,
+   "prompt": "Wat is het voornaamste doel van BGP Route Flap Dampening?",
+   "explain": "Flap Dampening straft instabiele routes met een penalty en onderdrukt ze om te voorkomen dat de CPU's van core routers overbelast raken door miljoenen herberekeningen.",
+   "options": [
+    "Het onderdrukken van instabiele routes om wereldwijde CPU-overbelasting door constante herberekeningen te voorkomen",
+    "Het versnellen van de BGP convergentietijd bij een fysieke kabelbreuk naar minder dan 1 seconde",
+    "Het automatisch corrigeren van typefouten in het BGP Autonomous System Number",
+    "Het versleutelen van BGP UPDATE berichten over openbare internetknooppunten (IXP's)"
+   ],
+   "answer": 0
+  }
+ ],
+ "production": {
+  "type": "explain",
+  "lang": "nl",
+  "minWords": 100,
+  "prompt": "**Productiecase: BGP Multihoming Traffic Engineering & RPKI Beveiliging.**\n\nJouw bedrijf (AS 64500) beschikt over een eigen publiek IP-blok `198.51.100.0/22` en is redundant aangesloten op twee internet transit providers via eBGP:\n- **Provider A (AS 174, Cogent)**: Aangesloten via een 10 Gbps onbeperkte glasvezelverbinding (lage kosten).\n- **Provider B (AS 3356, Lumen)**: Aangesloten via een 10 Gbps 'metered' glasvezelverbinding waarbij elke overschreden gigabyte duur wordt gefactureerd.\n\nTijdens een netwerkaudit stelt de CFO vast dat de rekening voor Provider B torenhoog is. Uit telemetrie blijkt dat 70% van al het uitgaande dataverkeer over de dure link van Provider B loopt, en dat externe netwerken (zoals telecomproviders in Azië en de VS) hun inkomende dataverkeer massaal via Provider B naar jouw servers sturen. Bovendien ontdekt het security team dat een malafide partij op een internet exchange recentelijk `198.51.100.0/24` heeft aangekondigd.\n\nWerk een compleet en technisch onderbouwd BGP Traffic Engineering & Security plan uit en beantwoord de volgende vier vragen:\n1. **Uitgaand Verkeer Sturen (Egress)**: Welk BGP attribuut configureer je op jouw edge routers om 100% van het uitgaande verkeer standaard via Provider A te sturen, met Provider B als automatische failover? Geef de concrete waarden en verklaar waarom dit attribuut gekozen wordt.\n2. **Inkomend Verkeer Beïnvloeden (Ingress)**: Welke BGP techniek pas je toe in de route-advertentie naar Provider B om externe autonome systemen op het wereldwijde internet te ontmoedigen om Provider B te gebruiken? Leg exact uit hoe dit mechanisme werkt.\n3. **De Hijack Anatomie & Falen van BGP Attributen**: Waarom kon de kaper die `198.51.100.0/24` aankondigde dataverkeer kapen, ondanks dat jouw AS-PATH naar Provider A veel korter was? Verklaar de wisselwerking tussen de Data Plane (FIB / LPM) en de Control Plane (BGP Best Path).\n4. **RPKI & ROA Oplossing**: Hoe los je het hijacking-risico definitief op met RPKI? Beschrijf welke parameters in de ROA moeten worden geregistreerd en welk beleid routers wereldwijd moeten hanteren.",
+  "model": "1. **Uitgaand Verkeer Sturen (Egress) via Local Preference**:\nOm het uitgaande dataverkeer te sturen gebruiken we het BGP attribuut **Local Preference (LOCAL_PREF)**. Local Preference is een AS-wijd attribuut dat via iBGP aan alle interne routers wordt gecommuniceerd en in de BGP Best Path selectie vóór het AS-PATH wordt geëvalueerd (stap 2):\n- Op de eBGP inkomende route-map van **Provider A (AS 174)** stellen we in: `set local-preference 200`.\n- Op de eBGP inkomende route-map van **Provider B (AS 3356)** laten we de standaardwaarde staan of stellen we expliciet in: `set local-preference 100`.\nOmdat 200 > 100, verkiest elke router binnen AS 64500 de route via Provider A voor alle uitgaande stromen. Valt de link met Provider A uit, dan vervalt de route met Local Pref 200 en schakelt het netwerk naadloos en volautomatisch over op de route via Provider B (Local Pref 100).\n\n2. **Inkomend Verkeer Beïnvloeden (Ingress) via AS-PATH Prepending**:\nInkomend verkeer wordt bepaald door de beslissingen van *externe* netwerken. Zij hanteren BGP Best Path en verkiezen een korter AS-PATH (stap 4). Om Provider B als inkomend pad te ontmoedigen passen we **AS-PATH Prepending** toe op de uitgaande route-advertentie naar Provider B:\n- Naar Provider A adverteren we normaal: `198.51.100.0/22` met AS-PATH `[64500]`.\n- Naar Provider B adverteren we dezelfde prefix, maar voegen we ons eigen AS-nummer tweemaal extra toe: `198.51.100.0/22` met AS-PATH `[64500 64500 64500]`.\nVoor routers op het wereldwijde internet lijkt het pad via Provider B nu 3 hops lang en het pad via Provider A slechts 1 hop. Hierdoor zal het wereldwijde dataverkeer massaal binnenstromen via de goedkope Provider A.\n\n3. **De Hijack Anatomie & LPM versus BGP Attributen**:\nDe kaper kondigde `198.51.100.0/24` aan, terwijl AS 64500 `198.51.100.0/22` adverteert. In de Control Plane (BGP) worden BGP Best Path regels (Weight, Local Pref, AS-PATH) **uitsluitend vergeleken tussen routes voor exact hetzelfde prefix**! Een `/24` en een `/22` worden door BGP als twee totaal verschillende bestemmingen gezien.\nIn de Data Plane (FIB) past de forwarding hardware echter altijd **Longest Prefix Match (LPM)** toe: de meest specifieke prefix wint ALTIJD. Omdat `/24` een 24-bits netwerkmasker heeft en `/22` slechts 22 bits, sturen alle routers wereldwijd pakketten voor adressen binnen dat /24 subnet naar de kaper, ongeacht hoe kort ons AS-PATH was of hoe hoog onze Local Preference was.\n\n4. **RPKI & ROA Mitigatie**:\nOm dit definitief te neutraliseren publiceren we bij RIPE NCC een cryptografisch ondertekende **Route Origin Authorization (ROA)** met de volgende parameters:\n- **Prefix**: `198.51.100.0/22`\n- **Authorized Origin ASN**: `AS 64500`\n- **Max Length**: `/22` (cruciaal: stel MaxLength niet in op /24, want dat zou specifiekere kapingen toestaan!).\nInternetproviders die RPKI Route Origin Validation toepassen met het beleid **RPKI Invalid Drop**, zien dat de aankondiging van de kaper afkomstig is van een ongeautoriseerd ASN (of langer is dan MaxLength /22). Deze aankondiging krijgt de status `Invalid` en wordt per direct gedropt, waardoor het kapen van het verkeer volledig onmogelijk wordt.",
+  "rubric": [
+   "Configureert Local Preference correct (bv. 200 voor Provider A vs 100 voor Provider B) en verklaart waarom dit uitgaand verkeer stuurt.",
+   "Past AS-PATH Prepending toe naar Provider B en legt uit hoe het verlengen van het pad extern inkomend verkeer ontmoedigt.",
+   "Verklaart het fundamentele verschil tussen BGP Best Path en Longest Prefix Match (LPM) in de FIB als oorzaak van de /24 hijack.",
+   "Definieert een correcte RPKI ROA (Prefix, Origin ASN 64500, MaxLength /22) en noemt het RPKI Invalid Drop beleid."
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-l4-01",
+   "skill": "bgp-fsm-session",
+   "front": "Over welk transportprotocol en welke poort worden BGP-sessies opgebouwd?",
+   "back": "TCP poort 179."
+  },
+  {
+   "id": "c-l4-02",
+   "skill": "asn-and-path-vector",
+   "front": "Hoe voorkomt eBGP dat er routeringslussen ontstaan tussen autonome systemen?",
+   "back": "Wanneer een router een route ontvangt waarin zijn eigen ASN voorkomt in het AS-PATH attribuut, weigert hij de route per direct."
+  },
+  {
+   "id": "c-l4-03",
+   "skill": "ebgp-vs-ibgp-mechanics",
+   "front": "Wat dicteert de iBGP Split Horizon regel?",
+   "back": "Een router mag een route die via iBGP is geleerd nooit doorsturen naar een andere iBGP peer."
+  },
+  {
+   "id": "c-l4-04",
+   "skill": "ebgp-vs-ibgp-mechanics",
+   "front": "Waarom is het commando 'neighbor ... next-hop-self' noodzakelijk op een randrouter voor iBGP peers?",
+   "back": "Omdat iBGP standaard het externe IP-adres als next-hop behoudt; als interne routers dat IP niet kennen in hun IGP, wordt de route inactief."
+  },
+  {
+   "id": "c-l4-05",
+   "skill": "best-path-selection",
+   "front": "Wat zijn de eerste vier stappen in het BGP Best Path Selection algoritme?",
+   "back": "1. Hoogste Weight, 2. Hoogste Local Preference, 3. Lokaal geïnitieerde route, 4. Kortste AS-PATH."
+  },
+  {
+   "id": "c-l4-06",
+   "skill": "best-path-selection",
+   "front": "Wat is het doel en de scope van het attribuut Local Preference?",
+   "back": "Het bepaalt het uitgaande (egress) verkeer van het gehele AS; het wordt verspreid via iBGP (standaard 100, hoogste wint) en nooit verzonden via eBGP."
+  },
+  {
+   "id": "c-l4-07",
+   "skill": "best-path-selection",
+   "front": "Hoe beïnvloedt AS-PATH Prepending het dataverkeer?",
+   "back": "Het beïnvloedt inkomend (ingress) verkeer door het eigen ASN meermalen toe te voegen, waardoor externe partijen een alternatief korter pad verkiezen."
+  },
+  {
+   "id": "c-l4-08",
+   "skill": "bgp-anomalies-and-security",
+   "front": "Wat legt een RPKI Route Origin Authorization (ROA) vast?",
+   "back": "Het geautoriseerde Origin ASN, de geautoriseerde IP-prefix en de maximaal toegestane prefixlengte (MaxLength)."
+  }
+ ],
+ "sources": [
+  "Rekhter, Y., Li, T., & Hares, S. (2006). RFC 4271: A Border Gateway Protocol 4 (BGP-4). IETF.",
+  "Villamizar, C., Chandra, R., & Govindan, R. (1998). RFC 2439: BGP Route Flap Damping. IETF.",
+  "Lepinski, M., & Kent, S. (2012). RFC 6480: An Infrastructure to Support Secure Internet Routing (RPKI). IETF.",
+  "Huston, G. (2023). BGP in 2023: The BGP Table and Churn Analysis. APNIC Labs."
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-02",
+  "adaptedFor": "Didactisch uitgewerkt voor Thibaud (Handelsingenieur): wiskundige en deterministische logica van het 9-staps BGP Best Path algoritme, gecombineerd met zakelijke en technische analyse van ISP-peering kosten, LPM bij internetkapingen en RPKI ROA beveiliging."
+ }
+}

@@ -40,7 +40,7 @@ RADAR = os.path.join(STUDIO, "content", "radar")
 ITEMS = os.path.join(RADAR, "items")
 PROMPTS = os.path.join(STUDIO, "prompts")
 TOPICS = ("ai", "chips", "crypto", "systems", "automation")
-TRACKS = ("greek", "french", "spanish", "solidity", "ai", "automation", "jev")
+TRACKS = ("greek", "french", "spanish", "solidity", "ai", "automation", "jev", "routing")
 QUIZ_TYPES = {"mcq", "multi", "type", "numeric", "order"}
 KIND_LABEL = {"news": "Doorbraak", "paper": "Paper", "classic": "Klassieker", "request": "Op jouw vraag"}
 

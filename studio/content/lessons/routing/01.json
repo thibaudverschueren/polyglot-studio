@@ -1,0 +1,836 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "routing",
+ "id": 1,
+ "roadmap": "routing-01-layer2-layer3-lifecycle",
+ "kind": "core",
+ "title": "Het Leven van een Pakket: Layer 2, Layer 3 & ARP",
+ "subtitle": "Van Ethernet-frames en MAC-adressen tot IP-pakketten, ARP-spoofing en MTU/MSS-fragmentatie",
+ "level": "fundament",
+ "minutes": 45,
+ "summary": "Om netwerken te begrijpen en storingen zelfstandig op te lossen, moet je exact weten wat er met een bit gebeurt zodra het een netwerkkaart verlaat. Deze les volgt de volledige levenscyclus van een datapakket: van Ethernet-encapsulatie en hop-by-hop MAC-adressen tot end-to-end IP-routing, ARP-resolutie, PMTUD black holes en TTL-loopdetectie.",
+ "objectives": [
+  {
+   "id": "osi-vs-tcpip",
+   "text": "Je kunt het OSI-model en TCP/IP vertalen naar concrete encapsulatie in Ethernet-frames en IP-pakketten."
+  },
+  {
+   "id": "mac-vs-ip",
+   "text": "Je kunt het fundamentele onderscheid tussen hop-by-hop MAC-adressering (Layer 2) en end-to-end IP-adressering (Layer 3) toepassen."
+  },
+  {
+   "id": "arp-mechanics-poisoning",
+   "text": "Je kunt de werking van ARP, ARP-caching en ARP-spoofing/poisoning analyseren en beveiligen."
+  },
+  {
+   "id": "mtu-mss-pmtud",
+   "text": "Je kunt MTU, MSS en IP-fragmentatie berekenen en PMTUD black holes diagnosticeren."
+  },
+  {
+   "id": "ttl-loop-prevention",
+   "text": "Je kunt de werking van TTL (Time to Live) en routeringslussen traceren met ICMP Time Exceeded."
+  }
+ ],
+ "diagnostic": {
+  "intro": "Deze diagnostische niveautest meet je parate basiskennis over netwerklagen, adressering, ARP en pakketdoorvoer. Zo stemt Polyglot Studio het tempo direct op jouw voorkennis af.",
+  "bands": [
+   "basis",
+   "gevorderd",
+   "expert"
+  ],
+  "items": [
+   {
+    "id": "d01",
+    "type": "mcq",
+    "skill": "osi-vs-tcpip",
+    "level": 1,
+    "prompt": "Welke netwerklaag in het OSI-model is verantwoordelijk voor de hop-by-hop frame-aflevering tussen direct verbonden apparaten op hetzelfde fysieke netwerksegment?",
+    "explain": "De Data Link Layer (Layer 2) zorgt voor fysieke adressering (MAC-adressen) en frame-aflevering tussen direct verbonden knooppunten.",
+    "options": [
+     "Data Link Layer (Layer 2)",
+     "Network Layer (Layer 3)",
+     "Transport Layer (Layer 4)",
+     "Physical Layer (Layer 1)"
+    ],
+    "answer": 0,
+    "band": "basis"
+   },
+   {
+    "id": "d02",
+    "type": "mcq",
+    "skill": "mac-vs-ip",
+    "level": 1,
+    "prompt": "Wat gebeurt er met de bron- en bestemmings-MAC-adressen van een frame wanneer een router een IPv4-pakket doorstuurt naar een volgende hop?",
+    "explain": "MAC-adressen gelden alleen per lokale link; een router verwijdert het oude Ethernet-frame en maakt een nieuw frame aan met nieuwe bron- en bestemmings-MAC-adressen.",
+    "options": [
+     "Beide MAC-adressen worden door de router herschreven voor het nieuwe linksegment.",
+     "Beide MAC-adressen blijven ongewijzigd van bronhost tot eindbestemming.",
+     "Alleen het bron-MAC-adres wordt herschreven; het bestemmings-MAC blijft gelijk.",
+     "Alleen het bestemmings-MAC-adres wordt herschreven; het bron-MAC blijft gelijk."
+    ],
+    "answer": 0,
+    "band": "basis"
+   },
+   {
+    "id": "d03",
+    "type": "mcq",
+    "skill": "arp-mechanics-poisoning",
+    "level": 2,
+    "prompt": "Naar welk bestemmings-MAC-adres zendt een host een ARP Request wanneer hij het fysieke adres van de default gateway nog niet in zijn cache heeft?",
+    "explain": "Een ARP Request is een Layer 2 broadcast naar FF:FF:FF:FF:FF:FF zodat alle hosts op het lokale broadcastdomein de aanvraag ontvangen.",
+    "options": [
+     "FF:FF:FF:FF:FF:FF (Layer 2 broadcast)",
+     "00:00:00:00:00:00 (het default null-adres)",
+     "Het unicast MAC-adres van de centrale switch",
+     "01:00:5E:00:00:01 (het IPv4 all-hosts multicast-adres)"
+    ],
+    "answer": 0,
+    "band": "gevorderd"
+   },
+   {
+    "id": "d04",
+    "type": "numeric",
+    "skill": "mtu-mss-pmtud",
+    "level": 2,
+    "prompt": "Wat is de standaard TCP Maximum Segment Size (MSS) in bytes op een standaard Ethernet-interface met een MTU van 1500 bytes (uitgaande van standaard 20 bytes IPv4-header en 20 bytes TCP-header)?",
+    "explain": "MSS = MTU - IP-header (20B) - TCP-header (20B) = 1500 - 40 = 1460 bytes.",
+    "value": 1460,
+    "tolerance": 0.01,
+    "unit": "bytes",
+    "band": "gevorderd"
+   },
+   {
+    "id": "d05",
+    "type": "mcq",
+    "skill": "mtu-mss-pmtud",
+    "level": 3,
+    "prompt": "Wat is de exacte technische oorzaak van een zogeheten 'PMTUD black hole' waarbij webpagina's oneindig blijven laden tijdens de TLS-handshake?",
+    "explain": "Wanneer een router een pakket met DF=1 niet kan doorsturen vanwege een kleinere MTU, stuurt hij ICMP Type 3 Code 4. Als een tussenliggende firewall dit ICMP-bericht blokkeert, komt de zender dit nooit te weten en blijven grote pakketten verloren gaan.",
+    "options": [
+     "Een tussenliggende link heeft een kleinere MTU, DF=1 staat aan, en een firewall dropt de ICMP Type 3 Code 4 foutberichten.",
+     "De router verlaagt de TTL naar 0 waardoor het TCP SYN-ACK pakket onderweg verloren gaat.",
+     "De switch heeft zijn MAC-adrestabel geleegd waardoor alle TLS-frames als broadcast verzonden worden.",
+     "De DNS-server retourneert een ongeldig AAAA-record waardoor de client wacht op een IPv6 timeout."
+    ],
+    "answer": 0,
+    "band": "expert"
+   },
+   {
+    "id": "d06",
+    "type": "mcq",
+    "skill": "ttl-loop-prevention",
+    "level": 3,
+    "prompt": "Welk ICMP-foutbericht stuurt een router terug naar de bron wanneer de TTL (Time to Live) van een IPv4-pakket de waarde 0 bereikt?",
+    "explain": "Zodra de TTL naar 0 daalt, vernietigt de router het pakket en zendt hij ICMP Type 11 Code 0 (Time to Live exceeded in transit) terug.",
+    "options": [
+     "ICMP Type 11 Code 0 (Time Exceeded)",
+     "ICMP Type 3 Code 4 (Fragmentation Needed)",
+     "ICMP Type 3 Code 1 (Host Unreachable)",
+     "ICMP Type 8 Code 0 (Echo Request)"
+    ],
+    "answer": 0,
+    "band": "expert"
+   }
+  ]
+ },
+ "sections": [
+  {
+   "id": "sec-encapsulation",
+   "title": "1. Het Gelaagde Model: OSI, TCP/IP en Encapsulatie",
+   "md": "Om netwerken grondig te beheersen, moeten we voorbij abstracte diagrammen kijken en observeren hoe data daadwerkelijk over de draad beweegt. In theorie onderscheidt het **OSI-model** zeven lagen, maar het praktische internet is gebouwd op het **TCP/IP-model** (RFC 1122) met vier pragmatische lagen:\n\n1. **Applicatielaag (L7/L5-7)**: HTTP, DNS, SSH, TLS.\n2. **Transportlaag (L4)**: TCP en UDP. Verantwoordelijk voor poortnummers, flow control en betrouwbaarheid.\n3. **Netwerklaag (L3)**: IPv4 en IPv6. Zorgt voor logische end-to-end adressering en globale routering.\n4. **Netwerktoegangs- / Data Link-laag (L2/L1)**: Ethernet, Wi-Fi, point-to-point links. Zorgt voor fysieke framing en hop-by-hop transport over het lokale medium.\n\n### Encapsulatie & Protocol Data Units (PDU's)\nWanneer een applicatie gegevens verzendt, reist de payload van boven naar beneden door de netwerkstack. Elke laag wikkelt zijn eigen stuurinformatie (de **header**) om de data van de bovenliggende laag. Dit proces heet **encapsulatie**:\n\n$$\\text{Applicatiedata} \\xrightarrow{\\text{L4}} \\text{TCP Segment} \\xrightarrow{\\text{L3}} \\text{IP Pakket} \\xrightarrow{\\text{L2}} \\text{Ethernet Frame} \\xrightarrow{\\text{L1}} \\text{Bits op het medium}$$\n\nElke laag gebruikt zijn eigen PDU-terminologie:\n- **Layer 4**: *Segment* (TCP) of *Datagram* (UDP).\n- **Layer 3**: *Packet* (IP-pakket).\n- **Layer 2**: *Frame* (Ethernet-frame).\n\n### Anatomie van een Ethernet II-frame\nHet meest gangbare Layer 2-formaat op vaste netwerken is het **Ethernet II frame**:\n- **Preamble & SFD (8 bytes)**: synchronisatie voor de fysieke netwerkkaart (PHY).\n- **Bestemmings-MAC (6 bytes)**: het hardware-adres van de volgende hop of lokale bestemming.\n- **Bron-MAC (6 bytes)**: het hardware-adres van de verzendende netwerkkaart.\n- **EtherType (2 bytes)**: identificeert het ingekapselde Layer 3-protocol:\n  - `0x0800` $\\to$ **IPv4**\n  - `0x86DD` $\\to$ **IPv6**\n  - `0x0806` $\\to$ **ARP**\n- **Payload (46 tot 1500 bytes)**: het IP-pakket.\n- **Frame Check Sequence (FCS / CRC32, 4 bytes)**: hardwarematige foutdetectie. Is de CRC ongeldig, dan wordt het frame direct door de netwerkchip gedropt zonder de CPU te belasten.\n\n### De IPv4-header\nBinnen het Ethernet-frame bevindt zich het IP-pakket. Een standaard IPv4-header is minimaal **20 bytes** groot en bevat cruciale velden:\n- **Version (4 bits)**: `4` voor IPv4.\n- **IHL (Internet Header Length, 4 bits)**: lengte van de header in 32-bit woorden (standaard 5 = 20 bytes).\n- **Total Length (16 bits)**: totale omvang van het IP-pakket (header + payload).\n- **Flags (3 bits)**: bevat de bit **DF (Don't Fragment)** en **MF (More Fragments)**.\n- **TTL (Time to Live, 8 bits)**: voorkomt oneindige lussen.\n- **Protocol (8 bits)**: `6` voor TCP, `17` voor UDP, `1` voor ICMP.\n- **Bron- en Bestemmings-IP (elk 32 bits / 4 bytes)**.\n\n> [!rule] De Gouden Scheiding van L2 en L3\n> Een Ethernet-switch kijkt uitsluitend naar de **Layer 2-header** (bestemmings-MAC) en leert bron-MAC's op poorten. Pas wanneer een apparaat moet routeren naar een ander subnet, wordt het pakket uitgepakt tot op **Layer 3**.",
+   "checks": [
+    {
+     "id": "c1-01",
+     "type": "mcq",
+     "skill": "osi-vs-tcpip",
+     "level": 1,
+     "prompt": "Welke Protocol Data Unit (PDU) hoort bij Layer 2 van het netwerkmodel?",
+     "explain": "Op Layer 2 spreekt men over een Frame (zoals een Ethernet-frame). Op Layer 3 is het een Packet, op Layer 4 een Segment.",
+     "options": [
+      "Frame",
+      "Packet",
+      "Segment",
+      "Bit"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c1-02",
+     "type": "cloze",
+     "skill": "osi-vs-tcpip",
+     "level": 2,
+     "prompt": "Vul de hexadecimale EtherType-waarde in:",
+     "text": "In een Ethernet II-frame geeft het EtherType-veld met de hexadecimale waarde {{0x0800|0800}} aan dat de payload een IPv4-pakket is.",
+     "explain": "0x0800 staat voor IPv4, 0x86DD staat voor IPv6 en 0x0806 staat voor ARP."
+    }
+   ]
+  },
+  {
+   "id": "sec-mac-vs-ip",
+   "title": "2. MAC versus IP: Hop-by-Hop versus End-to-End",
+   "md": "Waarom hebben we zowel MAC-adressen als IP-adressen nodig? Waarom volstaat één globaal adresseringssysteem niet?\n\nHet antwoord ligt in de scheiding tussen **lokale forwarding** en **globale routering**:\n\n| Eigenschap | MAC-adres (Layer 2) | IP-adres (Layer 3) |\n|---|---|---|\n| **Bereik** | Lokaal broadcastdomein / subnet | Globaal routeerbaar over het hele internet |\n| **Structuur** | Plat (48-bit EUI-48, bv. `00:1A:2B:3C:4D:5E`) | Hiërarchisch (32-bit IPv4 of 128-bit IPv6) |\n| **Doel** | Identificeert een specifieke fysieke interface | Identificeert een logische locatie in de netwerktopologie |\n| **Gedrag bij routering** | **Verandert bij elke router-hop** | **Blijft behouden van bron tot bestemming** (zonder NAT) |\n\n### Het Leven van een Pakket over Twee Routers\nStel: **Host A** (`192.168.1.50`, MAC `AA:AA`) wil communiceren met **Server B** (`10.0.0.100`, MAC `BB:BB`). Tussen hen in staan **Router 1** en **Router 2**.\n\n```\n[Host A] ---> (Switch) ---> [Router 1] ===== [Router 2] ---> [Server B]\n  192.168.1.50                 eth0 / eth1      eth0 / eth1      10.0.0.100\n   MAC: AA:AA                   R1a    R1b       R2a    R2b       MAC: BB:BB\n```\n\n1. **Host A stelt vast dat Server B buiten zijn subnet ligt**:\n   `192.168.1.50/24` vergelijkt zijn subnet met `10.0.0.100`. Conclusie: niet lokaal! Het pakket moet naar de **default gateway** (Router 1 interface `eth0`, `192.168.1.1`, MAC `R1a`).\n2. **Frame 1 (Host A naar Router 1)**:\n   - Bron-MAC: `AA:AA` | Bestemmings-MAC: `R1a` (van de default gateway!)\n   - Bron-IP: `192.168.1.50` | Bestemmings-IP: `10.0.0.100`\n3. **Router 1 verwerkt het pakket**:\n   - De netwerkkaart herkent zijn eigen MAC (`R1a`), stript het Ethernet-frame af en inspecteert het IP-pakket.\n   - Router 1 verlaagt de TTL met 1 en herberekent de IP-checksum.\n   - Router 1 raadpleegt zijn routingtabel: bestemming `10.0.0.100` gaat via next-hop Router 2 (`R2a`) op interface `eth1` (`R1b`).\n4. **Frame 2 (Router 1 naar Router 2)**:\n   - Router 1 encapsuleert het IP-pakket in een **volledig nieuw Ethernet-frame**!\n   - Bron-MAC: `R1b` | Bestemmings-MAC: `R2a`\n   - Bron-IP: `192.168.1.50` | Bestemmings-IP: `10.0.0.100` (**exact hetzelfde!**)\n5. **Router 2 levert af aan Server B**:\n   - Router 2 stript Frame 2, verlaagt de TTL met 1, en ziet dat `10.0.0.100` zich op zijn direct verbonden subnet `eth1` bevindt.\n   - Frame 3: Bron-MAC `R2b`, Bestemmings-MAC `BB:BB`.\n   - De IP-adressen blijven nog steeds `192.168.1.50` en `10.0.0.100`.\n\n> [!pitfall] De Veelgemaakte Fout\n> Een beginnende engineer denkt vaak dat Host A het MAC-adres van Server B opvraagt via ARP. Dat is onmogelijk! ARP-broadcasts stoppen altijd bij de router. Host A vraagt uitsluitend het MAC-adres op van zijn **lokale default gateway**.",
+   "checks": [
+    {
+     "id": "c2-01",
+     "type": "mcq",
+     "skill": "mac-vs-ip",
+     "level": 1,
+     "prompt": "Host A stuurt een pakket naar een server op een extern kantoornetwerk via twee tussenliggende routers (zonder NAT). Wat is waar over de header-velden onderweg?",
+     "explain": "De Layer 2 MAC-adressen worden bij elke routerhop vervangen door de MAC-adressen van de lokale link, terwijl de IP-adressen end-to-end behouden blijven.",
+     "options": [
+      "De Layer 2 MAC-adressen veranderen bij elke router-hop; de bron- en doel-IP-adressen blijven ongewijzigd.",
+      "De IP-adressen veranderen bij elke hop; de MAC-adressen blijven ongewijzigd van bron tot bestemming.",
+      "Zowel de MAC-adressen als de IP-adressen blijven van begin tot eind identiek.",
+      "Alleen het bestemmings-IP-adres verandert; de rest van de headers blijft constant."
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c2-02",
+     "type": "cloze",
+     "skill": "mac-vs-ip",
+     "level": 2,
+     "prompt": "Vul de reikwijdte van beide adresseringslagen in:",
+     "text": "MAC-adressering verzorgt de {{hop-by-hop|hop per hop|lokale}} aflevering per link, terwijl IP-adressering zorgt voor {{end-to-end|globale}} routering van bron tot eindbestemming.",
+     "explain": "MAC-adressen zijn hop-by-hop gebonden aan het lokale broadcastdomein; IP-adressen zijn end-to-end routeerbaar over het gehele netwerk."
+    }
+   ]
+  },
+  {
+   "id": "sec-arp-mechanics",
+   "title": "3. Address Resolution Protocol (ARP) & Aanvallen",
+   "md": "Hoe weet een host welk MAC-adres hoort bij een bepaald lokaal IP-adres? Dat is de taak van het **Address Resolution Protocol (ARP)**, gedefinieerd in RFC 826.\n\n### De ARP-cyclus: Request en Reply\nWanneer Host A (`192.168.1.50`) een pakket wil zenden naar `192.168.1.1` en dit adres nog niet in zijn lokale tabel staat, doorloopt hij twee stappen:\n\n1. **ARP Request (Broadcast)**:\n   - *\"Wie heeft IP 192.168.1.1? Vertel het aan 192.168.1.50 (MAC AA:AA)!\"*\n   - Bestemmings-MAC in de Ethernet-header is `FF:FF:FF:FF:FF:FF` (Layer 2 broadcast).\n   - Elke netwerkkaart in het broadcastdomein pikt dit frame op en geeft het door aan zijn OS-kernel.\n2. **ARP Reply (Unicast)**:\n   - Alleen het apparaat met IP `192.168.1.1` reageert:\n   - *\"192.168.1.1 bevindt zich op MAC R1:R1!\"*\n   - Dit antwoord wordt gericht als **unicast** teruggestuurd naar MAC `AA:AA`.\n\n### De ARP Cache\nOm te vermijden dat voor elk individueel pakket een broadcast over de lijn moet, bewaart het besturingssysteem de koppeling in de **ARP-cache**:\n\n```bash\n# Linux commando om de ARP-tabel (burentabel) te inspecteren:\nip neigh show\n# Voorbeeld output:\n# 192.168.1.1 dev eth0 lladdr 00:11:22:33:44:55 REACHABLE\n# 192.168.1.120 dev eth0 lladdr 66:77:88:99:aa:bb STALE\n```\n\nEntries in de ARP-cache hebben een beperkte levensduur (standaard tussen 60 seconden en 20 minuten) en gaan door toestanden zoals `REACHABLE`, `STALE` en `FAILED`.\n\n### Gratuitous ARP (GARP)\nEen host kan ook ongevraagd een ARP Request of Reply uitzenden waarin zijn eigen IP-adres als bron én doel staat. Dit heet een **Gratuitous ARP (GARP)**. Dit dient voor:\n- **IP-conflict detectie**: als er al een ander apparaat reageert, gebruikt iemand hetzelfde IP.\n- **Failover (VRRP / CARP / High Availability)**: wanneer een back-up router de rol van de primaire router overneemt, stuurt hij een GARP zodat alle switches hun CAM-tabel en alle hosts hun ARP-cache direct bijwerken naar het MAC van de nieuwe actieve node.\n\n### De Valkuil: ARP Spoofing & Cache Poisoning\nARP is ontworpen in 1982 en bevat **nul authenticatie**. Elk apparaat accepteert blind een ARP Reply, zelfs als het er nooit om gevraagd heeft (*unsolicited ARP reply*)!\n\nEen kwaadwillende node op het LAN kan voortdurend valse ARP Replies uitsturen:\n- Naar de client: *\"192.168.1.1 (de gateway) is op MAC van de aanvaller!\"*\n- Naar de gateway: *\"192.168.1.50 (de client) is op MAC van de aanvaller!\"*\n\nBeide apparaten overschrijven hun ARP-cache (**ARP Poisoning**). Al het verkeer tussen de client en het internet stroomt nu via de laptop van de aanvaller (**Man-in-the-Middle**).\n\n> [!tip] Beveiliging tegen ARP Spoofing\n> Moderne enterprise switches stoppen dit met **Dynamic ARP Inspection (DAI)**. De switch controleert binnenkomende ARP-pakketten tegen een betrouwbare database van de DHCP-server (**DHCP Snooping binding table**). Komt het IP-MAC paar niet overeen met het toegekende DHCP-lease, dan vernietigt de switch het ARP-pakket direct.",
+   "checks": [
+    {
+     "id": "c3-01",
+     "type": "type",
+     "skill": "arp-mechanics-poisoning",
+     "level": 2,
+     "prompt": "Welk hexadecimale bestemmings-MAC-adres wordt gebruikt voor een Ethernet-broadcast bij een ARP Request?",
+     "explain": "Het Ethernet broadcast-adres bestaat uit louter enen: FF:FF:FF:FF:FF:FF.",
+     "answers": [
+      "FF:FF:FF:FF:FF:FF",
+      "ff:ff:ff:ff:ff:ff",
+      "FF-FF-FF-FF-FF-FF",
+      "ff-ff-ff-ff-ff-ff"
+     ]
+    },
+    {
+     "id": "c3-02",
+     "type": "mcq",
+     "skill": "arp-mechanics-poisoning",
+     "level": 2,
+     "prompt": "Welke technologie op managed switches beveiligt het netwerk tegen ARP Spoofing door ARP-antwoorden te valideren aan de hand van DHCP-leases?",
+     "explain": "Dynamic ARP Inspection (DAI) inspecteert ARP-pakketten op niet-vertrouwde poorten en valideert ze tegen de DHCP Snooping database.",
+     "options": [
+      "Dynamic ARP Inspection (DAI)",
+      "Spanning Tree Protocol (STP)",
+      "Port Mirroring (SPAN)",
+      "Link Aggregation (LACP)"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "sec-mtu-mss-pmtud",
+   "title": "4. MTU, MSS, Fragmentatie & PMTUD Black Holes",
+   "md": "Een van de meest frustrerende netwerkstoringen is het fenomeen waarbij kleine pings vlekkeloos slagen, maar websites en bestandsoverdrachten halverwege onherroepelijk vastlopen. De boosdoeners: **MTU**, **MSS** en falende **PMTUD**.\n\n### MTU versus MSS\n- **MTU (Maximum Transmission Unit)**: De maximale omvang in bytes van een Layer 3-pakket (inclusief IP-header) die zonder fragmentatie over een fysieke link verstuurd kan worden. Op standaard Ethernet is de MTU **1500 bytes**.\n- **MSS (Maximum Segment Size)**: De maximale hoeveelheid pure **TCP data-payload** die een host in één enkel segment mag stoppen.\n\nDe relatie tussen beide op standaard IPv4:\n$$\\text{MSS} = \\text{MTU} - \\text{IPv4 Header (20 bytes)} - \\text{TCP Header (20 bytes)} = 1500 - 40 = 1460 \\text{ bytes}$$\n\nBij IPv6 (vaste header van 40 bytes) is de MSS bij MTU 1500:\n$$\\text{MSS}_{\\text{IPv6}} = 1500 - 40 - 20 = 1440 \\text{ bytes}$$\n\n### IP-Fragmentatie en de DF-bit\nWat gebeurt er wanneer een pakket van 1500 bytes via een router over een link moet met een lagere MTU (bijvoorbeeld een PPPoE-verbinding met MTU 1492, of een VPN-tunnel met MTU 1420)?\n\nEr zijn twee scenario's afhankelijk van de vlag **DF (Don't Fragment)** in de IP-header:\n\n1. **DF = 0 (Fragmentatie toegestaan)**:\n   De router splitst het IP-pakket op in twee of meer kleinere fragmenten. Elk fragment krijgt dezelfde `Identification`, maar een aangepaste `Fragment Offset` en de vlag `More Fragments (MF)`. De eindbestemming moet alle fragmenten bufferen en herassembleren.\n   *Gevaar*: Als één fragment verloren gaat, moet het hele originele TCP-segment opnieuw verzonden worden. Bovendien kost fragmentatie veel router-CPU.\n2. **DF = 1 (Niet fragmenteren)**:\n   Vrijwel alle moderne TCP-stacks zetten de DF-bit standaard op 1. Wanneer het pakket groter is dan de uitgaande MTU, **dropt de router het pakket** en stuurt een ICMP-foutbericht terug naar de bron: **ICMP Type 3 Code 4: Destination Unreachable, Fragmentation Needed and DF set** (RFC 1191). In dit bericht meldt de router tevens de MTU van de knelpunt-link (de *Next-Hop MTU*).\n\n### Path MTU Discovery (PMTUD) en Black Holes\nDankzij **Path MTU Discovery (PMTUD)** weet de verzendende host op basis van het ICMP Type 3 Code 4 bericht dat hij zijn TCP MSS moet verlagen voor die bestemming.\n\n```\n[Client MTU:1500] ---> [Router MTU:1500] === [VPN-Tunnel MTU:1420] ---> [Server MTU:1500]\n      |                                               |\n      |--- TCP SYN (DF=1) --------------------------->| (Kleine packet: passeert vlot!)\n      |<-- TCP SYN-ACK (DF=1) ------------------------| (Handshake slaagt)\n      |                                               |\n      |--- TLS Handshake / Data (1500B, DF=1) --------X (Gedropt door Router! Te groot)\n      |<-- [ICMP Type 3 Code 4: Next MTU=1420] ---X (GEBLOKKEERD DOOR PARANOÏDE FIREWALL)\n      |\n  CLIENT BLIJFT WACHTEN... RETRANSMITS... TIMEOUT! (PMTUD BLACK HOLE)\n```\n\n> [!pitfall] Het PMTUD Black Hole\n> Veel overijverige netwerkbeheerders configureren firewalls met de regel `DROP ALL ICMP`. Hierdoor wordt ook **ICMP Type 3 Code 4** geblokkeerd! De client ontdekt nooit dat zijn pakket te groot was. Kleine controlepakketten (TCP SYN, SSH login, ping) werken prima, maar zodra er data over de lijn gaat (TLS certificaat, HTTP response), valt de verbinding stil.\n\n### De Oplossing: TCP MSS Clamping\nOmdat je firewalls op het publieke internet niet kunt veranderen, lossen routers aan de rand van tunnels dit op met **TCP MSS Clamping**. De router onderschept passerende TCP SYN-pakketten en herschrijft de geadverteerde MSS-optie naar een veilige waarde:\n\n```bash\n# Linux iptables regel voor MSS clamping op een PPPoE/VPN interface:\niptables -t mangle -A POSTROUTING -p tcp --tcp-flags SYN,RST SYN -o wg0 -j TCPMSS --clamp-mss-to-pmtu\n```",
+   "checks": [
+    {
+     "id": "c4-01",
+     "type": "numeric",
+     "skill": "mtu-mss-pmtud",
+     "level": 2,
+     "prompt": "Bereken de TCP MSS in bytes op een IPv4-verbinding via een PPPoE-link met een MTU van 1492 bytes, uitgaande van standaard 20 bytes IPv4 en 20 bytes TCP headers.",
+     "explain": "MSS = MTU - IP-header (20B) - TCP-header (20B) = 1492 - 40 = 1452 bytes.",
+     "value": 1452,
+     "tolerance": 0.01,
+     "unit": "bytes"
+    },
+    {
+     "id": "c4-02",
+     "type": "cloze",
+     "skill": "mtu-mss-pmtud",
+     "level": 2,
+     "prompt": "Vul het juiste ICMP codenummer in:",
+     "text": "Wanneer een router een IPv4-pakket met DF=1 moet droppen wegens een te kleine MTU, verzendt hij een ICMP Type 3 Code {{4}} bericht.",
+     "explain": "ICMP Type 3 is Destination Unreachable; Code 4 specificeert Fragmentation Needed and DF set."
+    }
+   ]
+  },
+  {
+   "id": "sec-ttl-loop-prevention",
+   "title": "5. TTL & Routeringslussen: Waarom Pakketten Nooit Oneindig Cirkelen",
+   "md": "In een dynamisch netwerk kan door een configuratiefout of tijdens het herberekenen van routingprotocollen een **routeringslus (routing loop)** ontstaan. Stel dat Router A denkt dat netwerk X via Router B loopt, terwijl Router B denkt dat netwerk X via Router A loopt.\n\nZonder bescherming zou een pakket miljarden keren heen en weer kaatsen tot de verbinding volledig dichtslibt met nutteloos spookverkeer. Om dit te voorkomen bevat elk IP-pakket een levensduurteller: **Time to Live (TTL)** in IPv4, of **Hop Limit** in IPv6.\n\n### De TTL-regel voor Routers\nDe TTL is een 8-bit veld in de IPv4-header (waarde 0 tot 255). Elk Layer 3-apparaat (router) dat een pakket doorstuurt, is verplicht de TTL met minimaal 1 te verlagen:\n\n$$\\text{TTL}_{\\text{nieuw}} = \\text{TTL}_{\\text{oud}} - 1$$\n\n- Zolang $\\text{TTL} > 0$, wordt het pakket geforward.\n- Zodra een router een pakket ontvangt met $\\text{TTL} = 1$ en dit moet doorsturen naar een andere interface, daalt de TTL naar **0**.\n- De router **dropt het pakket onmiddellijk** en stuurt een ICMP-foutbericht terug naar de bron: **ICMP Type 11 Code 0: Time to Live exceeded in transit** (RFC 792).\n\n> [!note] Switches raken de TTL niet aan\n> Een pure Layer 2 Ethernet-switch inspecteert of wijzigt de IP-header niet. Switches verlagen de TTL dus **nooit**. Om lussen op Layer 2 te voorkomen is een heel ander protocol nodig: **Spanning Tree Protocol (STP)**.\n\n### Hoe Traceroute de TTL Misbruikt om het Pad te Mappen\nHet diagnostische hulpmiddel `traceroute` (of `mtr`) maakt op ingenieuze wijze gebruik van het TTL-decrementmechanisme om elke router op het pad naar een bestemming te identificeren:\n\n1. **Probe 1 (TTL = 1)**:\n   Host stuurt een pakket met $\\text{TTL} = 1$. De eerste router (default gateway) verlaagt de TTL naar 0, dropt het pakket en stuurt **ICMP Type 11** terug. De host noteert het bron-IP van de router en berekent de round-trip time (RTT).\n2. **Probe 2 (TTL = 2)**:\n   Host stuurt een pakket met $\\text{TTL} = 2$. Router 1 verlaagt naar 1; Router 2 verlaagt naar 0 en stuurt ICMP Type 11 terug. Hop 2 is ontdekt!\n3. **Volgende hops (TTL = 3, 4, ...)**:\n   Dit proces herhaalt zich hop voor hop tot het pakket de eindbestemming bereikt. De eindbestemming stuurt geen Time Exceeded, maar een **ICMP Echo Reply** (bij ping-based traceroute) of een **ICMP Port Unreachable / TCP RST** (bij UDP/TCP traceroute).",
+   "checks": [
+    {
+     "id": "c5-01",
+     "type": "mcq",
+     "skill": "ttl-loop-prevention",
+     "level": 1,
+     "prompt": "Welk netwerkapparaat verlaagt de TTL-waarde van een IP-pakket met 1?",
+     "explain": "Alleen Layer 3 apparaten (routers) die pakketten tussen verschillende subnetten forwarden verlagen de TTL. Layer 2 switches wijzigen de IP-header niet.",
+     "options": [
+      "Elke Layer 3 router die het IP-pakket doorstuurt",
+      "Elke Layer 2 Ethernet-switch op het pad",
+      "Uitsluitend de verzendende host bij het aanmaken van het pakket",
+      "Uitsluitend de bestemmingshost bij ontvangst"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c5-02",
+     "type": "order",
+     "skill": "ttl-loop-prevention",
+     "level": 2,
+     "prompt": "Rangschik de stappen van traceroute om de eerste hop van een routeringspad te identificeren:",
+     "explain": "Traceroute start met TTL=1; de eerste router verlaagt de TTL naar 0, dropt het pakket en antwoordt met ICMP Time Exceeded.",
+     "tiles": [
+      "De client verzendt een probe-pakket met TTL ingesteld op 1",
+      "De eerste hop router verlaagt de TTL van 1 naar 0",
+      "De router dropt het pakket wegens verlopen levensduur",
+      "De router verzendt een ICMP Type 11 Code 0 bericht naar de client",
+      "De client registreert het IP-adres en de RTT van de eerste hop"
+     ]
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "osi-vs-tcpip",
+   "level": 1,
+   "prompt": "Welke laag in het TCP/IP-model is verantwoordelijk voor end-to-end logische adressering en routering over meerdere netwerken?",
+   "explain": "De Internet- of Netwerklaag (Layer 3) zorgt voor logische adressering (IP) en routekeuze.",
+   "options": [
+    "De Internet / Netwerklaag (Layer 3)",
+    "De Netwerktoegangslaag (Layer 2)",
+    "De Transportlaag (Layer 4)",
+    "De Fysieke Laag (Layer 1)"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "cloze",
+   "skill": "osi-vs-tcpip",
+   "level": 2,
+   "prompt": "Vul de minimale grootte van de IPv4-header in:",
+   "text": "Een standaard IPv4-header zonder optionele velden heeft een vaste minimale omvang van {{20|twintig}} bytes.",
+   "explain": "De minimale IPv4-header is 20 bytes (IHL = 5 woorden van 4 bytes)."
+  },
+  {
+   "id": "p03",
+   "type": "match",
+   "skill": "osi-vs-tcpip",
+   "level": 2,
+   "prompt": "Koppel de netwerklaag aan de juiste Protocol Data Unit (PDU):",
+   "explain": "Layer 4 = Segment/Datagram, Layer 3 = Packet, Layer 2 = Frame.",
+   "pairs": [
+    [
+     "Transportlaag (Layer 4)",
+     "Segment"
+    ],
+    [
+     "Netwerklaag (Layer 3)",
+     "Packet"
+    ],
+    [
+     "Data Link-laag (Layer 2)",
+     "Frame"
+    ]
+   ]
+  },
+  {
+   "id": "p04",
+   "type": "mcq",
+   "skill": "mac-vs-ip",
+   "level": 2,
+   "prompt": "Host A (`192.168.1.10/24`) wil communiceren met Server C (`192.168.2.20/24`). Welk bestemmings-MAC-adres plaatst Host A in zijn uitgaande Ethernet-frame?",
+   "explain": "Omdat Server C in een ander subnet staat, richt Host A het Ethernet-frame aan het MAC-adres van zijn lokale default gateway.",
+   "options": [
+    "Het MAC-adres van de lokale default gateway",
+    "Het MAC-adres van Server C",
+    "Het broadcast MAC-adres FF:FF:FF:FF:FF:FF",
+    "Het MAC-adres van de centrale switch"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p05",
+   "type": "cloze",
+   "skill": "mac-vs-ip",
+   "level": 2,
+   "prompt": "Vul de juiste netwerkterm in:",
+   "text": "Terwijl een Ethernet-switch frames doorstuurt op basis van zijn interne {{MAC-adrestabel|MAC-tabel|CAM-tabel}}, stuurt een router pakketten door op basis van zijn {{routingtabel|routing table|FIB}}.",
+   "explain": "Switches gebruiken een MAC/CAM-tabel; routers gebruiken een routingtabel (RIB/FIB)."
+  },
+  {
+   "id": "p06",
+   "type": "multi",
+   "skill": "mac-vs-ip",
+   "level": 2,
+   "prompt": "Welke twee velden in een IPv4-pakket worden standaard gewijzigd door een router tijdens een normale forwarding-stap (zonder NAT)?",
+   "explain": "Een router verlaagt de TTL met minimaal 1 en moet daardoor de IPv4 Header Checksum opnieuw berekenen. Bron- en bestemmings-IP blijven ongewijzigd.",
+   "options": [
+    "Time to Live (TTL)",
+    "Header Checksum",
+    "Bron IP-adres",
+    "Bestemmings IP-adres"
+   ],
+   "answers": [
+    0,
+    1
+   ]
+  },
+  {
+   "id": "p07",
+   "type": "mcq",
+   "skill": "arp-mechanics-poisoning",
+   "level": 2,
+   "prompt": "Waarom is het standaard ARP-protocol inherent kwetsbaar voor Man-in-the-Middle aanvallen via ARP Cache Poisoning?",
+   "explain": "ARP heeft geen cryptografische verificatie of authenticatie; besturingssystemen accepteren ongevraagde ARP-antwoorden en overschrijven hun tabel.",
+   "options": [
+    "ARP verifieert de echtheid van ARP-antwoorden niet en accepteert ongevraagde replies.",
+    "ARP-berichten worden altijd versleuteld waardoor firewalls ze niet kunnen inspecteren.",
+    "ARP kan uitsluitend werken via statische tabellen die handmatig ingevoerd moeten worden.",
+    "ARP-pakketten hebben geen bron-IP veld waardoor de afzender onbekend is."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p08",
+   "type": "type",
+   "skill": "arp-mechanics-poisoning",
+   "level": 2,
+   "prompt": "Met welk modern Linux iproute2 commando bekijk je de inhoud van de lokale ARP-cache?",
+   "explain": "Het standaard commando onder moderne Linux-distributies is 'ip neigh' of 'ip neighbor'.",
+   "answers": [
+    "ip neigh",
+    "ip neighbor",
+    "ip neigh show",
+    "ip neighbor show"
+   ]
+  },
+  {
+   "id": "p09",
+   "type": "cloze",
+   "skill": "arp-mechanics-poisoning",
+   "level": 2,
+   "prompt": "Vul de naam van het speciale ARP-bericht in:",
+   "text": "Een ongevraagd ARP-bericht dat een host uitzendt om zijn eigen IP-adres aan te kondigen of duplicaten op te sporen heet een {{Gratuitous ARP|GARP}}.",
+   "explain": "Gratuitous ARP (GARP) wordt gebruikt bij failover (VRRP) en voor duplicate address detection (DAD)."
+  },
+  {
+   "id": "p10",
+   "type": "numeric",
+   "skill": "mtu-mss-pmtud",
+   "level": 2,
+   "prompt": "Een WireGuard VPN-tunnel heeft een interface-MTU van 1420 bytes. Wat is de maximale TCP MSS in bytes over deze tunnel bij standaard IPv4 (20B IP + 20B TCP)?",
+   "explain": "MSS = MTU - 20 (IP) - 20 (TCP) = 1420 - 40 = 1380 bytes.",
+   "value": 1380,
+   "tolerance": 0.01,
+   "unit": "bytes"
+  },
+  {
+   "id": "p11",
+   "type": "mcq",
+   "skill": "mtu-mss-pmtud",
+   "level": 2,
+   "prompt": "Wat gebeurt er wanneer een router een IPv4-pakket van 1500 bytes moet doorsturen over een link met MTU 1400, waarbij de DF-bit in de IP-header op 0 staat?",
+   "explain": "Met DF=0 fragmenteert de router het pakket in meerdere kleinere IP-pakketten die bij de ontvanger opnieuw geassembleerd moeten worden.",
+   "options": [
+    "De router fragmenteert het pakket in twee kleinere IP-pakketten.",
+    "De router dropt het pakket en stuurt ICMP Type 3 Code 4 terug.",
+    "De router comprimeert de TCP-payload zodat deze in 1400 bytes past.",
+    "De router zet de DF-bit automatisch op 1 en stuurt het pakket door."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p12",
+   "type": "cloze",
+   "skill": "mtu-mss-pmtud",
+   "level": 2,
+   "prompt": "Vul de naam van de router-techniek in:",
+   "text": "Wanneer routers aan de rand van een VPN-tunnel het MSS-veld in passerende TCP SYN-pakketten kunstmatig verlagen, heet dit {{TCP MSS clamping|MSS clamping|clamping}}.",
+   "explain": "MSS clamping herschrijft de Maximum Segment Size in het SYN-pakket om PMTUD black holes te voorkomen."
+  },
+  {
+   "id": "p13",
+   "type": "mcq",
+   "skill": "mtu-mss-pmtud",
+   "level": 3,
+   "prompt": "Waarom slaagt een ping met standaardgrootte (64 bytes) wel naar een externe server, terwijl een HTTPS-verbinding naar diezelfde server blijft hangen bij een PMTUD black hole?",
+   "explain": "ICMP ping-pakketten en TCP SYN-pakketten zijn klein (< 100 bytes) en overschrijden de knelpunt-MTU niet. De TLS-handshake bevat grote certificaatpakketten (> 1420 bytes) met DF=1 die gedropt worden.",
+   "options": [
+    "Ping-pakketten zijn klein en overschrijden de knelpunt-MTU niet, terwijl TLS-certificaten maximale pakketgrootte benutten.",
+    "Ping maakt gebruik van UDP waardoor fragmentatie nooit noodzakelijk is.",
+    "HTTPS gebruikt poort 443 die door routers automatisch via een andere route wordt gestuurd.",
+    "Ping omzeilt de routeringstabel en reist via een directe Layer 2 verbinding."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p14",
+   "type": "mcq",
+   "skill": "ttl-loop-prevention",
+   "level": 1,
+   "prompt": "Wat is het doel van het TTL-veld (Time to Live) in de IPv4-header?",
+   "explain": "De TTL telt af bij elke routerhop en voorkomt dat pakketten oneindig blijven rondcirkelen in het netwerk bij routeringslussen.",
+   "options": [
+    "Voorkomen dat pakketten oneindig blijven circuleren bij routeringslussen",
+    "De maximale latentie in milliseconden meten tussen client en server",
+    "De transmissiesnelheid van de netwerkverbinding dynamisch afknijpen",
+    "Het aantal hertransmissies van een verloren TCP-segment bijhouden"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p15",
+   "type": "numeric",
+   "skill": "ttl-loop-prevention",
+   "level": 2,
+   "prompt": "Een client verzendt een IP-pakket met een initiële TTL van 64. Het pakket passeert onderweg achtereenvolgens 5 routers voordat het aankomt bij de bestemmingshost. Welke TTL-waarde leest de bestemmingshost in de header?",
+   "explain": "Elke router verlaagt de TTL met 1: 64 - 5 = 59.",
+   "value": 59,
+   "tolerance": 0.01,
+   "unit": "hops"
+  },
+  {
+   "id": "p16",
+   "type": "cloze",
+   "skill": "ttl-loop-prevention",
+   "level": 2,
+   "prompt": "Vul de naam van het IPv6-veld in:",
+   "text": "In het nieuwere IPv6-protocol is het IPv4 TTL-veld hernoemd naar {{Hop Limit|hop limit}}.",
+   "explain": "In IPv6 heet dit veld Hop Limit, wat exact beschrijft wat het veld doet."
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "mcq",
+   "skill": "osi-vs-tcpip",
+   "level": 2,
+   "prompt": "Een technicus vangt met Wireshark een frame op en ziet in het EtherType-veld de waarde `0x86DD`. Welk protocol bevindt zich in de payload van dit Ethernet-frame?",
+   "explain": "EtherType 0x86DD duidt op een IPv6-pakket. 0x0800 is IPv4 en 0x0806 is ARP.",
+   "options": [
+    "IPv6",
+    "IPv4",
+    "ARP",
+    "MPLS"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m02",
+   "type": "cloze",
+   "skill": "osi-vs-tcpip",
+   "level": 2,
+   "prompt": "Vul het ontbrekende PDU-type in:",
+   "text": "Wanneer een UDP-applicatie data verstuurt, noemt men de Layer 4 PDU een {{datagram|Datagram}}, terwijl men bij TCP spreekt over een segment.",
+   "explain": "Bij UDP spreekt men van een datagram, bij TCP van een segment."
+  },
+  {
+   "id": "m03",
+   "type": "order",
+   "skill": "osi-vs-tcpip",
+   "level": 2,
+   "prompt": "Plaats de stappen van deencapsulatie in de juiste volgorde zoals een host een binnenkomend HTTP-bericht verwerkt:",
+   "explain": "Het pakket reist van de fysieke bits via frame en pakket omhoog naar de applicatie.",
+   "tiles": [
+    "Netwerkkaart ontvangt bits en valideert de Ethernet FCS/CRC",
+    "Ethernet-header wordt gestript en payload gaat naar IP op basis van EtherType",
+    "IP-header wordt gevalideerd en gestript op basis van bestemmings-IP",
+    "TCP-header wordt verwerkt en poortnummer stuurt payload naar de webserver",
+    "Applicatie leest de HTTP-payload uit de socket"
+   ]
+  },
+  {
+   "id": "m04",
+   "type": "mcq",
+   "skill": "mac-vs-ip",
+   "level": 2,
+   "prompt": "Waarom kan een router op Layer 3 geen Ethernet-switchende beslissing nemen op basis van het bestemmings-MAC-adres van de eindbestemming?",
+   "explain": "Omdat MAC-adressen lokaal zijn per broadcastdomein en niet over routers heen worden geadverteerd of gerouteerd.",
+   "options": [
+    "Het bestemmings-MAC-adres van een externe host is onbekend en irrelevant voor tussenliggende routers.",
+    "Switches blokkeren altijd alle frames die bestemd zijn voor apparaten buiten het eigen subnet.",
+    "Ethernet-frames mogen principieel nooit een routerinterface binnenkomen.",
+    "MAC-adressen zijn variabel in lengte waardoor routers ze niet snel genoeg kunnen opzoeken in TCAM."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m05",
+   "type": "cloze",
+   "skill": "mac-vs-ip",
+   "level": 2,
+   "prompt": "Vul het juiste adresseringsbegrip in:",
+   "text": "Terwijl een MAC-adres een {{plat|ongeordend|flat}} 48-bits hardware-adres is, heeft een IP-adres een {{hiërarchische|hierarchische}} structuur met een netwerk- en hostgedeelte.",
+   "explain": "MAC-adressen zijn plat en niet hiërarchisch routeerbaar; IP-adressen zijn opgebouwd uit netwerk- en hostbits."
+  },
+  {
+   "id": "m06",
+   "type": "match",
+   "skill": "mac-vs-ip",
+   "level": 2,
+   "prompt": "Koppel de netwerkactie aan de verantwoordelijke component in het netwerk:",
+   "explain": "Switch leert MAC's en switcht L2; router consulteert routingtabel en herschrijft L2 headers.",
+   "pairs": [
+    [
+     "Leert MAC-adressen per poort",
+     "Layer 2 Switch"
+    ],
+    [
+     "Herschrijft MAC-headers en verlaagt TTL",
+     "Layer 3 Router"
+    ],
+    [
+     "Genereert de initiële TCP SYN-payload",
+     "Bronhost"
+    ]
+   ]
+  },
+  {
+   "id": "m07",
+   "type": "mcq",
+   "skill": "arp-mechanics-poisoning",
+   "level": 2,
+   "prompt": "Een kwaadwillende zendt een ongevraagde ARP Reply naar een switchpoort: `192.168.1.1 is at b8:27:eb:11:22:33`. Wat is het directe gevolg voor een client die dit antwoord verwerkt?",
+   "explain": "De client koppelt het IP van de gateway aan het MAC-adres van de aanvaller en stuurt voortaan al zijn externe verkeer naar de aanvaller.",
+   "options": [
+    "De client overschrijft zijn ARP-cache en stuurt al het verkeer voor de gateway naar de aanvaller.",
+    "De client detecteert automatisch een conflict en schakelt zijn netwerkinterface uit.",
+    "De switch blokkeert onmiddellijk het MAC-adres van de legitieme gateway.",
+    "Het IP-adres van de client verandert automatisch naar 192.168.1.1."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m08",
+   "type": "type",
+   "skill": "arp-mechanics-poisoning",
+   "level": 2,
+   "prompt": "Welke technologie op managed switches bewaakt DHCP-toewijzingen en vormt de vertrouwde bron voor Dynamic ARP Inspection (DAI)?",
+   "explain": "DHCP Snooping bouwt de betrouwbare binding database op die door DAI wordt geraadpleegd.",
+   "answers": [
+    "DHCP Snooping",
+    "dhcp snooping",
+    "DHCP-snooping",
+    "dhcp-snooping"
+   ]
+  },
+  {
+   "id": "m09",
+   "type": "cloze",
+   "skill": "arp-mechanics-poisoning",
+   "level": 2,
+   "prompt": "Vul de toestand in de Linux burentabel in:",
+   "text": "Wanneer een router probeert een host te bereiken maar na herhaalde ARP Requests geen reactie ontvangt, krijgt de entry in 'ip neigh' de status {{FAILED|failed}}.",
+   "explain": "De status FAILED geeft aan dat ARP-resolutie definitief is mislukt."
+  },
+  {
+   "id": "m10",
+   "type": "multi",
+   "skill": "arp-mechanics-poisoning",
+   "level": 3,
+   "prompt": "Welke twee mechanismen zijn effectieve maatregelen om het risico op ARP Poisoning binnen een bedrijfsnetwerk te elimineren of drastisch te beperken?",
+   "explain": "Dynamic ARP Inspection (DAI) op de switch en statische ARP-bindingen op kritieke systemen verhinderen het vervalsen van ARP-koppelingen.",
+   "options": [
+    "Dynamic ARP Inspection (DAI) configureren op access-switches",
+    "Statische ARP-vermeldingen configureren voor de default gateway",
+    "De MTU van het lokale subnet verlagen naar 1400 bytes",
+    "De TTL van uitgaande pakketten verhogen naar 255"
+   ],
+   "answers": [
+    0,
+    1
+   ]
+  },
+  {
+   "id": "m11",
+   "type": "numeric",
+   "skill": "mtu-mss-pmtud",
+   "level": 2,
+   "prompt": "Een IPv6-verbinding heeft een MTU van 1500 bytes. De vaste IPv6-header is 40 bytes en de TCP-header is 20 bytes. Wat is de resulterende TCP MSS in bytes?",
+   "explain": "MSS = 1500 - 40 (IPv6) - 20 (TCP) = 1440 bytes.",
+   "value": 1440,
+   "tolerance": 0.01,
+   "unit": "bytes"
+  },
+  {
+   "id": "m12",
+   "type": "cloze",
+   "skill": "mtu-mss-pmtud",
+   "level": 3,
+   "prompt": "Vul het ontbrekende protocol in:",
+   "text": "Path MTU Discovery (PMTUD) faalt en veroorzaakt een black hole wanneer netwerkbeheerders het protocol {{ICMP|icmp}} volledig blokkeren op hun firewalls.",
+   "explain": "Zonder ICMP Type 3 Code 4 ontvangt de zender geen bericht over de te kleine MTU."
+  },
+  {
+   "id": "m13",
+   "type": "mcq",
+   "skill": "mtu-mss-pmtud",
+   "level": 3,
+   "prompt": "Een engineer merkt dat gebruikers via OpenVPN wel kunnen inloggen op SSH, maar dat het commando `cat bigfile.txt` de terminal na enkele regels laat bevriezen. Wat is de meest waarschijnlijke oorzaak?",
+   "explain": "Kleine SSH-commando's passen binnen de tunnel-MTU; zodra een grote outputstroom wordt verstuurd met DF=1, vallen de pakketten boven de MTU stil door een PMTUD black hole.",
+   "options": [
+    "De grote pakketten overschrijden de tunnel-MTU met DF=1 en ICMP Type 3 Code 4 wordt onderweg geblokkeerd.",
+    "De server verbreekt de verbinding omdat de TTL van het SSH-bestand de limiet van 64 overschrijdt.",
+    "De ARP-tabel van de OpenVPN server raakt verzadigd door de grote hoeveelheid tekst.",
+    "De switchpoort schakelt over naar half-duplex waardoor TCP geen ACK-pakketten meer kan ontvangen."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m14",
+   "type": "numeric",
+   "skill": "mtu-mss-pmtud",
+   "level": 3,
+   "prompt": "Een netwerkbeheerder configureert een GRE-tunnel over een verbinding met MTU 1500. De GRE-overhead bedraagt 24 bytes. Wat is de maximaal haalbare MTU van de virtuele tunnelinterface (in bytes) om fragmentatie te voorkomen?",
+   "explain": "Tunnel MTU = 1500 - 24 bytes overhead = 1476 bytes.",
+   "value": 1476,
+   "tolerance": 0.01,
+   "unit": "bytes"
+  },
+  {
+   "id": "m15",
+   "type": "mcq",
+   "skill": "ttl-loop-prevention",
+   "level": 2,
+   "prompt": "Een pakket komt een router binnen met een TTL van 1. De router stelt vast dat het pakket moet worden doorgestuurd naar een volgende hop. Wat onderneemt de router?",
+   "explain": "De router verlaagt de TTL van 1 naar 0, vernietigt het pakket en stuurt ICMP Type 11 Code 0 terug.",
+   "options": [
+    "De router verlaagt de TTL naar 0, dropt het pakket en stuurt een ICMP Time Exceeded bericht naar de bron.",
+    "De router stuurt het pakket door met TTL 0 omdat de eindbestemming de TTL controleert.",
+    "De router reset de TTL naar 64 en stuurt het pakket met verhoogde prioriteit door.",
+    "De router stuurt het pakket terug naar de vorige hop met de vraag om een nieuwe route."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m16",
+   "type": "cloze",
+   "skill": "ttl-loop-prevention",
+   "level": 2,
+   "prompt": "Vul het typenummer van het ICMP-bericht in:",
+   "text": "Het ICMP-foutbericht 'Time to Live exceeded in transit' heeft ICMP Type {{11|elf}}.",
+   "explain": "ICMP Type 11 Code 0 is Time Exceeded."
+  },
+  {
+   "id": "m17",
+   "type": "numeric",
+   "skill": "ttl-loop-prevention",
+   "level": 2,
+   "prompt": "Hoeveel bits telt het TTL-veld in een standaard IPv4-header?",
+   "explain": "Het TTL-veld is een 8-bit integer met een maximumwaarde van 255.",
+   "value": 8,
+   "tolerance": 0.01,
+   "unit": "bits"
+  },
+  {
+   "id": "m18",
+   "type": "order",
+   "skill": "ttl-loop-prevention",
+   "level": 3,
+   "prompt": "Plaats de stappen in de juiste volgorde wanneer twee routers A en B elkaar in een oneindige routeringslus bevragen over een pakket:",
+   "explain": "Het pakket bounced tussen A en B; bij elke oversteek daalt de TTL met 1 tot TTL=0, waarna het pakket wordt vernietigd.",
+   "tiles": [
+    "Pakket arriveert op Router A met bestemming 10.5.5.5 en TTL 64",
+    "Router A routeert naar Router B en verlaagt de TTL naar 63",
+    "Router B routeert abusievelijk terug naar Router A en verlaagt TTL naar 62",
+    "Pakket wisselt tientallen keren van router terwijl de TTL gestaag afneemt",
+    "Zodra een router de TTL verlaagt van 1 naar 0 wordt het pakket vernietigd"
+   ]
+  }
+ ],
+ "production": {
+  "type": "explain",
+  "prompt": "**Case: Netwerkforensiek — PMTUD Black Hole & ARP MitM Incident**\n\nAls lead network engineer word je opgetrommeld voor een dubbele storing op de hoofdzetel van een logistiek bedrijf:\n1. **Incident 1 (VPN Black Hole)**: Medewerkers die via een nieuwe WireGuard VPN-tunnel (`wg0`, interface-MTU 1420) naar de cloud-ERP surfen, kunnen vlekkeloos inloggen op SSH en pingen naar de ERP-server (`10.200.0.10`), maar de ERP-webapplicatie blijft bij het laden van het dashboard oneindig hangen op een wit scherm. De firewallbeheerder meldt trots dat hij alle ICMP-verkeer op de gateway heeft geblokkeerd 'om hackers geen kans te geven'.\n2. **Incident 2 (Intermitterend LAN-verkeer)**: Meerdere werkstations op het interne subnet `192.168.10.0/24` klagen over haperende verbindingen naar de default gateway `192.168.10.1`. Uit een snelle inspectie op een getroffen werkstation blijkt dat het MAC-adres van `192.168.10.1` in de ARP-tabel elke paar seconden wisselt tussen `00:15:5d:01:02:03` (de echte router) en `b8:27:eb:aa:bb:cc` (een onbekende Raspberry Pi op het LAN).\n\nSchrijf een diepgaand technisch incidentenrapport (350-500 woorden) waarin je de volgende vier aspecten behandelt:\n1. **Root-cause Incident 1**: Verklaar exact waarom ping en SSH wél werken, maar de ERP-webapplicatie vastloopt. Benoem de rol van de DF-bit, de pakketgrootte en het specifieke ICMP-bericht.\n2. **Remediatie Incident 1**: Bereken de maximale TCP MSS voor deze WireGuard-tunnel (IPv4 20B + TCP 20B) en geef de concrete configuratielijn (`iptables` of firewall-regel) om dit direct op de gateway op te lossen zonder de clients te hoeven herconfigureren.\n3. **Root-cause Incident 2**: Leg uit welk aanvalsmechanisme hier plaatsvindt, waarom de ARP-tabel van de client fluctueert en wat het doel is van de aanvaller.\n4. **Structurele Beveiliging Incident 2**: Beschrijf twee enterprise-beveiligingstechnieken op de switch (Layer 2) waarmee dit type aanval in de toekomst automatisch en direct aan de fysieke poort wordt geblokkeerd.",
+  "model": "### 1. Root-cause Analyse Incident 1 (PMTUD Black Hole)\nDe storing op de WireGuard-tunnel is een klassiek **PMTUD Black Hole** (Path MTU Discovery):\n- **Kleine pakketten slagen**: ICMP echo requests (standaard 64-84 bytes) en SSH-keystrokes passen ruimschoots binnen de beperkte MTU van 1420 bytes van de `wg0`-interface.\n- **Grote datapakketten falen**: Tijdens het laden van het ERP-webdashboard verzendt de server omvangrijke TLS-certificaten en HTTP-responses. De TCP-stack segmenteert deze data tot de standaard Ethernet-MTU van 1500 bytes met de **DF (Don't Fragment) bit op 1**.\n- **Het Black Hole**: Wanneer de VPN-gateway dit 1500-byte pakket wil forwarden over `wg0` (MTU 1420), moet hij het pakket droppen en **ICMP Type 3 Code 4 (Fragmentation Needed and DF set)** terugsturen naar de server. Omdat de firewallbeheerder echter alle ICMP-berichten categorisch blokkeert, bereikt dit noodzakelijke signaal de server nooit. De server blijft tevergeefs dezelfde 1500-byte segmenten hertransmitteren tot de sessie definitief timet.\n\n### 2. Concrete Remediatie Incident 1\nDe maximale TCP Maximum Segment Size (MSS) voor deze tunnel bedraagt:\n$$\\text{MSS} = \\text{MTU} - \\text{IP Header (20B)} - \\text{TCP Header (20B)} = 1420 - 40 = 1380 \\text{ bytes}$$\n\nOm dit centraal op de router op te lossen passen we **TCP MSS Clamping** toe. Hierdoor herschrijft de router de MSS in alle passerende TCP SYN-pakketten naar de veilige waarde:\n```bash\niptables -t mangle -A POSTROUTING -p tcp --tcp-flags SYN,RST SYN -o wg0 -j TCPMSS --clamp-mss-to-pmtu\n```\nDaarnaast moet de firewallbeheerder per direct ICMP Type 3 Code 4 whitelisten.\n\n### 3. Root-cause Analyse Incident 2 (ARP Poisoning / Spoofing)\nIncident 2 is een actieve **ARP Cache Poisoning Man-in-the-Middle (MitM) aanval**:\n- De Raspberry Pi (`b8:27:eb:aa:bb:cc`) stuurt een aanhoudende stroom van vervalste, ongevraagde ARP-antwoorden (*gratuitous/unsolicited ARP replies*) over het LAN waarin hij beweert dat IP `192.168.10.1` op zijn eigen MAC-adres huist.\n- De fluctuatie in de ARP-cache ontstaat door een *race condition*: telkens wanneer de echte router legitiem verkeer verstuurt, herstelt de cache van de client zich tijdelijk naar `00:15:5d:01:02:03`, om milliseconden later weer vergiftigd te worden door de aanvaller. Het doel van de aanvaller is al het uitgaande bedrijfs- en internetverkeer te onderscheppen, te manipuleren of af te tappen.\n\n### 4. Structurele Beveiliging op Layer 2\nOm dit definitief te neutraliseren implementeren we twee complementaire maatregelen op de access-switches:\n1. **DHCP Snooping**: De switch inspecteert alle DHCP-transacties op niet-vertrouwde poorten en bouwt een cryptografisch betrouwbare *DHCP Snooping Binding Database* op met IP-MAC-poort combinaties.\n2. **Dynamic ARP Inspection (DAI)**: De switch onderschept elk binnenkomend ARP-pakket op access-poorten en vergelijkt het bron-IP en bron-MAC met de DHCP Snooping database. Valse ARP-antwoorden (zoals die van de Raspberry Pi) worden direct op de poort gedropt en de poort kan optioneel via *err-disable* direct worden uitgeschakeld.",
+  "rubric": [
+   "Verklaart de werking van het PMTUD black hole (verschil tussen kleine packets en volle MTU-frames, DF-bit = 1, en blokkade van ICMP Type 3 Code 4)",
+   "Berekent de correcte MSS (1420 - 40 = 1380 bytes) en geeft een geldige configuratielijn voor TCP MSS clamping",
+   "Identificeert de ARP Cache Poisoning / Man-in-the-Middle aanval en legt de race condition / cache fluctuatie uit",
+   "Beschrijft de combinatie van DHCP Snooping en Dynamic ARP Inspection (DAI) als structurele Layer 2 oplossing"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-01",
+   "skill": "osi-vs-tcpip",
+   "front": "Wat zijn de PDU-benamingen voor Layer 4, Layer 3 en Layer 2?",
+   "back": "Layer 4 = **Segment** (TCP) / Datagram (UDP)\nLayer 3 = **Packet** (IP)\nLayer 2 = **Frame** (Ethernet)"
+  },
+  {
+   "id": "c-02",
+   "skill": "osi-vs-tcpip",
+   "front": "Welke EtherType-waarde duidt op een IPv4-pakket en welke op IPv6?",
+   "back": "IPv4 = `0x0800`\nIPv6 = `0x86DD`\n(ARP = `0x0806`)"
+  },
+  {
+   "id": "c-03",
+   "skill": "mac-vs-ip",
+   "front": "Wat gebeurt er met MAC-adressen en IP-adressen bij het passeren van een router (zonder NAT)?",
+   "back": "De **MAC-adressen worden herschreven** voor de nieuwe link (hop-by-hop); de **IP-adressen blijven gelijk** (end-to-end)."
+  },
+  {
+   "id": "c-04",
+   "skill": "arp-mechanics-poisoning",
+   "front": "Naar welk MAC-adres wordt een ARP Request verstuurd en naar welk adres de ARP Reply?",
+   "back": "ARP Request = `FF:FF:FF:FF:FF:FF` (**Broadcast**)\nARP Reply = MAC-adres van de aanvrager (**Unicast**)"
+  },
+  {
+   "id": "c-05",
+   "skill": "arp-mechanics-poisoning",
+   "front": "Hoe beschermt Dynamic ARP Inspection (DAI) een netwerk tegen ARP Spoofing?",
+   "back": "De switch valideert binnenkomende ARP-antwoorden tegen de **DHCP Snooping database** en dropt ongeldige IP-MAC koppelingen."
+  },
+  {
+   "id": "c-06",
+   "skill": "mtu-mss-pmtud",
+   "front": "Hoe bereken je de standaard TCP MSS uit de MTU bij IPv4?",
+   "back": "$$\\text{MSS} = \\text{MTU} - 20 \\text{ (IP)} - 20 \\text{ (TCP)} = \\text{MTU} - 40$$\n(Bij standaard MTU 1500 is de MSS **1460 bytes**)"
+  },
+  {
+   "id": "c-07",
+   "skill": "mtu-mss-pmtud",
+   "front": "Welk ICMP-bericht zendt een router bij een te groot pakket met DF=1?",
+   "back": "**ICMP Type 3 Code 4**: *Destination Unreachable, Fragmentation Needed and DF set*."
+  },
+  {
+   "id": "c-08",
+   "skill": "mtu-mss-pmtud",
+   "front": "Wat is een PMTUD Black Hole en hoe los je dit op de router op?",
+   "back": "Grote pakketten met DF=1 worden gedropt en ICMP Type 3 Code 4 wordt door firewalls geblokkeerd. Oplossing: **TCP MSS Clamping**."
+  },
+  {
+   "id": "c-09",
+   "skill": "ttl-loop-prevention",
+   "front": "Wat doet een router wanneer een ontvangen IPv4-pakket een TTL van 1 heeft en geforward moet worden?",
+   "back": "De router verlaagt de TTL naar 0, **dropt het pakket** en zendt **ICMP Type 11 Code 0** (*Time Exceeded*) terug."
+  },
+  {
+   "id": "c-10",
+   "skill": "ttl-loop-prevention",
+   "front": "Hoe achterhaalt traceroute de routers op een netwerkpad?",
+   "back": "Door opeenvolgende probes te sturen met oplopende TTL's (1, 2, 3...) en de resulterende **ICMP Type 11 Time Exceeded** antwoorden te registreren."
+  }
+ ],
+ "sources": [
+  "RFC 791 — Internet Protocol (IPv4 Specification)",
+  "RFC 826 — An Ethernet Address Resolution Protocol (ARP)",
+  "RFC 1191 — Path MTU Discovery (PMTUD)",
+  "RFC 894 — A Standard for the Transmission of IP Datagrams over Ethernet Networks",
+  "RFC 792 — Internet Control Message Protocol (ICMP)"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-02"
+ }
+}

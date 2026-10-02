@@ -36,7 +36,8 @@
         "solidity",
         "ai",
         "automation",
-        "jev"
+        "jev",
+        "routing"
       ]
     },
     "id": {
@@ -245,7 +246,7 @@
         },
         "items": {
           "type": "array",
-          "minItems": 8,
+          "minItems": 6,
           "items": {
             "$ref": "#/$defs/item"
           }

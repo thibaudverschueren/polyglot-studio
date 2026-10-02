@@ -1,0 +1,512 @@
+{
+ "track": "routing",
+ "goal": "Netwerkarchitectuur, pakketdoorvoer, routingprotocollen (RIB/FIB, OSPF, BGP) en edge gateways (NAT, CGNAT, DHCP, DNS, bufferbloat) tot in de puntjes doorgronden — met als specifiek doel het ontwerpen, trainen en embedden van een applicatiespecifieke reasoning LLM die zelfstandig netwerkproblemen op consumenten- en enterprise-routers diagnosticeert en oplost.",
+ "principles": [
+  "Layer-isolatie: begin altijd bij de fysieke en data-link laag (Layer 1/2: link errors, ARP, duplex) vóórdat je routingprotocollen (Layer 3) of DNS (Layer 7) de schuld geeft.",
+  "Control Plane (RIB, protocollen, software) versus Data Plane (FIB, hardware switching, TCAM, fast-path) altijd scherp scheiden.",
+  "Begrijp de wiskunde van routering: Longest Prefix Match (LPM), Dijkstra SPF link-state kosten, BGP deterministische path selection en queueing latency (Bufferbloat).",
+  "Edge-realiteit van consumentenrouters: NAT/PAT, CGNAT, DHCP DORA en DNS-caching veroorzaken 80% van de dagelijkse internetstoringen.",
+  "De Autonomous Reasoning LLM: combineer System 1 (snelle telemetrie-parsing van logs, 'ip route', 'conntrack') met System 2 (Tree-of-Thoughts hypothesevorming en root-cause analysis) en veilige mitigatie-guardrails op lokale router-SoC's."
+ ],
+ "modules": [
+  {
+   "id": "p1",
+   "title": "Pijler 1 — Fundamenten van Pakketdoorvoer & Layer 2/3",
+   "topics": [
+    "routing-01-layer2-layer3-lifecycle",
+    "routing-02-addressing-subnetting-cidr"
+   ]
+  },
+  {
+   "id": "p2",
+   "title": "Pijler 2 — De Routing Tabel, Forwarding & Control Plane",
+   "topics": [
+    "routing-03-rib-fib-control-plane",
+    "routing-04-lpm-nexthop-metrics"
+   ]
+  },
+  {
+   "id": "p3",
+   "title": "Pijler 3 — Dynamic Interior Gateway Protocols (IGP)",
+   "topics": [
+    "routing-05-distance-vector-rip",
+    "routing-06-link-state-ospf-core",
+    "routing-07-ospf-hierarchies-multiarea"
+   ]
+  },
+  {
+   "id": "p4",
+   "title": "Pijler 4 — BGP & Inter-domein Internet Routing",
+   "topics": [
+    "routing-08-bgp-fundamentals-asn",
+    "routing-09-bgp-path-selection-policy",
+    "routing-10-bgp-anomalies-flapping-rpki"
+   ]
+  },
+  {
+   "id": "p5",
+   "title": "Pijler 5 — Consumentenrouters, Edge Gateways & Triaging",
+   "topics": [
+    "routing-11-nat-cgnat-pat",
+    "routing-12-dhcp-core-exhaustion",
+    "routing-13-dns-architecture-failures",
+    "routing-14-icmp-diagnostics-traceroute"
+   ]
+  },
+  {
+   "id": "p6",
+   "title": "Pijler 6 — Netwerkkwaliteit, Congestie & WiFi/Mesh Bottlenecks",
+   "topics": [
+    "routing-15-latency-jitter-packetloss",
+    "routing-16-bufferbloat-aqm-cake",
+    "routing-17-wifi-mesh-edge-issues"
+   ]
+  },
+  {
+   "id": "p7",
+   "title": "Pijler 7 — De Autonomous Reasoning Router LLM",
+   "topics": [
+    "routing-18-telemetry-parsing-signals",
+    "routing-19-reasoning-tree-rca",
+    "routing-20-automated-remediation-guardrails",
+    "routing-21-chip-architecture-edge-slm"
+   ]
+  }
+ ],
+ "topics": [
+  {
+   "id": "routing-01-layer2-layer3-lifecycle",
+   "title": "Het Leven van een Pakket: Layer 2, Layer 3 & ARP",
+   "level": "fundament",
+   "objectives": [
+    "Het OSI-model en TCP/IP vertalen naar echte netwerkframes en pakketten",
+    "Het onderscheid tussen MAC-adressering (L2 hop-by-hop) en IP-adressering (L3 end-to-end) doorgronden",
+    "De werking van ARP (Address Resolution Protocol), ARP-cache en ARP-poisoning uitleggen",
+    "MTU (Maximum Transmission Unit), MSS (Maximum Segment Size) en de gevaren van IP-fragmentatie en PMTUD black holes berekenen",
+    "De rol van de TTL (Time to Live) bij het voorkomen van oneindige netwerklussen begrijpen"
+   ],
+   "theory": [
+    "Pakketencapsulatie: Payload -> TCP segment (MSS) -> IP packet (MTU 1500) -> Ethernet frame",
+    "MAC-adressen veranderen bij elke router-hop; IP-adressen blijven (zonder NAT) behouden van bron tot bestemming",
+    "ARP zoekt het MAC-adres bij een lokaal IP via Layer 2 broadcasts; switches leren MAC-tabellen; ARP-spoofing kaapt verkeer",
+    "MTU is standaard 1500 bytes op Ethernet; als DF (Don't Fragment) aanstaat en het pakket is te groot voor een link, dropt de router het met ICMP Type 3 Code 4",
+    "TTL telt af met 1 bij elke router; bereikt het 0, dan stuurt de router ICMP Type 11 Time Exceeded terug"
+   ],
+   "example": "Een client met MTU 1500 probeert via een PPPoE VPN-tunnel met MTU 1492 te communiceren. Omdat de DF-bit aanstaat en een firewall ICMP blokkeert, ontstaat een 'PMTUD black hole': webpagina's hangen oneindig op TLS handshake.",
+   "exercise": "Bereken de maximale TCP payload (MSS) op een standaard 1500 byte Ethernet-verbinding met 20 bytes IP-header en 20 bytes TCP-header.",
+   "test": "Vragen over MAC vs IP, ARP cache veroudering, TTL decrements en MTU/MSS berekeningen."
+  },
+  {
+   "id": "routing-02-addressing-subnetting-cidr",
+   "title": "Adressering, Subnetting & CIDR Wiskunde",
+   "level": "fundament",
+   "objectives": [
+    "Binaire subnetmaskers omrekenen naar CIDR-notatie (/24, /27, /30, /32)",
+    "Netwerkadres, broadcastadres en bruikbare host-ranges foutloos bepalen",
+    "Het verschil tussen Unicast, Broadcast, Multicast en Anycast routering toelichten",
+    "IPv6 fundamenten: /64 prefixen, Link-Local adressen (fe80::) en SLAAC begrijpen"
+   ],
+   "theory": [
+    "IPv4 heeft 32 bits; het subnetmasker splitst het adres in Network ID en Host ID",
+    "Formule bruikbare hosts: 2^(32 - prefix) - 2 (eerste is netwerk-ID, laatste is broadcast)",
+    "Punt-naar-punt routerlinks gebruiken /30 (2 hosts) of /31 (RFC 3021, zonder broadcast)",
+    "Anycast routeert hetzelfde IP naar meerdere geografische locaties via BGP (veel gebruikt voor DNS root servers en CDN's zoals Cloudflare)",
+    "IPv6 heeft 128 bits; elk lokaal subnet is /64; Link-Local (fe80::) is verplicht voor router-adjacencies en vereist geen DHCP"
+   ],
+   "example": "Een routerinterface heeft IP 192.168.10.65/27. Het subnet loopt van 192.168.10.64 t/m 192.168.10.95. Bruikbare hosts zijn .65 t/m .94; broadcast is .95.",
+   "exercise": "Bepaal het netwerk- en broadcastadres van 10.45.128.140/22.",
+   "test": "Subnetcalculaties, host capaciteiten en adres-classificaties."
+  },
+  {
+   "id": "routing-03-rib-fib-control-plane",
+   "title": "Control Plane vs Data Plane: RIB, FIB & Hardware Switching",
+   "level": "gevorderd",
+   "objectives": [
+    "De scheiding tussen Control Plane (software/RIB) en Data Plane (hardware/FIB) verklaren",
+    "Begrijpen hoe routers miljoenen pakketten per seconde verwerken via TCAM (Ternary Content-Addressable Memory)",
+    "Fast-path routering (Linux flow offloading, DPDK, eBPF/XDP) in consumenten- en enterprise-hardware analyseren",
+    "Herkennen wat er gebeurt als de router-CPU overbelast raakt door Control Plane verkeer"
+   ],
+   "theory": [
+    "Control plane: bouwt de Routing Information Base (RIB) op via protocollen (OSPF, BGP, statisch) in de centrale CPU",
+    "Data plane: compiled de beste routes naar de Forwarding Information Base (FIB) in gespecialiseerde hardware (ASIC/TCAM)",
+    "TCAM zoekt in 1 klokcyclus het Longest Prefix Match op over honderdduizenden routes",
+    "Consumentenrouters (OpenWrt, ASUS, Netgear) gebruiken software fast-path of hardware flow offloading (Qualcomm NSS, Mediatek FastPath) om 1Gbps/10Gbps NAT te halen zonder de kleine CPU te laten crashen",
+    "Pakketuitval door 'punt-to-CPU': wanneer verkeer niet offloaded kan worden (bv. fragmentatie, opties, firewall logging) schiet de CPU naar 100% en ontstaan bufferbloat en drops"
+   ],
+   "example": "Een consumentenrouter haalt 940 Mbps met hardware NAT offloading aan 4% CPU-belasting. Zodra de gebruiker een zware QoS-filter aanzet die flow offloading deactiveert, zakt de doorvoer naar 180 Mbps en piekt de CPU op 100%.",
+   "exercise": "Analyseer het verschil tussen RIB updates (traag, event-driven) en FIB lookups (hardware, per pakket).",
+   "test": "Vragen over TCAM, software vs hardware forwarding en Control Plane isolatie."
+  },
+  {
+   "id": "routing-04-lpm-nexthop-metrics",
+   "title": "De Routing Tabel: LPM, Next-Hop, Metrics & AD",
+   "level": "gevorderd",
+   "objectives": [
+    "Het Longest Prefix Match (LPM) algoritme toepassen op een samengestelde routeringstabel",
+    "Administrative Distance (AD) en metrieken correct prioriteren",
+    "De rol van de Default Gateway (0.0.0.0/0) en recursive next-hop lookups begrijpen",
+    "ECMP (Equal-Cost Multi-Path) en floating static routes configureren en diagnosticeren"
+   ],
+   "theory": [
+    "LPM vuistregel: de meest specifieke route wint ALTIJD, ongeacht Administrative Distance of metriek! /32 verslaat /24, /24 verslaat /16, /16 verslaat default /0",
+    "Administrative Distance (AD) kiest tussen VERSCHILLENDE protocollen voor dezelfde prefix: Connected (0) > Static (1) > eBGP (20) > OSPF (110) > RIP (120) > iBGP (200)",
+    "Metriek kiest tussen routes binnen HETZELFDE protocol (laagste wint)",
+    "Recursive lookup: de next-hop IP moet zelf weer worden opgezocht in de routing tabel tot er een direct connected interface gevonden is",
+    "ECMP verdeelt verkeer over meerdere routes met identieke kost via een 5-tuple hash (src IP, dst IP, src port, dst port, protocol) om out-of-order packets te vermijden"
+   ],
+   "example": "Een pakket naar 8.8.8.8 matcht op '0.0.0.0/0 via ISP1 (AD 1)' én '8.8.8.0/24 via ISP2 (AD 110)'. De router stuurt het pakket via ISP2 omdat /24 specifieker is dan /0!",
+   "exercise": "Gegeven een routingtabel met 5 overlappende routes, bepaal de winnende next-hop voor een opgegeven bestemmings-IP.",
+   "test": "LPM evaluatie, AD prioritering en ECMP hashing scenario's."
+  },
+  {
+   "id": "routing-05-distance-vector-rip",
+   "title": "Distance Vector Routering: RIP, Count-to-Infinity & Loops",
+   "level": "gevorderd",
+   "objectives": [
+    "De werking van het Bellman-Ford algoritme doorgronden",
+    "Het Count-to-Infinity probleem verklaren bij falende netwerklinks",
+    "De mechanismen Split Horizon, Poison Reverse en Hold-down timers toepassen",
+    "De beperkingen van RIP (hop count metric max 15) inzien"
+   ],
+   "theory": [
+    "Distance Vector routers kennen alleen 'afstand' (metriek) en 'vector' (richting/next-hop); ze kennen niet de complete topologie ('routing by rumor')",
+    "Count-to-Infinity: als router A zijn link verliest, maar router B nog adverteert dat hij de bestemming in 2 hops kan bereiken via A, gaan ze elkaars metriek oneindig ophogen",
+    "Split Horizon: adverteer nooit een route terug over de interface waar je hem van geleerd hebt",
+    "Poison Reverse: adverteer de route wél terug, maar met oneindige metriek (hop count 16)",
+    "RIP is verouderd door trage convergentie (minuten) en starre metriek (houdt geen rekening met bandbreedte of latency)"
+   ],
+   "example": "Een link van 1 Gbps en een link van 10 Mbps hebben in RIP allebei een kost van 1 hop. RIP kan daardoor verkeer over een trage 10 Mbps bottleneck sturen in plaats van over een snellere 2-hop route.",
+   "exercise": "Simuleer de routetabel-updates bij het wegvallen van een netwerksegment met en zonder Split Horizon.",
+   "test": "Vragen over Bellman-Ford convergentie, hop limitaties en loop-preventie."
+  },
+  {
+   "id": "routing-06-link-state-ospf-core",
+   "title": "Link-State Routering: OSPF, Dijkstra & Adjacencies",
+   "level": "expert",
+   "objectives": [
+    "Het Link-State concept en het Dijkstra Shortest Path First (SPF) algoritme begrijpen",
+    "OSPF adjacency toestanden (Down -> Init -> 2-Way -> ExStart -> Exchange -> Loading -> Full) doorgronden",
+    "De rol van Designated Router (DR) en BDR op broadcast netwerken verklaren",
+    "OSPF link-kosten berekenen via de referentiebandbreedte (10^8 / bandbreedte in bps)",
+    "LSA Types 1 (Router LSA) en 2 (Network LSA) onderscheiden"
+   ],
+   "theory": [
+    "Link-State routers bouwen een complete kaart van het netwerk (LSDB - Link State Database); elke router berekent onafhankelijk de kortste route via Dijkstra",
+    "OSPF Hello packets ontdekken buren (elke 10s); Dead interval is standaard 40s; MTU-mismatch op een link blokkeert de overgang van ExStart naar Exchange",
+    "DR/BDR vermindert het aantal adjacencies op Ethernet van N*(N-1)/2 naar 2*(N-2); buren communiceren via multicast 224.0.0.5 (AllSPFRouters) en 224.0.0.6 (AllDRouters)",
+    "OSPF kost = Reference Bandwidth / Interface Bandwidth. Standaard referentie is 100 Mbps, waardoor 1 Gbps en 10 Gbps dezelfde kost (1) krijgen tenzij 'auto-cost reference-bandwidth' wordt verhoogd",
+    "Convergence is ordes van grootte sneller dan RIP (sub-seconde met BFD - Bidirectional Forwarding Detection)"
+   ],
+   "example": "Twee OSPF-routers blijven hangen in de 'ExStart/Exchange' status. De oorzaak: interface MTU op router A is 1500, maar op router B staat MTU 1492. De Database Description (DBD) packets worden geweigerd.",
+   "exercise": "Bereken de OSPF padkosten voor een alternatieve route over 10 Gbps vs 1 Gbps met een referentiebandbreedte van 100 Gbps.",
+   "test": "OSPF adjacency troubleshooting, cost calculations en LSA analyse."
+  },
+  {
+   "id": "routing-07-ospf-hierarchies-multiarea",
+   "title": "Multi-Area OSPF: Schaalbaarheid & Area 0",
+   "level": "expert",
+   "objectives": [
+    "De noodzaak van een backbone area (Area 0) in OSPF verklaren",
+    "De functies van ABR (Area Border Router) en ASBR (Autonomous System Boundary Router) definiëren",
+    "LSA Type 3 (Summary LSA), Type 4 (ASBR Summary) en Type 5 (External LSA) traceren",
+    "Route summarization configureren om SPF-herberekeningen in andere gebieden te voorkomen"
+   ],
+   "theory": [
+    "Als een netwerk te groot wordt (honderden routers), vergt elke link-flap een globale Dijkstra herberekening in alle routers; daarom verdelen we het netwerk in gebieden (Areas)",
+    "Alle areas moeten direct verbonden zijn met Area 0 (Backbone); verkeer tussen twee niet-backbone areas moet altijd door Area 0 reizen (loop-vrije hiërarchie)",
+    "ABR's filteren en vatten routes samen via Type 3 LSA's; een flap in Area 1 triggert dan géén SPF run in Area 2",
+    "Stub areas blokkeren Type 5 externe routes en vervangen die door een enkele default route om geheugen en CPU op zwakkere routers te besparen"
+   ],
+   "example": "Een ABR vat 16 subnets van 10.1.0.0/24 t/m 10.1.15.0/24 samen tot één enkele Type 3 LSA: 10.1.0.0/20.",
+   "exercise": "Ontwerp een 3-area OSPF topologie met ABR summarization.",
+   "test": "LSA typologie, area restricties en summarization berekeningen."
+  },
+  {
+   "id": "routing-08-bgp-fundamentals-asn",
+   "title": "BGP & Het Globale Internet: AS-Nummers & Peering",
+   "level": "expert",
+   "objectives": [
+    "Het concept van Autonomous Systems (AS) en BGP als Path Vector protocol doorgronden",
+    "eBGP (External) en iBGP (Internal) vergelijken qua peering, TTL en next-hop gedrag",
+    "De BGP sessie-opbouw via TCP poort 179 en finite state machine (Idle -> Connect -> Active -> OpenSent -> OpenConfirm -> Established) analyseren",
+    "De BGP routing tabellen (Adj-RIB-In, Loc-RIB, Adj-RIB-Out) begrijpen"
+   ],
+   "theory": [
+    "BGP verbindt meer dan 75.000 autonome netwerken (ASN's) op het wereldwijde internet; de volledige internet-tabel telt meer dan 950.000 IPv4 prefixen",
+    "BGP gebruikt TCP poort 179 voor betrouwbaarheid; eBGP sessies hebben standaard TTL 1 (direct verbonden kabels); iBGP heeft TTL 255",
+    "Loop-preventie in eBGP: als een router zijn eigen ASN in het AS-PATH attribuut ziet staan, weigert hij de route onmiddellijk",
+    "iBGP loop-preventie: routes geleerd via iBGP worden NOOIT doorgestuurd naar andere iBGP buren; dit vereist een full-mesh aan iBGP sessies of Route Reflectors",
+    "Next-Hop gedrag: eBGP overschrijft het Next-Hop IP met zichzelf; iBGP behoudt standaard het originele externe Next-Hop IP ('next-hop-self' is vereist)"
+   ],
+   "example": "Een nieuwe BGP peering blijft hangen in de toestand 'Active'. Dit betekent dat de router actief probeert een TCP-verbinding op te zetten naar poort 179 van de buur, maar geen SYN-ACK terugkrijgt (vaak een firewall of verkeerd IP).",
+   "exercise": "Traceer hoe het AS-PATH attribuut groeit naarmate een prefix door AS 13335 (Cloudflare), AS 3356 (Lumen) en AS 2611 (Belnet) reist.",
+   "test": "BGP state machine diagnostiek, AS-PATH loop preventie en iBGP vs eBGP regels."
+  },
+  {
+   "id": "routing-09-bgp-path-selection-policy",
+   "title": "BGP Path Selection & Traffic Engineering",
+   "level": "expert",
+   "objectives": [
+    "Het deterministische BGP Best Path Selection algoritme uit het hoofd kennen en toepassen",
+    "BGP attributen manipuleren: Weight, Local Preference, AS-PATH prepending en MED",
+    "Inkomend vs uitgaand verkeer sturen met BGP policies en community tags",
+    "Hot-potato routing vs cold-potato routing begrijpen"
+   ],
+   "theory": [
+    "BGP Best Path beslisvolgorde: 1. Hoogste Weight (Cisco specifiek, lokaal) -> 2. Hoogste Local Preference (AS-wijd, beïnvloedt uitgaand verkeer) -> 3. Lokaal gegenereerde route -> 4. Kortste AS-PATH (beïnvloedt inkomend verkeer) -> 5. Laagste Origin code (IGP < EGP < Incomplete) -> 6. Laagste MED (Multi-Exit Discriminator) -> 7. eBGP boven iBGP -> 8. Laagste IGP metriek naar Next-Hop -> 9. Laagste Router ID",
+    "Uitgaand verkeer sturen is makkelijk: stel Local Preference in (bv. 200 voor snelle glasvezel, 100 voor back-up)",
+    "Inkomend verkeer sturen is lastig: je vraagt andere providers vriendelijk via AS-PATH prepending (je eigen AS meermaals toevoegen om het pad kunstmatig langer te maken) of via BGP communities",
+    "MED (Multi-Exit Discriminator) suggereert aan een naburige AS welke van meerdere peering-links hij moet kiezen"
+   ],
+   "example": "Een bedrijf heeft twee ISP's: Telenet en Proximus. Om te zorgen dat al het uitgaande dataverkeer via Telenet loopt, configureert de engineer 'set local-preference 200' op de BGP sessie met Telenet en '100' op Proximus.",
+   "exercise": "Evalueer twee concurrerende BGP routes voor 1.1.1.0/24 aan de hand van de 9 beslissingsstappen.",
+   "test": "Stapsgewijze toepassing van het BGP best path algoritme."
+  },
+  {
+   "id": "routing-10-bgp-anomalies-flapping-rpki",
+   "title": "BGP Storingen, Route Flapping & RPKI Beveiliging",
+   "level": "expert",
+   "objectives": [
+    "Het fenomeen van BGP Route Flapping en Route Flap Dampening uitleggen",
+    "BGP Route Hijacking en route leaks analyseren aan de hand van historische incidenten",
+    "De werking van RPKI en Route Origin Authorizations (ROA) verklaren",
+    "Valideren hoe routers ongeldige routes automatisch weigeren (Invalid Drop)"
+   ],
+   "theory": [
+    "Route Flapping: een instabiele link stuurt continu BGP Announcements en Withdrawals; dit dwingt het hele wereldwijde internet tot herberekeningen",
+    "Flap Dampening: routers straffen een flappende route met een 'penalty'; overschrijdt die een drempel, dan wordt de route urenlang onderdrukt (suppressed)",
+    "BGP Hijacking: een kwaadwillende of blunderende partij adverteert een IP-reeks die niet van hem is met een specifiekere prefix (/24 verslaat /22) of korter AS-PATH; internetverkeer wordt omgeleid",
+    "RPKI: cryptografische ondertekening van prefixen via RIR's (RIPE, ARIN); routers downloaden ROA's en markeren routes als Valid, Invalid of Unknown; Invalid routes worden gedropt"
+   ],
+   "example": "In 2008 kaapte Pakistan Telecom per ongeluk YouTube wereldwijd door 208.65.153.0/24 te adverteren om lokale YouTube-toegang te blokkeren. Binnen minuten stroomde al het wereldwijde YouTube-verkeer naar Pakistan.",
+   "exercise": "Bepaal de RPKI validatiestatus van een BGP-aankondiging met afwijkend Origin AS.",
+   "test": "Incident-analyse, RPKI ROA verificatie en flap dampening wiskunde."
+  },
+  {
+   "id": "routing-11-nat-cgnat-pat",
+   "title": "Consumentenrouters: NAT, PAT, Conntrack & CGNAT",
+   "level": "fundament",
+   "objectives": [
+    "Het exacte mechanisme van SNAT, DNAT en Port Address Translation (PAT) traceren",
+    "De Linux conntrack state table doorgronden en conntrack table exhaustion diagnosticeren",
+    "De problemen van Double-NAT en CGNAT (RFC 6598 100.64.0.0/10) op consumentenlijnen verklaren",
+    "Waarom UPnP en STUN/TURN noodzakelijk zijn voor P2P en gaming"
+   ],
+   "theory": [
+    "NAT loste het tekort aan IPv4-adressen op: private IP-ranges (RFC 1918: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) worden vertaald naar één publiek IP",
+    "PAT (Masquerade) herschrijft IP én TCP/UDP poort; de router houdt dit bij in een connectietabel ('conntrack')",
+    "Conntrack exhaustion: BitTorrent of malware opent tienduizenden UDP-verbindingen; als de tabel (bv. 16.384 entries) vol raakt, weigert de router elke nieuwe verbinding ('geen internet' hoewel ping soms nog werkt)",
+    "CGNAT (100.64.0.0/10): providers stoppen duizenden klanten achter een centrale provider-NAT; consumenten krijgen geen eigen publiek IPv4 meer, waardoor port forwarding onmogelijk wordt tenzij via IPv6 of reverse tunnels (Cloudflare Tunnels, Tailscale)",
+    "Double-NAT: een consument sluit een eigen WiFi-router aan achter de modem-router van de provider; twee opeenvolgende NAT-lagen breken VPN's, VoIP SIP en online gaming"
+   ],
+   "example": "Een gebruiker klaagt: 'Mijn router blokkeert elke 20 minuten'. Uit 'conntrack -C' blijkt dat het aantal verbindingen 65.535 bereikt door een slimme deurbel die bij elke frame een nieuwe sessie opent zonder TCP FIN/RST.",
+   "exercise": "Traceer hoe de bron- en doelpoorten wijzigen in een PAT-sessie tussen 192.168.1.50:52341 en 142.250.179.206:443.",
+   "test": "Conntrack troubleshooting, private ranges identificeren en CGNAT herkenning."
+  },
+  {
+   "id": "routing-12-dhcp-core-exhaustion",
+   "title": "DHCP Mechanica, Pool Exhaustion & Rogue Servers",
+   "level": "fundament",
+   "objectives": [
+    "De 4 stappen van het DHCP DORA-proces (Discover, Offer, Request, Acknowledge) doorgronden",
+    "DHCP lease timers (T1 renewal op 50%, T2 rebind op 87.5%, expire op 100%) berekenen",
+    "Symptomen van DHCP pool exhaustion diagnosticeren (APIPA 169.254.x.x)",
+    "Rogue DHCP servers detecteren en beveiligen via DHCP Snooping"
+   ],
+   "theory": [
+    "DORA gebeurt via UDP poort 67 (server) en 68 (client); Discover is een L2/L3 broadcast (255.255.255.255)",
+    "Als een client geen DHCP-antwoord krijgt binnen de timeout, wijst hij zichzelf een link-local APIPA-adres toe (169.254.0.0/16); dit is hét bewijs dat Layer 2 werkt maar DHCP faalt",
+    "Pool exhaustion: een gastennetwerk met lease time van 24 uur en slechts 50 IP's raakt vol na 50 bezoekers; nieuwe apparaten kunnen geen verbinding maken",
+    "Rogue DHCP server: een medewerker prikt een thuisrouter verkeerd om in het bedrijfsnetwerk (LAN op LAN); de foute router deelt sneller foute IP's en default gateways uit, waardoor het netwerk platgaat",
+    "DHCP Snooping op switches: markeer alleen de poort naar de legitieme router als 'trusted'; blokkeer DHCP Offers op alle access-poorten"
+   ],
+   "example": "Een laptop krijgt IP 169.254.42.89 met subnetmasker 255.255.0.0. De helpdeskmedewerker weet direct: Layer 1 en WiFi zijn verbonden, maar de DHCP-server antwoordt niet (DORA faalt).",
+   "exercise": "Bereken de T1 (renewal) en T2 (rebind) tijdstippen voor een DHCP lease van 12 uur.",
+   "test": "DORA sequencing, APIPA diagnose en rogue DHCP mitigatie."
+  },
+  {
+   "id": "routing-13-dns-architecture-failures",
+   "title": "DNS Architectuur, Timeouts & Storingen Analyseren",
+   "level": "fundament",
+   "objectives": [
+    "Het verschil tussen stub resolvers, recursieve resolvers (1.1.1.1) en autoritatieve nameservers uitleggen",
+    "DNS statuscodes (NOERROR, NXDOMAIN, SERVFAIL, REFUSED) interpreteren in logfiles",
+    "DNS caching, TTLs en het fenomeen van 'DNS leaks' bij VPN's diagnosticeren",
+    "DoH (DNS over HTTPS) en DoT (DNS over TLS) impact op router-monitoring beoordelen"
+   ],
+   "theory": [
+    "DNS vertaalt namen naar IP's via UDP poort 53 (of TCP bij grote responses > 512 bytes / DNSSEC)",
+    "NXDOMAIN: het domein bestaat niet. SERVFAIL: de recursieve resolver kon geen geldige data ophalen (vaak een verbroken upstream verbinding of falende DNSSEC cryptografische validatie)",
+    "Als DNS faalt, lijkt het alsof 'het hele internet platligt', terwijl IP-pakketten naar 8.8.8.8 foutloos doorgestuurd worden",
+    "DNS latency is de grootste component van de gepercipieerde laadsnelheid van webpagina's (100ms DNS delay = trage site)",
+    "Lokale DNS-forwarders op routers (dnsmasq, unbound) cachen antwoorden en intercepten lokale namen (.lan / .local)"
+   ],
+   "example": "Een gebruiker klaagt dat 'google.be' niet werkt, maar 'ping 8.8.8.8' slaagt direct met 12ms. 'dig google.be' retourneert na 5 seconden een timeout; de ISP upstream DNS-server is gecrasht.",
+   "exercise": "Analyseer een 'dig +trace' output en wijs aan waar de keten faalt.",
+   "test": "DNS statuscode interpretatie, split DNS en caching logica."
+  },
+  {
+   "id": "routing-14-icmp-diagnostics-traceroute",
+   "title": "ICMP Diagnostiek: Ping, Traceroute & Black Holes",
+   "level": "gevorderd",
+   "objectives": [
+    "Het verschil tussen Type 8/0 (Echo/Reply), Type 3 (Unreachable) en Type 11 (Time Exceeded) doorgronden",
+    "Exact uitleggen hoe traceroute incrementele TTL-waarden gebruikt om netwerkhops bloot te leggen",
+    "Asymmetrische routering en MPLS-tunnels herkennen in traceroutes",
+    "ICMP rate-limiting onderscheiden van echte packet loss"
+   ],
+   "theory": [
+    "Ping stuurt ICMP Echo Request (Type 8); bestemming stuurt Echo Reply (Type 0). Meet RTT (Round Trip Time)",
+    "Traceroute stuurt pakketten met TTL=1, TTL=2, TTL=3... Elke opeenvolgende router trekt 1 af, bereikt 0 en stuurt ICMP Type 11 (Time to Live exceeded in transit) terug met zijn eigen bron-IP",
+    "Sterretjes (* * *) in een traceroute betekenen NIET dat het netwerk stuk is; veel core-routers hebben ICMP generatie rate-limited of gedropt in de control plane om hun CPU te sparen",
+    "Asymmetrische routes: het heen-pad (A -> B) kan over een compleet andere ISP en fysieke kabel lopen dan het terug-pad (B -> A); traceroute toont alleen het heen-pad!",
+    "PMTUD Black Hole: een router stuurt ICMP Type 3 Code 4 (Fragmentation Needed but DF set), maar een paranoïde firewall blokkeert ALLE ICMP, waardoor de zender nooit te weten komt dat hij kleinere pakketten moet sturen"
+   ],
+   "example": "In een traceroute van 10 hops toont hop 4 plots 80% packet loss, maar hop 5 t/m 10 tonen 0% loss. Conclusie: router 4 heeft ICMP rate-limiting aanstaan; er is GEEN sprake van echt dataverlies.",
+   "exercise": "Interpreteer een traceroute met asymmetrische hops en identificeer de locatie van een link-flap.",
+   "test": "Traceroute dissectie, ICMP foutcodes en rate-limit artefacten."
+  },
+  {
+   "id": "routing-15-latency-jitter-packetloss",
+   "title": "Kwaliteit van de Link: Latency, Jitter & Loss",
+   "level": "gevorderd",
+   "objectives": [
+    "De 4 componenten van latency (propagatie, transmissie, queueing, processing) kwantificeren",
+    "Jitter (Packet Delay Variation) wiskundig berekenen en de impact op VoIP en video analyseren",
+    "Het verschil tussen congestion drops en physical link errors (CRC/FCS) aantonen via ethtool",
+    "SLA's en real-time verkeersprioritering (DSCP) evalueren"
+   ],
+   "theory": [
+    "Totale latency = T_prop (snelheid van licht in glasvezel: ~5 µs/km) + T_trans (pakketgrootte / bandbreedte) + T_queue (wachttijd in router-buffers) + T_proc (routing lookup)",
+    "Queueing delay is de enige variabele factor en is verantwoordelijk voor 99% van jitter!",
+    "Jitter bufferen: VoIP en Zoom gebruiken een jitter-buffer (bv. 50-100ms); overschrijdt de vertraging de buffer, dan wordt het pakket alsnog weggegooid",
+    "Packet loss door congestie: buffers lopen vol (tail drop) -> TCP halveert window. Packet loss door fysieke kabel: interface errors (CRC, runts, frame errors in 'ethtool -S')"
+   ],
+   "example": "Een glasvezelverbinding Brussel-Frankfurt (400 km) heeft een minimale propagatielatency van $2 \\times (400 \\times 5\\mu s) = 4$ ms RTT. Als de ping plots 85 ms aangeeft met variatie van 60 ms, is de oorzaak queueing delay door bufferbloat.",
+   "exercise": "Bereken de transmissievertraging van een 1500 byte pakket op een 10 Mbps uploadlijn versus een 1 Gbps glasvezellijn.",
+   "test": "Latency componenten, jitter buffers en interface error diagnostiek."
+  },
+  {
+   "id": "routing-16-bufferbloat-aqm-cake",
+   "title": "Bufferbloat & Active Queue Management (CoDel & CAKE)",
+   "level": "expert",
+   "objectives": [
+    "Het Bufferbloat-fenomeen verklaren: waarom grote buffers latency laten exploderen onder belasting",
+    "Het principe van Active Queue Management (AQM) en CoDel (Controlled Delay) doorgronden",
+    "CAKE (Common Applications Kept Enhanced) en fq_codel vergelijken op router hardware",
+    "SQM (Smart Queue Management) implementeren om latency onder load onder 5ms te houden"
+   ],
+   "theory": [
+    "Hardwarefabrikanten stopten megabytes aan RAM in router-chips om 'geen enkel pakket te verliezen'; gevolg: bij verzadigde upload/download wachten pakketten honderden milliseconden in de rij",
+    "TCP interpreteert packet drops als signaal om af te remmen; oneindige buffers verbergen dit signaal, waardoor TCP data blijft pompen tot de buffer overloopt (honderden milliseconden latency)",
+    "CoDel meet hoe lang pakketten in de rij staan (sojourn time); als de minimale wachttijd langer dan 5ms duurt over een interval van 100ms, dropt of markeert (ECN) het algoritme strategisch pakketten aan de kop van de queue",
+    "fq_codel & CAKE combineren Fair Queueing met CoDel: elke datastroom (download, gaming, DNS) krijgt zijn eigen rij; kleine DNS- en gamingpakketjes hoeven NOOIT te wachten achter een gigantische download-stream",
+    "CAKE voegt automatische bandwidth shaping toe met overhead-compensatie (VLAN, PPPoE framing)"
+   ],
+   "example": "Tijdens een speedtest schiet de ping van een gamer omhoog van 15ms naar 450ms. Na het inschakelen van CAKE SQM op de router blijft de ping onder volle 100% saturatie stabiel op 18ms.",
+   "exercise": "Bereken de wachttijd in een FIFO queue van 2 MB bij een uploadverbinding van 20 Mbps.",
+   "test": "Bufferbloat mechanica, CoDel sojourn time en CAKE flow isolation."
+  },
+  {
+   "id": "routing-17-wifi-mesh-edge-issues",
+   "title": "WiFi, Mesh & Draadloze Edge Storingen",
+   "level": "gevorderd",
+   "objectives": [
+    "De fysieke beperkingen van 2.4 GHz, 5 GHz en 6 GHz spectra analyseren",
+    "Co-channel interference (CCI) en DFS (Dynamic Frequency Selection) radar detectie herkennen in router-logs",
+    "Draadloze mesh backhaul bottlenecks kwantificeren (50% throughput halvering per draadloze hop)",
+    "Roaming standaarden (802.11k, 802.11v, 802.11r) en het 'sticky client' probleem diagnosticeren"
+   ],
+   "theory": [
+    "WiFi is een gedeeld medium (half-duplex CSMA/CA): slechts 1 apparaat kan tegelijk zenden per kanaal; interferentie van buren dwingt apparaten tot wachten en verlaagt MCS-index (snelheid)",
+    "DFS kanalen (52-144 op 5 GHz): routers moeten wettelijk luisteren naar weerradars; detecteert de router een radarsignaal, dan schakelt hij per direct de radio uit voor 60 seconden ('CAC radar detected')",
+    "Draadloze mesh zonder dedicated backhaul-radio moet elk pakket ontvangen en opnieuw uitzenden op dezelfde frequentie; elke extra hop halveert de beschikbare bandbreedte en verdubbelt de latency",
+    "Sticky client: een smartphone blijft krampachtig verbonden met de verre router in de woonkamer (met signaal -82 dBm) hoewel hij 1 meter naast een mesh access point staat; 802.11v BSS transition management lost dit op"
+   ],
+   "example": "Een gebruiker meldt dat elke dag om 14:15 het 5 GHz WiFi-netwerk 1 minuut verdwijnt. In de router 'dmesg' staat: 'ath10k: DFS radar event detected on channel 100, switching to channel 36'.",
+   "exercise": "Evalueer signaalsterktes (RSSI in dBm) en SNR (Signal to Noise Ratio) om de oorzaak van packet loss op een WiFi-link vast te stellen.",
+   "test": "DFS log analyse, mesh throughput halvering en sticky client mitigatie."
+  },
+  {
+   "id": "routing-18-telemetry-parsing-signals",
+   "title": "Router Telemetrie: Signals, Metrics & Logs voor AI",
+   "level": "expert",
+   "objectives": [
+    "De essentiële Linux router commando's en hun gestructureerde JSON-outputs beheersen",
+    "Telemetrie uit 'ip route', 'ip neigh', 'conntrack -S', 'ethtool -S' en 'dmesg' compileren tot een compacte observatievector",
+    "Afwijkingen (anomalieën) filteren uit gigantische syslog streams via System 1 pattern matching",
+    "Data extractie voorbereiden voor een Reasoning LLM context window"
+   ],
+   "theory": [
+    "Een router LLM mag niet verdrinken in ruwe log-tekst; we extraheren alleen delta's en state counters via gestructureerde CLI hooks (bv. 'ip -j route', 'ip -j link')",
+    "Kernsignalen voor netwerkstoringen: 1. Link state & carrier flags (L1/L2) -> 2. Interface drop & error counters (L2) -> 3. ARP stale/failed entries (L2) -> 4. Default gateway bereikbaarheid & RTT (L3) -> 5. Conntrack bezetting percentage -> 6. DNS query latency & SERVFAIL percentage (L7)",
+    "Systeemgebeurtenissen filteren: OOM-killer (Out of Memory), kernel panic, link flap messages (e.g. 'eth0: Link is Down'), en WiFi deauth reasons (code 4, 15)",
+    "Token-compressie: een ruwe log van 100.000 regels wordt via een System 1 pre-filter gecondenseerd naar een gestructureerde JSON diagnose-vector van 400 tokens"
+   ],
+   "example": "Een geautomatiseerd script draait 'ip -j neigh show' en detecteert: [{\"dst\": \"192.168.1.1\", \"state\": \"FAILED\"}]. De LLM herkent onmiddellijk dat de default gateway niet meer reageert op ARP!",
+   "exercise": "Bouw een JSON schema voor een router health snapshot die interface errors, route tabel status en DNS latency samenvat.",
+   "test": "Linux router command output interpretatie en signaal-extractie."
+  },
+  {
+   "id": "routing-19-reasoning-tree-rca",
+   "title": "Reasoning LLM Architectuur: Root Cause Analysis (RCA)",
+   "level": "expert",
+   "objectives": [
+    "Een Tree-of-Thoughts / Chain-of-Thought redeneerpatroon ontwerpen voor netwerkdiagnostiek",
+    "Hypotheses systematisch testen en falsifiëren volgens de bottom-up netwerklagen",
+    "Valse sporen ('red herrings') zoals ICMP rate limiting en upstream DNS caching onderscheiden van echte oorzaken",
+    "De wiskunde van probabilistische diagnose (Bayesiaanse causaliteit) toepassen"
+   ],
+   "theory": [
+    "Een standaard LLM gokt vaak blind ('herstart de router'). Een Reasoning LLM (zoals DeepSeek-R1 of Qwen-2.5-Coder getraind op netwerk telemetry) genereert een expliciet redeneerspoor (think tokens)",
+    "Bottom-Up redeneermodel: 1. Is er fysieke link (carrier)? -> 2. Is er L2 connectiviteit (ARP)? -> 3. Is er een geldige L3 route (LPM)? -> 4. Werkt NAT/conntrack? -> 5. Antwoordt DNS? -> 6. Is er applicatie-level blokkade?",
+    "Falsificatietest: als 'ping 8.8.8.8' werkt maar 'ping google.com' niet, dan verwerpt het redeneerspoor direct alle L1/L2/L3 hypotheses en focust 100% op DNS resolvers",
+    "Als latency hoog is alléén tijdens uploads, elimineert de LLM WiFi-interferentie en identificeert Bufferbloat op de WAN interface"
+   ],
+   "example": "De redeneer-LLM ontvangt klacht: 'Geen internet op TV'. <think> TV heeft IP 169.254.12.4. Dit is APIPA. Betekent dat L2 ethernet link up is, maar DHCP DORA faalde. Ik controleer 'dhcp-leases.log'. Log toont: pool 192.168.1.100-150 is 100% vol. Root Cause: DHCP pool exhaustion. </think>",
+   "exercise": "Schrijf een redeneerspoor voor een situatie waarin interne LAN apparaten elkaar kunnen pingen, maar geen enkele externe website bereikbaar is.",
+   "test": "Tree-of-thoughts evaluatie en multi-layer foutisolatie."
+  },
+  {
+   "id": "routing-20-automated-remediation-guardrails",
+   "title": "Geautomatiseerde Remediatie & Veilige Guardrails",
+   "level": "expert",
+   "objectives": [
+    "Concrete, veilige shell-remediaties definiëren voor veelvoorkomende netwerkstoringen",
+    "Guardrails ontwerpen die voorkomen dat een AI de router onbereikbaar maakt (bricking / lockout)",
+    "Automatische MTU/MSS clamping, ARP flushing, DHCP pool vergroting en kanaalwissels programmeren",
+    "Rollback mechanismen implementeren met watchdog timers"
+   ],
+   "theory": [
+    "Een router LLM mag NOOIT willekeurige bash commands uitvoeren; het redeneermodel kiest uit een streng gevalideerde set acties (TypeSafe tooling via JSON schema's / function calling)",
+    "Veilige acties: 1. 'flush_arp(ip)' -> 2. 'restart_service(dnsmasq)' -> 3. 'clamp_mss(interface, 1452)' -> 4. 'expand_dhcp_pool(range)' -> 5. 'switch_wifi_channel(radio, channel)' -> 6. 'enable_sqm_cake(upload_kbps, download_kbps)'",
+    "De Gouden Regel van Router Beheer: Nooit je eigen beheerinterface afsluiten. Voer risicovolle wijzigingen altijd uit met een automatische rollback timer (bv. 'commit confirmed 3m' of een watchdog script dat herstelt als de ping naar de gateway na 30 seconden wegvalt)",
+    "Blast radius inperken: wijzigingen gelden eerst per interface vóór globale herstart"
+   ],
+   "example": "De LLM diagnosticeert een PMTUD black hole op een PPPoE glasvezellijn. Veilige herstelactie: `iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu`. De TLS handshakes slagen direct weer.",
+   "exercise": "Ontwerp een JSON-RPC schema voor de remediatietool van de router-agent inclusief rollback parameters.",
+   "test": "Veilige herstelcommando's, guardrails en watchdog architecturen."
+  },
+  {
+   "id": "routing-21-chip-architecture-edge-slm",
+   "title": "On-Router Chip Architectuur & Lokale SLM Deployment",
+   "level": "expert",
+   "objectives": [
+    "De hardware-architectuur van moderne router-SoC's (Qualcomm, MediaTek, Broadcom, NXP) analyseren",
+    "Geheugen- en compute-budgetten berekenen voor on-device inference (512MB - 4GB RAM, ARM Cortex-A53/A73)",
+    "Compacte reasoning SLM's (0.5B - 3B) kwantiseren (GGUF Q4_K_M / Q8) voor router-chips",
+    "Inference engines (llama.cpp, MLC-LLM, NPU drivers) benchmarken op embedded Linux (OpenWrt)"
+   ],
+   "theory": [
+    "Consumenten- en enterprise routers evolueren: nieuwste WiFi 7 routers beschikken over quad-core ARM 64-bit processors (1.8-2.2 GHz) en 1GB tot 4GB DDR4 RAM, vaak met een dedicated NPU voor AI-acceleratie",
+    "Cloud-afhankelijkheid is onaanvaardbaar voor netwerkherstel: als het internet uitvalt, kan de router GEEN OpenAI of Anthropic API aanroepen! De troubleshooting AI MOET 100% lokaal draaien op de chip",
+    "Model selectie: een 0.5B tot 1.5B reasoning SLM (zoals Qwen2.5-0.5B-Instruct of DeepSeek-R1-Distill-Qwen-1.5B gekwantiseerd naar 4-bit) eist slechts 400MB tot 1.1GB RAM en genereert 15-30 tokens/seconde op een ARM Cortex-A73",
+    "System 1 pre-filtering draait continu met 0% CPU; de zwaardere System 2 reasoning LLM wordt pas gewekt wanneer een storing of anomalie wordt getriggerd"
+   ],
+   "example": "Een OpenWrt WiFi 7 gateway met 2GB RAM draait een lokale gekwantiseerde 1.5B reasoning SLM via llama.cpp. Bij een internetstoring analyseert het model in 2,1 seconden de kernel-logs en routeringstabel zonder dat er één byte data naar de cloud hoeft.",
+   "exercise": "Bereken het VRAM/RAM geheugengebruik van een 1.5B model in 4-bit quantisatie (Q4_K_M) inclusief KV-cache voor een context window van 2.048 tokens.",
+   "test": "Embedded hardware sizing, quantisatie berekeningen en zero-cloud architectuur."
+  }
+ ]
+}

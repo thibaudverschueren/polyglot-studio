@@ -542,8 +542,8 @@ PS.needsGate = () => {
 PS.renderGate = () => {
   const app = document.getElementById('app');
   const returnToArticle = PS.isSharedArticleRoute() ? location.hash : '';
-  app.innerHTML = `<div class="gate"><div class="gate-orbs" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-    <div class="gate-card"><div class="gate-glyphs" aria-hidden="true"><span style="color:var(--greek)">Ω</span><span style="color:var(--french)">É</span><span style="color:var(--spanish)">Ñ</span><span class="mono" style="color:var(--solidity)">0x</span><span style="color:var(--ai)">∇</span><span class="mono" style="color:var(--automation)">{ }</span><span class="mono" style="color:var(--jev)">⑂</span></div>
+  app.innerHTML = `<div class="gate"><div class="gate-orbs" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="gate-card"><div class="gate-glyphs" aria-hidden="true"><span style="color:var(--greek)">Ω</span><span style="color:var(--french)">É</span><span style="color:var(--spanish)">Ñ</span><span class="mono" style="color:var(--solidity)">0x</span><span style="color:var(--ai)">∇</span><span class="mono" style="color:var(--automation)">{ }</span><span class="mono" style="color:var(--jev)">⑂</span><span class="mono" style="color:var(--routing)">⇄</span></div>
       <h1 class="display" style="font-size:34px;text-align:center;margin:10px 0 4px">Polyglot Studio</h1><p class="lede" style="text-align:center;font-size:15.5px;margin-bottom:18px">Log in om toegang te krijgen tot alle leerpaden, oefeningen en je persoonlijke voortgang.</p>
       <div data-gate-login>${PS.views.loginForm()}</div>
       <button class="btn btn-ghost btn-sm btn-block" data-local style="margin-top:10px">Verder zonder account (alleen dit toestel)</button>

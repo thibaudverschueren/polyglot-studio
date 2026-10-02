@@ -1,0 +1,745 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "routing",
+ "id": 2,
+ "roadmap": "routing-04-lpm-nexthop-metrics",
+ "kind": "core",
+ "title": "De Routing Tabel: LPM, Next-Hop, Metrics & AD",
+ "subtitle": "Longest Prefix Match, Administrative Distance, Default Gateways en hoe routers razendsnel beslissen",
+ "level": "gevorderd",
+ "minutes": 45,
+ "summary": "Wanneer een router een IP-pakket ontvangt, moet hij in fracties van microseconden bepalen via welke interface en buurman het pakket verder reist. Deze les ontrafelt de interne beslisboom van de router: de scheiding tussen Control Plane (RIB) en Data Plane (FIB), de onverbiddelijke wet van Longest Prefix Match (LPM), Administrative Distance versus metrieken, recursive next-hop lookups en ECMP load-balancing.",
+ "objectives": [
+  {
+   "id": "rib-vs-fib",
+   "text": "Je kunt het architecturale verschil tussen de Control Plane (RIB) en de Data Plane (FIB) verklaren."
+  },
+  {
+   "id": "longest-prefix-match",
+   "text": "Je kunt het Longest Prefix Match (LPM) algoritme toepassen op overlappende routes (/32 > /24 > /16 > /0)."
+  },
+  {
+   "id": "ad-vs-metrics",
+   "text": "Je kunt Administrative Distance (AD) en metrieken correct prioriteren tussen en binnen verschillende routingbronnen."
+  },
+  {
+   "id": "nexthop-recursive-default",
+   "text": "Je kunt next-hop resolutie, recursive lookups en de default gateway (0.0.0.0/0) analyseren."
+  },
+  {
+   "id": "ecmp-load-balancing",
+   "text": "Je kunt Equal-Cost Multi-Path (ECMP) en 5-tuple flow hashing toepassen en diagnosticeren."
+  }
+ ],
+ "sections": [
+  {
+   "id": "sec-rib-vs-fib",
+   "title": "1. Control Plane vs Data Plane: Het Brein (RIB) en de Spieren (FIB)",
+   "md": "In moderne netwerkapparatuur (van een bescheiden OpenWrt-thuisrouter tot een modulaire Cisco- of Juniper-core-router) is er een strikte scheiding tussen twee werelden: de **Control Plane** en de **Data Plane** (Forwarding Plane).\n\n### De Twee Tabellen: RIB versus FIB\n\n| Eigenschap | Routing Information Base (RIB) | Forwarding Information Base (FIB) |\n|---|---|---|\n| **Locatie** | Control Plane (Centrale CPU / RAM) | Data Plane (ASIC / TCAM / Kernel Fast-Path) |\n| **Doel** | Verzamelt en berekent alle topologieën | Voert per-pakket doorvoerbeslissingen uit op wire-speed |\n| **Inhoud** | **Alle** routes van alle protocollen (actief én inactief) | **Alleen de beste, winnende routes** direct gekoppeld aan interfaces |\n| **Snelheid** | Milliseconden (event-driven, complexe protocollen) | Nanoseconden (hardware-gestuurd, miljoenen pakketten/sec) |\n\n### Hoe de RIB de FIB Bouwt\nDe router draait verschillende routeringsprocessen in software (BGP, OSPF, statische routes, direct connected interfaces). Elk proces levert zijn routes af aan de centrale **RIB**:\n\n1. De routerings-engine evalueert alle kandidaten in de RIB.\n2. Voor elke unieke IP-prefix kiest het selectieproces de route met de laagste **Administrative Distance (AD)** en laagste **metriek**.\n3. De router lost eventuele indirecte next-hops recursief op tot een fysieke interface en een Layer 2 MAC-adres.\n4. De resulterende compacte forwarding-tabel wordt geprogrammeerd in de **FIB**.\n\n### Het Gevaar van 'Punt-to-CPU'\nIn enterprise hardware is de FIB geïmplementeerd in **TCAM (Ternary Content-Addressable Memory)**. Hiermee kan de hardware in exact **één enkele klokcyclus** de juiste route vinden, ongeacht of de tabel 1.000 of 1.000.000 routes bevat.\n\nWanneer een datapakket echter een uitzondering triggert (bijvoorbeeld een verlopen TTL, IP-opties, fragmentatie of een onbekend bestemmings-MAC dat ARP-resolutie vereist), kan de hardware-ASIC het pakket niet zelfstandig afhandelen. Het pakket moet worden doorgestuurd naar de trage CPU van de Control Plane. Dit heet **punting**.\n\n> [!warning] DoS via Control Plane Punting\n> Als een aanvaller duizenden pakketten per seconde stuurt die naar de CPU worden 'gepunt' (zoals pakketten met TTL=1), raakt de router-CPU overbelast (100% belasting). BGP- en OSPF-keepalives vallen weg en de hele router verliest zijn routeringstabel!",
+   "checks": [
+    {
+     "id": "c1-01",
+     "type": "mcq",
+     "skill": "rib-vs-fib",
+     "level": 1,
+     "prompt": "In welke tabel zoekt de gespecialiseerde netwerkchip (ASIC/TCAM) tijdens het doorsturen van datapakketten op wire-speed?",
+     "explain": "De Forwarding Information Base (FIB) in het Data Plane bevat de direct toepasbare routes voor hardwarematige pakketdoorvoer.",
+     "options": [
+      "De Forwarding Information Base (FIB) in het Data Plane",
+      "De Routing Information Base (RIB) in de Control Plane",
+      "De BGP Link-State Database in het werkgeheugen",
+      "De DNS resolver cache in het applicatiesegment"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c1-02",
+     "type": "cloze",
+     "skill": "rib-vs-fib",
+     "level": 2,
+     "prompt": "Vul de namen van beide routeringstabellen in:",
+     "text": "De {{RIB|Routing Information Base}} bevindt zich in de softwarematige Control Plane, terwijl de {{FIB|Forwarding Information Base}} door de hardwarematige Data Plane wordt geraadpleegd.",
+     "explain": "RIB = Control Plane (software/protocollen); FIB = Data Plane (hardware/forwarding)."
+    }
+   ]
+  },
+  {
+   "id": "sec-longest-prefix-match",
+   "title": "2. De Gouden Regel van Routering: Longest Prefix Match (LPM)",
+   "md": "Wanneer de router een pakket ontvangt met een bepaald bestemmings-IP, inspecteert hij de FIB. Het komt zeer vaak voor dat een bestemmings-IP matcht op **meerdere** regels in de routingtabel.\n\nHoe beslist de router welke route wint?\n\n> [!rule] De Gouden Wet van Longest Prefix Match (LPM)\n> De meest specifieke route — dat wil zeggen de route met het **grootste aantal netwerkbits (de langste subnetmasker-prefix)** — wint **ALTIJD**!\n\nDe hiërarchie van specificiteit verloopt als volgt:\n$$\\text{Host route } (/32) > /30 > /28 > /24 > /16 > /8 > \\text{Default route } (/0)$$\n\n### Een Concreet Rekenvoorbeeld\nBeschouw een router met de volgende routes in zijn tabel:\n\n1. `0.0.0.0/0 via 198.51.100.1` (Default route, prefixlengte 0)\n2. `10.0.0.0/8 via 192.168.10.1` (Prefixlengte 8)\n3. `10.20.0.0/16 via 192.168.20.1` (Prefixlengte 16)\n4. `10.20.30.0/24 via 192.168.30.1` (Prefixlengte 24)\n5. `10.20.30.40/32 via 192.168.40.1` (Host route, prefixlengte 32)\n\nLaten we drie binnenkomende pakketten evalueren:\n- **Bestemming 8.8.8.8**: Matcht alleen op route 1 (`0.0.0.0/0`). Het pakket gaat naar next-hop `198.51.100.1`.\n- **Bestemming 10.20.55.1**: Matcht op route 1 (`/0`), route 2 (`/8`) en route 3 (`/16`). De langste prefix match is `/16`. Het pakket gaat naar next-hop `192.168.20.1`.\n- **Bestemming 10.20.30.40**: Matcht op route 1 (`/0`), route 2 (`/8`), route 3 (`/16`), route 4 (`/24`) en route 5 (`/32`). De langste prefix match is `/32`. Het pakket gaat naar next-hop `192.168.40.1`.\n\n### De Fatale Misconceptie: AD versus LPM\nVeel netwerkbeheerders maken een cruciale denkfout: zij denken dat Administrative Distance (AD) of een direct verbonden interface voorrang heeft op een dynamisch protocol.\n\nStel dat een router de volgende twee routes heeft:\n- Route A: `10.0.0.0/8 dev eth0` (**Direct Connected, AD = 0**)\n- Route B: `10.1.1.0/24 via 172.16.1.1` (**RIP, AD = 120**)\n\nWaar gaat een pakket voor `10.1.1.99` naartoe?\n\n> [!pitfall] De Valkuil: AD telt pas bij gelijke prefixlengte!\n> Het pakket gaat via **Route B (RIP)**! Waarom? Omdat `/24` specifieker is dan `/8`. De router kijkt **eerst en alleen naar de prefixlengte (LPM)**. De Administrative Distance en de metriek worden pas vergeleken wanneer twee routes **exact dezelfde prefix en hetzelfde subnetmasker** hebben!",
+   "checks": [
+    {
+     "id": "c2-01",
+     "type": "mcq",
+     "skill": "longest-prefix-match",
+     "level": 2,
+     "prompt": "Een router heeft in zijn routingtabel: `172.16.0.0/16` (Connected, AD 0), `172.16.10.0/24` (Static, AD 1) en `172.16.10.64/28` (OSPF, AD 110). Welke route kiest de router voor een pakket naar `172.16.10.70`?",
+     "explain": "LPM wint altijd: /28 (28 bits) is specifieker dan /24 en /16. AD 110 speelt geen rol omdat de prefixlengtes verschillen.",
+     "options": [
+      "De OSPF-route naar 172.16.10.64/28 omdat /28 de langste prefix match heeft",
+      "De Connected-route naar 172.16.0.0/16 omdat AD 0 de laagste afstand heeft",
+      "De Static-route naar 172.16.10.0/24 omdat AD 1 betrouwbaarder is dan OSPF",
+      "De router verdeelt het verkeer gelijkmatig over alle drie de routes via ECMP"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c2-02",
+     "type": "match",
+     "skill": "longest-prefix-match",
+     "level": 2,
+     "prompt": "Koppel de route-omschrijving aan de bijbehorende CIDR-prefixlengte:",
+     "explain": "/32 = één host; /24 = klassiek lokaal subnet; /0 = default route die alles matcht.",
+     "pairs": [
+      [
+       "Host-specifieke route (exact 1 IP-adres)",
+       "/32"
+      ],
+      [
+       "Standaard subnet (256 IP-adressen)",
+       "/24"
+      ],
+      [
+       "Default route (Gateway of Last Resort)",
+       "/0"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sec-ad-vs-metrics",
+   "title": "3. Administrative Distance & Metrieken: Wie Heeft Voorrang?",
+   "md": "Wanneer twee routeringsbronnen informatie aanleveren over **exact dezelfde prefix en hetzelfde subnetmasker** (bijvoorbeeld OSPF en BGP adverteren beide `192.168.100.0/24`), kan de router niet kiezen op basis van LPM. De prefixlengtes zijn immers identiek.\n\nNu treden twee criteria in werking:\n1. **Administrative Distance (AD)**: kiest tussen **verschillende** bronnen of protocollen.\n2. **Metriek (Metric)**: kiest tussen meerdere routes binnen **hetzelfde** protocol.\n\n### Standaard Administrative Distance Waarden\nDe Administrative Distance is een getal van 0 tot 255 dat de betrouwbaarheid van de routebron aangeeft. **Hoe lager het getal, des te betrouwbaarder de bron.**\n\n| Routeringsbron | Standaard AD (Cisco / Linux FRR) | Betekenis / Toepassing |\n|---|---|---|\n| **Direct Connected** | `0` | Interface heeft een IP en is fysiek `UP` |\n| **Static Route** | `1` | Handmatig geconfigureerd door beheerder |\n| **eBGP (External BGP)** | `20` | Routes geleerd van een externe provider / AS |\n| **OSPF** | `110` | Link-state protocol binnen de onderneming |\n| **IS-IS** | `115` | Link-state protocol in service provider backbones |\n| **RIP** | `120` | Eenvoudig distance-vector protocol (verouderd) |\n| **iBGP (Internal BGP)** | `200` | BGP-routes binnen hetzelfde autonome systeem |\n| **Onbereikbaar** | `255` | Wordt nooit geïnstalleerd in de FIB |\n\n### Routing Metrieken\nAls een router twee routes leert voor dezelfde prefix via **hetzelfde protocol** (beide via OSPF, dus beide met AD 110), bepaalt de **metriek** de winnaar. De laagste metriek wint:\n- **RIP**: *Hop count* (het aantal tussenliggende routers, maximaal 15; 16 = onbereikbaar).\n- **OSPF**: *Cost*, omgekeerd evenredig met de linkbandbreedte:\n  $$\\text{Cost} = \\frac{\\text{Reference Bandwidth}}{\\text{Interface Bandwidth}}$$\n  Een 10 Gbps glasvezelverbinding heeft bijvoorbeeld een veel lagere cost dan een trage 100 Mbps koperlijn.\n\n### Floating Static Routes: Slimme Noodlijnen\nBeheerders benutten AD voor automatische failover via een **floating static route**. Dit is een statische route met een opzettelijk verhoogde AD die hoger is dan het dynamische protocol:\n\n```bash\n# Primaire route via dynamisch OSPF (AD 110)\n# Backup statische route via 5G-modem met verhoogde AD (AD 130):\nip route add 0.0.0.0/0 via 192.168.8.1 metric 130\n```\n\nZolang OSPF gezond is, heeft OSPF (AD 110) voorrang en blijft de statische route onzichtbaar in de FIB. Zodra de glasvezelverbinding fysiek breekt of de OSPF-buur wegvalt, verdwijnt de OSPF-route uit de RIB. De floating static route (AD 130) wordt direct gepromoveerd naar de FIB!",
+   "checks": [
+    {
+     "id": "c3-01",
+     "type": "order",
+     "skill": "ad-vs-metrics",
+     "level": 2,
+     "prompt": "Rangschik de routeringsbronnen van meest betrouwbaar (laagste AD) naar minst betrouwbaar (hoogste AD):",
+     "explain": "Connected (0) < Static (1) < eBGP (20) < OSPF (110) < RIP (120) < iBGP (200).",
+     "tiles": [
+      "Direct Connected interface (AD 0)",
+      "Standaard Static route (AD 1)",
+      "External BGP / eBGP (AD 20)",
+      "OSPF (AD 110)",
+      "RIP (AD 120)",
+      "Internal BGP / iBGP (AD 200)"
+     ]
+    },
+    {
+     "id": "c3-02",
+     "type": "cloze",
+     "skill": "ad-vs-metrics",
+     "level": 2,
+     "prompt": "Vul de netwerkterm in:",
+     "text": "Een statische route die geconfigureerd is met een hogere Administrative Distance dan het actieve dynamische protocol ter back-up noemt men een {{floating static route|floating static}}.",
+     "explain": "Floating static routes worden pas actief in de FIB wanneer de primaire dynamische route wegvalt."
+    }
+   ]
+  },
+  {
+   "id": "sec-nexthop-recursive-default",
+   "title": "4. Next-Hop Resolutie, Recursive Lookups & De Default Gateway",
+   "md": "Elke routevermelding in een routeringstabel koppelt een bestemmingsprefix aan een doorgifte-instructie: de **next-hop**.\n\n### Direct Connected versus Indirecte Next-Hops\nEr zijn twee varianten van next-hops:\n1. **Direct Connected**: De route wijst direct naar een lokale fysieke interface, bijvoorbeeld `10.1.0.0/24 dev eth1`. De router weet onmiddellijk over welke kabel hij moet zenden en gebruikt ARP om het MAC-adres van de host te bepalen.\n2. **Indirecte / Recursieve Next-Hop**: De route specificeert een IP-adres van een volgende router, bijvoorbeeld `10.2.0.0/24 via 198.51.100.1`.\n\n### De Recursive Lookup Cyclus\nEen router kan een Ethernet-frame niet zomaar naar een IP-adres sturen; een frame vereist een **fysieke uitgangsinterface** en een **bestemmings-MAC-adres**. Daarom voert de router een **recursieve lookup** uit in zijn eigen routeringstabel:\n\n1. *Zoektocht 1*: Pakket naar `10.2.0.50` matcht op `10.2.0.0/24 via 198.51.100.1`.\n2. *Zoektocht 2 (recursief)*: Hoe bereik ik next-hop `198.51.100.1`? De router vindt `198.51.100.0/29 dev eth0`.\n3. *Conclusie*: Het pakket moet fysiek naar buiten via interface `eth0`. De router stuurt een ARP-aanvraag voor `198.51.100.1` op `eth0` om het bestemmings-MAC van de volgende router op te halen.\n\n> [!pitfall] Onbereikbare Next-Hop (Dead Route)\n> Als de next-hop `198.51.100.1` op geen enkele route in de routeringstabel matcht (of de onderliggende link is down), mislukt de recursieve lookup. De route is **inactief** en wordt door de Control Plane **nooit in de FIB geplaatst**!",
+   "checks": [
+    {
+     "id": "c4-01",
+     "type": "cloze",
+     "skill": "nexthop-recursive-default",
+     "level": 2,
+     "prompt": "Vul de term in voor het herhaaldelijk opzoeken van de next-hop:",
+     "text": "Wanneer een route als next-hop een IP-adres specificeert en de router een tweede interne opzoeking moet doen naar de fysieke interface, heet dit een {{recursive lookup|recursieve lookup|recursive route lookup}}.",
+     "explain": "Een recursive lookup lost het indirecte next-hop IP-adres recursief op naar een fysieke exit-interface."
+    },
+    {
+     "id": "c4-02",
+     "type": "mcq",
+     "skill": "nexthop-recursive-default",
+     "level": 2,
+     "prompt": "Welk ICMP-foutbericht zendt een router terug naar de afzender wanneer een pakket geen enkele route matcht in de FIB en er ook géén default route (0.0.0.0/0) aanwezig is?",
+     "explain": "Als er geen route matcht en geen default route is geconfigureerd, stuurt de router ICMP Type 3 Code 0: Destination Network Unreachable.",
+     "options": [
+      "ICMP Type 3 Code 0 (Destination Network Unreachable)",
+      "ICMP Type 11 Code 0 (Time to Live Exceeded)",
+      "ICMP Type 3 Code 4 (Fragmentation Needed and DF set)",
+      "ICMP Type 5 Code 1 (Redirect for Host)"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "sec-ecmp-load-balancing",
+   "title": "5. ECMP: Equal-Cost Multi-Path & Flow Hashing",
+   "md": "Wat gebeurt er wanneer een router twee of meer routes naar exact dezelfde bestemming leert met **exact dezelfde prefixlengte, dezelfde Administrative Distance én dezelfde metriek**?\n\nDe router hoeft niet te kiezen! Hij installeert **alle equivalente routes** gelijktijdig in de FIB. Dit mechanisme heet **Equal-Cost Multi-Path (ECMP)**.\n\n### De Fatale Fout van Per-Packet Round-Robin\nEen intuïtieve gedachte is om binnenkomende pakketten om en om over de beschikbare links te verdelen (pakket 1 over Link A, pakket 2 over Link B). In moderne netwerken is dit echter **desastreus**:\n\n- Links hebben in de praktijk nooit exact dezelfde latentie en queueing delay.\n- Pakket 2 haalt pakket 1 onderweg in en arriveert eerder bij de bestemming.\n- De ontvangende TCP-stack detecteert gaten in de sequentienummers (**out-of-order packets**).\n- De ontvanger stuurt direct drie **Duplicate ACKs**. De verzender concludeert dat er pakketverlies is opgetreden, triggert *TCP Fast Retransmit* en halveert zijn *congestion window* ($cw n d$). De effectieve doorvoersnelheid keldert drastisch!\n\n### De Oplossing: Flow Hashing over de 5-Tuple\nOm out-of-order levering te voorkomen, hanteren routers **per-flow hashing**. Voor elk pakket berekent de hardware een deterministische hashfunctie over de **5-tuple** in de headers:\n\n$$\\text{Hash} = \\text{CRC32}(\\text{Bron-IP}, \\text{Doel-IP}, \\text{Protocol}, \\text{Bronpoort}, \\text{Doelpoort}) \\pmod N$$\n\nWaarbij $N$ het aantal beschikbare ECMP-paden is.\n\n- Omdat alle pakketten binnen dezelfde TCP-verbinding dezelfde IP-adressen en poortnummers hebben, is de hashwaarde **voor elk pakket in die sessie identiek**.\n- Alle pakketten van die specifieke stream nemen **gegarandeerd exact hetzelfde pad**. Volgorde blijft 100% behouden!\n- Verschillende streams (met andere poortcombinaties) leveren andere hashwaarden op en worden netjes en evenwichtig over de links gespreid.\n\n### Hash Polarisatie in Meerlaagse Netwerken\nWanneer meerdere opeenvolgende routers in een datacenter exact hetzelfde hash-algoritme en dezelfde fixed seed gebruiken, kan **hash polarization** optreden. Alle stromen die bij Router 1 voor link A kozen, hebben een hash die bij Router 2 opnieuw uitsluitend voor Link A kiest. Link B blijft hierdoor volkomen onbenut. Moderne routerchips voorkomen dit door per router een willekeurige, unieke **hash seed** in te stellen.",
+   "checks": [
+    {
+     "id": "c5-01",
+     "type": "mcq",
+     "skill": "ecmp-load-balancing",
+     "level": 2,
+     "prompt": "Waarom passen routers bij ECMP per-flow hashing toe in plaats van per-packet round-robin load-balancing?",
+     "explain": "Per-flow hashing garandeert dat alle pakketten van dezelfde TCP-sessie hetzelfde pad volgen, waardoor out-of-order levering en degradatie van het congestievenster worden voorkomen.",
+     "options": [
+      "Om te voorkomen dat TCP-pakketten binnen dezelfde sessie out-of-order arriveren en retransmissies veroorzaken",
+      "Omdat een netwerkchip hardwarematig niet in staat is om opeenvolgende pakketten te tellen",
+      "Om te voldoen aan de IEEE 802.1Q VLAN-standaard voor trunk-poorten",
+      "Omdat switches op Layer 2 weigeren om frames van verschillende links samen te voegen"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c5-02",
+     "type": "multi",
+     "skill": "ecmp-load-balancing",
+     "level": 2,
+     "prompt": "Welke vier velden uit de IP- en transport-headers maken standaard deel uit van de klassieke 5-tuple hash voor ECMP load-balancing?",
+     "explain": "De 5-tuple bestaat uit Bron-IP, Bestemmings-IP, Protocol, Bronpoort en Bestemmingspoort. MAC-adressen en TTL maken hier geen deel van uit.",
+     "options": [
+      "Bron IP-adres",
+      "Bestemmings IP-adres",
+      "Bron TCP/UDP poortnummer",
+      "Bestemmings TCP/UDP poortnummer",
+      "Bestemmings MAC-adres",
+      "Time to Live (TTL)"
+     ],
+     "answers": [
+      0,
+      1,
+      2,
+      3
+     ]
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "rib-vs-fib",
+   "level": 1,
+   "prompt": "Waarom bevat de Forwarding Information Base (FIB) alleen de beste routes en niet alle alternatieve routes die via routeringsprotocollen zijn geleerd?",
+   "explain": "De FIB is geoptimaliseerd voor ultrasnelle hardwarematige pakketdoorvoer; overbodige alternatieve routes zouden de lookup-snelheid vertragen en kostbaar TCAM-geheugen verspillen.",
+   "options": [
+    "De FIB moet compact en gestroomlijnd zijn voor ultrasnelle hardware-lookups in TCAM.",
+    "Routingprotocollen weigeren om meer dan één route per prefix naar de router te sturen.",
+    "De netwerkkaart kan fysiek slechts één enkele route in zijn firmware opslaan.",
+    "Omdat alternatieve routes altijd automatisch door de firewall geblokkeerd worden."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "cloze",
+   "skill": "rib-vs-fib",
+   "level": 2,
+   "prompt": "Vul de naam van het gespecialiseerde hardwaregeheugen in:",
+   "text": "Enterprise routers gebruiken {{TCAM|Ternary Content-Addressable Memory|tcam}} geheugen om Longest Prefix Match lookups in één enkele klokcyclus parallel uit te voeren.",
+   "explain": "TCAM (Ternary Content-Addressable Memory) zoekt routes parallel in 1 hardware-cyclus."
+  },
+  {
+   "id": "p03",
+   "type": "mcq",
+   "skill": "rib-vs-fib",
+   "level": 2,
+   "prompt": "Wat gebeurt er bij het fenomeen 'punting' op een enterprise router?",
+   "explain": "Punting treedt op wanneer een pakket niet via het hardware fast-path verwerkt kan worden en doorgestuurd moet worden naar de centrale CPU van de Control Plane.",
+   "options": [
+    "Een datapakket kan niet in hardware worden geforward en wordt naar de Control Plane CPU gestuurd.",
+    "Een switchpoort schakelt automatisch over naar een lagere snelheid wegens oververhitting.",
+    "De router stuurt een BGP route-update door naar alle aangesloten peering-partners.",
+    "Twee redundante routers wisselen hun volledige ARP-cache uit via een synchronisatiekabel."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p04",
+   "type": "mcq",
+   "skill": "longest-prefix-match",
+   "level": 2,
+   "prompt": "Een routerings-FIB bevat de volgende vier routes: `0.0.0.0/0`, `10.0.0.0/8`, `10.128.0.0/9` en `10.130.0.0/16`. Naar welke route wordt een pakket voor `10.130.45.1` geforward?",
+   "explain": "LPM: 10.130.45.1 matcht op /0, /8, /9 en /16. De langste prefix match is /16 (10.130.0.0/16).",
+   "options": [
+    "10.130.0.0/16",
+    "10.128.0.0/9",
+    "10.0.0.0/8",
+    "0.0.0.0/0"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p05",
+   "type": "numeric",
+   "skill": "longest-prefix-match",
+   "level": 2,
+   "prompt": "Hoeveel bits komen minimaal overeen met het netwerkgedeelte bij de meest specifieke IPv4 host-route?",
+   "explain": "Een host-route matcht op het volledige 32-bit IP-adres (/32).",
+   "value": 32,
+   "tolerance": 0.01,
+   "unit": "bits"
+  },
+  {
+   "id": "p06",
+   "type": "cloze",
+   "skill": "longest-prefix-match",
+   "level": 2,
+   "prompt": "Vul de Engelse vaktermijn in voor dit selectieprincipe:",
+   "text": "Het algoritme waarbij de route met het grootste aantal opeenvolgende netwerkbits wint noemt men {{Longest Prefix Match|longest prefix match|LPM}}.",
+   "explain": "Longest Prefix Match (LPM) is de universele beslisregel voor IP forwarding."
+  },
+  {
+   "id": "p07",
+   "type": "numeric",
+   "skill": "ad-vs-metrics",
+   "level": 2,
+   "prompt": "Wat is de standaard Administrative Distance (AD) van het OSPF-routeringsprotocol op standaard Cisco- en Linux FRR-systemen?",
+   "explain": "OSPF heeft een vaste standaard Administrative Distance van 110.",
+   "value": 110,
+   "tolerance": 0.01
+  },
+  {
+   "id": "p08",
+   "type": "mcq",
+   "skill": "ad-vs-metrics",
+   "level": 2,
+   "prompt": "Een router ontvangt twee routes voor het exacte subnet `192.168.10.0/24`: één via eBGP (AD 20) en één via OSPF (AD 110, cost 5). Welke route installeert de RIB in de FIB?",
+   "explain": "Omdat de prefixlengtes identiek zijn (/24), wint de route met de laagste Administrative Distance: eBGP (AD 20) verslaat OSPF (AD 110).",
+   "options": [
+    "De eBGP-route omdat AD 20 lager en betrouwbaarder is dan AD 110",
+    "De OSPF-route omdat de interne cost van 5 lager is dan de BGP AS-path lengte",
+    "Beide routes worden gelijktijdig geïnstalleerd via ECMP load-balancing",
+    "Geen van beide; er ontstaat een conflict waardoor het subnet onbereikbaar wordt"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p09",
+   "type": "cloze",
+   "skill": "ad-vs-metrics",
+   "level": 2,
+   "prompt": "Vul de standaard metriek van het RIP-protocol in:",
+   "text": "Het verouderde RIP-protocol gebruikt als routeringsmetriek het aantal tussenliggende routers, ook wel de {{hop count|hops|hopcount}} genoemd.",
+   "explain": "RIP telt uitsluitend hops (maximaal 15)."
+  },
+  {
+   "id": "p10",
+   "type": "match",
+   "skill": "ad-vs-metrics",
+   "level": 2,
+   "prompt": "Koppel de routeringsbron aan zijn standaard Administrative Distance:",
+   "explain": "Static = 1, eBGP = 20, RIP = 120.",
+   "pairs": [
+    [
+     "Static route",
+     "1"
+    ],
+    [
+     "External BGP (eBGP)",
+     "20"
+    ],
+    [
+     "Routing Information Protocol (RIP)",
+     "120"
+    ]
+   ]
+  },
+  {
+   "id": "p11",
+   "type": "type",
+   "skill": "nexthop-recursive-default",
+   "level": 2,
+   "prompt": "In welke CIDR-notatie noteert men de IPv4 default route (Gateway of Last Resort)?",
+   "explain": "De default route matcht elk IP met prefixlengte 0: 0.0.0.0/0.",
+   "answers": [
+    "0.0.0.0/0",
+    "0.0.0.0 0.0.0.0"
+   ]
+  },
+  {
+   "id": "p12",
+   "type": "cloze",
+   "skill": "nexthop-recursive-default",
+   "level": 2,
+   "prompt": "Vul de Engelse term in:",
+   "text": "Wanneer de default route ontbreekt en een bestemmings-IP op geen enkele route matcht, noemt men het ontbrekende vangnet de {{Gateway of Last Resort|gateway of last resort}}.",
+   "explain": "De default route staat bekend als de Gateway of Last Resort."
+  },
+  {
+   "id": "p13",
+   "type": "mcq",
+   "skill": "nexthop-recursive-default",
+   "level": 2,
+   "prompt": "Waarom wordt een statische route met een onbereikbaar next-hop IP-adres niet opgenomen in de actieve FIB?",
+   "explain": "Een route kan alleen worden geforward als de next-hop recursief kan worden herleid tot een actieve fysieke uitgangsinterface.",
+   "options": [
+    "Omdat de recursieve lookup naar een fysieke exit-interface mislukt",
+    "Omdat onbereikbare routes automatisch een Administrative Distance van 0 krijgen",
+    "Omdat ARP weigert om tabellen bij te werken voor statische routes",
+    "Omdat de router anders automatisch een ICMP redirect moet uitzenden"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p14",
+   "type": "mcq",
+   "skill": "ecmp-load-balancing",
+   "level": 2,
+   "prompt": "Onder welke voorwaarde installeert een router meerdere routes naar dezelfde bestemming gelijktijdig via ECMP in de FIB?",
+   "explain": "ECMP vereist exact dezelfde prefixlengte, dezelfde Administrative Distance én dezelfde metriek.",
+   "options": [
+    "De routes moeten exact dezelfde prefixlengte, dezelfde AD én dezelfde metriek hebben.",
+    "De routes moeten afkomstig zijn van twee verschillende internetproviders.",
+    "De uitgaande interfaces moeten identieke fysieke MAC-adressen delen.",
+    "De router moet geconfigureerd zijn met BGP Multi-Exit Discriminator."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p15",
+   "type": "cloze",
+   "skill": "ecmp-load-balancing",
+   "level": 2,
+   "prompt": "Vul het ontbrekende veld van de 5-tuple in:",
+   "text": "De klassieke 5-tuple voor ECMP hashing bestaat uit Bron-IP, Bestemmings-IP, Bronpoort, Bestemmingspoort en het transportlaag-{{protocol|Protocol}}.",
+   "explain": "De 5 velden zijn Src IP, Dst IP, Src Port, Dst Port en Protocol."
+  },
+  {
+   "id": "p16",
+   "type": "numeric",
+   "skill": "ecmp-load-balancing",
+   "level": 2,
+   "prompt": "Een router heeft 4 gelijke ECMP-paden (N=4). Als een hashfunctie een berekende hashwaarde van 147 oplevert, over welke interface-index (0, 1, 2 of 3) wordt het pakket gestuurd bij gebruik van modulo-rekenen (147 mod 4)?",
+   "explain": "147 gedeeld door 4 is 36 met een rest van 3 (147 = 36 * 4 + 3). Het pakket gaat naar pad 3.",
+   "value": 3,
+   "tolerance": 0.01
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "mcq",
+   "skill": "rib-vs-fib",
+   "level": 2,
+   "prompt": "Wat is het belangrijkste functionele verschil tussen de Control Plane (RIB) en de Data Plane (FIB) bij het verwerken van een BGP route-flap?",
+   "explain": "De BGP daemon in de Control Plane herberekent de RIB; pas wanneer een nieuwe beste route is geselecteerd wordt de FIB in het Data Plane bijgewerkt.",
+   "options": [
+    "De Control Plane berekent de topologiewijziging in de RIB en programmeert daarna de nieuwe winnende route in de FIB.",
+    "De FIB berekent zelfstandig het BGP-pad en stuurt daarna een bevestiging naar de RIB.",
+    "Zowel de RIB als de FIB stoppen onmiddellijk met het forwarden van alle datapakketten.",
+    "De Control Plane stuurt het dataverkeer direct door terwijl de FIB opnieuw gecompileerd wordt."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m02",
+   "type": "cloze",
+   "skill": "rib-vs-fib",
+   "level": 2,
+   "prompt": "Vul de term in voor het doorsturen van uitzonderingsverkeer naar de CPU:",
+   "text": "Wanneer netwerkhardware een pakket niet zelfstandig kan forwarden en doorstuurt naar de router-CPU, noemt men dit {{punting|punt-to-cpu|punt}}.",
+   "explain": "Punting belast de router-CPU met niet-offloadbaar verkeer."
+  },
+  {
+   "id": "m03",
+   "type": "match",
+   "skill": "rib-vs-fib",
+   "level": 2,
+   "prompt": "Koppel de netwerkfunctie aan het juiste vlak in de routerarchitectuur:",
+   "explain": "Control Plane = BGP/OSPF processen; Data Plane = TCAM lookup en frame forwarden.",
+   "pairs": [
+    [
+     "Draait het OSPF Dijkstra SPF-algoritme",
+     "Control Plane"
+    ],
+    [
+     "Voert TCAM match uit op wire-speed",
+     "Data Plane"
+    ],
+    [
+     "Beheert fysieke ventilatoren en voeding",
+     "Management Plane"
+    ]
+   ]
+  },
+  {
+   "id": "m04",
+   "type": "mcq",
+   "skill": "longest-prefix-match",
+   "level": 2,
+   "prompt": "Gegeven routes: (1) `192.168.0.0/16 via ISP-A (AD 1)`, (2) `192.168.1.0/24 via ISP-B (AD 110)`, (3) `0.0.0.0/0 via ISP-C (AD 1)`. Welk pad kiest een pakket voor `192.168.1.200`?",
+   "explain": "LPM: 192.168.1.200 matcht op /0, /16 en /24. De meest specifieke prefix is /24 (ISP-B). AD speelt geen rol.",
+   "options": [
+    "ISP-B via route 2, omdat /24 de langste prefix match is ongeacht de hogere AD van 110",
+    "ISP-A via route 1, omdat AD 1 veel betrouwbaarder is dan OSPF AD 110",
+    "ISP-C via route 3, omdat de default gateway alle specifieke routes overschrijft",
+    "De router dropt het pakket omdat routes 1 en 2 met elkaar in conflict zijn"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m05",
+   "type": "numeric",
+   "skill": "longest-prefix-match",
+   "level": 2,
+   "prompt": "Een netwerkbeheerder configureert een subnet `10.50.0.0/22`. Hoeveel bits omvat de netwerkprefix die door het Longest Prefix Match algoritme vergeleken wordt?",
+   "explain": "De prefixlengte /22 betekent dat de eerste 22 bits het netwerkgedeelte vormen.",
+   "value": 22,
+   "tolerance": 0.01,
+   "unit": "bits"
+  },
+  {
+   "id": "m06",
+   "type": "cloze",
+   "skill": "longest-prefix-match",
+   "level": 3,
+   "prompt": "Vul de CIDR-prefix in van de route die álle IPv4-adressen matcht met de allerlaagste specificiteit:",
+   "text": "De default route heeft als CIDR-notatie {{0.0.0.0/0}} en telt exact nul netwerkbits.",
+   "explain": "0.0.0.0/0 matcht elk IPv4-adres met prefixlengte 0."
+  },
+  {
+   "id": "m07",
+   "type": "mcq",
+   "skill": "longest-prefix-match",
+   "level": 3,
+   "prompt": "Waarom kan een kwaadwillende BGP-kaper internetverkeer naar een legitieme IP-reeks stelen door simpelweg een /24 prefix aan te kondigen wanneer de legitieme eigenaar een /21 aankondigt?",
+   "explain": "Omdat alle routers wereldwijd Longest Prefix Match toepassen: de /24 is specifieker dan de /21 en wint altijd, ongeacht het BGP AS-pad.",
+   "options": [
+    "Omdat LPM overal ter wereld de meer specifieke /24 route verkiest boven de /21 prefix",
+    "Omdat BGP routes met een kleiner getal in het subnetmasker automatisch als ongeldig beschouwt",
+    "Omdat de kaper automatisch de Administrative Distance van alle routers op 0 zet",
+    "Omdat de /24 route automatisch alle DNS root servers overschrijft"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m08",
+   "type": "order",
+   "skill": "ad-vs-metrics",
+   "level": 2,
+   "prompt": "Rangschik de volgende routeringsbronnen van laagste AD naar hoogste AD:",
+   "explain": "Connected (0) < Static (1) < OSPF (110) < RIP (120) < iBGP (200).",
+   "tiles": [
+    "Direct aangesloten interface (AD 0)",
+    "Statische route (AD 1)",
+    "OSPF route (AD 110)",
+    "RIP route (AD 120)",
+    "Internal BGP / iBGP route (AD 200)"
+   ]
+  },
+  {
+   "id": "m09",
+   "type": "cloze",
+   "skill": "ad-vs-metrics",
+   "level": 2,
+   "prompt": "Vul de eigenschap in:",
+   "text": "Terwijl Administrative Distance kiest tussen verschillende protocollen, kiest de {{metriek|metric|kosten}} tussen meerdere paden binnen hetzelfde protocol.",
+   "explain": "Binnen hetzelfde protocol beslist de metriek (metric/cost/hops)."
+  },
+  {
+   "id": "m10",
+   "type": "numeric",
+   "skill": "ad-vs-metrics",
+   "level": 2,
+   "prompt": "Wat is de standaard Administrative Distance van een External BGP (eBGP) route?",
+   "explain": "eBGP heeft standaard AD 20 (veel betrouwbaarder dan interne IGP's zoals OSPF met AD 110).",
+   "value": 20,
+   "tolerance": 0.01
+  },
+  {
+   "id": "m11",
+   "type": "mcq",
+   "skill": "ad-vs-metrics",
+   "level": 3,
+   "prompt": "Een beheerder configureert een floating static route als backup voor een OSPF-verbinding: `ip route 10.0.0.0/8 192.168.1.1 125`. Wat gebeurt er als de primaire OSPF-route (AD 110) gezond en actief is?",
+   "explain": "De statische route heeft AD 125, wat hoger is dan OSPF (AD 110). De RIB installeert uitsluitend de OSPF-route in de FIB; de floating route blijft inactief stand-by.",
+   "options": [
+    "De statische route blijft stand-by in de RIB en wordt niet geïnstalleerd in de FIB.",
+    "De router verdeelt het verkeer gelijkmatig over OSPF en de statische route.",
+    "De statische route overschrijft de OSPF-route omdat statische routes altijd prioriteit hebben.",
+    "De OSPF-verbinding wordt automatisch verbroken wegens een administratief conflict."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m12",
+   "type": "type",
+   "skill": "nexthop-recursive-default",
+   "level": 2,
+   "prompt": "Welk type lookup voert een router uit wanneer de next-hop van een route een IP-adres is in plaats van een fysieke interface?",
+   "explain": "Dit proces heet een recursive lookup of recursieve lookup.",
+   "answers": [
+    "recursive lookup",
+    "recursieve lookup",
+    "recursive route lookup",
+    "recursive"
+   ]
+  },
+  {
+   "id": "m13",
+   "type": "cloze",
+   "skill": "nexthop-recursive-default",
+   "level": 2,
+   "prompt": "Vul de toestand van de route in:",
+   "text": "Wanneer de next-hop van een statische route nergens in de routingtabel gevonden kan worden, beschouwt de router de route als {{inactief|onbereikbaar|inactive}} en installeert deze niet in de FIB.",
+   "explain": "Zonder bereikbare next-hop is een route inactief (dead/unreachable)."
+  },
+  {
+   "id": "m14",
+   "type": "mcq",
+   "skill": "nexthop-recursive-default",
+   "level": 3,
+   "prompt": "Een core router heeft een BGP-route naar `203.0.113.0/24 via 198.51.100.5`. Interface `eth0` (die het netwerk `198.51.100.0/24` verbindt) gaat plots fysiek `DOWN`. Wat gebeurt er met het verkeer naar `203.0.113.50`?",
+   "explain": "Omdat de link down gaat, faalt de recursive lookup naar de next-hop. De BGP-route wordt ongeldig en wordt direct uit de FIB verwijderd.",
+   "options": [
+    "De recursive lookup faalt, de route wordt direct uit de FIB verwijderd en verkeer valt terug op de default route of wordt gedropt.",
+    "De router blijft het verkeer naar eth0 sturen totdat de BGP-hold-timer na 180 seconden verloopt.",
+    "De router past automatisch ARP-spoofing toe om een andere interface te forceren.",
+    "De router bewaart alle pakketten in zijn RAM-buffer totdat de link weer hersteld is."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m15",
+   "type": "mcq",
+   "skill": "ecmp-load-balancing",
+   "level": 2,
+   "prompt": "Twee parallelle links van 1 Gbps tussen twee routers zijn geconfigureerd met ECMP. Een beheerder start één enkele iperf3 TCP-downloadsessie. Welke maximale doorvoer kan deze specifieke TCP-sessie behalen?",
+   "explain": "Omdat ECMP per-flow hashing toepast op de 5-tuple, volgen alle pakketten van één TCP-sessie exact één link. De maximale snelheid is dus de bandbreedte van 1 link (1 Gbps).",
+   "options": [
+    "Maximaal 1 Gbps, omdat alle pakketten van één TCP-stream dezelfde hashwaarde hebben en over één link reizen",
+    "Precies 2 Gbps, omdat ECMP de TCP-segmenten per-packet balanceert over beide verbindingen",
+    "Maximaal 500 Mbps, omdat ECMP de helft van de bandbreedte reserveert voor controle-verkeer",
+    "0 Gbps, omdat TCP niet compatibel is met multi-path routering"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m16",
+   "type": "multi",
+   "skill": "ecmp-load-balancing",
+   "level": 3,
+   "prompt": "Welke twee nadelige gevolgen treden op wanneer een router ECMP per-packet round-robin toepast over links met licht verschillende transmissietijden?",
+   "explain": "Pakketten komen out-of-order aan, waardoor TCP duplicate ACKs stuurt, Fast Retransmit triggert en zijn congestion window halveert.",
+   "options": [
+    "TCP-pakketten arriveren out-of-order bij de ontvanger",
+    "De verzender verlaagt zijn transmissiesnelheid door onnodige TCP Fast Retransmits",
+    "De router verhoogt de TTL van vertraagde pakketten automatisch naar 255",
+    "Het Ethernet EtherType-veld wordt overschreven met ARP data"
+   ],
+   "answers": [
+    0,
+    1
+   ]
+  },
+  {
+   "id": "m17",
+   "type": "cloze",
+   "skill": "ecmp-load-balancing",
+   "level": 2,
+   "prompt": "Vul het netwerkfenomeen in:",
+   "text": "Wanneer identieke hash-algoritmes op opeenvolgende routers ertoe leiden dat verkeersstromen steeds dezelfde link kiezen en parallelle paden onbenut laten, spreekt men van hash {{polarisatie|polarization}}.",
+   "explain": "Hash polarisatie (hash polarization) veroorzaakt scheve belasting in multi-tier ECMP netwerken."
+  },
+  {
+   "id": "m18",
+   "type": "order",
+   "skill": "ecmp-load-balancing",
+   "level": 3,
+   "prompt": "Rangschik de stappen die een hardware ASIC doorloopt bij het bepalen van het uitgaande ECMP-pad voor een TCP-pakket:",
+   "explain": "Headers parsen -> 5-tuple extraheren -> hash berekenen met seed -> modulo aantal paden -> interface selecteren.",
+   "tiles": [
+    "ASIC inspecteert de binnenkomende IP- en TCP-headers van het frame",
+    "Hardware extraheert de 5-tuple (Src IP, Dst IP, Protocol, Src Port, Dst Port)",
+    "Hashfunctie berekent een numerieke hashwaarde met de unieke router-seed",
+    "Modulo-bewerking (Hash mod N) bepaalt de index van het uitgaande pad",
+    "Pakket wordt direct geforward via de geselecteerde fysieke interface"
+   ]
+  }
+ ],
+ "production": {
+  "type": "explain",
+  "prompt": "**Case: Routing Tabel Forensiek — Dual-ISP Failover & De LPM-Valkuil**\n\nAls senior netwerkarchitect word je ingeschakeld door een fintech-onderneming. Hun hoofdkantoor heeft een redundante internetconnectie via twee verschillende providers:\n- **ISP-1 (Primaire Glasvezel, 1 Gbps)**: Geconfigureerd met een standaard statische default route: `ip route 0.0.0.0/0 via 198.51.100.1` (standaard AD = 1).\n- **ISP-2 (Back-up 5G Zakelijk, 100 Mbps)**: Bedoeld als automatische noodlijn bij kabelbreuk van de glasvezel.\n- **Intern Bedrijfsnetwerk**: Alle interne vestigingen en datacenters communiceren via **OSPF** (AD = 110).\n\nEr doen zich twee ernstige problemen voor:\n1. **Incident A (De Verkeerde Snelweg)**: De beheerder wilde garanderen dat verkeer naar het externe betalingsplatform (`192.168.100.0/24`) altijd bereikbaar bleef via 5G. Hij voegde een statische route toe: `ip route 192.168.100.0/24 via 192.0.2.1` (het 5G-modem). Tot verbijstering van het management loopt nu AL het betalingsverkeer continu over de trage, dure 5G-lijn, zelfs wanneer de 1 Gbps glasvezelverbinding 100% operationeel is!\n2. **Incident B (De Mislukte Failover)**: Toen een graafmachine de glasvezelkabel van ISP-1 2 kilometer verderop doorsneed, bleef interface `eth0` op de router gewoon fysiek `UP` (omdat de lokale media-converter nog stroom had). Gevolg: al het internetverkeer bleef in een zwart gat verdwijnen en de 5G-backup nam niets over.\n\nSchrijf een diepgaande technische analyse en herstelplan (350-500 woorden) met de volgende vier onderdelen:\n1. **Verklaar Incident A**: Leg exact uit waarom het betalingsverkeer over de 5G-lijn loopt met behulp van de regels van **Longest Prefix Match (LPM)** en **Administrative Distance (AD)**.\n2. **Herstelplan Incident A**: Hoe pas je de configuratie aan zodat de 1 Gbps glasvezel primair gebruikt wordt voor `192.168.100.0/24` en de 5G-verbinding uitsluitend als echte floating static backup fungeert?\n3. **Verklaar Incident B**: Waarom faalde de automatische failover ondanks de fysieke kabelbreuk, en waarom bleef de route via ISP-1 in de FIB staan?\n4. **Structurele Oplossing Incident B**: Welke twee specifieke routermechanismen (zoals IP SLA / BFD / route tracking) implementeer je om te garanderen dat de router een upstream storing direct detecteert en de route uit de FIB verwijdert?",
+  "model": "### 1. Analyse Incident A: De LPM-Valkuil\nHet betalingsverkeer kiest de trage 5G-lijn vanwege de universele wet van **Longest Prefix Match (LPM)**:\n- De router heeft voor het internet een default route `0.0.0.0/0` via ISP-1 (prefixlengte /0).\n- Voor het betalingsplatform heeft de beheerder een statische route `192.168.100.0/24` via ISP-2 (prefixlengte /24) ingevoerd.\n- Wanneer een client een betaling verstuurt naar bijvoorbeeld `192.168.100.50`, matcht dit IP op zowel `0.0.0.0/0` als `192.168.100.0/24`.\n- Omdat een prefix van 24 bits specifieker is dan een prefix van 0 bits, **wint de /24 route ALTIJD via LPM**! De router kijkt geeneens naar bandbreedte, latency of Administrative Distance. De 5G-verbinding wordt dus altijd geforceerd.\n\n### 2. Herstelplan Incident A: Correcte Floating Route Structuur\nOm de 1 Gbps glasvezel primair te benutten en 5G als backup te houden, moeten beide routes op **exact hetzelfde prefixniveau** worden gedefinieerd, waarna Administrative Distance de beslissing neemt:\n1. Voeg een specifieke statische route toe via de primaire glasvezel:\n   `ip route 192.168.100.0/24 via 198.51.100.1` (standaard AD = 1).\n2. Verhoog de Administrative Distance van de route via de 5G-verbinding tot een **floating static route**:\n   `ip route 192.168.100.0/24 via 192.0.2.1 metric 10` (of AD 10/130).\nNu matcht verkeer op twee identieke `/24` prefixen. De router vergelijkt de AD: AD 1 wint van AD 10. De 5G-route blijft stand-by in de RIB en wordt pas in de FIB geplaatst als de primaire route wegvalt.\n\n### 3. Analyse Incident B: Onzichtbare Upstream Kabelbreuk\nEen router verwijdert een statische route uitsluitend uit de FIB wanneer de direct aangesloten fysieke interface de toestand `NO-CARRIER` of `DOWN` bereikt. Omdat de router verbonden was met een lokale switch of mediaconverter die van stroom voorzien bleef, rapporteerde de fysieke Ethernet-laag (Layer 1) `operstate: UP`. De router veronderstelt hierdoor ten onrechte dat de next-hop bereikbaar is, waardoor de statische route actief bleef in de FIB en alle pakketten in een upstream *black hole* verdwenen.\n\n### 4. Structurele Oplossing Incident B: End-to-End Health Tracking\nOm upstream storingen betrouwbaar en binnen fracties van een seconde te detecteren, implementeren we twee complementaire mechanismen:\n1. **IP SLA met Object Tracking**: De router vuurt elke 3 seconden een periodieke ICMP Echo Request af naar een betrouwbaar upstream IP-adres (bijvoorbeeld de gateway van ISP-1 of `1.1.1.1` geforceerd via `eth0`). De statische route via ISP-1 wordt gekoppeld aan een track-object (`ip route 0.0.0.0/0 via 198.51.100.1 track 1`). Zodra drie opeenvolgende pings falen, verklaart de router de track `DOWN` en trekt de route direct in uit de FIB.\n2. **Bidirectional Forwarding Detection (BFD)**: Tussen de enterprise router en de provider-router configureren we hardware-assisted BFD. BFD verstuurt sub-seconde keepalives (bijvoorbeeld 300 ms). Bij een onderbreking detecteert BFD de linkuitval binnen 900 ms, waarna de routerings-engine onmiddellijk overschakelt naar de secundaire ISP.",
+  "rubric": [
+   "Verklaart de root-cause van Incident A via Longest Prefix Match (LPM /24 verslaat default route /0 ongeacht intentie)",
+   "Biedt een correct herstelplan met identieke prefixlengtes en een verhoogde Administrative Distance voor de floating backup",
+   "Legt uit waarom de router de uitval in Incident B niet detecteerde (Layer 1 carrier blijft UP op lokale mediaconverter)",
+   "Draagt concrete end-to-end monitoringoplossingen aan (IP SLA met Object Tracking en BFD voor sub-seconde failover)"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-01",
+   "skill": "rib-vs-fib",
+   "front": "Wat is het architecturale verschil tussen de RIB en de FIB?",
+   "back": "De **RIB** (Control Plane/CPU) bevat alle geleerde routes en berekent de topologie; de **FIB** (Data Plane/ASIC) bevat alleen de beste routes voor hardwarematige forwarding op wire-speed."
+  },
+  {
+   "id": "c-02",
+   "skill": "rib-vs-fib",
+   "front": "Wat is 'punting' op een router en waarom is het gevaarlijk?",
+   "back": "Het doorsturen van niet-offloadbare pakketten van de netwerkchip naar de **trage Control Plane CPU**. Te veel punted verkeer leidt tot 100% CPU-belasting en protocol-crashes."
+  },
+  {
+   "id": "c-03",
+   "skill": "longest-prefix-match",
+   "front": "Wat is de Gouden Regel van Longest Prefix Match (LPM)?",
+   "back": "De route met het **grootste aantal netwerkbits (meest specifieke subnetmasker)** wint ALTIJD:\n$$/32 > /24 > /16 > /8 > /0$$\n(AD en metriek spelen géén rol bij verschillende prefixlengtes!)"
+  },
+  {
+   "id": "c-04",
+   "skill": "ad-vs-metrics",
+   "front": "Wanneer kijkt een router wél naar Administrative Distance (AD)?",
+   "back": "**Uitsluitend** wanneer twee of meer routes **exact dezelfde prefix en hetzelfde subnetmasker** hebben, geleerd via verschillende protocollen. De laagste AD wint."
+  },
+  {
+   "id": "c-05",
+   "skill": "ad-vs-metrics",
+   "front": "Noem de standaard AD voor Connected, Static, eBGP, OSPF, RIP en iBGP:",
+   "back": "- Connected: **0**\n- Static: **1**\n- eBGP: **20**\n- OSPF: **110**\n- RIP: **120**\n- iBGP: **200**"
+  },
+  {
+   "id": "c-06",
+   "skill": "ad-vs-metrics",
+   "front": "Wat is een floating static route en hoe werkt het?",
+   "back": "Een statische route met een **opzettelijk verhoogde AD** (bv. 130). Hij blijft inactief stand-by zolang het dynamische protocol (bv. OSPF AD 110) gezond is, en activeert automatisch bij uitval."
+  },
+  {
+   "id": "c-07",
+   "skill": "nexthop-recursive-default",
+   "front": "Wat is een recursive next-hop lookup?",
+   "back": "Wanneer de next-hop een IP-adres is, moet de router een **tweede interne opzoeking** doen in de routingtabel om de bijbehorende fysieke uitgangsinterface te bepalen."
+  },
+  {
+   "id": "c-08",
+   "skill": "nexthop-recursive-default",
+   "front": "Wat is de functie en CIDR-notatie van de default route?",
+   "back": "`0.0.0.0/0` (Gateway of Last Resort). Matcht alle IP-adressen met prefixlengte 0, waardoor hij pas gekozen wordt wanneer geen enkele specifiekere route matcht."
+  },
+  {
+   "id": "c-09",
+   "skill": "ecmp-load-balancing",
+   "front": "Waarom gebruikt ECMP een 5-tuple hash in plaats van per-packet round-robin?",
+   "back": "Om te voorkomen dat TCP-segmenten **out-of-order** arriveren. Per-flow hashing garandeert dat alle pakketten van dezelfde TCP-verbinding hetzelfde pad volgen."
+  },
+  {
+   "id": "c-10",
+   "skill": "ecmp-load-balancing",
+   "front": "Wat is hash polarisatie in ECMP en hoe wordt dit opgelost?",
+   "back": "Wanneer opeenvolgende routers dezelfde hashfunctie gebruiken en daardoor steeds dezelfde link kiezen. Oplossing: een **unieke willekeurige hash-seed** per router."
+  }
+ ],
+ "sources": [
+  "RFC 1812 — Requirements for IP Version 4 Routers",
+  "RFC 2991 — Multipath Issues in Unicast and Multicast Next-Hop Selection",
+  "RFC 2328 — OSPF Version 2 Specification",
+  "RFC 4271 — A Border Gateway Protocol 4 (BGP-4)"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-02"
+ }
+}

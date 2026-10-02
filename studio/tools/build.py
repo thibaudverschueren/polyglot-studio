@@ -29,7 +29,7 @@ CONTENT = os.path.join(STUDIO, "content")
 APP = os.path.join(STUDIO, "app")
 PROFILE = os.path.expanduser("~/scripts/student_profile.json")
 NODE = shutil.which("node") or "/opt/homebrew/bin/node"
-TRACKS = ["greek", "french", "spanish", "solidity", "ai", "automation", "jev"]
+TRACKS = ["greek", "french", "spanish", "solidity", "ai", "automation", "jev", "routing"]
 
 
 def load(path):

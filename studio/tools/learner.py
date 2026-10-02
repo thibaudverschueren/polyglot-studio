@@ -10,7 +10,7 @@ import os
 import re
 from collections import Counter, defaultdict
 
-TRACKS = ["greek", "french", "spanish", "solidity", "ai", "automation", "jev"]
+TRACKS = ["greek", "french", "spanish", "solidity", "ai", "automation", "jev", "routing"]
 RANK = ["new", "started", "legacy", "learned", "mastered", "anchored"]
 DONE = {"legacy", "learned", "mastered", "anchored"}
 DAY_MS = 86400000

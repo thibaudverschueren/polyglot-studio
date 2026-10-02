@@ -1,0 +1,747 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "routing",
+ "id": 5,
+ "roadmap": "routing-11-nat-cgnat-pat",
+ "kind": "core",
+ "title": "Consumentenrouters: NAT, PAT, Conntrack & CGNAT",
+ "subtitle": "Hoe edge gateways private IP's vertalen, connectietabellen volraken en CGNAT poortforwarding blokkeert",
+ "level": "fundament",
+ "minutes": 45,
+ "summary": "Consumentenrouters verbinden miljoenen apparaten met het internet via Network Address Translation (NAT/PAT). In deze les ontleed je RFC 1918 vertalingen, analyseer je de Linux conntrack tabel, diagnosticeer je conntrack exhaustion en ontdek je waarom CGNAT en Double-NAT traditionele poortforwarding breken.",
+ "objectives": [
+  {
+   "id": "rfc1918-nat-basics",
+   "text": "Je identificeert de RFC 1918 private adresreeksen en legt het verschil uit tussen SNAT, DNAT en PAT (Masquerade)."
+  },
+  {
+   "id": "conntrack-mechanics",
+   "text": "Je traceert hoe de Linux conntrack tabel 5-tuples bijhoudt en berekent het geheugengebruik en de timeouts van statussen."
+  },
+  {
+   "id": "conntrack-exhaustion",
+   "text": "Je diagnosticeert conntrack table exhaustion aan de hand van kernel logs, telemetry indicatoren en connectiesymptomen."
+  },
+  {
+   "id": "double-nat-cgnat",
+   "text": "Je herkent Double-NAT en CGNAT (RFC 6598 100.64.0.0/10) op WAN-interfaces en verklaart waarom poortforwarding faalt."
+  },
+  {
+   "id": "nat-traversal-p2p",
+   "text": "Je evalueert NAT-traversal mechanismen zoals UPnP, STUN, TURN en reverse VPN-tunnels voor peer-to-peer verkeer."
+  }
+ ],
+ "sections": [
+  {
+   "id": "rfc1918-en-pat",
+   "title": "1. Het Schaarsteprobleem: RFC 1918, SNAT, DNAT en PAT",
+   "md": "In het oorspronkelijke IPv4-ontwerp (1981) had elk verbonden apparaat een wereldwijd uniek publiek IP-adres nodig. Met slechts $2^{32} \\approx 4{,}29$ miljard mogelijke adressen dreigde het internet begin jaren 90 al snel volledig vast te lopen. Als tussenoplossing introduceerde het IETF in 1996 **RFC 1918**: een formele reservering van drie private adresblokken die *nooit* direct gerouteerd worden over het publieke internet:\n\n- **Klasse A (10.0.0.0/8)**: $10.0.0.0$ tot $10.255.255.255$ ($16.777.216$ adressen, $2^{24}$ hosts). Typisch gebruikt in grote enterprise-campussen en datacenters.\n- **Klasse B (172.16.0.0/12)**: $172.16.0.0$ tot $172.31.255.255$ ($1.048.576$ adressen, 16 opeenvolgende /16 blokken). Veelal gebruikt voor interne bedrijfsnetwerken en VPN-pools.\n- **Klasse C (192.168.0.0/16)**: $192.168.0.0$ tot $192.168.255.255$ ($65.536$ adressen, 256 subnetten van /24). De universele standaard voor consumentenrouters, home-offices en kleine KMO's.\n\nOmdat routers op de internetbackbone pakketten met een RFC 1918 bron- of bestemmingsadres direct droppen, moet een edge gateway (de consumentenrouter) adressen vertalen via **Network Address Translation (NAT)**. We onderscheiden drie fundamentele vormen:\n\n1. **SNAT (Source NAT)**: De router herschrijft het interne bron-IP naar een vast publiek IP-adres. Dit gebeurt op het moment dat een intern pakket de WAN-interface verlaat (postrouting).\n2. **DNAT (Destination NAT)**: De router herschrijft het bestemmings-IP van een inkomend pakket op de WAN-poort naar het private IP van een interne server (prerouting). Dit is het exacte mechanisme achter traditionele **port forwarding** (bijvoorbeeld: extern verkeer op TCP poort 443 doorsluizen naar interne webserver `192.168.1.50:443`).\n3. **PAT (Port Address Translation / NAPT / Masquerade)**: De ruggengraat van thuisnetwerken. Omdat een gezin of kantoor tientallen apparaten heeft maar slechts **één enkel dynamisch publiek IPv4-adres** bezit, herschrijft de router zowel het IP-adres als het Layer 4 poortnummer (TCP of UDP). Hierdoor kunnen duizenden gelijktijdige uitgaande verbindingen hetzelfde publieke IP delen.\n\n> [!example] Pakketreis door PAT\n> Een laptop op het LAN (`192.168.1.25:54321`) zendt een HTTP GET-verzoek naar webserver `142.250.179.206:443`. De router (met publiek WAN-IP `203.0.113.10`) voert PAT uit:\n> - **Origineel pakket**: Bron `192.168.1.25:54321` $\\rightarrow$ Bestemming `142.250.179.206:443`\n> - **Vertaald pakket op WAN**: Bron `203.0.113.10:41002` $\\rightarrow$ Bestemming `142.250.179.206:443`\n> \n> De router kiest de vrije willekeurige poort `41002` op zijn publieke interface en onthoudt deze koppeling in zijn interne statusgeheugen. Wanneer de webserver antwoordt naar `203.0.113.10:41002`, vertaalt de router het pakket direct terug naar `192.168.1.25:54321`.\n\n> [!pitfall] Ephemeral Port Exhaustion\n> Een IPv4-adres heeft theoretisch maximaal 65.535 TCP- en UDP-poorten. Poorten 1 t/m 1023 zijn gereserveerde *well-known* poorten. De router gebruikt dynamische poorten (standaard 1024–65535, of de IANA ephemeral range 49152–65535). Wanneer te veel interne clients gelijktijdig verbindingen openen naar dezelfde externe bestemming, kan een router door zijn beschikbare vertaalpoorten heen raken (*port exhaustion*).",
+   "checks": [
+    {
+     "id": "c1-01",
+     "type": "cloze",
+     "skill": "rfc1918-nat-basics",
+     "level": 1,
+     "prompt": "Vul het netwerkmasker aan voor de RFC 1918 Klasse B private adresruimte:",
+     "text": "De RFC 1918 Klasse B reeks loopt van 172.16.0.0 tot 172.31.255.255 en heeft CIDR-prefix {{172.16.0.0/12|/12}}.",
+     "explain": "De Klasse B private reeks beslaat 16 /16 blokken, wat overeenkomt met een /12 subnetmasker (255.240.0.0)."
+    },
+    {
+     "id": "c1-02",
+     "type": "mcq",
+     "skill": "rfc1918-nat-basics",
+     "level": 2,
+     "prompt": "Welk type adresvertaling wordt toegepast wanneer een router inkomend WAN-verkeer op poort 80 doorschakelt naar een interne webserver?",
+     "explain": "DNAT (Destination NAT) herschrijft het bestemmings-IP (en optioneel de poort) van binnenkomende pakketten vóór routering.",
+     "options": [
+      "Destination NAT (DNAT)",
+      "Source NAT (SNAT)",
+      "Dynamic Masquerading",
+      "Stateless Anycast NAT"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "linux-conntrack-tabel",
+   "title": "2. Onder de Motorkap: De Linux Conntrack State Table",
+   "md": "Hoe weet een router bij terugkerende datapakketten exact naar welke interne pc het antwoord moet worden doorgestuurd? Een stateless router kan dit onmogelijk weten. Consumenten- en enterprise-routers draaiend op Linux (zoals OpenWrt, VyOS, pfSense/OPNsense via pf) maken daarom gebruik van een geavanceerd state-tracking subsysteem: **Netfilter Connection Tracking (`nf_conntrack`)**.\n\nVoor elke actieve sessie slaat de kernel een unieke **5-tuple** op in een hashtabel in het RAM-geheugen:\n\n$$\\text{5-Tuple} = \\langle \\text{Protocol}, \\text{Bron-IP}, \\text{Doel-IP}, \\text{Bronpoort}, \\text{Doelpoort} \\rangle$$\n\nIn de praktijk slaat conntrack voor elke verbinding **twee richtingen** op: de originele aanvraag (*original*) en de verwachte repliek (*reply*):\n\n```text\n# Inspectie van een conntrack entry via: conntrack -L\ntcp      6 431998 ESTABLISHED src=192.168.1.25 dst=142.250.179.206 sport=54321 dport=443 \\\n         src=142.250.179.206 dst=203.0.113.10 sport=443 dport=41002 [ASSURED] mark=0 use=1\n```\n\nBekijk de structuur nauwkeurig:\n- **Original tuple**: `src=192.168.1.25`, `dst=142.250.179.206`, `sport=54321`, `dport=443`\n- **Reply tuple**: `src=142.250.179.206`, `dst=203.0.113.10`, `sport=443`, `dport=41002`\n\nWanneer een antwoordpakket binnenkomt op WAN-interface `203.0.113.10:41002`, berekent de kernel de hash van de inkomende reply-tuple, vindt de bijbehorende original-tuple en herschrijft de bestemming naadloos naar `192.168.1.25:54321`.\n\n### Toestanden en Timeouts\nNiet elk protocol heeft een expliciete verbinding. TCP is stateful (SYN, ESTABLISHED, FIN/RST), maar UDP en ICMP zijn connectionless. Netfilter creëert daarom virtuele pseudo-statussen met strikte timers:\n\n| Protocol & Status | Standaard Kernel Timeout | Betekenis in de praktijk |\n|---|---|---|\n| **TCP SYN_SENT** | 120 seconden | Handshake gestart, wacht op SYN-ACK |\n| **TCP ESTABLISHED** | 432.000 s (5 dagen!) | Actieve TCP-verbinding; data stroomt |\n| **TCP TIME_WAIT** | 120 seconden | Verbinding netjes afgesloten door FIN |\n| **TCP CLOSE** | 10 seconden | Verbinding geannuleerd via RST |\n| **UDP UNREPLIED** | 30 seconden | Eén UDP-pakket verzonden, nog geen reply |\n| **UDP ASSURED** | 180 seconden | Tweerichtings UDP-stroom (bv. VoIP of video) |\n| **ICMP** | 30 seconden | Ping echo request/reply venster |\n\n### Geheugenbeslag van Conntrack in de Kernel\nElk conntrack-record verbruikt non-swappable kernel slab RAM (`kmalloc`). Een gemiddeld record kost tussen **320 en 384 bytes**. Een router met een tabel van 65.536 entries reserveert dus continu circa $65.536 \\times 384\\text{ B} \\approx 25\\text{ MB}$ exclusief de hashtable buckets.",
+   "checks": [
+    {
+     "id": "c2-01",
+     "type": "numeric",
+     "skill": "conntrack-mechanics",
+     "level": 2,
+     "prompt": "Een Linux router reserveert 384 bytes kernelgeheugen per conntrack entry. Hoeveel megabyte (MB) RAM verbruiken 65.536 gelijktijdige verbindingen in de slab cache (rond af op 1 decimaal of geheel getal)?",
+     "explain": "65536 * 384 bytes = 25.165.824 bytes ≈ 25,17 MB.",
+     "value": 25.2,
+     "tolerance": 0.05,
+     "unit": "MB"
+    },
+    {
+     "id": "c2-02",
+     "type": "cloze",
+     "skill": "conntrack-mechanics",
+     "level": 1,
+     "prompt": "Benoem het Linux subsysteem:",
+     "text": "Het subsysteem in de Linux netwerkkernel dat verantwoordelijk is voor state tracking en NAT-vertalingen heet nf_{{conntrack|conntrack}}.",
+     "explain": "nf_conntrack staat voor Netfilter Connection Tracking."
+    }
+   ]
+  },
+  {
+   "id": "conntrack-exhaustion-diagnose",
+   "title": "3. Conntrack Exhaustion: Het 'Geen Internet' Mysterie",
+   "md": "In het dagelijkse leven van netwerkbeheerders en helpdesks veroorzaakt conntrack een van de meest verwarrende storingspatronen. Dit fenomeen staat bekend als **Conntrack Table Exhaustion**.\n\nElke Linux router heeft een harde limiet voor het maximale aantal sessies dat gelijktijdig kan worden bijgehouden, geconfigureerd via sysctl:\n\n```bash\n# Maximale tabelgrootte uitlezen en huidig aantal tellen:\nsysctl net.netfilter.nf_conntrack_max\ncat /proc/sys/net/netfilter/nf_conntrack_count\n# Snelle telemetrie-telling:\nconntrack -C\n```\n\nOp goedkope consumentenrouters met 128 MB tot 256 MB RAM staat `nf_conntrack_max` vaak ingesteld op slechts 8.192 of 16.384. Zelfs krachtigere gateways hebben standaard vaak 65.535 als limiet.\n\n### Wat gebeurt er als de tabel vol raakt?\nZodra `nf_conntrack_count >= nf_conntrack_max`, weigert de kernel om een nieuw record aan te maken. In `dmesg` verschijnt met rode letters:\n\n```text\n[ 3824.192014] nf_conntrack: table full, dropping packet\n```\n\nDit leidt tot een **half-functionerende internetstoring**:\n1. **Bestaande verbindingen blijven werken**: Een lopende Teams-vergadering, een actieve SSH-sessie of een download stroomt ongestoord door. Immers: deze sessies zitten al in de tabel en worden foutloos gematcht!\n2. **Nieuwe verbindingen worden 100% gedropt**: Ieder nieuw TCP SYN-pakket vereist een nieuw conntrack record. Omdat de tabel vol is, gooit Netfilter het SYN-pakket direct in de prullenmand.\n3. **Ping kan slagen**: Als ICMP stateless wordt afgehandeld of een bestaande entry herbruikt, rapporteert de gebruiker: *'Ik kan 8.8.8.8 pingen, maar geen enkele browserpagina opent!'*\n\n```\n                     +-------------------------------+                      \n                     |   Conntrack Tabel (VOL: 65k)  |                      \n                     +-------------------------------+                      \n                                    │                                       \n     Bestaande TCP-stroom (ESTABLISHED) ──> Matcht entry ──> Toegelaten [OK]\n                                                                            \n     Nieuwe TCP SYN (Website openen)   ──> Tabel vol    ──> GEDROPT [DROP]  \n```\n\n### Typische Oorzaken in Thuis- en KMO-Netwerken\n- **BitTorrent & P2P-applicaties**: P2P-clients scannen via de Distributed Hash Table (DHT) tienduizenden andere nodes per minuut over UDP. Omdat UDP-timeouts standaard oplopen tot 180 seconden, vult één enkele actieve torrent-client binnen no-time 30.000 conntrack records.\n- **Slecht geprogrammeerde IoT-apparaten**: Goedkope bewakingscamera's, deurbellen of slimme thermostaten openen elke 5 seconden een nieuwe TCP-verbinding naar een cloudserver, maar sluiten de sessie nooit netjes af met `FIN` of `RST`. Door de standaard Linux `tcp_timeout_established` van **5 dagen (432.000 seconden)** blijft elke zombie-sessie dagenlang een slot bezet houden tot de router bezwijkt.\n- **SYN-flood of poortscans**: Een gecompromitteerde host op het LAN die het internet afzoekt naar kwetsbaarheden.\n\n> [!tip] Mitigatie & Hardening op de Router\n> Verlaag de buitensporige standaard timeout voor gevestigde TCP-verbindingen in `/etc/sysctl.conf`:\n> ```text\n> net.netfilter.nf_conntrack_tcp_timeout_established = 7200\n> net.netfilter.nf_conntrack_udp_timeout = 10\n> net.netfilter.nf_conntrack_udp_timeout_stream = 60\n> net.netfilter.nf_conntrack_max = 131072\n> ```",
+   "checks": [
+    {
+     "id": "c3-01",
+     "type": "mcq",
+     "skill": "conntrack-exhaustion",
+     "level": 2,
+     "prompt": "Waarom kan een gebruiker tijdens conntrack exhaustion vaak nog een lopend VoIP-gesprek voortzetten terwijl webpagina's niet openen?",
+     "explain": "Bestaande verbindingen hebben al een actieve entry in conntrack, terwijl nieuwe TCP SYN-pakketten direct worden gedropt.",
+     "options": [
+      "Bestaande sessies bezitten reeds een conntrack entry; nieuwe TCP SYN-pakketten vereisen een nieuw record en worden gedropt",
+      "VoIP gebruikt geen IP-pakketten maar schakelt over op analoge Layer 1 carrier frequenties",
+      "Webbrowsers vereisen DNSSEC en schakelen automatisch over op statische conntrack proxies",
+      "Het TCP-protocol negeert volgelopen netwerktabellen zolang de MTU onder 1500 bytes blijft"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c3-02",
+     "type": "cloze",
+     "skill": "conntrack-exhaustion",
+     "level": 2,
+     "prompt": "Vul de kernel logmelding aan:",
+     "text": "Wanneer de conntrack-tabel zijn limiet bereikt, meldt de Linux kernel: 'nf_conntrack: {{table full, dropping packet|table full}}'.",
+     "explain": "De melding 'table full, dropping packet' is de klassieke kernel indicator van conntrack verzadiging."
+    }
+   ]
+  },
+  {
+   "id": "double-nat-en-cgnat",
+   "title": "4. Dubbele Muren: Double-NAT en CGNAT (RFC 6598)",
+   "md": "In een ideale wereld bevindt zich tussen het thuisnetwerk en het wereldwijde internet precies één router die één keer NAT uitvoert. Twee moderne netwerkomstandigheden breken deze aanname echter fundamenteel: **Double-NAT** en **Carrier-Grade NAT (CGNAT)**.\n\n### Double-NAT: De Router-achter-Router Valkuil\nVeel consumenten en thuiswerkers ontvangen van hun telecomprovider (zoals Telenet of Proximus) een geïntegreerde modem-router. Omdat het ingebouwde WiFi-signaal matig is, koopt de gebruiker een geavanceerde WiFi 6 mesh-router (bijvoorbeeld van Asus, Netgear of Ubiquiti). Men sluit de WAN-poort van de eigen router aan op een LAN-poort van de provider-modem.\n\nHet resultaat is **Double-NAT**:\n- Provider-modem LAN: `192.168.1.1/24`. De WAN-poort van de eigen router krijgt via DHCP IP `192.168.1.100`.\n- Eigen router LAN: `192.168.0.1/24` (of in het slechtste geval ook `192.168.1.1/24`, wat een catastrofaal IP-conflict oplevert).\n\n```\n[Game Console]                 [Eigen Router]              [ISP Modem-Router]           [Internet]\n192.168.0.50  ──(NAT 1)──>  WAN: 192.168.1.100 ──(NAT 2)──>  WAN: 203.0.113.88  ───>  Publiek IP\n```\n\nWat gaat hier mis?\n1. **UPnP en Port Forwarding falen**: Wanneer de game console via UPnP vraagt om poort 3074 te openen, opent de eigen router poort 3074 op interface `192.168.1.100`. De buitenste ISP-modem weet echter van niets! Inkomend verkeer strandt genadeloos op de modem. Gevolg: PlayStation en Xbox melden **NAT Type: Strict / Type 3**.\n2. **Asymmetrische routering & VPN-drops**: VPN-tunnels (zoals IPsec met ESP) en VoIP SIP-protocollen verdragen twee opeenvolgende vertaalcycli zeer slecht en verliezen continu hun verbinding.\n3. **De Oplossing**: Zet de ISP-modem in **Bridge mode** (zodat hij puur functioneert als transparante Layer 2 mediaconverter), of configureer de eigen router als puur **Access Point (AP-modus)** zonder eigen routing/NAT.\n\n### CGNAT (Carrier-Grade NAT / RFC 6598)\nSinds de officiële uitputting van vrije IPv4-adresblokken bij RIPE en ARIN hebben internetproviders niet meer voldoende publieke IP-adressen voor elke abonnee. Vooral bij glasvezelaanbieders (FTTH), mobiele 4G/5G operators en nieuwe ISP's krijgt de consument **helemaal geen publiek IP-adres meer**.\n\nIn plaats daarvan implementeert de provider een gigantische centrale NAT-cluster in zijn core-netwerk. Volgens **RFC 6598** heeft het IETF hiervoor een speciaal adresblok gereserveerd: de **Shared Address Space**:\n\n$$\\mathbf{100.64.0.0/10} \\quad (100.64.0.0 \\text{ tot } 100.127.255.255, \\approx 4{,}19 \\text{ miljoen adressen})$$\n\n### Hoe bewijs je dat een verbinding achter CGNAT zit?\nJe herkent CGNAT aan de hand van twee onweerlegbare feiten:\n1. **Controleer het WAN-IP op de router**: Log in op de beheerinterface van de router. Als het WAN-adres begint met `100.64.x.x` tot `100.127.x.x`, zit de router onbetwistbaar achter CGNAT.\n2. **Vergelijk WAN-IP met een externe check**: Surf naar een website zoals `whatismyip.com`. Toont de website een publiek IP (zoals `194.154.218.44`), maar staat in je router WAN-status `100.85.12.34`? Dan is er sprake van CGNAT.\n\n> [!pitfall] De Dode Port Forward\n> Achter CGNAT is het instellen van traditionele Port Forwarding op de router **100% zinloos**. Duizenden andere ISP-klanten delen hetzelfde publieke IP. Inkomende datapakketten vanaf het internet weten niet naar welke van de honderden klanten ze moeten worden doorgestuurd. Een eigen thuisserver, NAS of game-host is van buitenaf onbereikbaar over IPv4.",
+   "checks": [
+    {
+     "id": "c4-01",
+     "type": "mcq",
+     "skill": "double-nat-cgnat",
+     "level": 1,
+     "prompt": "Welk WAN IP-adres op een consumentenrouter toont onomstotelijk aan dat de internetprovider Carrier-Grade NAT (CGNAT) toepast?",
+     "explain": "De reeks 100.64.0.0/10 (100.64.0.0 t/m 100.127.255.255) is door RFC 6598 gereserveerd voor Carrier-Grade NAT.",
+     "options": [
+      "100.88.42.15",
+      "172.32.10.5",
+      "192.169.1.1",
+      "11.0.0.1"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c4-02",
+     "type": "cloze",
+     "skill": "double-nat-cgnat",
+     "level": 2,
+     "prompt": "Vul het RFC nummer in voor de Shared Address Space:",
+     "text": "Het IETF document dat de 100.64.0.0/10 reeks vastlegde voor Carrier-Grade NAT is RFC {{6598}}.",
+     "explain": "RFC 6598 definieert de IANA IPv4 Shared Address Space voor provider NAT-infrastructuren."
+    }
+   ]
+  },
+  {
+   "id": "nat-traversal-en-p2p",
+   "title": "5. Muren Doorbreken: UPnP, STUN, TURN & Reverse Tunnels",
+   "md": "Wanneer twee eindgebruikers direct met elkaar willen communiceren (P2P)—denk aan online multiplayer gaming, WebRTC videobellen (Zoom, Google Meet) of torrents—stuit men op een fundamenteel probleem: **beide eindpunten zitten achter een NAT-gateway**. Geen van beiden heeft een direct bereikbaar publiek IP.\n\nOm deze blokkade te omzeilen, heeft de netwerkindustrie diverse **NAT-traversal** mechanismen ontwikkeld:\n\n### 1. UPnP (Universal Plug and Play) & NAT-PMP / PCP\nUPnP stelt een lokale client (zoals een Xbox of desktop) in staat om via een XML/SOAP-bericht over UDP poort 1900 aan de router te vragen: *'Wil je poort 3074 op je WAN-interface automatisch doorschakelen naar mijn IP?'*\n- **Voordeel**: Volledig geautomatiseerd, geen handmatige poortconfiguratie nodig.\n- **Gevaar**: Een zwaar veiligheidsrisico. UPnP kent standaard geen authenticatie. Malware op een willekeurige pc in het netwerk kan een inkomende poort openzetten om de firewall te omzeilen. Beveiligingsexperts schakelen UPnP daarom steevast uit.\n\n### 2. STUN (Session Traversal Utilities for NAT - RFC 5389)\nBij STUN stuurt een interne client een UDP-verzoek naar een publieke STUN-server op het internet (zoals `stun.l.google.com:19302`). De STUN-server kijkt in de IP- en UDP-headers vanaf welk publiek IP en welke externe poort het pakket arriveerde, en stuurt deze gegevens terug naar de client.\n\nZodra de client weet: *'Ik ben extern bekend als 203.0.113.5:58210'*, kan hij dit meedelen aan zijn peer via een out-of-band signaling server. Beide peers sturen vervolgens tegelijkertijd UDP-pakketten naar elkaars externe poorten. Dit slaat tijdelijk een 'gat' in elkaars firewall en conntrack-tabel: **UDP Hole Punching**.\n\n### 3. De Beperking van Symmetric NAT & De Noodzaak van TURN\nNiet elke NAT-router gedraagt zich hetzelfde. We onderscheiden twee hoofdcategorieën:\n- **Cone NAT (Full Cone, Restricted Cone, Port Restricted Cone)**: Zolang de interne client naar buiten zendt, blijft de externe vertaalpoort op de router *hetzelfde*, ongeacht naar welk extern doeladres wordt verzonden. STUN en UDP hole punching slagen hier vrijwel altijd.\n- **Symmetric NAT**: Voor *ieder afzonderlijk extern IP-adres en poort* wijst de router een **willekeurige nieuwe externe poort** toe. Als client A naar de STUN-server zendt, krijgt hij poort 40001; zendt hij vervolgens naar peer B, dan maakt de router er plotseling poort 51239 van! Peer B kan deze poort onmogelijk raden. UDP hole punching faalt 100%.\n\nWanneer een van beide partijen achter een Symmetric NAT (of CGNAT) zit, is directe P2P communicatie onmogelijk. De enige uitweg is **TURN (Traversal Using Relays around NAT - RFC 5766)**: alle audio, video en data stroomt via een centrale relay-server in de cloud. Dit garandeert verbinding, maar kost de aanbieder massieve bandbreedte.\n\n```\n[Client A (NAT)] ───> [STUN Server]  (Ontdekt publiek IP/poort)\n       │                                       \n       ├───── UDP Hole Punching (Cone NAT) ──────> [Client B (NAT)]\n       │                                       \n       └───── Symmetric NAT / CGNAT ────────────> [TURN Relay Server] ───> [Client B]\n```\n\n### 4. De Moderne Oplossing: Reverse Tunnels & Overlay VPN's\nWie thuis of in een KMO achter CGNAT of Double-NAT een server wil hosten, hoeft tegenwoordig niet meer te bidden voor een publiek IPv4-adres:\n- **Cloudflare Tunnels (`cloudflared`)**: Een lokaal daemon-proces op de server initieert een uitgaande, permanente HTTP/2- of QUIC-tunnel naar Cloudflare's wereldwijde edge. Bezoekers bereiken je webapplicatie via Cloudflare, zonder dat er ook maar één inkomende poort openstaat of port forwarding nodig is.\n- **Tailscale / ZeroTier**: Bouwen een versleuteld mesh-netwerk (op basis van WireGuard). Via ingebouwde STUN, UPnP en fallback relay-nodes (DERP bij Tailscale) leggen apparaten naadloos verbinding met elkaar, zelfs dwars door CGNAT en dubbele firewalls heen.\n- **IPv6**: De definitieve architecturale oplossing. Omdat elk apparaat een globaal uniek IPv6-adres (/64) bezit, bestaat er in IPv6 geen NAT of PAT. Men hoeft enkel de inkomende firewall-regel op de edge router open te zetten.",
+   "checks": [
+    {
+     "id": "c5-01",
+     "type": "match",
+     "skill": "nat-traversal-p2p",
+     "level": 2,
+     "prompt": "Koppel elk NAT-traversal mechanisme aan zijn specifieke werking:",
+     "explain": "STUN ontdekt het externe adres, TURN transporteert data over een relay, UPnP vraagt lokale poortdoorschakeling aan en Cloudflare Tunnel bouwt een uitgaande reverse verbinding.",
+     "pairs": [
+      [
+       "STUN",
+       "Ontdekt het externe publieke IP en poort via reflectie"
+      ],
+      [
+       "TURN",
+       "Relayed alle mediastromen via een centrale cloudserver"
+      ],
+      [
+       "UPnP",
+       "Lokale client vraagt router autonoom om een poort te openen"
+      ],
+      [
+       "Cloudflare Tunnel",
+       "Uitgaande reverse verbinding zonder openstaande WAN-poorten"
+      ]
+     ]
+    },
+    {
+     "id": "c5-02",
+     "type": "cloze",
+     "skill": "nat-traversal-p2p",
+     "level": 2,
+     "prompt": "Vul het relay protocol in:",
+     "text": "Wanneer directe UDP hole punching mislukt door een Symmetric NAT, moet al het dataverkeer worden doorgestuurd via een {{TURN|turn}} server.",
+     "explain": "TURN (Traversal Using Relays around NAT) fungeert als centrale relay wanneer end-to-end P2P onmogelijk is."
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "type",
+   "skill": "rfc1918-nat-basics",
+   "level": 1,
+   "prompt": "Wat is de CIDR-notatie van de Klasse B private IP-adresreeks volgens RFC 1918?",
+   "explain": "De Klasse B private reeks beslaat 172.16.0.0 t/m 172.31.255.255, wat overeenkomt met /12.",
+   "answers": [
+    "172.16.0.0/12",
+    "172.16.0.0 /12"
+   ],
+   "errors": [
+    {
+     "match": "172.16.0.0/16",
+     "feedback": "172.16.0.0/16 is slechts 1 van de 16 beschikbare blokken. De volledige Klasse B reeks omvat /12.",
+     "tag": "rfc1918-mask"
+    }
+   ]
+  },
+  {
+   "id": "p02",
+   "type": "mcq",
+   "skill": "rfc1918-nat-basics",
+   "level": 1,
+   "prompt": "Wat is het fundamentele verschil tussen SNAT en DNAT?",
+   "explain": "SNAT herschrijft het bron-IP bij uitgaand verkeer; DNAT herschrijft het doel-IP bij inkomend verkeer.",
+   "options": [
+    "SNAT herschrijft het bron-IP; DNAT herschrijft het bestemmings-IP",
+    "SNAT werkt alleen op IPv6; DNAT werkt exclusief op IPv4",
+    "SNAT vereist DNS-caching; DNAT werkt enkel via DHCP",
+    "SNAT blokkeert poorten; DNAT vertaalt MAC-adressen"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p03",
+   "type": "cloze",
+   "skill": "rfc1918-nat-basics",
+   "level": 2,
+   "prompt": "Vul de ontbrekende L4 eigenschap aan:",
+   "text": "Port Address Translation (PAT) onderscheidt zich van gewone NAT doordat het naast het IP-adres ook het {{poortnummer|poort|port}} van het transportlaagsegment herschrijft.",
+   "explain": "PAT vertaalt zowel Layer 3 IP-adressen als Layer 4 poortnummers om meerdere apparaten over één IP te multiplexen."
+  },
+  {
+   "id": "p04",
+   "type": "order",
+   "skill": "conntrack-mechanics",
+   "level": 2,
+   "prompt": "Zet de stappen van een uitgaande PAT-verbinding in de juiste chronologische volgorde:",
+   "explain": "Eerst stuurt de client een SYN, de router slaat de state op in conntrack, herschrijft het bronadres (SNAT), ontvangt het antwoord en vertaalt dit terug.",
+   "tiles": [
+    "Client op LAN zendt TCP SYN naar extern webserver-IP",
+    "Router Netfilter alloceert nieuwe 5-tuple in conntrack",
+    "Router herschrijft bron-IP en bronpoort naar WAN-adres (PAT)",
+    "Externe server zendt SYN-ACK naar router WAN-poort",
+    "Router matched reply-tuple in conntrack en vertaalt terug naar LAN-IP"
+   ]
+  },
+  {
+   "id": "p05",
+   "type": "numeric",
+   "skill": "conntrack-mechanics",
+   "level": 2,
+   "prompt": "Een Linux gateway heeft 32.768 conntrack records in het geheugen. Elk record kost 384 bytes in de kernel slab. Hoeveel megabyte (MB) bedraagt het geheugenbeslag (rond af op 2 decimalen)?",
+   "explain": "32768 * 384 = 12.582.912 bytes / 1.000.000 = 12.58 MB (of 12 MiB).",
+   "value": 12.58,
+   "tolerance": 0.05,
+   "unit": "MB"
+  },
+  {
+   "id": "p06",
+   "type": "match",
+   "skill": "conntrack-mechanics",
+   "level": 2,
+   "prompt": "Koppel de netwerksessie-status aan zijn standaard Linux kernel conntrack timeout:",
+   "explain": "TCP ESTABLISHED blijft standaard 5 dagen (432000s) actief; TIME_WAIT 120s; UDP UNREPLIED 30s; UDP ASSURED 180s.",
+   "pairs": [
+    [
+     "TCP ESTABLISHED",
+     "432.000 seconden (5 dagen)"
+    ],
+    [
+     "TCP TIME_WAIT",
+     "120 seconden"
+    ],
+    [
+     "UDP UNREPLIED",
+     "30 seconden"
+    ],
+    [
+     "UDP ASSURED",
+     "180 seconden"
+    ]
+   ]
+  },
+  {
+   "id": "p07",
+   "type": "mcq",
+   "skill": "conntrack-exhaustion",
+   "level": 2,
+   "prompt": "Welk specifiek symptoom wijst op conntrack table exhaustion op een edge gateway?",
+   "explain": "Bij een volle conntrack-tabel blijven reeds gevestigde sessies werken, maar kunnen geen nieuwe TCP handshakes worden geregistreerd.",
+   "options": [
+    "Lopende SSH/VoIP-sessies blijven werken, maar nieuwe websites openen niet meer",
+    "De router verliest zijn fysieke Ethernet carrier link op poort eth0",
+    "Alle interne apparaten krijgen plots een 169.254.x.x link-local adres",
+    "DNS-servers retourneren onmiddellijk NXDOMAIN voor alle domeinen"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p08",
+   "type": "cloze",
+   "skill": "conntrack-exhaustion",
+   "level": 2,
+   "prompt": "Vul de exacte kernel logging aan:",
+   "text": "Wanneer de conntrack tabel vol is en een nieuw pakket binnenkomt, logt dmesg: 'nf_conntrack: {{table full, dropping packet|table full}}'.",
+   "explain": "Dit is de officiële Linux kernel logwaarschuwing bij een overvolle netfilter tabel."
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "conntrack-exhaustion",
+   "level": 2,
+   "prompt": "Welke bekende P2P-applicatie veroorzaakt vaak conntrack exhaustion door via DHT tienduizenden peers over UDP te pollen?",
+   "explain": "BitTorrent clients openen duizenden UDP-connecties naar distributed hash tables.",
+   "answers": [
+    "BitTorrent",
+    "bittorrent",
+    "torrent",
+    "Torrent"
+   ]
+  },
+  {
+   "id": "p10",
+   "type": "mcq",
+   "skill": "double-nat-cgnat",
+   "level": 1,
+   "prompt": "Welk WAN IP-adres op een consumentenrouter duidt op Carrier-Grade NAT (Shared Address Space volgens RFC 6598)?",
+   "explain": "100.64.0.0/10 omvat adressen van 100.64.0.0 tot 100.127.255.255.",
+   "options": [
+    "100.72.19.4",
+    "172.15.1.1",
+    "192.168.10.1",
+    "10.256.0.1"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p11",
+   "type": "cloze",
+   "skill": "double-nat-cgnat",
+   "level": 1,
+   "prompt": "Vul de CIDR prefix in voor CGNAT:",
+   "text": "De IANA gereserveerde Shared Address Space voor Carrier-Grade NAT heeft prefix {{100.64.0.0/10}}.",
+   "explain": "RFC 6598 alloceerde specifiek 100.64.0.0/10 om overlap met RFC 1918 te voorkomen."
+  },
+  {
+   "id": "p12",
+   "type": "match",
+   "skill": "double-nat-cgnat",
+   "level": 2,
+   "prompt": "Koppel de netwerktopologie aan de correcte term:",
+   "explain": "Een eigen router achter een ISP-modem veroorzaakt Double-NAT; 100.64.0.0/10 is CGNAT; een transparante modem staat in Bridge mode.",
+   "pairs": [
+    [
+     "Eigen router WAN krijgt 192.168.1.50 van ISP-modem",
+     "Double-NAT situatie"
+    ],
+    [
+     "Router WAN toont IP 100.99.14.8",
+     "Carrier-Grade NAT (CGNAT)"
+    ],
+    [
+     "ISP-modem zendt puur L2 frames door naar eigen router",
+     "Bridge mode configuratie"
+    ]
+   ]
+  },
+  {
+   "id": "p13",
+   "type": "type",
+   "skill": "double-nat-cgnat",
+   "level": 2,
+   "prompt": "Welke configuratiemodus op de provider-modem elimineert Double-NAT door de modem als transparante L2-bridge in te stellen?",
+   "explain": "In bridge mode schakelt de modem zijn eigen routing-, DHCP- en NAT-functies uit.",
+   "answers": [
+    "Bridge mode",
+    "bridge mode",
+    "bridge",
+    "Bridge",
+    "bridged"
+   ]
+  },
+  {
+   "id": "p14",
+   "type": "match",
+   "skill": "nat-traversal-p2p",
+   "level": 2,
+   "prompt": "Koppel de technologie aan zijn primaire rol bij het passeren van NAT-gateways:",
+   "explain": "STUN ontdekt mapping, TURN relayed media, UPnP opent lokale poorten, Tailscale bouwt een WireGuard overlay.",
+   "pairs": [
+    [
+     "STUN (RFC 5389)",
+     "Ontdekken van extern IP en poort voor UDP hole punching"
+    ],
+    [
+     "TURN (RFC 5766)",
+     "Centrale relay-server wanneer P2P direct faalt"
+    ],
+    [
+     "UPnP IGD",
+     "Lokale client vraagt router dynamisch een poort te openen"
+    ],
+    [
+     "Tailscale / WireGuard",
+     "Gecodeerde overlay mesh met automatische NAT traversal"
+    ]
+   ]
+  },
+  {
+   "id": "p15",
+   "type": "cloze",
+   "skill": "nat-traversal-p2p",
+   "level": 2,
+   "prompt": "Vul het NAT-type in:",
+   "text": "Wanneer een router voor iedere nieuwe externe bestemming een willekeurig andere vertaalpoort toewijst, spreekt men van {{Symmetric NAT|symmetric NAT|symmetric nat}}.",
+   "explain": "Symmetric NAT wijst dynamisch verschillende poorten toe per bestemming, waardoor STUN hole-punching onmogelijk wordt."
+  },
+  {
+   "id": "p16",
+   "type": "mcq",
+   "skill": "nat-traversal-p2p",
+   "level": 2,
+   "prompt": "Waarom schakelen netwerkbeheerders het UPnP-protocol vrijwel altijd uit op zakelijke routers?",
+   "explain": "UPnP heeft geen ingebouwde authenticatie; elke geïnfecteerde interne host kan ongezien poorten openzetten in de firewall.",
+   "options": [
+    "Elk intern apparaat of malware kan zonder authenticatie poorten openzetten",
+    "UPnP verdubbelt het stroomverbruik van de router-CPU",
+    "UPnP werkt uitsluitend over analoge ISDN-telefoonlijnen",
+    "Het protocol vereist verplicht een publiek IPv6 subnet"
+   ],
+   "answer": 0
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "type",
+   "skill": "rfc1918-nat-basics",
+   "level": 1,
+   "prompt": "Hoeveel bits omvat het netwerkprefix van het grootste private IPv4-adresblok (10.0.0.0/8)?",
+   "explain": "De prefixlengte van 10.0.0.0/8 is exact 8 bits.",
+   "answers": [
+    "8",
+    "8 bits",
+    "/8"
+   ]
+  },
+  {
+   "id": "m02",
+   "type": "cloze",
+   "skill": "rfc1918-nat-basics",
+   "level": 2,
+   "prompt": "Vul het juiste NAT-type in:",
+   "text": "Een port-forwarding regel op een consumentenrouter die inkomend HTTPS-verkeer doorstuurt naar een interne server is een implementatie van {{DNAT|Destination NAT|dnat}}.",
+   "explain": "Destination NAT (DNAT) herschrijft het bestemmings-IP van inkomend verkeer naar een intern private adres."
+  },
+  {
+   "id": "m03",
+   "type": "mcq",
+   "skill": "rfc1918-nat-basics",
+   "level": 2,
+   "prompt": "Welk van de volgende IPv4-adressen behoort NIET tot de RFC 1918 private adresruimte?",
+   "explain": "172.32.1.1 valt buiten de Klasse B private reeks (172.16.0.0 t/m 172.31.255.255) en is een publiek routeerbaar IP.",
+   "options": [
+    "172.32.1.1",
+    "10.240.100.5",
+    "172.25.14.99",
+    "192.168.200.1"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m04",
+   "type": "numeric",
+   "skill": "conntrack-mechanics",
+   "level": 2,
+   "prompt": "Hoeveel seconden blijft een actieve TCP-verbinding in de status ESTABLISHED standaard bewaard in de Linux conntrack tabel (5 dagen)?",
+   "explain": "5 dagen * 24 uur * 3600 seconden = 432.000 seconden.",
+   "value": 432000,
+   "abs": 0,
+   "unit": "seconden"
+  },
+  {
+   "id": "m05",
+   "type": "cloze",
+   "skill": "conntrack-mechanics",
+   "level": 2,
+   "prompt": "Vul de 5-tuple ontbrekende parameter in:",
+   "text": "Een conntrack-tuple in de netwerkkernel bestaat uit protocol, bron-IP, bestemmings-IP, bronpoort en {{bestemmingspoort|doelpoort|dport}}.",
+   "explain": "De 5 parameters vormen samen de unieke identificator van elke TCP/UDP netwerkstroom."
+  },
+  {
+   "id": "m06",
+   "type": "order",
+   "skill": "conntrack-mechanics",
+   "level": 2,
+   "prompt": "Sorteer de netwerkstatussen van kortste naar langste conntrack timeout in de standaard Linux kernel:",
+   "explain": "TCP CLOSE (10s) < UDP UNREPLIED (30s) < TCP TIME_WAIT (120s) < TCP ESTABLISHED (432000s).",
+   "tiles": [
+    "TCP CLOSE (10 seconden)",
+    "UDP UNREPLIED (30 seconden)",
+    "TCP TIME_WAIT (120 seconden)",
+    "TCP ESTABLISHED (432.000 seconden)"
+   ]
+  },
+  {
+   "id": "m07",
+   "type": "mcq",
+   "skill": "conntrack-mechanics",
+   "level": 2,
+   "prompt": "Waarom bewaart nf_conntrack per sessie zowel een 'original' als een 'reply' tuple?",
+   "explain": "Omdat PAT zowel het bronadres op de heenweg als het bestemmingsadres op de terugweg moet kunnen transformeren.",
+   "options": [
+    "Om inkomende antwoordpakketten snel te matchen en terug te vertalen naar de interne host",
+    "Om te controleren of de client het correcte WiFi-wachtwoord heeft ingevoerd",
+    "Om te garanderen dat pakketten altijd over twee fysieke kabels verstuurd worden",
+    "Om automatisch een reservekopie op te slaan in de NVRAM-flashchip van de router"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m08",
+   "type": "cloze",
+   "skill": "conntrack-exhaustion",
+   "level": 2,
+   "prompt": "Vul het TCP vlag-type in:",
+   "text": "Wanneer de conntrack tabel 100% vol is, worden nieuwe binnenkomende of uitgaande TCP {{SYN|syn}} pakketten direct gedropt.",
+   "explain": "Nieuwe verbindingen starten met een TCP SYN en vereisen een nieuwe conntrack entry; bij een volle tabel dropt de kernel deze direct."
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "conntrack-exhaustion",
+   "level": 2,
+   "prompt": "Welk Linux commando geeft direct een snelle telling van het huidige aantal conntrack-verbindingen?",
+   "explain": "conntrack -C toont direct het huidige aantal geregistreerde sessies.",
+   "answers": [
+    "conntrack -C",
+    "conntrack -c",
+    "cat /proc/sys/net/netfilter/nf_conntrack_count"
+   ]
+  },
+  {
+   "id": "m10",
+   "type": "mcq",
+   "skill": "conntrack-exhaustion",
+   "level": 3,
+   "prompt": "Een beheerder ziet dat zijn router bezwijkt onder duizenden half-gesloten sessies van IoT-camera's. Welke sysctl aanpassing biedt de meest effectieve bescherming?",
+   "explain": "Het verlagen van nf_conntrack_tcp_timeout_established van 432000 naar bijvoorbeeld 7200 seconden ruimt inactieve verbindingen veel sneller op.",
+   "options": [
+    "Verlagen van net.netfilter.nf_conntrack_tcp_timeout_established naar 7200",
+    "Verhogen van de interface MTU van 1500 naar 9000 bytes jumbo frames",
+    "Uitschakelen van het ARP-protocol op de LAN-interface",
+    "Inschakelen van RIPv2 routing op de WAN-poort"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m11",
+   "type": "type",
+   "skill": "double-nat-cgnat",
+   "level": 1,
+   "prompt": "Welk RFC-nummer definieerde de 100.64.0.0/10 Shared Address Space voor Carrier-Grade NAT?",
+   "explain": "RFC 6598 documenteerde het gereserveerde 100.64.0.0/10 adresblok voor ISP's.",
+   "answers": [
+    "6598",
+    "RFC 6598",
+    "RFC6598"
+   ]
+  },
+  {
+   "id": "m12",
+   "type": "cloze",
+   "skill": "double-nat-cgnat",
+   "level": 2,
+   "prompt": "Vul de NAT-status in:",
+   "text": "In een Double-NAT thuisnetwerk rapporteren PlayStation en Xbox consoles steevast een NAT-status van Type 3 oftewel {{Strict|strict}}.",
+   "explain": "Strict (Type 3) NAT betekent dat inkomende P2P-verbindingen geblokkeerd worden door dubbele vertaallagen."
+  },
+  {
+   "id": "m13",
+   "type": "mcq",
+   "skill": "double-nat-cgnat",
+   "level": 2,
+   "prompt": "Een gebruiker configureert port forward regel TCP poort 80 naar zijn NAS. Het WAN-IP van zijn router is 100.75.22.10. Waarom kan niemand zijn NAS bereiken vanaf het internet?",
+   "explain": "100.75.22.10 bevindt zich in de CGNAT-reeks; de ISP heeft geen inkomende poortmapping vanaf het publieke IP naar deze aansluiting.",
+   "options": [
+    "De aansluiting zit achter CGNAT waardoor inkomend internetverkeer de router niet bereikt",
+    "De NAS ondersteunt geen TCP maar uitsluitend connectionless UDP",
+    "Het subnetmasker /10 blokkeert standaard alle poorten onder 1024",
+    "Poort 80 kan alleen geforward worden over een glasvezelkabel met BGP"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m14",
+   "type": "order",
+   "skill": "double-nat-cgnat",
+   "level": 3,
+   "prompt": "Plaats de netwerkhops van een datapakket van een LAN-host achter een Double-NAT opstelling in de juiste volgorde naar het internet:",
+   "explain": "Het pakket vertrekt van de host, passeert de eerste NAT op de eigen router, de tweede NAT op de modem, reist naar de ISP gateway en bereikt het internet.",
+   "tiles": [
+    "Host op intern LAN (192.168.0.25)",
+    "Eigen router LAN-interface voert eerste vertaalslag uit (PAT naar 192.168.1.100)",
+    "ISP modem-router voert tweede vertaalslag uit (PAT naar publiek WAN-IP)",
+    "ISP Edge Gateway router",
+    "Publiek Internet bestemmingsserver"
+   ]
+  },
+  {
+   "id": "m15",
+   "type": "type",
+   "skill": "nat-traversal-p2p",
+   "level": 1,
+   "prompt": "Welk IETF-protocol (drie of vier letters) wordt gebruikt om via een externe reflectieserver het publieke IP en de toegekende poort van een NAT-client te ontdekken?",
+   "explain": "STUN (Session Traversal Utilities for NAT) ontdekt het externe adres.",
+   "answers": [
+    "STUN",
+    "stun"
+   ]
+  },
+  {
+   "id": "m16",
+   "type": "cloze",
+   "skill": "nat-traversal-p2p",
+   "level": 2,
+   "prompt": "Vul de moderne VPN-oplossing in:",
+   "text": "Moderne veilige overlay mesh-netwerken zoals {{Tailscale|tailscale|ZeroTier|Cloudflare Tunnels}} bouwen uitgaande tunnels waardoor thuisservers achter CGNAT bereikbaar worden zonder openstaande poorten.",
+   "explain": "Tailscale en vergelijkbare tools omzeilen NAT via reverse tunnels en WireGuard verbindingen."
+  },
+  {
+   "id": "m17",
+   "type": "mcq",
+   "skill": "nat-traversal-p2p",
+   "level": 2,
+   "prompt": "Waarom faalt STUN UDP hole punching wanneer een van de routers een Symmetric NAT implementeert?",
+   "explain": "Symmetric NAT wijst voor iedere nieuwe bestemming een andere willekeurige poort toe, waardoor de door STUN ontdekte poort waardeloos is.",
+   "options": [
+    "De router wijst voor elke unieke bestemmingshost een andere externe poort toe",
+    "Symmetric NAT codeert de UDP-payload met verplichte AES-256 encryptie",
+    "STUN-servers weigeren te communiceren over verbindingen sneller dan 10 Mbps",
+    "Symmetric NAT wist automatisch alle ARP-records op het lokale netwerk"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m18",
+   "type": "order",
+   "skill": "nat-traversal-p2p",
+   "level": 2,
+   "prompt": "Plaats de stappen van STUN reflectie en NAT mapping in de juiste volgorde:",
+   "explain": "De client stuurt een request, de router vertaalt, de STUN server leest de header en stuurt het resultaat terug in de payload.",
+   "tiles": [
+    "Client achter NAT zendt UDP binding request naar openbare STUN server",
+    "Router voert PAT uit en reserveert tijdelijke poortbinding op WAN-interface",
+    "STUN server inspecteert inkomende Layer 3/4 headers en leest bron-IP en poort",
+    "STUN server zendt response terug met daarin het geobserveerde publieke IP en poort"
+   ]
+  }
+ ],
+ "production": {
+  "type": "explain",
+  "lang": "nl",
+  "minWords": 120,
+  "prompt": "**Klantcase: De Mysteriële Storing bij B2B-Klant 'OptiLogistiek'**\nEen kmo-klant klaagt: *'Sinds vanmorgen kunnen onze medewerkers geen nieuwe websites meer openen en de hosted ERP-applicatie weigert verbinding te maken. Maar bizar genoeg: de VoIP-telefoongesprekken die al liepen vóór 9u werken nog steeds kristalhelder, en pingen naar 8.8.8.8 lukt direct met 11 ms RTT. Onze IT-partner wil direct een nieuwe glasvezelkabel laten trekken.'*\n\nJe logt via SSH in op de edge router (een Linux-gebaseerde OpenWrt gateway).\nUit je System 1 telemetrie-extractie komen de volgende outputs:\n1. `ip -j route show`: `[{\"dst\": \"default\", \"gateway\": \"100.68.32.1\", \"dev\": \"eth0\"}]`\n2. `conntrack -C`: `65535`\n3. `sysctl net.netfilter.nf_conntrack_max`: `net.netfilter.nf_conntrack_max = 65535`\n4. `dmesg | tail -n 5`: `[ 4120.341] nf_conntrack: table full, dropping packet`\n5. `conntrack -L -p udp`: Toont 48.000 actieve entries afkomstig van IP `192.168.1.185` (een netwerk-NVR met 16 IP-camera's) naar willekeurige internet-IP's over UDP poort 3702 en 5353.\n\nBeantwoord de volgende 4 vragen voor je interventierapport:\n1. **Root Cause**: Verklaar exact waarom bestaande VoIP-gesprekken en ICMP pings nog werken, terwijl nieuwe webpagina's en de ERP-sessies 100% falen.\n2. **Conntrack Tabel Analyse**: Welke twee specifieke factoren hebben ervoor gezorgd dat de conntrack-tabel de limiet van 65.535 bereikte?\n3. **WAN & CGNAT Beoordeling**: Analyseer het gateway-IP `100.68.32.1`. Kan deze klant een inkomende poort forwarden voor zijn lokale ERP-server naar het internet? Waarom wel/niet?\n4. **Remediatieplan**: Geef een 3-stappen mitigatieplan (korte termijn noodgreep in sysctl/iptables, isolatie van de boosdoener, en een structurele oplossing voor veilige externe toegang zonder publiek IPv4).",
+  "model": "**1. Root Cause**: De router lijdt aan acute **conntrack table exhaustion** (`nf_conntrack_count == nf_conntrack_max` op 65.535). Bestaande VoIP-gesprekken functioneren omdat hun 5-tuples reeds aanwezig zijn in het conntrack-geheugen; terugkerende en uitgaande datapakketten worden direct gematcht. ICMP pings slagen omdat ping vaak stateless wordt afgehandeld of bestaande sessies benut. Nieuwe webpagina's en ERP-sessies vereisen het opzetten van een nieuwe TCP 3-way handshake (SYN). Omdat de tabel vol is, weigert de kernel nieuwe records aan te maken en dropt alle nieuwe SYN-pakketten genadeloos (`nf_conntrack: table full, dropping packet`).\n\n**2. Factoren van de volgelopen tabel**:\n- **Boosdoener op het LAN**: De NVR op `192.168.1.185` spamt tienduizenden UDP discovery/multicast verzoeken (WS-Discovery poort 3702 en mDNS 5353) naar het internet, goed voor 48.000 'unreplied' sessies.\n- **Hoge standaard timeouts**: Linux bewaart UDP- en TCP-statussen standaard lang in het geheugen, waardoor een storm van UDP-pakketten de tabel binnen enkele minuten satureert.\n\n**3. WAN & CGNAT Beoordeling**: Het gateway-IP `100.68.32.1` valt binnen de reeks `100.64.0.0/10` (RFC 6598 Shared Address Space). Dit bewijst dat de klant achter **Carrier-Grade NAT (CGNAT)** zit. Traditionele port forwarding voor de lokale ERP-server is **onmogelijk**: inkomend verkeer vanaf het publieke internet stuit op de centrale CGNAT-cluster van de provider, die geen poortmapping bezit naar de router van deze specifieke klant.\n\n**4. Remediatieplan**:\n- **Stap 1 (Acute Noodgreep)**: Isoleer het IP van de NVR tijdelijk via iptables (`iptables -I FORWARD -s 192.168.1.185 -j DROP`), flush de overbodige conntrack-entries (`conntrack -F`), en verlaag de timeouts via sysctl (`net.netfilter.nf_conntrack_udp_timeout = 10` en `net.netfilter.nf_conntrack_tcp_timeout_established = 7200`). Nieuwe internetverbindingen herstellen direct.\n- **Stap 2 (Structurele Netwerkisolatie)**: Plaats de NVR en IP-camera's in een apart geïsoleerd IoT/CCTV VLAN zonder uitgaande internettoegang, of schakel de agressieve cloud-P2P/discovery functies op de camera's uit.\n- **Stap 3 (Veilige Externe Toegang zonder Publiek IPv4)**: Implementeer een moderne reverse tunnel zoals **Cloudflare Tunnels (`cloudflared`)** of **Tailscale (WireGuard overlay)** voor de ERP-server, of vraag de provider om een vast publiek IPv4-adres of native IPv6.",
+  "rubric": [
+   "Verklaart conntrack exhaustion en waarom bestaande sessies wel en nieuwe TCP SYN-pakketten niet werken",
+   "Wijst de NVR (192.168.1.185) en UDP discovery broadcasts/timeouts aan als de oorzaak van de 48.000 entries",
+   "Identificeert 100.68.32.1 correct als RFC 6598 CGNAT en concludeert dat port forwarding onmogelijk is",
+   "Biedt een acute mitigatie (NVR blokkeren / conntrack flush / timeouts verlagen)",
+   "Biedt een structurele architectuuroplossing (IoT VLAN + Cloudflare Tunnel/Tailscale/IPv6)"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-rfc1918",
+   "front": "Welke drie private IPv4-adresreeksen zijn gedefinieerd in RFC 1918?",
+   "back": "10.0.0.0/8, 172.16.0.0/12, en 192.168.0.0/16",
+   "skill": "rfc1918-nat-basics"
+  },
+  {
+   "id": "c-pat-difference",
+   "front": "Wat is het fundamentele verschil tussen klassieke NAT en PAT (Masquerade)?",
+   "back": "Klassieke NAT vertaalt enkel IP-adressen (1-op-1); PAT herschrijft ook Layer 4 poortnummers om meerdere apparaten één publiek IP te laten delen.",
+   "skill": "rfc1918-nat-basics"
+  },
+  {
+   "id": "c-conntrack-tuple",
+   "front": "Uit welke vijf elementen bestaat een conntrack 5-tuple in de Linux kernel?",
+   "back": "Protocol, bron-IP, bestemmings-IP, bronpoort en bestemmingspoort",
+   "skill": "conntrack-mechanics"
+  },
+  {
+   "id": "c-conntrack-exhaustion",
+   "front": "Wat is het klassieke symptoom van conntrack table exhaustion op een router?",
+   "back": "Bestaande verbindingen blijven werken, maar alle nieuwe TCP-handshakes (SYN) worden direct gedropt (websites openen niet meer).",
+   "skill": "conntrack-exhaustion"
+  },
+  {
+   "id": "c-rfc6598",
+   "front": "Welk IP-adresbereik is volgens RFC 6598 gereserveerd voor Carrier-Grade NAT (Shared Address Space)?",
+   "back": "100.64.0.0/10 (100.64.0.0 t/m 100.127.255.255)",
+   "skill": "double-nat-cgnat"
+  },
+  {
+   "id": "c-cgnat-portforward",
+   "front": "Waarom is traditionele port forwarding onmogelijk wanneer een router achter CGNAT zit?",
+   "back": "Omdat de router geen publiek IP heeft; de provider deelt één publiek IP met honderden abonnees en heeft geen poortmapping naar jouw router.",
+   "skill": "double-nat-cgnat"
+  },
+  {
+   "id": "c-double-nat-remedy",
+   "front": "Hoe los je een Double-NAT situatie tussen een ISP-modem en een eigen router structureel op?",
+   "back": "Zet de ISP-modem in Bridge mode (puur L2), of stel de eigen router in als transparant Access Point (AP mode).",
+   "skill": "double-nat-cgnat"
+  },
+  {
+   "id": "c-stun-vs-turn",
+   "front": "Wanneer is het zwaardere TURN-protocol noodzakelijk in plaats van lichtgewicht STUN?",
+   "back": "Wanneer minstens één endpoint achter een Symmetric NAT (of CGNAT) zit, waardoor UDP hole punching mislukt en alle data over een relay moet.",
+   "skill": "nat-traversal-p2p"
+  }
+ ],
+ "sources": [
+  "RFC 1918: Address Allocation for Private Internets (1996)",
+  "RFC 6598: IANA-Reserved IPv4 Prefix for Shared Address Space (2012)",
+  "RFC 5389: Session Traversal Utilities for NAT (STUN) (2008)",
+  "RFC 5766: Traversal Using Relays around NAT (TURN) (2010)",
+  "Linux Netfilter Documentation: Connection Tracking System"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-02",
+  "adaptedFor": "Ontworpen voor Thibaud als fundamentles over consumenten-edge gateways, met diepgaande conntrack telemetrie, wiskundige geheugenberekeningen en realistische B2B triage."
+ }
+}

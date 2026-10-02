@@ -1,0 +1,716 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "routing",
+ "id": 6,
+ "roadmap": "routing-16-bufferbloat-aqm-cake",
+ "kind": "core",
+ "title": "Netwerkziektes: Bufferbloat, Jitter & MTU Black Holes",
+ "subtitle": "Waarom routers met te veel geheugen het internet vertragen, en hoe CoDel en CAKE SQM gaming en streaming redden",
+ "level": "expert",
+ "minutes": 45,
+ "summary": "Te grote geheugenbuffers op routers veroorzaken een verwoestende netwerkziekte: Bufferbloat, waarbij vertragingen oplopen tot honderden milliseconden onder belasting. In deze les ontleed je de vier latency-componenten, doorgrond je Active Queue Management (CoDel), implementeer je CAKE SQM met flow isolation en los je mysterieuze PMTUD Black Holes op met TCP MSS clamping.",
+ "objectives": [
+  {
+   "id": "latency-components",
+   "text": "Je kwantificeert de vier componenten van netwerklatency (propagatie, transmissie, queueing en processing) en berekent de theoretische vertragingen."
+  },
+  {
+   "id": "bufferbloat-mechanics",
+   "text": "Je verklaart het ontstaan van Bufferbloat door overdimensionering van FIFO-buffers en analyseert de impact op TCP congestiecontrole."
+  },
+  {
+   "id": "codel-aqm",
+   "text": "Je legt het werkingsprincipe van Active Queue Management (AQM) en het CoDel-algoritme uit (sojourn time < 5ms over 100ms interval)."
+  },
+  {
+   "id": "cake-flow-isolation",
+   "text": "Je vergelijkt fq_codel en CAKE (Common Applications Kept Enhanced) op het gebied van flow isolation, Deficit Round Robin en overhead-shaping."
+  },
+  {
+   "id": "pmtud-blackholes-mss",
+   "text": "Je diagnosticeert Path MTU Discovery (PMTUD) Black Holes door geblokkeerde ICMP Type 3 Code 4 berichten en lost dit op met TCP MSS clamping."
+  }
+ ],
+ "sections": [
+  {
+   "id": "de-vier-latencies",
+   "title": "1. De Wiskunde van Vertraging: De Vier Latency Componenten",
+   "md": "In netwerkengineering wordt de term 'latency' vaak losjes gebruikt voor ping-tijden. Om router-bottlenecks op expertniveau te diagnosticeren, moeten we vertraging ontleden in zijn **vier fundamentele fysische en logische componenten**:\n\n$$T_{\\text{totaal}} = T_{\\text{prop}} + T_{\\text{trans}} + T_{\\text{proc}} + T_{\\text{queue}}$$\n\n### 1. Propagatievertraging ($T_{\\text{prop}}$)\nDe tijd die een elektromagnetische golf nodig heeft om fysiek door het transmissiemedium te reizen over een afstand $d$:\n\n$$T_{\\text{prop}} = \\frac{d}{v}$$\n\nIn vacuüm reist het licht aan $c \\approx 300\\,000\\text{ km/s}$. In optische glasvezelkabel (met brekingsindex $n \\approx 1{,}47$ tot $1{,}50$) bedraagt de lichtsnelheid $v = \\frac{c}{n} \\approx 200\\,000\\text{ km/s}$.\n- **Gouden Vuistregel**: Glasvezel vertraagt data met circa **$5\\ \\mu\\text{s per kilometer}$** (enkele reis) of **$1\\text{ ms}$ per $200\\text{ km}$**.\n- Een Round-Trip Time (RTT) tussen Brussel en Frankfurt ($400\\text{ km}$) kent een absolute fysische ondergrens van $2 \\times (400 \\times 5\\ \\mu\\text{s}) = 4\\text{ ms}$.\n\n### 2. Transmissievertraging ($T_{\\text{trans}}$)\nDe tijd die de netwerkkaart of routerinterface nodig heeft om alle bits van een pakket fysiek op het medium te 'pompen':\n\n$$T_{\\text{trans}} = \\frac{L}{R}$$\n\nwaarbij $L$ de lengte van het pakket in bits is en $R$ de nominale transmissiesnelheid van de link in bits per seconde (bps). Voor een standaard Ethernet MTU-pakket van 1500 bytes ($12\\,000\\text{ bits}$):\n- Op een 10 Mbps uploadkabel: $T_{\\text{trans}} = \\frac{12\\,000}{10 \\cdot 10^6} = 1{,}2\\text{ ms}$ per pakket.\n- Op een 1 Gbps glasvezelpoort: $T_{\\text{trans}} = \\frac{12\\,000}{10^9} = 12\\ \\mu\\text{s}$ per pakket.\n\n### 3. Verwerkingsvertraging ($T_{\\text{proc}}$)\nDe tijd die de router-CPU of ASIC nodig heeft om de frameheader te ontleden, bitfouten (CRC) te controleren, de IP-checksum bij te werken, de TTL te verlagen en een Longest Prefix Match (LPM) route-lookup uit te voeren in de Forwarding Information Base (FIB). In moderne hardware-ASIC's met TCAM bedraagt dit minder dan $1\\ \\mu\\text{s}$; op software-routers enkele microseconden.\n\n### 4. Wachtrijvertraging ($T_{\\text{queue}}$) & Het Ontstaan van Jitter\nDe tijd die een pakket moet wachten in de buffer van de router tot voorgaande pakketten verzonden zijn.\n\n> [!important] De Anatomie van Jitter\n> $T_{\\text{prop}}$, $T_{\\text{trans}}$ en $T_{\\text{proc}}$ zijn voor een gegeven pakketgrootte en route **volledig constant en deterministisch**. De wachtrijvertraging ($T_{\\text{queue}}$) is de **ENIGE variabele factor** in de hele keten. Variatie in wachtrijlengte is verantwoordelijk voor **meer dan 99% van alle netwerk-jitter** (Packet Delay Variation).",
+   "checks": [
+    {
+     "id": "c1-01",
+     "type": "numeric",
+     "skill": "latency-components",
+     "level": 2,
+     "prompt": "Bereken de transmissievertraging ($T_{\\text{trans}}$ in milliseconden) van een 1500-byte Ethernet pakket (12.000 bits) over een 20 Mbps uploadverbinding:",
+     "explain": "12.000 bits / 20.000.000 bps = 0,0006 s = 0,6 ms.",
+     "value": 0.6,
+     "tolerance": 0.01,
+     "unit": "ms"
+    },
+    {
+     "id": "c1-02",
+     "type": "mcq",
+     "skill": "latency-components",
+     "level": 1,
+     "prompt": "Welke van de vier latency-componenten is direct verantwoordelijk voor Packet Delay Variation (jitter) in een stabiel IP-netwerk?",
+     "explain": "Wachtrijvertraging (T_queue) varieert dynamisch met de momentane vulling van routerbuffers.",
+     "options": [
+      "Wachtrijvertraging (T_queue)",
+      "Propagatievertraging (T_prop)",
+      "Transmissievertraging (T_trans)",
+      "Lichtsnelheidsdispersie in glasvezel"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "het-bufferbloat-probleem",
+   "title": "2. Waarom Meer Geheugen Slechter Is: De Bufferbloat Paradox",
+   "md": "Rond 2005 daalden de prijzen van RAM-geheugen dramatisch. Hardwarefabrikanten van consumentenrouters, kabelmodems en WiFi access points begonnen massaal grote geheugenchips (32 MB tot 128 MB) in hun chips te stoppen. De gedachte was verleidelijk eenvoudig: *'Als we gigantische buffers inbouwen, hoeven we nooit een datapakket weg te gooien bij een burst. Geen packet loss betekent perfecte verbindingen!'*\n\nDit bleek een van de meest destructieve misconcepties in de internetgeschiedenis. In 2010 gaven netwerkpioniers Jim Gettys en Dave Täht dit fenomeen een naam: **Bufferbloat**.\n\n### Hoe TCP Congestiecontrole Werkt\nOm te begrijpen waarom grote buffers dodelijk zijn voor de responsiviteit, moeten we kijken naar TCP congestie-algoritmen (zoals TCP Reno en TCP CUBIC):\n1. Een TCP-zender begint voorzichtig en verhoogt zijn zendsnelheid exponentieel (*Slow Start*) en vervolgens lineair door zijn *congestion window* ($cwnd$) continu op te voeren.\n2. TCP tast bewust de grenzen van de link af: het **blijft steeds meer data pompen tot de bottleneck-link overstroomt**.\n3. Zodra een router een pakketje **dropt**, detecteert de zender dit (via 3 opeenvolgende Duplicate ACK's of een timeout). **Voor TCP is een packet drop geen fout, maar een essentieel stuursignaal!** Het vertelt TCP: *'De leiding zit vol, halveer je $cwnd$ en stabiliseer je snelheid.'*\n\n### De Ramp van Gigantische FIFO Buffers met Tail Drop\nTraditionele routers gebruiken een simpele FIFO-wachtrij (First-In, First-Out). Wanneer de uploadlijn van een gebruiker (bijvoorbeeld 20 Mbps) verzadigd raakt door een grote upload (OneDrive synchronisatie, YouTube upload), vult de router zijn gigantische buffer van bijvoorbeeld 4 Megabytes ($32 \\cdot 10^6\\text{ bits}$).\n\nZolang de buffer niet 100% vol is, **dropt de router geen enkel pakket**. TCP krijgt dus **geen enkel signaal om af te remmen**! TCP blijft op maximale snelheid data in de buffer dumpen tot hij de rand bereikt. Pas wanneer de buffer barstensvol is, treedt **Tail Drop** op: het allerlaatste pakket wordt weggegooid.\n\nWat betekent dit voor de wachttijd?\n\n$$T_{\\text{queue}} = \\frac{\\text{Buffergrootte}}{\\text{Uploadbandbreedte}} = \\frac{32 \\cdot 10^6\\text{ bits}}{20 \\cdot 10^6\\text{ bps}} = \\mathbf{1{,}6\\text{ seconden!}}$$\n\nElk interactief pakketje—een toetsaanslag in SSH, een Discord spraakpakketje, een DNS lookup of een gaming update—moet achteraan sluiten in deze gigantische wachtrij van 1,6 seconden. De gaming ping explodeert van 15 ms naar 1600 ms, Zoom-gesprekken haperen onverstaanbaar en webpagina's lijken dood te slaan.\n\n> [!pitfall] De Snelheidsmythe\n> Een gigabit glasvezellijn lost bufferbloat niet automatisch op. Zodra een applicatie de upload of download voor 100% verzadigt, lopen ongecontroleerde buffers net zo hard vol. Het probleem is niet bandbreedte, maar **ongereguleerde wachttijd**.",
+   "checks": [
+    {
+     "id": "c2-01",
+     "type": "numeric",
+     "skill": "bufferbloat-mechanics",
+     "level": 2,
+     "prompt": "Bereken de maximale wachtrijvertraging (in milliseconden) van een 1 Megabyte (8.000.000 bits) FIFO buffer op een 10 Mbps uploadverbinding:",
+     "explain": "8.000.000 bits / 10.000.000 bps = 0,8 seconden = 800 ms.",
+     "value": 800,
+     "tolerance": 0.01,
+     "unit": "ms"
+    },
+    {
+     "id": "c2-02",
+     "type": "mcq",
+     "skill": "bufferbloat-mechanics",
+     "level": 2,
+     "prompt": "Waarom leidt het vergroten van een FIFO buffer zonder actief beheer tot een gigantische latency-explosie onder belasting?",
+     "explain": "TCP blijft de buffer volpompen zolang er geen packet drops optreden; pas bij een volle buffer remt TCP af, nadat pakketten secondenlang hebben stilgestaan.",
+     "options": [
+      "TCP krijgt geen tijdig dropsignaal om af te remmen en blijft data dumpen tot buffers seconden vertraging vasthouden",
+      "Het TCP-protocol schakelt bij grote buffers automatisch over op ongecodeerd UDP-verkeer",
+      "Grote buffers dwingen de router-CPU om alle IP-pakketten in software te hercoderen naar IPv6",
+      "Ethernet-kabels kunnen maximaal 64 kilobyte aan statische wachttijd fysiek transporteren"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "active-queue-management-codel",
+   "title": "3. Slimmer Weggooien: AQM en het CoDel Algoritme",
+   "md": "De fundamentele remedie voor Bufferbloat is **Active Queue Management (AQM)**. In plaats van passief te wachten tot de wachtrij overstroomt (Tail Drop), bewaakt AQM actief de wachtrij en grijpt preventief in.\n\nOude AQM-mechanismen zoals RED (Random Early Detection, 1993) vereisten complexe handmatige tuning van drempels en faalden jammerlijk op variabele consumentenlijnen. In 2012 publiceerden internetpioniers Van Jacobson en Kathleen Nichols een revolutionair, parameterloos algoritme: **CoDel (Controlled Delay, RFC 8289)**.\n\n### Goede Wachtrijen versus Slechte Wachtrijen\nCoDel maakt een briljant conceptueel onderscheid:\n- **Goede wachtrij (Burst buffer)**: Vangt een tijdelijke uitbarsting van data op (bijvoorbeeld een browser die 20 afbeeldingen tegelijk opvraagt). De wachtrij loopt even op, maar loopt binnen enkele tientallen milliseconden weer leeg naar nul zodra de data verzonden is.\n- **Slechte wachtrij (Standing queue)**: Een hardnekkig stilstaand reservoir van pakketten dat **nooit leegloopt**. Deze 'standing queue' levert geen enkele extra doorvoer op, maar creëert puur en alleen persistente latency.\n\n### De Werking van CoDel: Meten bij Vertrek (Sojourn Time)\nIn tegenstelling tot RED meet CoDel niet het aantal bytes of pakketten in de wachtrij. CoDel meet **tijd**.\n\nWanneer een pakket binnenkomt op de router, krijgt het een timestamp ($T_{\\text{aankomst}}$). Wanneer het pakket aan de kop van de wachtrij arriveert om verzonden te worden (*head of line*), berekent CoDel de daadwerkelijke verblijftijd, de **sojourn time**:\n\n$$\\text{Sojourn Time} = T_{\\text{vertrek}} - T_{\\text{aankomst}}$$\n\nCoDel hanteert twee magische constanten die voor 99% van alle internetverbindingen optimaal zijn:\n1. **Target**: Standaard **$5\\text{ ms}$**. Zolang de sojourn time onder 5 ms blijft, doet CoDel helemaal niets.\n2. **Interval**: Standaard **$100\\text{ ms}$** (ongeveer één typische trans-Atlantische RTT).\n\n### De Dropping State en Wiskundige Spreiding\nAls de *laagste* gemeten sojourn time gedurende het hele $100\\text{ ms}$ venster **boven de $5\\text{ ms}$ drempel** blijft, concludeert CoDel: *'Er is sprake van een standing queue!'* Het algoritme betreedt de **dropping state**:\n- CoDel dropt het pakket direct aan de **kop van de wachtrij** (Head Drop). Waarom head drop? Omdat de ontvanger het ontbrekende volgnummer direct detecteert en onmiddellijk Duplicate ACK's terugstuurt naar de zender, waardoor TCP binnen één RTT afremt!\n- Als de wachttijd boven de 5 ms blijft hangen, plant CoDel volgende drops met **afnemende tussenpozen** volgens de formule:\n\n$$t_{\\text{volgende\\_drop}} = t + \\frac{\\text{Interval}}{\\sqrt{n}}$$\n\nwaarbij $n$ het aantal opeenvolgende drops is ($n = 1, 2, 3\\dots$). Deze inverse vierkantswortel ($1/\\sqrt{n}$) matcht exact de wiskundige eigenschap van TCP CUBIC en Reno, waardoor de congestiecontrole razendsnel stabiliseert zónder de verbinding te laten instorten.\n\n> [!tip] ECN: Markeren in Plaats van Droppen\n> Wanneer beide eindpunten **Explicit Congestion Notification (ECN, RFC 3168)** ondersteunen, hoeft CoDel het pakket niet eens fysiek te vernietigen! Het overschrijft de 2 ECN-bits in de IPv4/IPv6-header naar `11` (CE: Congestion Experienced). De ontvanger signaleert dit terug naar de zender, die afremt met **nul procent dataverlies**.",
+   "checks": [
+    {
+     "id": "c3-01",
+     "type": "numeric",
+     "skill": "codel-aqm",
+     "level": 1,
+     "prompt": "Wat is de standaard streefwaarde (target) in milliseconden van de sojourn time in het CoDel algoritme?",
+     "explain": "De standaard target van CoDel is 5 ms (bij een interval van 100 ms).",
+     "value": 5,
+     "abs": 0,
+     "unit": "ms"
+    },
+    {
+     "id": "c3-02",
+     "type": "cloze",
+     "skill": "codel-aqm",
+     "level": 2,
+     "prompt": "Vul de netwerkindicator aan:",
+     "text": "De tijd die een pakket van binnenkomst tot vertrek in de buffer verblijft, noemt CoDel de {{sojourn time|sojourn-time|sojourn}}.",
+     "explain": "Sojourn time is de exacte verblijftijd van een pakket in een wachtrij."
+    }
+   ]
+  },
+  {
+   "id": "fq-codel-en-cake",
+   "title": "4. Eerlijk Delen en Modelleren: fq_codel en CAKE",
+   "md": "AQM alleen lost een belangrijk probleem niet op: als één client op het LAN een gigantische BitTorrent-download start met 50 parallelle TCP-stromen, drukt hij alle andere gebruikers alsnog weg. We hebben **Fair Queueing** nodig.\n\n### fq_codel (Fair Queueing + CoDel, RFC 8290)\nIn 2012 combineerden Eric Dumazet en Dave Täht Fair Queueing met CoDel in de Linux kernel tot **fq_codel** (sinds Linux 3.5 de standaard qdisc in Linux):\n1. **Flow Hashing**: Inkomende pakketten worden via een hash van hun 5-tuple verdeeld over **1024 virtuele wachtrijen**.\n2. **Flow Isolation**: fq_codel onderscheidt automatisch twee soorten verkeer:\n   - *Sparse flows (mice)*: Gaming packets (60 bytes), DNS queries, VoIP (RTP) en TCP ACK's. Deze flows sturen sporadisch pakketten en hebben bijna altijd een lege wachtrij.\n   - *Bulk flows (elephants)*: Grote bestandsoverdrachten, downloads en uploads.\n3. **Deficit Round Robin (DRR)**: fq_codel geeft **altijd absolute voorrang aan sparse flows**. Een gamingpakketje hoeft daardoor *nooit* te wachten achter een rij van 100 downloadpakketten, maar schiet er direct tussendoor!\n4. **CoDel per Queue**: Elke afzonderlijke wachtrij draait zijn eigen onafhankelijke CoDel-instantie. Een bulk flow die bufferbloat veroorzaakt, straft puur zichzelf zónder andere verbindingen te storen.\n\n### CAKE: Common Applications Kept Enhanced\nHoewel fq_codel fantastisch werkt, vereiste het op consumentenlijnen nog steeds een complexe combinatie met een aparte traffic shaper (zoals HTB). Daarom ontwikkelden Dave Täht en Toke Høiland-Jørgensen **CAKE**, tegenwoordig dé gouden standaard voor **Smart Queue Management (SQM)** in OpenWrt en enterprise edge-routers:\n\n```bash\n# CAKE inschakelen op de WAN-poort (eth0) voor een 100 Mbps kabelupload:\ntc qdisc replace dev eth0 root cake bandwidth 95mbit ethernet\n```\n\n### De Drie Innovaties van CAKE\n1. **Geïntegreerde Bandbreedte Shaper**: Waarom stellen we de shaper in op **95 Mbps** voor een 100 Mbps lijn? Omdat we moeten forceren dat de **bottleneck op onze eigen router ligt** waar CAKE de controle heeft! Als de lijn op 100 Mbps verzadigt, ontstaat de wachtrij immers in de domme, ongecontroleerde buffer van de ISP-modem (waar wij niets aan kunnen doen).\n2. **Framing & Overhead Compensatie**: Een netwerkkabel transporteert niet alleen ruwe IP-pakketten. Er is sprake van Layer 1 en Layer 2 framing overhead:\n   - Ethernet L1/L2 overhead: 14 bytes Ethernet header + 4 bytes FCS (CRC) + 20 bytes Preamble & Inter-Frame Gap (IFG) = **38 bytes per frame**.\n   - VDSL/ADSL: PPPoE (8 bytes) + ATM cell tax (opknippen in vaste cellen van 53 bytes met 48 bytes payload).\n   Als een shaper deze verborgen bytes vergeet, overschrijdt hij de werkelijke fysieke lijncapaciteit met 3% tot 10%, waardoor bufferbloat in het ISP-modem alsnog de kop opsteekt. CAKE berekent deze framing overhead met de optie `ethernet` of `atm` exact tot op de byte nauwkeurig.\n3. **DiffServ / DSCP Tins**: CAKE sorteert verkeer automatisch in 3 of 4 prioriteitsklassen (Bulk, Best Effort, Video, Voice) en past binnen elke klasse fq_codel flow isolation toe.",
+   "checks": [
+    {
+     "id": "c4-01",
+     "type": "match",
+     "skill": "cake-flow-isolation",
+     "level": 2,
+     "prompt": "Koppel het CAKE/fq_codel principe aan zijn technische werking:",
+     "explain": "Flow isolation scheidt stromen, DRR plant eerlijk, overhead compensation berekent L1/L2 framing en shaping forceert de bottleneck op de eigen router.",
+     "pairs": [
+      [
+       "Flow Isolation",
+       "Scheidt kleine interactieve stromen van zware downloads via 5-tuple hashing"
+      ],
+      [
+       "Deficit Round Robin",
+       "Eerlijk scheduleringsmechanisme dat deficits bijhoudt per subqueue"
+      ],
+      [
+       "Overhead Compensation",
+       "Berekent Ethernet Preamble/IFG (38 bytes) of ATM-framing mee"
+      ],
+      [
+       "Bandwidth Shaping (95%)",
+       "Forceert de wachtrij op de eigen router in plaats van in het ISP-modem"
+      ]
+     ]
+    },
+    {
+     "id": "c4-02",
+     "type": "mcq",
+     "skill": "cake-flow-isolation",
+     "level": 2,
+     "prompt": "Waarom moet een SQM-shaper op een consumentenrouter worden ingesteld op circa 90% tot 95% van de nominale ISP-bandbreedte?",
+     "explain": "Door de link net onder verzadiging te houden, ontstaat de wachtrij op de eigen router waar CAKE draait, en niet in de ongecontroleerde buffer van de ISP.",
+     "options": [
+      "Om te garanderen dat de wachtrij op de eigen router ontstaat en niet in de ongecontroleerde buffer van het ISP-modem",
+      "Omdat Linux routers wettelijk verplicht zijn 5% bandbreedte te reserveren voor noodverkeer",
+      "Omdat TCP-pakketten automatisch crashen zodra een interface 100% capaciteit bereikt",
+      "Om te voorkomen dat de Ethernet-kabel oververhit raakt door continue datadoorvoer"
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "pmtud-black-holes-en-mss",
+   "title": "5. De Verzwegen Ramp: PMTUD Black Holes & TCP MSS Clamping",
+   "md": "Naast Bufferbloat bestaat er een tweede beruchte 'netwerkziekte' op routers: het **PMTUD Black Hole** (Path MTU Discovery Black Hole). Dit fenomeen veroorzaakt schijnbaar onverklaarbare storingen waarbij eenvoudige commando's werken, maar webpagina's of bestandsoverdrachten halverwege bevriezen.\n\n### MTU versus MSS\n- **MTU (Maximum Transmission Unit)**: De maximale framegrootte die een data-link laag kan transporteren. Op standaard Ethernet is de MTU **1500 bytes**.\n- **MSS (Maximum Segment Size)**: De maximale hoeveelheid pure TCP-payload data die een host in één IP-pakket mag stoppen. Standaard geldt voor IPv4:\n\n$$\\text{MSS} = \\text{MTU} - (\\text{IP-header} + \\text{TCP-header}) = 1500 - (20 + 20) = \\mathbf{1460\\text{ bytes}}$$\n\n### Tunnels en de Krimpende MTU\nWanneer verkeer door een tunnel moet reizen, voegen tunnelheaders extra bytes toe, waardoor de beschikbare MTU krimpt:\n- **PPPoE** (veel gebruikt op DSL en glasvezel): voegt 8 bytes overhead toe $\\implies$ **MTU 1492**.\n- **WireGuard VPN**: voegt tot 80 bytes overhead toe $\\implies$ **MTU 1420**.\n- **IPsec / GRE**: voegt 50 tot 70 bytes toe $\\implies$ **MTU 1430–1450**.\n\n### Hoe PMTUD Hoort te Werken (RFC 1191)\nModerne besturingssystemen zetten standaard de **DF (Don't Fragment)** bit in de IP-header op `1`. Ze willen immers fragmentatie voorkomen (fragmentatie verhoogt packet loss en CPU-overhead exponentieel).\n1. Client zendt een 1500-byte pakket met `DF=1`.\n2. De router bij de ingang van een WireGuard-tunnel (MTU 1420) constateert: *'Dit pakket past niet, maar fragmenteren is verboden door de DF-bit!'*\n3. De router dropt het pakket en stuurt een essentieel ICMP-bericht terug naar de zender: **ICMP Type 3 Code 4** (*Destination Unreachable: Fragmentation Needed and DF set, Next-Hop MTU = 1420*).\n4. De zender ontvangt dit, verlaagt zijn MTU voor deze route naar 1420 en verstuurt voortaan pakketten met een MSS van maximaal 1380 bytes.\n\n### Het Ontstaan van het Black Hole\nIn de praktijk configureren veel paranoïde security-engineers firewalls met de regel: *'Blokkeer alle inkomende ICMP-berichten, want ICMP is een beveiligingsrisico!'*\n\nWanneer een firewall tussen de router en de zender staat en ICMP blokkeert, bereikt het **ICMP Type 3 Code 4 bericht de zender NOOIT**! Dit is het **PMTUD Black Hole**:\n- De router dropt stilzwijgend alle pakketten groter dan 1420 bytes.\n- De zender weet van niets en blijft stug zijn 1500-byte pakket herhalen tot de verbinding na 60 seconden time-out.\n\n```\n[Client (MTU 1500)] ──── Pakket 1500B (DF=1) ────> [Router (MTU 1420)] ──> GEDROPT!\n        ▲                                                    │                       \n        │                 [Paranoïde Firewall]               │                       \n        X <──── BLOKKEERT ──── [ICMP Type 3 Code 4] <────────┘                       \n   (Zender weet niets: sessie hangt oneindig op TLS handshake!)                      \n```\n\n### De Bizarre Symptomen\n- `ping` werkt foutloos (pingpakketjes zijn slechts 64 of 84 bytes).\n- De TCP 3-way handshake (SYN, SYN-ACK, ACK) slaagt direct (SYN-pakketjes zijn slechts 60 bytes).\n- DNS lookups slagen.\n- **Maar**: Zodra een website een TLS-verbinding opent (de `TLS Client Hello` met encryptiecertificaten is vaak 2000+ bytes) of een bestandsoverdracht start, bevriest de terminal direct!\n\n### De Oplossing: TCP MSS Clamping op de Router\nAls beheerder van de edge router kun je dit probleem definitief oplossen zonder dat eindgebruikers hun instellingen hoeven aan te passen via **TCP MSS Clamping**:\n\n```bash\n# iptables MSS clamping regel op de router:\niptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN \\\n  -j TCPMSS --clamp-mss-to-pmtu\n```\n\nWat doet deze regel? De router inspecteert elk passerend TCP SYN-pakket. Als de geadverteerde MSS groter is dan de MTU van de uitgaande interface minus 40 bytes (bijvoorbeeld $1420 - 40 = 1380\\text{ bytes}$), **overschrijft de router de MSS-optie direct in het TCP-pakket** naar 1380. Beide eindpunten communiceren voortaan automatisch met pakketten die perfect door de tunnel passen!",
+   "checks": [
+    {
+     "id": "c5-01",
+     "type": "cloze",
+     "skill": "pmtud-blackholes-mss",
+     "level": 2,
+     "prompt": "Vul het ICMP type en code in dat vereist is voor correcte Path MTU Discovery:",
+     "text": "Wanneer een pakket met DF=1 te groot is voor een link, zendt een router een ICMP Type {{3}} Code {{4}} bericht terug.",
+     "explain": "ICMP Type 3 (Destination Unreachable) Code 4 staat voor Fragmentation Needed and DF set."
+    },
+    {
+     "id": "c5-02",
+     "type": "mcq",
+     "skill": "pmtud-blackholes-mss",
+     "level": 2,
+     "prompt": "Waarom slaagt de TCP 3-way handshake bij een PMTUD Black Hole wel, maar loopt de daaropvolgende TLS-handshake direct vast?",
+     "explain": "De SYN/ACK pakketjes van de 3-way handshake zijn kleiner dan de bottleneck MTU, maar het TLS certificaat overschrijdt de MTU en wordt gedropt zonder ICMP feedback.",
+     "options": [
+      "De SYN-handshake gebruikt kleine pakketten (<100B), maar TLS verzendt grote certificaat-pakketten die de tunnel-MTU overschrijden",
+      "TLS vereist verplicht UDP-poort 443, terwijl de 3-way handshake uitsluitend over ICMP verloopt",
+      "Het DF-bit wordt pas geactiveerd nadat de eerste gigabyte aan data is verzonden",
+      "De router schakelt tijdens de TLS-handshake over op half-duplex CSMA/CD"
+     ],
+     "answer": 0
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "numeric",
+   "skill": "latency-components",
+   "level": 1,
+   "prompt": "Bereken de minimale one-way propagatievertraging (in milliseconden) van een signaal door een glasvezelkabel van 1.000 km bij een lichtsnelheid van 200.000 km/s:",
+   "explain": "1.000 km / 200.000 km/s = 0,005 s = 5 ms.",
+   "value": 5,
+   "abs": 0.1,
+   "unit": "ms"
+  },
+  {
+   "id": "p02",
+   "type": "mcq",
+   "skill": "latency-components",
+   "level": 1,
+   "prompt": "Welke component van end-to-end netwerklatency is als enige niet-constant en veroorzaakt vrijwel alle netwerk-jitter?",
+   "explain": "Queueing delay (wachtrijvertraging) fluctueert met de wisselende bezetting van routerbuffers.",
+   "options": [
+    "Wachtrijvertraging (T_queue)",
+    "Transmissievertraging (T_trans)",
+    "Propagatievertraging (T_prop)",
+    "Kabeldispersie (T_disp)"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p03",
+   "type": "numeric",
+   "skill": "latency-components",
+   "level": 2,
+   "prompt": "Bereken de transmissievertraging ($T_{\\text{trans}}$ in milliseconden) voor een 1500-byte Ethernet-frame (12.000 bits) over een 100 Mbps netwerklink:",
+   "explain": "12.000 bits / 100.000.000 bps = 0,00012 seconden = 0,12 ms.",
+   "value": 0.12,
+   "tolerance": 0.01,
+   "unit": "ms"
+  },
+  {
+   "id": "p04",
+   "type": "numeric",
+   "skill": "bufferbloat-mechanics",
+   "level": 2,
+   "prompt": "Een router bezit een ongecontroleerde FIFO buffer van 2 Megabytes (16.000.000 bits). De uitgaande uploadlijn heeft een snelheid van 40 Mbps. Hoeveel milliseconden wachttijd ontstaat er als deze buffer 100% vol raakt?",
+   "explain": "16.000.000 bits / 40.000.000 bps = 0,4 s = 400 ms.",
+   "value": 400,
+   "abs": 0.5,
+   "unit": "ms"
+  },
+  {
+   "id": "p05",
+   "type": "mcq",
+   "skill": "bufferbloat-mechanics",
+   "level": 2,
+   "prompt": "Wat is het kernprobleem van klassieke routers met grote FIFO-buffers onder volle netwerkbelasting?",
+   "explain": "Doordat de router pakketten buffert in plaats van tijdig te droppen, krijgt TCP geen signaal om af te remmen en stapelen vertragingen zich op tot honderden milliseconden.",
+   "options": [
+    "De buffer slikt data zonder drops, waardoor TCP niet afremt en de latency explodeert",
+    "De router schakelt de netwerkpoort uit omdat het RAM-geheugen oververhit raakt",
+    "Alle TCP SYN-pakketten worden omgezet in ongecodeerde UDP-broadcasts",
+    "Het routerbesturingssysteem wist automatisch de default gateway uit de FIB"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p06",
+   "type": "cloze",
+   "skill": "bufferbloat-mechanics",
+   "level": 2,
+   "prompt": "Vul de wachtrij-term in:",
+   "text": "Het simpelweg weggooien van het laatst binnengekomen pakket zodra een traditionele FIFO-buffer 100% vol is, noemt men {{Tail Drop|tail drop|taildrop}}.",
+   "explain": "Tail Drop is het passieve gedrag van ongecontroleerde buffers wanneer de maximale capaciteit bereikt is."
+  },
+  {
+   "id": "p07",
+   "type": "type",
+   "skill": "codel-aqm",
+   "level": 1,
+   "prompt": "Welke Engelse term gebruikt het CoDel-algoritme voor de exacte verblijftijd van een datapakket in de wachtrij van aankomst tot vertrek?",
+   "explain": "Sojourn time is de formele term voor verblijftijd in wachtrijtheorie en CoDel.",
+   "answers": [
+    "sojourn time",
+    "sojourn",
+    "Sojourn time",
+    "Sojourn Time"
+   ]
+  },
+  {
+   "id": "p08",
+   "type": "mcq",
+   "skill": "codel-aqm",
+   "level": 2,
+   "prompt": "Waarom dropt het CoDel-algoritme een pakketje aan de KOP van de wachtrij (head drop) in plaats van aan de staart?",
+   "explain": "Bij een head drop bereikt het resterende verkeer de ontvanger sneller, waardoor de Duplicate ACK's de zender binnen één RTT dwingen af te remmen.",
+   "options": [
+    "De ontvanger merkt de drop direct op en stuurt sneller feedback naar de zender",
+    "De router bespaart hierdoor stroom in de netwerkswitch-chip",
+    "Head drops zijn wettelijk verplicht volgens de IEEE 802.3 Ethernet standaard",
+    "Omdat de staart van de wachtrij gereserveerd is voor ARP-broadcasting"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p09",
+   "type": "cloze",
+   "skill": "codel-aqm",
+   "level": 2,
+   "prompt": "Vul de streefwaarde in:",
+   "text": "Als CoDel over een interval van 100 ms waarneemt dat de minimale sojourn time continu boven het target van {{5}} ms blijft, betreedt het de dropping state.",
+   "explain": "5 ms is de standaard target parameter van CoDel (RFC 8289)."
+  },
+  {
+   "id": "p10",
+   "type": "match",
+   "skill": "cake-flow-isolation",
+   "level": 2,
+   "prompt": "Koppel de SQM/CAKE component aan zijn specifieke netwerkfunctie:",
+   "explain": "Flow isolation scheidt kleine van grote stromen, DRR plant eerlijk, overhead compensation verrekent L1/L2 bytes en 95% shaping houdt de wachtrij op de eigen router.",
+   "pairs": [
+    [
+     "Flow Isolation",
+     "Plaatst sparse interactieve stromen in aparte subqueues via 5-tuple hashing"
+    ],
+    [
+     "Deficit Round Robin",
+     "Eerlijk scheduleringsmechanisme dat round-robin wisselt tussen actieve stromen"
+    ],
+    [
+     "Overhead Compensation",
+     "Berekent Ethernet Preamble/IFG (38 bytes) en ATM framing exact door"
+    ],
+    [
+     "Bandwidth Shaping (95%)",
+     "Voorkomt dat ongecontroleerde buffers in de ISP-modem vollopen"
+    ]
+   ]
+  },
+  {
+   "id": "p11",
+   "type": "cloze",
+   "skill": "cake-flow-isolation",
+   "level": 1,
+   "prompt": "Vul de afkorting aan:",
+   "text": "De moderne Linux qdisc CAKE staat voluit voor Common Applications Kept {{Enhanced|enhanced}}.",
+   "explain": "CAKE is ontworpen als de opvolger van fq_codel met geïntegreerde shaper en overhead-berekening."
+  },
+  {
+   "id": "p12",
+   "type": "mcq",
+   "skill": "cake-flow-isolation",
+   "level": 2,
+   "prompt": "Waarom ervaart een online gamer nauwelijks latency-verhoging onder fq_codel/CAKE terwijl een huisgenoot een gigantische download uitvoert?",
+   "explain": "De kleine gamepakketjes vallen in een sparse flow en krijgen via Deficit Round Robin direct voorrang op de bulk download flow.",
+   "options": [
+    "Gamepakketjes vormen een sparse flow en krijgen direct voorrang op bulk downloads",
+    "CAKE converteert alle speldata automatisch naar een versleutelde VPN-tunnel",
+    "fq_codel blokkeert automatisch alle downloads zodra een game opstart",
+    "De router overschrijft de IP-adressen van de download naar een virtueel subnet"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p13",
+   "type": "numeric",
+   "skill": "cake-flow-isolation",
+   "level": 2,
+   "prompt": "Een kantoor heeft een kabelverbinding met een nominale uploadsnelheid van 50 Mbps. Op hoeveel Mbps moet de CAKE shaper worden ingesteld bij de vuistregel van 95% capaciteit?",
+   "explain": "50 * 0,95 = 47,5 Mbps.",
+   "value": 47.5,
+   "abs": 0.1,
+   "unit": "Mbps"
+  },
+  {
+   "id": "p14",
+   "type": "mcq",
+   "skill": "pmtud-blackholes-mss",
+   "level": 2,
+   "prompt": "Welk ICMP-bericht moet een router terugsturen naar de zender wanneer een pakket met DF=1 te groot is voor een netwerktunnel?",
+   "explain": "ICMP Type 3 (Destination Unreachable) Code 4 (Fragmentation Needed and DF set) is het officiële PMTUD-signaal.",
+   "options": [
+    "ICMP Type 3 Code 4 (Fragmentation Needed and DF set)",
+    "ICMP Type 8 Code 0 (Echo Request)",
+    "ICMP Type 11 Code 0 (Time to Live exceeded in transit)",
+    "ICMP Type 5 Code 1 (Redirect for Host)"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p15",
+   "type": "cloze",
+   "skill": "pmtud-blackholes-mss",
+   "level": 2,
+   "prompt": "Bereken de maximale TCP MSS:",
+   "text": "Op een WireGuard VPN-verbinding met een MTU van 1420 bytes en 40 bytes aan standaard IPv4/TCP headers bedraagt de maximale TCP MSS {{1380}} bytes.",
+   "explain": "1420 MTU - 20 (IP) - 20 (TCP) = 1380 bytes."
+  },
+  {
+   "id": "p16",
+   "type": "type",
+   "skill": "pmtud-blackholes-mss",
+   "level": 2,
+   "prompt": "Welke iptables target module wordt gebruikt om de geadverteerde MSS van passerende TCP SYN-pakketjes automatisch te begrenzen op de Path MTU?",
+   "explain": "De TCPMSS target met vlag --clamp-mss-to-pmtu herschrijft de MSS optie in TCP handshakes.",
+   "answers": [
+    "TCPMSS",
+    "tcpmss",
+    "TCPMSS --clamp-mss-to-pmtu",
+    "--clamp-mss-to-pmtu"
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "numeric",
+   "skill": "latency-components",
+   "level": 2,
+   "prompt": "Bereken de minimale fysieke Round-Trip Time (RTT in milliseconden) van een glasvezelverbinding van 500 km (enkele reis) bij een propagatievertraging van 5 microseconden per kilometer:",
+   "explain": "Heen en terug = 2 * 500 km = 1.000 km. 1.000 km * 5 µs/km = 5.000 µs = 5 ms.",
+   "value": 5,
+   "abs": 0.1,
+   "unit": "ms"
+  },
+  {
+   "id": "m02",
+   "type": "cloze",
+   "skill": "latency-components",
+   "level": 1,
+   "prompt": "Vul de vierde latency component aan:",
+   "text": "De totale latency van een netwerkpad is opgebouwd uit propagatie, transmissie, processing en {{queueing|wachtrij|wachtrijvertraging|queueing delay}}.",
+   "explain": "Queueing delay is de tijd die pakketten doorbrengen in wachtrijbuffers."
+  },
+  {
+   "id": "m03",
+   "type": "order",
+   "skill": "latency-components",
+   "level": 2,
+   "prompt": "Plaats de latency-stappen van een datapakket dat een router passeert in de juiste chronologische volgorde:",
+   "explain": "Het pakket propageert over de link, wordt verwerkt door de router, wacht in de uitgaande buffer en wordt getransmitteerd op de kabel.",
+   "tiles": [
+    "Inkomende propagatie over de fysieke glasvezelkabel (T_prop)",
+    "Router inspecteert IP-header en voert FIB route-lookup uit (T_proc)",
+    "Pakket wacht in de uitgaande interface-buffer (T_queue)",
+    "Netwerkkaart pompt de bits fysiek op de uitgaande link (T_trans)"
+   ]
+  },
+  {
+   "id": "m04",
+   "type": "numeric",
+   "skill": "bufferbloat-mechanics",
+   "level": 2,
+   "prompt": "Een VDSL-modem heeft een uploadcapaciteit van 15 Mbps (15.000.000 bps). De ingebouwde FIFO buffer bedraagt 1,5 Megabyte (12.000.000 bits). Hoeveel milliseconden bedraagt de maximale wachtrijvertraging wanneer deze buffer vol raakt?",
+   "explain": "12.000.000 bits / 15.000.000 bps = 0,8 s = 800 ms.",
+   "value": 800,
+   "abs": 0.5,
+   "unit": "ms"
+  },
+  {
+   "id": "m05",
+   "type": "cloze",
+   "skill": "bufferbloat-mechanics",
+   "level": 1,
+   "prompt": "Benoem het netwerkfenomeen:",
+   "text": "Het fenomeen waarbij overmatig grote netwerkbuffers onder belasting leiden tot gigantische vertragingen noemt men {{Bufferbloat|bufferbloat}}.",
+   "explain": "Bufferbloat is de ongewenste wachttijd veroorzaakt door het bufferen van te veel netwerkpakketten."
+  },
+  {
+   "id": "m06",
+   "type": "mcq",
+   "skill": "bufferbloat-mechanics",
+   "level": 2,
+   "prompt": "Welk signaal gebruikt een klassiek TCP-algoritme zoals Reno of CUBIC als primaire indicator om zijn congestion window (cwnd) te verkleinen?",
+   "explain": "Een packet drop (gedetecteerd via Duplicate ACK's of time-out) is het signaal voor TCP om de zendsnelheid te reduceren.",
+   "options": [
+    "Het optreden van een packet drop of drievoudige Duplicate ACK",
+    "Een expliciet DNS NXDOMAIN antwoord van de lokale resolver",
+    "Een wijziging in het fysieke MAC-adres van de default gateway",
+    "Een plotselinge verhoging van de CPU-kloksnelheid op de server"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m07",
+   "type": "numeric",
+   "skill": "codel-aqm",
+   "level": 1,
+   "prompt": "Wat is het standaard tijdsinterval in milliseconden waarover CoDel evalueert of de minimale sojourn time boven het target blijft?",
+   "explain": "Het standaard CoDel evaluatievenster is 100 ms (ongeveer 1 internet RTT).",
+   "value": 100,
+   "abs": 0,
+   "unit": "ms"
+  },
+  {
+   "id": "m08",
+   "type": "cloze",
+   "skill": "codel-aqm",
+   "level": 2,
+   "prompt": "Vul de 3-letterige afkorting in:",
+   "text": "In plaats van een pakket fysiek te vernietigen, kan een AQM-algoritme de {{ECN|ecn}} bits in de IP-header markeren met 'Congestion Experienced'.",
+   "explain": "Explicit Congestion Notification (ECN) stelt routers in staat congestie te signaleren zonder pakketverlies."
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "codel-aqm",
+   "level": 2,
+   "prompt": "Met welke wiskundige factor (uitgedrukt in n) neemt de tijd tussen opeenvolgende drops af in de dropping state van CoDel?",
+   "explain": "De volgende drop wordt gepland op interval / sqrt(n), oftewel een 1/sqrt(n) schaling.",
+   "answers": [
+    "1/sqrt(n)",
+    "1/\\sqrt{n}",
+    "1/√n",
+    "inverse vierkantswortel",
+    "1 / sqrt(n)"
+   ]
+  },
+  {
+   "id": "m10",
+   "type": "mcq",
+   "skill": "codel-aqm",
+   "level": 2,
+   "prompt": "Wat kenmerkt een 'goede buffer' in de filosofie van het CoDel-algoritme?",
+   "explain": "Een goede wachtrij vangt kortstondige bursts op en draineert binnen enkele tientallen milliseconden weer naar nul.",
+   "options": [
+    "Een buffer die kortstondige bursts absorbeert en snel weer leegloopt",
+    "Een buffer die permanent gevuld blijft met minimaal 100 MB aan data",
+    "Een wachtrij die uitsluitend IPv6-pakketten accepteert en IPv4 dropt",
+    "Een buffer die TCP-headers comprimeert met verliesloze gzip-algoritmen"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m11",
+   "type": "type",
+   "skill": "cake-flow-isolation",
+   "level": 2,
+   "prompt": "Welk scheduling-algoritme (drie letters) gebruikt fq_codel om deficits per subqueue bij te houden en eerlijk te wisselen?",
+   "explain": "DRR staat voor Deficit Round Robin.",
+   "answers": [
+    "DRR",
+    "drr",
+    "Deficit Round Robin"
+   ]
+  },
+  {
+   "id": "m12",
+   "type": "cloze",
+   "skill": "cake-flow-isolation",
+   "level": 2,
+   "prompt": "Vul het aantal bytes framing overhead in:",
+   "text": "Voor standaard Ethernet berekent CAKE een vaste Layer 1/2 overhead van {{38}} bytes (14B Ethernet header + 4B FCS + 20B Preamble/IFG) per frame.",
+   "explain": "14 (MAC) + 4 (CRC) + 8 (Preamble/SFD) + 12 (Inter-Frame Gap) = 38 bytes per frame."
+  },
+  {
+   "id": "m13",
+   "type": "mcq",
+   "skill": "cake-flow-isolation",
+   "level": 2,
+   "prompt": "Wat gebeurt er als je een CAKE-shaper configureert op 110% van de daadwerkelijke uploadsnelheid van je internetverbinding?",
+   "explain": "Als de shaper boven de werkelijke lijnsnelheid staat, vormt de router geen wachtrij en verplaatst de bufferbloat zich terug naar het ongecontroleerde ISP-modem.",
+   "options": [
+    "De wachtrij verplaatst zich naar het ISP-modem waardoor bufferbloat terugkeert",
+    "De router overklokt automatisch de fysieke modem-verbinding met 10 procent",
+    "Alle TCP-sessies worden direct afgesloten met een ICMP Host Unreachable",
+    "De Linux kernel weigert het tc commando met een Invalid Parameter error"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m14",
+   "type": "order",
+   "skill": "cake-flow-isolation",
+   "level": 2,
+   "prompt": "Plaats de stappen van pakketbehandeling in CAKE in de juiste volgorde:",
+   "explain": "Het pakket arriveert, 5-tuple hash bepaalt de subqueue, flow-classificatie (sparse vs bulk) vindt plaats, en CoDel bewaakt de sojourn time bij verzending.",
+   "tiles": [
+    "Inkomend pakket passeert Layer 3/4 inspectie",
+    "5-tuple hash wijst het pakket toe aan een van de 1024 subqueues",
+    "Classificatie als sparse flow (mice) of bulk flow (elephant)",
+    "DRR scheduler haalt pakket op en CoDel controleert de sojourn time bij vertrek"
+   ]
+  },
+  {
+   "id": "m15",
+   "type": "type",
+   "skill": "pmtud-blackholes-mss",
+   "level": 1,
+   "prompt": "Welk vlag-bit in de IPv4-header (twee letters) verbiedt tussenliggende routers om een pakket op te knippen in fragmenten?",
+   "explain": "DF staat voor Don't Fragment.",
+   "answers": [
+    "DF",
+    "df",
+    "Don't Fragment",
+    "DF-bit"
+   ]
+  },
+  {
+   "id": "m16",
+   "type": "cloze",
+   "skill": "pmtud-blackholes-mss",
+   "level": 1,
+   "prompt": "Vul het geblokkeerde protocol in:",
+   "text": "Een PMTUD Black Hole ontstaat wanneer een tussenliggende firewall alle inkomende {{ICMP|icmp}} berichten blokkeert, waardoor fragmentatiesignalen de zender niet bereiken.",
+   "explain": "Het blokkeren van ICMP Type 3 Code 4 berichten is de primaire oorzaak van PMTUD Black Holes."
+  },
+  {
+   "id": "m17",
+   "type": "mcq",
+   "skill": "pmtud-blackholes-mss",
+   "level": 2,
+   "prompt": "Welk kenmerkend storingssymptoom wijst direct op een Path MTU Discovery Black Hole?",
+   "explain": "Kleine handshakes en pings slagen foutloos, maar zodra een applicatie grote MTU 1500 payloads (zoals TLS certificaten) verzendt, bevriest de sessie.",
+   "options": [
+    "Kleine TCP handshakes en pings werken, maar grote data-overdrachten en TLS handshakes bevriezen",
+    "De computer kan geen verbinding maken met het lokale WiFi-netwerk",
+    "Alle DNS-aanvragen retourneren steevast het link-local adres 169.254.1.1",
+    "De router verliest zijn publieke WAN IP-adres na precies 60 seconden"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m18",
+   "type": "numeric",
+   "skill": "pmtud-blackholes-mss",
+   "level": 2,
+   "prompt": "Een consument heeft een PPPoE glasvezellink met een MTU van 1492 bytes. Gegeven een standaard 20-byte IPv4-header en 20-byte TCP-header, wat is de maximale TCP MSS in bytes?",
+   "explain": "1492 MTU - 20 (IP) - 20 (TCP) = 1452 bytes.",
+   "value": 1452,
+   "abs": 0,
+   "unit": "bytes"
+  }
+ ],
+ "production": {
+  "type": "explain",
+  "lang": "nl",
+  "minWords": 140,
+  "prompt": "**Expertcase: De Haperende Glasvezelverbinding & Falende VPN bij 'DataCore NV'**\nEen gaming- en AI-ontwikkelbedrijf heeft een 500/100 Mbps internetverbinding.\nDe CTO meldt twee acute problemen:\n1. **Probleem A**: Tijdens code-pushes en model uploads (volle 100 Mbps upload) schiet de gaming- en videobel-latency van het kantoor omhoog van 8 ms naar 720 ms met 12% packet loss.\n2. **Probleem B**: Medewerkers die via een WireGuard VPN-tunnel (interface `wg0`, MTU 1420) naar het datacenter verbinden, kunnen via SSH wel inloggen en korte commando's typen (`ls`, `whoami`), maar zodra ze `cat groot_bestand.log` uitvoeren of een `git pull` starten over HTTPS/SSH, bevriest de terminal oneindig en valt de sessie na 60 seconden weg.\n\nJe hebt SSH-toegang tot de centrale Linux edge router (draaiend op OpenWrt 23.05 met Linux 6.1 kernel).\n\nGeef een diepgaand technisch expertverslag met de volgende 4 onderdelen:\n1. **Analyse Probleem A (Bufferbloat)**: Verklaar de wiskundige relatie tussen de buffer in het WAN-modem en de latency-piek van 720 ms. Waarom faalt de klassieke FIFO-wachtrij hier?\n2. **Oplossing Probleem A (CAKE SQM)**: Geef het exacte Linux `tc` commando om CAKE in te schakelen op de WAN-interface (`eth0`), ingesteld op 95 Mbps upload met automatische Ethernet overhead-compensatie. Leg uit waarom 95 Mbps gekozen wordt en wat CAKE's flow isolation doet met de videobel-pakketten.\n3. **Analyse Probleem B (PMTUD Black Hole)**: Waarom werken `ls` en de TCP-handshake wel, maar crasht `cat groot_bestand.log`? Welk specifiek ICMP-pakket ontbreekt in de communicatieketen en waarom?\n4. **Oplossing Probleem B (MSS Clamping)**: Geef de exacte firewall-regel (`iptables`) om TCP MSS clamping af te dwingen voor passerend verkeer op de tunnel. Bereken de exacte resulterende TCP MSS-waarde voor de `wg0` tunnel (MTU 1420 bytes, standaard IPv4 TCP headers).",
+  "model": "**1. Analyse Probleem A (Bufferbloat Wiskunde)**:\nDe latency-sprong van $8\\text{ ms}$ naar $720\\text{ ms}$ betekent een zuivere wachtrijvertraging van $T_{\\text{queue}} = 720 - 8 = 712\\text{ ms} = 0{,}712\\text{ s}$.\nBij een uploadcapaciteit van $100\\text{ Mbps}$ ($100 \\cdot 10^6\\text{ bps}$) correspondeert deze vertraging met een enorme standing buffer in de upstream modem:\n\n$$\\text{Buffergrootte} = T_{\\text{queue}} \\times R = 0{,}712\\text{ s} \\times 100 \\cdot 10^6\\text{ bps} = 71{,}2 \\cdot 10^6\\text{ bits} \\approx 8{,}9\\text{ Megabytes!}$$\n\nDe klassieke FIFO-wachtrij past pas Tail Drop toe wanneer deze 8,9 MB barstensvol zit. Omdat TCP CUBIC/Reno geen tussentijdse drops ontvangt, blijft het zijn $cwnd$ vergroten, waardoor interactieve VoIP- en gamingpakketjes continu achter bijna 9 megabytes aan data moeten wachten.\n\n**2. Oplossing Probleem A (CAKE SQM Implementatie)**:\nVoer het volgende commando uit op de router:\n```bash\ntc qdisc replace dev eth0 root cake bandwidth 95mbit ethernet\n```\n- **Waarom 95 Mbps?**: Door de shaper op 95% van de nominale linksnelheid te zetten, forceren we dat de bottleneck **altijd op onze eigen router ligt** waar CAKE draait. Hierdoor raakt de ongecontroleerde buffer van de ISP-modem nooit verzadigd.\n- **Flow Isolation**: CAKE hasht stromen via hun 5-tuple naar subqueues. Videobel- en gamingpakketten worden herkend als *sparse flows (mice)* en krijgen via Deficit Round Robin (DRR) **onmiddellijke voorrang** op de gigantische *bulk flows (elephants)* van de model-upload. De latency blijft onder belasting stabiel rond 8–10 ms!\n\n**3. Analyse Probleem B (PMTUD Black Hole)**:\nKorte commando's (`ls`, `whoami`) en de TCP 3-way handshake genereren pakketten van minder dan 100 bytes, die moeiteloos door de WireGuard-tunnel (MTU 1420) reizen. Zodra `cat groot_bestand.log` start, verzendt de server echter full-size TCP-segmenten van 1500 bytes met de `DF` (Don't Fragment) bit op `1`.\nDe router aan de wateringang van `wg0` kan het 1500-byte pakket niet kwijt in de 1420-byte tunnel en dropt het. De router zendt een **ICMP Type 3 Code 4** (*Fragmentation Needed and DF set, Next-Hop MTU = 1420*) terug naar de zender. Omdat een tussenliggende firewall alle ICMP-berichten paranoïde blokkeert, bereikt dit signaal de zender nooit. De zender blijft hetzelfde 1500-byte pakket opnieuw zenden tot de sessie na 60 seconden time-out.\n\n**4. Oplossing Probleem B (TCP MSS Clamping)**:\nConfigureer de volgende iptables-regel in de mangle-tabel van de router:\n```bash\niptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN \\\n  -j TCPMSS --clamp-mss-to-pmtu\n```\n- **Berekening MSS**: Voor de WireGuard-tunnel met MTU 1420 geldt met standaard 20-byte IPv4- en 20-byte TCP-headers:\n\n$$\\text{MSS} = \\text{MTU} - (\\text{IPv4 Header} + \\text{TCP Header}) = 1420 - (20 + 20) = \\mathbf{1380\\text{ bytes}}$$\n\nDe router overschrijft de geadverteerde MSS in passerende SYN-pakketjes automatisch naar 1380 bytes. Beide eindpunten zenden voortaan segmenten van maximaal 1380 bytes payload, waardoor pakketten inclusief headers exact 1420 bytes meten en vlekkeloos door de tunnel stromen!",
+  "rubric": [
+   "Berekent de bufferomvang wiskundig (ca. 712 ms * 100 Mbps ≈ 8,9 MB) en verklaart het falen van FIFO Tail Drop",
+   "Geeft het correcte tc cake commando met 95mbit en ethernet overhead, en verklaart waarom shaping op 95% nodig is",
+   "Legt de werking van flow isolation (sparse mice vs bulk elephants) en Deficit Round Robin uit voor videobellen",
+   "Verklaart het PMTUD Black Hole mechanisme, de DF-bit en de geblokkeerde ICMP Type 3 Code 4 melding",
+   "Geeft de exacte iptables TCPMSS clamp regel en berekent de resulterende MSS van exact 1380 bytes (1420 - 40)"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-latency-formula",
+   "front": "Wat is de wiskundige formule voor de totale end-to-end netwerklatency?",
+   "back": "$T_{\\text{totaal}} = T_{\\text{prop}} + T_{\\text{trans}} + T_{\\text{proc}} + T_{\\text{queue}}$",
+   "skill": "latency-components"
+  },
+  {
+   "id": "c-fiber-propagation",
+   "front": "Wat is de gouden vuistregel voor de propagatievertraging van licht in optische glasvezel?",
+   "back": "Ongeveer 5 microseconden per kilometer (one-way), ofwel 1 ms per 200 km (enkele reis).",
+   "skill": "latency-components"
+  },
+  {
+   "id": "c-bufferbloat-definition",
+   "front": "Wat is de definitie en hoofdoorzaak van Bufferbloat?",
+   "back": "Onnodige wachtrijvertraging (latency) veroorzaakt doordat routers te grote ongecontroleerde FIFO-buffers vullen zonder tijdig pakketten te droppen.",
+   "skill": "bufferbloat-mechanics"
+  },
+  {
+   "id": "c-codel-parameters",
+   "front": "Wat zijn de twee kernparameters van het CoDel AQM-algoritme?",
+   "back": "Target = 5 ms (streefwaarde sojourn time) en Interval = 100 ms (evaluatievenster).",
+   "skill": "codel-aqm"
+  },
+  {
+   "id": "c-sojourn-time",
+   "front": "Wat betekent de term 'sojourn time' in CoDel?",
+   "back": "De daadwerkelijke verblijftijd die een pakket in de wachtrij doorbrengt vanaf binnenkomst tot vertrek.",
+   "skill": "codel-aqm"
+  },
+  {
+   "id": "c-cake-shaping-rate",
+   "front": "Waarom moet een CAKE SQM shaper ingesteld worden op 90–95% van de nominale ISP-snelheid?",
+   "back": "Om te garanderen dat de bottleneck op de eigen router ligt waar CAKE controle heeft, en niet in de domme buffer van het ISP-modem.",
+   "skill": "cake-flow-isolation"
+  },
+  {
+   "id": "c-pmtud-icmp",
+   "front": "Welk ICMP-bericht is essentieel voor Path MTU Discovery (PMTUD)?",
+   "back": "ICMP Type 3 Code 4 (Destination Unreachable: Fragmentation Needed and DF set).",
+   "skill": "pmtud-blackholes-mss"
+  },
+  {
+   "id": "c-mss-clamping-calc",
+   "front": "Hoe bereken je de maximale TCP MSS voor een tunnel met MTU 1420 over IPv4?",
+   "back": "MSS = MTU - 40 bytes (20B IP + 20B TCP header) = 1420 - 40 = 1380 bytes.",
+   "skill": "pmtud-blackholes-mss"
+  }
+ ],
+ "sources": [
+  "RFC 8289: Controlled Delay Active Queue Management (CoDel) (2018)",
+  "RFC 8290: The FlowQueue-CoDel Packet Scheduler and AQM Algorithm (2018)",
+  "RFC 1191: Path MTU Discovery (1990)",
+  "Høiland-Jørgensen et al. (2018), The Bufferbloat Problem and its Solutions on the Internet",
+  "Gettys & Nichols (2011), Bufferbloat: Dark Buffers in the Internet (ACM Queue)"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-02",
+  "adaptedFor": "Ontworpen voor Thibaud als expertles over netwerkkwaiteit, met wiskundige latency-modellen, CoDel-algoritmiek, CAKE overhead-shaping en diepgaande PMTUD triage."
+ }
+}

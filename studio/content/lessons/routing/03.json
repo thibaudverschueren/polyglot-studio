@@ -1,0 +1,750 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "routing",
+ "id": 3,
+ "roadmap": "routing-06-link-state-ospf-core",
+ "kind": "core",
+ "title": "Dynamic Routing: OSPF, Dijkstra & Adjacencies",
+ "subtitle": "Link-State routing, het SPF-algoritme, LSA-types en de 7 adjacency-toestanden",
+ "level": "gevorderd",
+ "minutes": 45,
+ "summary": "Statische routes schalen niet en Distance Vector (RIP) convergeert traag met gevaar op lussen. OSPF lost dit op met het Dijkstra Shortest Path First (SPF) algoritme: elke router bouwt een identieke topologische netwerkkaart (LSDB) en berekent zelfstandig het wiskundig optimale, lusvrije pad.",
+ "objectives": [
+  {
+   "id": "link-state-vs-distance-vector",
+   "text": "Je vergelijkt de fundamentele werkingsprincipes van Distance Vector (Bellman-Ford) en Link-State routering."
+  },
+  {
+   "id": "dijkstra-spf-math",
+   "text": "Je berekent padkosten en kortste paden met behulp van Dijkstra's SPF-algoritme en de OSPF-kostenformule."
+  },
+  {
+   "id": "hello-and-timers",
+   "text": "Je analyseert OSPF Hello-pakketten, timers en buurdetectie op verschillende netwerktypen."
+  },
+  {
+   "id": "adjacency-states",
+   "text": "Je doorloopt en diagnosticeert de 7 OSPF adjacency-toestanden van Down tot Full inclusief MTU-valkuilen."
+  },
+  {
+   "id": "dr-bdr-and-lsas",
+   "text": "Je verklaart de DR/BDR-verkiezing op broadcastnetwerken en het onderscheid tussen LSA Type 1 en Type 2."
+  }
+ ],
+ "sections": [
+  {
+   "id": "distance-vector-vs-link-state",
+   "title": "Distance Vector vs. Link-State: Van Geruchten naar een Volledige Kaart",
+   "md": "In dynamische routering delen routers netwerkinformatie met elkaar om automatisch de beste route naar elke bestemming te vinden. Historisch gebeurde dit met **Distance Vector** protocollen zoals RIP (Routing Information Protocol) op basis van het Bellman-Ford algoritme. Moderne enterprise- en datacenter-netwerken vertrouwen echter vrijwel universeel op **Link-State** protocollen zoals OSPF (Open Shortest Path First) en IS-IS.\n\n### Het 'Routing by Rumor' Probleem van Distance Vector\nDistance Vector routers kennen alleen twee parameters: de **afstand** (distance, zoals hop count) en de **richting** (vector, oftewel de next-hop interface). Een router weet niet hoe de topologie er achter zijn directe buur uitziet; hij vertrouwt blind op wat zijn buur hem vertelt. Dit principe staat bekend als *routing by rumor*.\n\nDit brengt ernstige kwetsbaarheden met zich mee:\n1. **Trage convergentie & Count-to-Infinity**: Als een link wegvalt, blijft buur B adverteren dat hij de bestemming kan bereiken via router A. Router A denkt vervolgens dat B een alternatieve route heeft en verhoogt zijn metriek. Ze blijven elkaars metriek oneindig ophogen totdat de limiet van 16 hops (in RIP) wordt bereikt.\n2. **Lapmiddelen tegen lussen**: Om dit tegen te gaan zijn kunstgrepen nodig zoals *Split Horizon* (adverteer een route nooit terug over dezelfde interface waar je hem hebt geleerd), *Poison Reverse* (adverteer de route direct met een oneindige metriek van 16) en *Hold-Down timers* (wacht minuten voor je een alternatief accepteert).\n\n### Het Link-State Paradigma\nLink-State protocollen werken fundamenteel anders. In plaats van kant-en-klare routeringstabellen adverteert elke router uitsluitend de toestand van zijn **eigen direct aangesloten links**:\n- Welke interfaces zijn up?\n- Welke IP-prefixen en subnetten hangen eraan?\n- Welke buren zijn direct verbonden?\n- Wat is de geconfigureerde kost (bandbreedte) van elke link?\n\nDeze informatie wordt verpakt in **Link State Advertisements (LSA's)** en betrouwbaar doorgestuurd (*flooded*) naar alle andere routers in hetzelfde gebied (*Area*). Binnen enkele milliseconden beschikt elke router over exact dezelfde **Link-State Database (LSDB)**. Elke router heeft hiermee een complete, identieke satellietkaart van de gehele netwerktopologie en berekent zelfstandig de kortste route naar elke bestemming.",
+   "checks": [
+    {
+     "id": "c01",
+     "type": "mcq",
+     "skill": "link-state-vs-distance-vector",
+     "level": 1,
+     "prompt": "Waarom noemt men het werkingsprincipe van Distance Vector protocollen ook wel 'routing by rumor'?",
+     "explain": "Distance Vector routers delen alleen hun samengestelde routeringstabel met directe buren; een router heeft geen eigen inzicht in de complete netwerktopologie en vertrouwt blind op de beweringen van zijn buren.",
+     "options": [
+      "Routers kennen alleen de afstand en next-hop van directe buren zonder de achterliggende topologie te zien",
+      "Routers sturen geruchten rond via ongecodeerde broadcastberichten zonder authenticatie",
+      "Updates worden alleen verzonden wanneer een link fysiek wegvalt en niet periodiek",
+      "Routers kiezen willekeurig een buur als default gateway wanneer tabellen niet overeenkomen"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c02",
+     "type": "cloze",
+     "skill": "link-state-vs-distance-vector",
+     "level": 2,
+     "prompt": "Vul de juiste termen in over Link-State eigenschappen:",
+     "explain": "De Link-State Database (LSDB) bevat alle ontvangen LSA's en is identiek op alle routers in de area; Dijkstra berekent de kortste paden.",
+     "text": "In OSPF verzamelt elke router binnengekomen LSA's in een identieke topologische database genaamd de {{LSDB|Link State Database|link-state database}}, waarna elke router zelfstandig en direct het {{Dijkstra|SPF|Shortest Path First}} algoritme uitvoert."
+    }
+   ]
+  },
+  {
+   "id": "dijkstra-spf-berekening",
+   "title": "Het Dijkstra SPF-Algoritme & OSPF Link-Kosten",
+   "md": "Zodra de Link-State Database (LSDB) gesynchroniseerd is, voert elke router lokaal het **Shortest Path First (SPF)** algoritme uit, ontworpen door de Nederlandse informaticus Edsger W. Dijkstra in 1956.\n\n### De Wiskunde van Dijkstra SPF\nHet netwerk wordt gemodelleerd als een gewogen gerichte graaf $G = (V, E)$, waarbij $V$ de verzameling routers en netwerksegmenten is, en $E$ de links met bijbehorende kosten (*weights*).\n\n1. De router plaatst **zichzelf als wortelknoop (root)** van een boomstructuur (*Shortest Path Tree*).\n2. De router houdt twee lijsten bij: de **Permanente lijst (PATH)** met knopen waarvan het kortste pad definitief vaststaat, en de **Tentatieve lijst (TENT)** met kandidaat-knopen en hun voorlopige cumulatieve padkost.\n3. In elke iteratie kiest het algoritme de knoop uit TENT met de **laagste cumulatieve kost**, verplaatst deze naar PATH, en onderzoekt de uitgaande buren van die knoop. Als een buur via deze nieuwe hop sneller bereikbaar is, wordt zijn kost in TENT verlaagd (*edge relaxation*).\n4. Dit herhaalt zich totdat alle bestemmingen in PATH staan. Het resultaat is een lusvrije boom met de optimale next-hop voor elke bestemming, die direct wordt gepusht naar de RIB.\n\n### OSPF Link Cost Formule\nIn tegenstelling tot RIP (waarbij elke link ongeacht de snelheid kost 1 heeft) gebruikt OSPF een metriek gebaseerd op de linkbandbreedte:\n\n$$\\text{Cost} = \\frac{\\text{Reference Bandwidth}}{\\text{Interface Bandwidth}}$$\n\nStandaard is de referentiebandbreedte in Cisco IOS en RFC 2328 vastgelegd op $10^8 \\text{ bps} = 100 \\text{ Mbps}$.\n\n| Interface Type | Bandbreedte | Standaard OSPF Kost | Kost met 100 Gbps Ref ($10^5 \\text{ Mbps}$) |\n|---|---|---|---|\n| T1 (serieel) | 1,544 Mbps | 64 | 64 766 |\n| FastEthernet | 100 Mbps | 1 | 1 000 |\n| GigabitEthernet | 1 Gbps (1 000 Mbps) | 1 (afgerond) | 100 |\n| 10 GigabitEthernet | 10 Gbps (10 000 Mbps) | 1 (afgerond) | 10 |\n| 100 GigabitEthernet | 100 Gbps (100 000 Mbps) | 1 (afgerond) | 1 |\n\n> [!pitfall] De 100 Mbps Valkuil in Moderne Netwerken\n> Omdat de kostenformule naar beneden afrondt op gehele getallen met een minimum van 1, krijgen FastEthernet (100M), Gigabit (1G) en 10-Gigabit (10G) met de standaard referentiebandbreedte **allemaal kost 1**! OSPF kan daardoor geen onderscheid maken tussen een trage 100 Mbps link en een snelle 10 Gbps glasvezelverbinding. Om dit op te lossen moet op álle routers de referentiebandbreedte worden verhoogd via `auto-cost reference-bandwidth 100000` (in Mbps, oftewel 100 Gbps).",
+   "checks": [
+    {
+     "id": "c03",
+     "type": "numeric",
+     "skill": "dijkstra-spf-math",
+     "level": 2,
+     "prompt": "Bereken de OSPF interface-kost voor een 10 Gbps verbinding als de referentiebandbreedte is ingesteld op 100 Gbps (100 000 Mbps).",
+     "explain": "Cost = Reference Bandwidth / Interface Bandwidth = 100 000 Mbps / 10 000 Mbps = 10.",
+     "value": 10,
+     "abs": 0
+    },
+    {
+     "id": "c04",
+     "type": "cloze",
+     "skill": "dijkstra-spf-math",
+     "level": 2,
+     "prompt": "Vul aan over OSPF link-kosten:",
+     "explain": "Standaard referentie is 100 Mbps, waardoor links met een bandbreedte groter of gelijk aan 100 Mbps allemaal kost 1 krijgen.",
+     "text": "De standaard OSPF referentiebandbreedte is {{100 Mbps|100Mbps|10^8 bps|100000000 bps}}, waardoor links van 1 Gbps en 10 Gbps zonder herconfiguratie beide de afgeronde minimumkost van {{1|één}} krijgen."
+    }
+   ]
+  },
+  {
+   "id": "hello-protocol-en-timers",
+   "title": "OSPF Buurdetectie: Hello-Pakketten & Timers",
+   "md": "Voordat routers LSA's uitwisselen, moeten ze elkaar ontdekken en een buurrelatie (*neighbor adjacency*) opbouwen. Dit gebeurt via het OSPF Hello-protocol.\n\n### Protocol 89 & Multicast\nOSPF gebruikt geen TCP of UDP. Het draait direct op Layer 3 via **IP protocol nummer 89**. Hello-pakketten worden periodiek verstuurd naar het gereserveerde multicast-adres **224.0.0.5** (*AllSPFRouters*).\n\n### De Router ID (RID)\nElke OSPF router moet een uniek 32-bit ID hebben (in IPv4-formaat, bv. `10.255.255.1`). De router kiest zijn RID volgens deze vaste pikorde:\n1. Het expliciet geconfigureerde Router ID (`router-id X.X.X.X` onder het OSPF-proces).\n2. Het hoogste IPv4-adres op een actieve **loopback**-interface (loopbacks flappen nooit fysiek, wat stabiliteit garandeert).\n3. Het hoogste IPv4-adres op een actieve **fysieke** interface.\n\n### Verplichte Overeenkomsten in het Hello-Pakket\nOm een buurschap te vestigen moeten twee routers op hetzelfde netwerksegment exact overeenstemmen op een reeks kritische parameters in het Hello-pakket. Wijkt er één af, dan weigert OSPF de buur:\n- **Area ID**: Beide interfaces moeten tot exact hetzelfde OSPF-gebied behoren (bv. Area 0).\n- **Subnet & Subnetmasker**: IP-adressen moeten in hetzelfde subnet vallen met hetzelfde masker (op multi-access netwerken).\n- **Hello & Dead Timers**: Standaard is het Hello-interval **10 seconden** op broadcast- en point-to-point links. Het Dead-interval (de tijd waarna een buur als offline wordt beschouwd) is standaard exact **4 keer het Hello-interval** (dus **40 seconden**). Op trage NBMA-links zijn deze 30s en 120s.\n- **Authentication**: Wachtwoord of cryptografische sleutel (MD5/HMAC-SHA).\n- **Stub Area Flags**: Routers moeten het eens zijn over speciale area-types (zoals stub of NSSA).",
+   "checks": [
+    {
+     "id": "c05",
+     "type": "multi",
+     "skill": "hello-and-timers",
+     "level": 1,
+     "prompt": "Welke parameters in het OSPF Hello-pakket MOETEN identiek zijn tussen twee buren om een adjacency te kunnen vormen?",
+     "explain": "Area ID, Subnet Masker, en Hello/Dead timers moeten exact overeenstemmen. Het Router ID moet daarentegen juist strikt uniek zijn en de OSPF priority mag verschillen.",
+     "options": [
+      "Area ID",
+      "Hello en Dead intervallen",
+      "Subnetmasker (op broadcast netwerken)",
+      "Router ID (moet identiek zijn)",
+      "OSPF interface priority"
+     ],
+     "answers": [
+      0,
+      1,
+      2
+     ]
+    },
+    {
+     "id": "c06",
+     "type": "numeric",
+     "skill": "hello-and-timers",
+     "level": 2,
+     "prompt": "Een netwerkbeheerder configureert handmatig 'ip ospf hello-interval 5' op een Point-to-Point glasvezellink. Wat wordt automatisch het bijbehorende Dead-interval in seconden als de standaard viervoudige verhouding behouden blijft?",
+     "explain": "Het standaard Dead-interval is 4 * Hello-interval = 4 * 5 = 20 seconden.",
+     "value": 20,
+     "abs": 0,
+     "unit": "seconden"
+    }
+   ]
+  },
+  {
+   "id": "de-zeven-adjacency-states",
+   "title": "De 7 Adjacency-Toestanden & MTU-Troubleshooting",
+   "md": "Het opbouwen van een volledige OSPF-buurrelatie doorloopt een strikte **Finite State Machine (FSM)** van zeven opeenvolgende toestanden:\n\n```\n[ Down ] ──(Hello ontvangen)──> [ Init ] ──(Eigen RID in Hello)──> [ 2-Way ]\n                                                                      │ (DR/BDR gekozen;\n                                                                      │  DROthers blijven 2-Way)\n                                                                      ▼\n[ Full ] <──(LSDB synchroon)── [ Loading ] <──(LSR / LSU)── [ Exchange ] <──(Master/Slave)── [ ExStart ]\n```\n\n1. **Down**: Initiële toestand; er zijn nog geen Hello-pakketten ontvangen van de buur.\n2. **Init**: De router ontvangt een Hello van de buur, maar zijn eigen Router ID staat nog *niet* in de burenlijst van dat pakket. Er is sprake van éénrichtingsverkeer.\n3. **2-Way**: Bidirectionele communicatie is bevestigd! De router ziet zijn eigen Router ID terug in de Neighbor List van de ontvangen Hello. Op broadcastnetwerken vindt hier de **DR/BDR-verkiezing** plaats. Tussen twee gewone routers (*DROthers*) stopt het proces hier (`2-Way/DROTHER`), wat flooding drastisch beperkt.\n4. **ExStart**: Routers besluiten een volledige adjacency te vormen. Ze bepalen een **Master/Slave**-relatie en een initieel volgnummer (ISN) via lege Database Description (DBD) pakketten. De router met het **hoogste Router ID wordt Master**; de Master stuurt als eerste DBD's en verhoogt de volgnummers.\n5. **Exchange**: Routers wisselen daadwerkelijke DBD-pakketten uit met samenvattingen (headers) van alle LSA's in hun LSDB.\n6. **Loading**: Routers vergelijken de ontvangen LSA-headers met hun eigen database. Blijkt een LSA te ontbreken of verouderd, dan vraagt de router de volledige LSA op met een **Link State Request (LSR)**. De buur antwoordt met een **Link State Update (LSU)** en de ontvangst wordt bevestigd met een **Link State Acknowledgment (LSAck)**.\n7. **Full**: De databases zijn 100% gesynchroniseerd. De routers hebben een volledige adjacency bereikt.\n\n> [!pitfall] De Klassieke ExStart / Exchange Hangup: MTU Mismatch\n> In de ExStart/Exchange fase controleren routers de **Interface MTU** die in het DBD-pakket staat. Als Router A een MTU van 1500 bytes heeft en Router B (bijvoorbeeld door een PPPoE/VLAN tunnel) een MTU van 1492 bytes heeft, accepteert Router B het grotere DBD-pakket niet. Gevolg: de OSPF adjacency blijft **eeuwig hangen in ExStart of Exchange**! Remedie: MTU synchroniseren of tijdelijk `ip ospf mtu-ignore` instellen.",
+   "checks": [
+    {
+     "id": "c07",
+     "type": "order",
+     "skill": "adjacency-states",
+     "level": 2,
+     "prompt": "Plaats de eerste 4 OSPF adjacency-toestanden in de juiste chronologische volgorde vanaf de start:",
+     "explain": "De opbouw start bij Down, gaat naar Init (éénrichting), dan 2-Way (bidirectioneel) en vervolgens naar ExStart (Master/Slave bepaling).",
+     "tiles": [
+      "Down",
+      "Init",
+      "2-Way",
+      "ExStart"
+     ]
+    },
+    {
+     "id": "c08",
+     "type": "type",
+     "skill": "adjacency-states",
+     "level": 2,
+     "prompt": "Twee OSPF-routers blijven oneindig hangen in de status 'ExStart/Exchange'. Welke interface-eigenschap verschilt hoogstwaarschijnlijk tussen beide kanten van de link?",
+     "explain": "Een mismatch in de MTU (Maximum Transmission Unit) zorgt ervoor dat DBD-pakketten niet geaccepteerd worden, waardoor de sessie vastloopt in ExStart of Exchange.",
+     "answers": [
+      "MTU",
+      "mtu",
+      "Maximum Transmission Unit",
+      "Interface MTU"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "dr-bdr-en-lsa-types",
+   "title": "Schaalbaarheid op Broadcast-Netwerken: DR/BDR & LSA Type 1 vs 2",
+   "md": "Op een gedeeld Ethernet multi-access segment (bijvoorbeeld 10 routers aangesloten op dezelfde switch) zou een volledige vermaasdheid (*full mesh*) aan adjacencies rampzalig zijn voor de prestaties:\n\n$$\\text{Aantal adjacencies} = \\frac{N(N - 1)}{2}$$\n\nBij 10 routers zijn dit 45 adjacencies; bij 50 routers maar liefst 1 225 adjacencies! Elke link-flap zou resulteren in een storm van redundante LSA-floodings over hetzelfde fysieke broadcast-domein.\n\n### De Oplossing: DR en BDR\nOSPF lost dit op door op multi-access broadcastnetwerken twee leiders te kiezen:\n1. **Designated Router (DR)**: Het centrale aanspreekpunt voor alle routers op het segment.\n2. **Backup Designated Router (BDR)**: Luistert mee en neemt direct over als de DR faalt.\n3. **DROther**: Alle overige routers. Zij bouwen alleen een `Full` adjacency op met de DR en BDR! Onderling blijven DROther routers in de toestand `2-Way`. Hierdoor daalt het aantal adjacencies op het segment drastisch naar $2N - 3$.\n\n### Multicast Verkeer tussen DR en DROther\n- **224.0.0.6 (AllDRouters)**: DROther routers sturen hun LSA-updates (LSU's) en acknowledgments uitsluitend naar dit adres. Alleen de DR en BDR luisteren hiernaar.\n- **224.0.0.5 (AllSPFRouters)**: De DR herhaalt de goedgekeurde LSA-updates naar dit adres, zodat alle routers op het segment de update ontvangen.\n\n### Verkiezing & Niet-Preëmptiviteit\nDe verkiezing gebeurt op basis van de **OSPF Interface Priority** (0 tot 255, default 1). De router met de hoogste prioriteit wint. Bij gelijke stand wint de router met het **hoogste Router ID**.\n- Een prioriteit van `0` (`ip ospf priority 0`) betekent dat de router **nooit** DR of BDR mag worden.\n- De verkiezing is **niet-preëmptief**: als een router met prioriteit 255 online komt nadat de DR al gekozen is, neemt hij het leiderschap *niet* over. Dit voorkomt netwerkonderbrekingen.\n\n### LSA Type 1 en Type 2\nBinnen een enkele OSPF area vormen twee LSA-types het fundament van de LSDB:\n- **LSA Type 1 (Router LSA)**: Gegenereerd door **elke router** voor zichzelf. Beschrijft alle direct verbonden links van de router, linktypes (point-to-point, stub, transit) en kosten. Blijft strikt binnen de eigen area.\n- **LSA Type 2 (Network LSA)**: Uitsluitend gegenereerd door de **Designated Router (DR)** op multi-access broadcast segmenten. Beschrijft het multi-access netwerk zelf (het subnetmasker) en somt alle aangesloten routers (Router ID's) op die met het segment verbonden zijn.",
+   "checks": [
+    {
+     "id": "c09",
+     "type": "mcq",
+     "skill": "dr-bdr-and-lsas",
+     "level": 2,
+     "prompt": "Naar welk multicast-adres sturen DROther routers hun Link State Updates op een broadcast netwerk?",
+     "explain": "DROthers sturen updates naar 224.0.0.6 (AllDRouters). Alleen de DR en BDR luisteren op dit adres. De DR floodt de update vervolgens naar alle routers via 224.0.0.5.",
+     "options": [
+      "224.0.0.6 (AllDRouters)",
+      "224.0.0.5 (AllSPFRouters)",
+      "224.0.0.1 (AllHosts)",
+      "224.0.0.9 (AllRIPRouters)"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c10",
+     "type": "cloze",
+     "skill": "dr-bdr-and-lsas",
+     "level": 2,
+     "prompt": "Vul in over LSA-types en DR-beheer:",
+     "explain": "LSA Type 2 wordt door de DR gegenereerd om multi-access buren op te sommen; priority 0 sluit een router permanent uit van de DR/BDR-verkiezing.",
+     "text": "LSA Type 1 wordt door elke router gegenereerd, terwijl LSA Type 2 (Network LSA) uitsluitend wordt aangemaakt door de {{DR|Designated Router|designated router}}. Om te zorgen dat een edge router nooit als DR gekozen wordt, stel je de interface priority in op {{0|nul}}."
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "link-state-vs-distance-vector",
+   "level": 1,
+   "prompt": "Wat is het fundamentele verschil in topologiekennis tussen een Distance Vector router en een Link-State router?",
+   "explain": "Distance Vector routers kennen alleen richting en afstand zoals meegedeeld door buren ('routing by rumor'), terwijl Link-State routers een identieke complete kaart van het netwerk (LSDB) bezitten.",
+   "options": [
+    "Link-State routers bezitten een complete topologische kaart van het gehele gebied; Distance Vector routers kennen alleen afstand en next-hop via buren",
+    "Distance Vector routers berekenen paden met Dijkstra; Link-State routers gebruiken uitsluitend Bellman-Ford",
+    "Link-State routers sturen periodiek hun complete routeringstabel door; Distance Vector routers sturen alleen incrementele updates",
+    "Distance Vector routers houden rekening met bandbreedte; Link-State routers tellen alleen het aantal hops"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "match",
+   "skill": "link-state-vs-distance-vector",
+   "level": 2,
+   "prompt": "Koppel elk routeringsprotocol aan zijn kenmerkende eigenschappen:",
+   "explain": "RIP is een Distance Vector protocol met Bellman-Ford en max 15 hops; OSPF is een Link-State protocol gebaseerd op Dijkstra met identieke LSDB's.",
+   "pairs": [
+    [
+     "RIP",
+     "Bellman-Ford met hop count limiet van 15"
+    ],
+    [
+     "OSPF",
+     "Dijkstra SPF met complete topologische LSDB"
+    ],
+    [
+     "Split Horizon",
+     "Adverteer een geleerde route nooit terug over dezelfde interface"
+    ],
+    [
+     "Poison Reverse",
+     "Adverteer een falende route direct met een oneindige metriek van 16"
+    ]
+   ]
+  },
+  {
+   "id": "p03",
+   "type": "cloze",
+   "skill": "link-state-vs-distance-vector",
+   "level": 2,
+   "prompt": "Vul de juiste begrippen in over Distance Vector problemen:",
+   "text": "Wanneer twee Distance Vector routers bij een linkfout elkaars hop-telling oneindig blijven ophogen, ontstaat het {{Count-to-Infinity|count to infinity|count-to-infinity}} probleem. In OSPF wordt dit voorkomen doordat elke router zelfstandig rekent op basis van een lusvrije {{boomstructuur|Shortest Path Tree|boom|SPT}}.",
+   "explain": "Count-to-Infinity ontstaat bij Distance Vector door vertraagde updates; OSPF voorkomt lussen door een Shortest Path Tree te bouwen."
+  },
+  {
+   "id": "p04",
+   "type": "numeric",
+   "skill": "dijkstra-spf-math",
+   "level": 2,
+   "prompt": "Bereken de standaard OSPF interface-kost voor een oudere 10 Mbps Ethernet link bij de standaard referentiebandbreedte van 100 Mbps.",
+   "explain": "Cost = Reference Bandwidth / Interface Bandwidth = 100 Mbps / 10 Mbps = 10.",
+   "value": 10,
+   "abs": 0
+  },
+  {
+   "id": "p05",
+   "type": "mcq",
+   "skill": "dijkstra-spf-math",
+   "level": 2,
+   "prompt": "Twee parallelle links verbinden router A met router B: link 1 is 1 Gbps en link 2 is 10 Gbps. Welke kost berekent OSPF standaard voor beide links als de referentiebandbreedte niet is gewijzigd?",
+   "explain": "Standaard is de referentiebandbreedte 100 Mbps. Zowel 100/1000 als 100/10000 levert een getal kleiner dan 1 op, wat OSPF afrondt naar de minimale kost van 1 voor beide links.",
+   "options": [
+    "Beide links krijgen kost 1, waardoor OSPF ze als gelijkwaardig beschouwt",
+    "Link 1 krijgt kost 1 en Link 2 krijgt kost 10",
+    "Link 1 krijgt kost 10 en Link 2 krijgt kost 1",
+    "Link 2 wordt automatisch uitgeschakeld wegens overcapaciteit"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p06",
+   "type": "type",
+   "skill": "dijkstra-spf-math",
+   "level": 2,
+   "prompt": "Welk specifiek Cisco OSPF configuratiecommando gebruik je in de routerconfiguratie om de referentiebandbreedte in te stellen op 100 Gbps (100 000 Mbps)?",
+   "explain": "Het commando luidt 'auto-cost reference-bandwidth 100000'.",
+   "answers": [
+    "auto-cost reference-bandwidth 100000",
+    "auto-cost reference-bandwidth 100000 Mbps",
+    "auto-cost reference-bandwidth 100 Gbps"
+   ]
+  },
+  {
+   "id": "p07",
+   "type": "numeric",
+   "skill": "dijkstra-spf-math",
+   "level": 2,
+   "prompt": "Router R1 kan bestemming D bereiken via pad R1-A-D (kosten: R1-A = 5, A-D = 3) of via pad R1-B-D (kosten: R1-B = 2, B-D = 7). Wat is de totale cumulatieve kost van het gekozen kortste pad volgens Dijkstra?",
+   "explain": "Pad 1 heeft kost 5 + 3 = 8. Pad 2 heeft kost 2 + 7 = 9. Dijkstra kiest het pad met de laagste totale kost, dus 8.",
+   "value": 8,
+   "abs": 0
+  },
+  {
+   "id": "p08",
+   "type": "multi",
+   "skill": "hello-and-timers",
+   "level": 2,
+   "prompt": "Welke van de volgende eigenschappen moeten exact overeenkomen tussen twee OSPF-routers om een buurrelatie (adjacency) op te kunnen bouwen?",
+   "explain": "Area ID, Hello/Dead timers en authenticatiesleutel moeten exact overeenkomen. Het Router ID moet uniek zijn en de OSPF priority mag verschillen.",
+   "options": [
+    "Area ID",
+    "Hello- en Dead-interval timers",
+    "Authenticatiesleutel (indien ingeschakeld)",
+    "Router ID van de router",
+    "Interface priority voor DR-verkiezing"
+   ],
+   "answers": [
+    0,
+    1,
+    2
+   ]
+  },
+  {
+   "id": "p09",
+   "type": "numeric",
+   "skill": "hello-and-timers",
+   "level": 2,
+   "prompt": "Wat is het standaard OSPF Dead-interval in seconden op een standaard Ethernet broadcast interface waar het Hello-interval 10 seconden bedraagt?",
+   "explain": "Standaard is het Dead-interval 4 maal het Hello-interval: 4 * 10 = 40 seconden.",
+   "value": 40,
+   "abs": 0,
+   "unit": "seconden"
+  },
+  {
+   "id": "p10",
+   "type": "type",
+   "skill": "hello-and-timers",
+   "level": 1,
+   "prompt": "Welk IP protocolnummer gebruikt OSPF direct in de IPv4 header (zonder TCP of UDP)?",
+   "explain": "OSPF draait direct over IP protocol 89.",
+   "answers": [
+    "89",
+    "Protocol 89",
+    "IP 89"
+   ]
+  },
+  {
+   "id": "p11",
+   "type": "order",
+   "skill": "adjacency-states",
+   "level": 2,
+   "prompt": "Rangschik de 7 OSPF adjacency-toestanden in de juiste volgorde van begin tot eind:",
+   "explain": "De volledige sequentie van OSPF is: Down -> Init -> 2-Way -> ExStart -> Exchange -> Loading -> Full.",
+   "tiles": [
+    "Down",
+    "Init",
+    "2-Way",
+    "ExStart",
+    "Exchange",
+    "Loading",
+    "Full"
+   ]
+  },
+  {
+   "id": "p12",
+   "type": "cloze",
+   "skill": "adjacency-states",
+   "level": 2,
+   "prompt": "Vul aan over de OSPF toestand tussen niet-DR routers:",
+   "text": "Op een broadcast Ethernet segment vormen twee gewone DROther routers onderling geen Full adjacency, maar blijven zij permanent in de toestand {{2-Way|2-way|two-way}} staan.",
+   "explain": "DROther routers bouwen alleen Full adjacencies op met de DR en BDR; onderling blijven ze in 2-Way toestand om flooding te beperken."
+  },
+  {
+   "id": "p13",
+   "type": "mcq",
+   "skill": "adjacency-states",
+   "level": 2,
+   "prompt": "Twee OSPF routers blijven continu steken in de toestand 'ExStart/Exchange'. Wat is de meest voorkomende oorzaak van dit probleem?",
+   "explain": "In de ExStart-toestand wisselen routers DBD-pakketten uit waarin de interface MTU staat vermeld. Een MTU-mismatch zorgt ervoor dat de packets worden genegeerd.",
+   "options": [
+    "Een mismatch in de geconfigureerde MTU (Maximum Transmission Unit) tussen beide interfaces",
+    "Een verschil in de geconfigureerde OSPF process ID's op beide routers",
+    "Een conflict tussen de geconfigureerde Router ID's van beide routers",
+    "Een verkeerd geconfigureerd default gateway IP-adres op router B"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p14",
+   "type": "type",
+   "skill": "adjacency-states",
+   "level": 2,
+   "prompt": "Welk type OSPF-pakket (afkorting) wisselen routers uit tijdens de ExStart- en Exchange-toestand om de inhoud van hun LSDB's te vergelijken?",
+   "explain": "Database Description pakketten (DBD of DDP) bevatten de headers van alle LSA's in de database.",
+   "answers": [
+    "DBD",
+    "DDP",
+    "Database Description"
+   ]
+  },
+  {
+   "id": "p15",
+   "type": "mcq",
+   "skill": "dr-bdr-and-lsas",
+   "level": 2,
+   "prompt": "Waarom is de DR/BDR-verkiezing in OSPF ontworpen als een 'niet-preëmptief' proces?",
+   "explain": "Niet-preëmptief betekent dat een router met hogere prioriteit die later online komt de huidige DR niet afzet. Dit voorkomt onnodige adjacency-flaps en herberekeningen op het netwerk.",
+   "options": [
+    "Om netwerkinstabiliteit en herhaaldelijke adjacency-resets te voorkomen als een router herstart",
+    "Omdat OSPF routers geen prioriteiten kunnen vergelijken na het verstrijken van de Dead timer",
+    "Omdat de DR verplicht altijd op poort 1 van de Ethernet switch moet zijn aangesloten",
+    "Om te garanderen dat de router met het laagste IP-adres altijd BDR blijft"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p16",
+   "type": "numeric",
+   "skill": "dr-bdr-and-lsas",
+   "level": 2,
+   "prompt": "Als 6 OSPF-routers zijn aangesloten op hetzelfde Ethernet broadcast segment, hoeveel Full adjacencies worden er in totaal gevormd dankzij de aanwezigheid van een DR en BDR? Gebruik de formule 2N - 3.",
+   "explain": "Met formule 2N - 3: voor N = 6 geldt 2(6) - 3 = 12 - 3 = 9 adjacencies (in plaats van 15 bij een full-mesh).",
+   "value": 9,
+   "abs": 0
+  },
+  {
+   "id": "p17",
+   "type": "match",
+   "skill": "dr-bdr-and-lsas",
+   "level": 2,
+   "prompt": "Koppel de OSPF multicast-adressen en LSA-types aan hun exacte functie:",
+   "explain": "224.0.0.5 is AllSPFRouters; 224.0.0.6 is AllDRouters; LSA 1 is Router LSA; LSA 2 is Network LSA (gegenereerd door DR).",
+   "pairs": [
+    [
+     "224.0.0.5",
+     "AllSPFRouters — ontvangen door alle OSPF routers"
+    ],
+    [
+     "224.0.0.6",
+     "AllDRouters — ontvangen door alleen DR en BDR"
+    ],
+    [
+     "LSA Type 1",
+     "Router LSA — gegenereerd door elke router voor zijn eigen links"
+    ],
+    [
+     "LSA Type 2",
+     "Network LSA — uitsluitend gegenereerd door de DR voor het broadcast segment"
+    ]
+   ]
+  },
+  {
+   "id": "p18",
+   "type": "cloze",
+   "skill": "dr-bdr-and-lsas",
+   "level": 2,
+   "prompt": "Vul in over DR/BDR prioriteitsinstellingen:",
+   "text": "Wanneer je op een OSPF interface het commando `ip ospf priority {{0|nul}}` instelt, geef je aan dat deze router {{nooit|niet}} mag deelnemen aan de verkiezing van DR of BDR.",
+   "explain": "Een OSPF interface priority van 0 sluit de router uit van deelname aan de DR- en BDR-verkiezingen."
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "type",
+   "skill": "link-state-vs-distance-vector",
+   "level": 2,
+   "prompt": "Hoe noemt men de categorie routeringsprotocollen (zoals RIP) waarbij routers elkaars tabellen blindelings overnemen volgens het principe van 'routing by rumor'?",
+   "explain": "Distance Vector protocollen delen alleen afstanden en richtingen zonder dat routers inzicht hebben in de volledige topologie.",
+   "answers": [
+    "Distance Vector",
+    "distance vector",
+    "Distance-Vector",
+    "distance-vector"
+   ]
+  },
+  {
+   "id": "m02",
+   "type": "cloze",
+   "skill": "link-state-vs-distance-vector",
+   "level": 2,
+   "prompt": "Vul in over de gedeelde kennis in een OSPF-gebied:",
+   "text": "In OSPF bezit elke router binnen dezelfde area een strikt {{identieke|gelijke|dezelfde}} database van alle links en buren, genaamd de {{LSDB|Link State Database|link-state database}}.",
+   "explain": "Binnen één enkele OSPF area heeft elke router een exact identieke kopie van de Link-State Database (LSDB)."
+  },
+  {
+   "id": "m03",
+   "type": "mcq",
+   "skill": "link-state-vs-distance-vector",
+   "level": 1,
+   "prompt": "Wat is het maximale aantal hops dat een pakket in RIP mag afleggen voordat een route als onbereikbaar (oneindig) wordt gemarkeerd?",
+   "explain": "In RIP is 15 de maximale geldige hop count; 16 hops geldt als oneindig (unreachable) om Count-to-Infinity te begrenzen.",
+   "options": [
+    "15 hops (16 is oneindig)",
+    "255 hops (256 is oneindig)",
+    "100 hops (101 is oneindig)",
+    "30 hops (31 is oneindig)"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m04",
+   "type": "numeric",
+   "skill": "dijkstra-spf-math",
+   "level": 2,
+   "prompt": "Een router heeft een 1 Gbps (1 000 Mbps) interface. De beheerder stelt de OSPF referentiebandbreedte in op 100 Gbps (100 000 Mbps). Wat is de resulterende OSPF link cost?",
+   "explain": "Cost = Reference Bandwidth / Interface Bandwidth = 100 000 Mbps / 1 000 Mbps = 100.",
+   "value": 100,
+   "abs": 0
+  },
+  {
+   "id": "m05",
+   "type": "numeric",
+   "skill": "dijkstra-spf-math",
+   "level": 2,
+   "prompt": "Router R1 berekent de kortste route naar subnet X. Pad Alpha heeft linkkosten van 4, 3 en 5. Pad Beta heeft linkkosten van 10 en 3. Welke totale cumulatieve kost kent de winnende route toe?",
+   "explain": "Pad Alpha kost 4 + 3 + 5 = 12. Pad Beta kost 10 + 3 = 13. Dijkstra kiest het pad met de laagste cumulatieve kost, dus 12.",
+   "value": 12,
+   "abs": 0
+  },
+  {
+   "id": "m06",
+   "type": "cloze",
+   "skill": "dijkstra-spf-math",
+   "level": 2,
+   "prompt": "Vul in over de wiskundige grondslag van OSPF:",
+   "text": "Om de kortste paden te berekenen vanuit de LSDB gebruikt OSPF het {{Dijkstra|SPF|Shortest Path First}} algoritme, waarbij de router zichzelf als de {{root|wortel|wortelknoop}} van de boomstructuur plaatst.",
+   "explain": "OSPF gebruikt Edsger Dijkstra's Shortest Path First (SPF) algoritme, waarbij de router zichzelf als root van de boom plaatst."
+  },
+  {
+   "id": "m07",
+   "type": "mcq",
+   "skill": "dijkstra-spf-math",
+   "level": 2,
+   "prompt": "Waarom leidt het niet aanpassen van de standaard OSPF referentiebandbreedte (100 Mbps) in een modern glasvezelnetwerk tot suboptimale routering?",
+   "explain": "Omdat OSPF afrondt naar beneden met minimum 1, krijgen alle links van 100 Mbps, 1 Gbps, 10 Gbps en 100 Gbps dezelfde kost (1). OSPF ziet geen kwaliteitsverschil.",
+   "options": [
+    "Alle interfaces vanaf 100 Mbps krijgen dezelfde minimale kost van 1, waardoor snellere 10G links niet geprefereerd worden boven 100M links",
+    "Het SPF-algoritme crasht zodra interfaces groter dan 100 Mbps LSA's adverteren",
+    "Routers weigeren adjacencies te vormen over interfaces die sneller zijn dan de referentiebandbreedte",
+    "De interface bandbreedte wordt automatisch afgeknepen naar 100 Mbps om overbelasting te voorkomen"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m08",
+   "type": "numeric",
+   "skill": "hello-and-timers",
+   "level": 2,
+   "prompt": "Op een trage NBMA link is het OSPF Hello-interval geconfigureerd op 30 seconden. Wat is het standaard bijbehorende Dead-interval in seconden?",
+   "explain": "Het standaard Dead-interval is 4 * Hello-interval = 4 * 30 = 120 seconden.",
+   "value": 120,
+   "abs": 0,
+   "unit": "seconden"
+  },
+  {
+   "id": "m09",
+   "type": "cloze",
+   "skill": "hello-and-timers",
+   "level": 2,
+   "prompt": "Vul het multicast adres in voor algemene OSPF communicatie:",
+   "text": "OSPF Hello-pakketten worden op een Ethernet broadcast netwerk verzonden naar het vaste multicast-adres {{224.0.0.5}}.",
+   "explain": "224.0.0.5 is het multicast adres voor AllSPFRouters waarop alle OSPF routers luisteren naar Hello's en updates van de DR."
+  },
+  {
+   "id": "m10",
+   "type": "multi",
+   "skill": "hello-and-timers",
+   "level": 2,
+   "prompt": "Hoe bepaalt een OSPF router automatisch zijn Router ID (RID) als er geen handmatig 'router-id' commando is opgegeven?",
+   "explain": "Als er geen handmatige RID is geconfigureerd, kiest OSPF het hoogste IPv4-adres van actieve loopback interfaces. Zijn er geen loopbacks, dan kiest hij het hoogste IP van actieve fysieke interfaces.",
+   "options": [
+    "Hij kiest het hoogste IPv4-adres op een actieve loopback-interface",
+    "Indien er geen loopbacks zijn, kiest hij het hoogste IPv4-adres op een actieve fysieke interface",
+    "Hij vraagt via DHCP een speciaal 32-bit OSPF identificatie-ID op",
+    "Hij kiest altijd het laagste IP-adres op de interface met Area 0"
+   ],
+   "answers": [
+    0,
+    1
+   ]
+  },
+  {
+   "id": "m11",
+   "type": "order",
+   "skill": "adjacency-states",
+   "level": 2,
+   "prompt": "Plaats de laatste vier OSPF adjacency-toestanden in de juiste volgorde vanaf het moment dat Master/Slave wordt onderhandeld:",
+   "explain": "Nadat 2-Way is gepasseerd volgt ExStart (Master/Slave bepaling), Exchange (DBD headers uitwisselen), Loading (LSR/LSU updates ophalen) en ten slotte Full.",
+   "tiles": [
+    "ExStart",
+    "Exchange",
+    "Loading",
+    "Full"
+   ]
+  },
+  {
+   "id": "m12",
+   "type": "type",
+   "skill": "adjacency-states",
+   "level": 3,
+   "prompt": "Een netwerkengineer controleert met 'show ip ospf neighbor' een router en ziet dat de status naar buur R2 al 10 minuten vastzit op 'ExStart'. Welke netwerkinstelling (afkorting) op de verbinding tussen R1 en R2 wijkt hoogstwaarschijnlijk af?",
+   "explain": "Een verschil in MTU tussen twee routers blokkeert de overgang van ExStart naar Exchange doordat de grotere DBD-pakketten worden gedropt.",
+   "answers": [
+    "MTU",
+    "mtu",
+    "Maximum Transmission Unit"
+   ]
+  },
+  {
+   "id": "m13",
+   "type": "cloze",
+   "skill": "adjacency-states",
+   "level": 2,
+   "prompt": "Vul in over de Master/Slave selectie in OSPF:",
+   "text": "Tijdens de ExStart-fase bepalen de routers wie Master en Slave wordt; de router met het hoogste {{Router ID|RID|router-id}} wordt Master en kiest het initiële volgnummer.",
+   "explain": "Tijdens ExStart wordt de router met het hoogste Router ID verkozen tot Master; de Master initieert de sequentienummers voor DBD-pakketten."
+  },
+  {
+   "id": "m14",
+   "type": "mcq",
+   "skill": "adjacency-states",
+   "level": 2,
+   "prompt": "Wat betekent het wanneer een router de status van zijn buur rapporteert als 'Init'?",
+   "explain": "Init betekent dat de router wel een Hello heeft ontvangen van de buur, maar zijn eigen Router ID nog niet terugziet in de burenlijst van die Hello (slechts éénrichtingscommunicatie).",
+   "options": [
+    "De router heeft een Hello ontvangen, maar zijn eigen Router ID staat nog niet in de burenlijst van de buur",
+    "De router heeft een Hello verstuurd, maar nog helemaal niets teruggehoord van de buur",
+    "De routers hebben elkaars Router ID gezien en onderhandelen momenteel over de Master/Slave relatie",
+    "De databases zijn vergeleken en de router wacht op de eerste Link State Update"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m15",
+   "type": "numeric",
+   "skill": "dr-bdr-and-lsas",
+   "level": 2,
+   "prompt": "Op een multi-access Ethernet segment zijn 7 routers aangesloten (1 DR, 1 BDR en 5 DROthers). Hoeveel Full adjacencies vormt de Backup Designated Router (BDR) op dit segment?",
+   "explain": "De BDR vormt een Full adjacency met de DR én met alle 5 DROther routers, dus in totaal 1 + 5 = 6 Full adjacencies.",
+   "value": 6,
+   "abs": 0
+  },
+  {
+   "id": "m16",
+   "type": "type",
+   "skill": "dr-bdr-and-lsas",
+   "level": 2,
+   "prompt": "Welk specifiek LSA-type (bijvoorbeeld 'LSA Type X' of naam) wordt op een broadcastnetwerk uitsluitend gegenereerd door de Designated Router om het segment en alle aangesloten routers te beschrijven?",
+   "explain": "LSA Type 2, ook wel Network LSA genoemd, wordt uitsluitend gegenereerd door de DR.",
+   "answers": [
+    "LSA Type 2",
+    "Type 2",
+    "LSA 2",
+    "Network LSA",
+    "Type 2 LSA"
+   ]
+  },
+  {
+   "id": "m17",
+   "type": "cloze",
+   "skill": "dr-bdr-and-lsas",
+   "level": 2,
+   "prompt": "Vul in over OSPF multicast communicatie:",
+   "text": "Wanneer een DROther router een linkwijziging detecteert, stuurt hij zijn LSU specifiek naar het multicast-adres {{224.0.0.6}}, waarna de DR de update herhaalt naar {{224.0.0.5}}.",
+   "explain": "DROther routers sturen LSU's naar 224.0.0.6 (AllDRouters); de DR herhaalt deze vervolgens naar alle routers via 224.0.0.5."
+  },
+  {
+   "id": "m18",
+   "type": "mcq",
+   "skill": "dr-bdr-and-lsas",
+   "level": 2,
+   "prompt": "Wat gebeurt er als een nieuwe router met OSPF priority 255 wordt ingeschakeld op een broadcast segment waar al een actieve DR (priority 1) en BDR (priority 1) draaien?",
+   "explain": "OSPF DR-verkiezing is strikt niet-preëmptief; de nieuwe router neemt het leiderschap niet over om netwerkverstoring te voorkomen. Hij wordt DROther tot de DR of BDR herstart.",
+   "options": [
+    "De nieuwe router wordt DROther; hij neemt het DR-leiderschap pas over als de huidige DR en BDR falen of herstarten",
+    "De nieuwe router stoot de huidige DR per direct van zijn troon en dwingt een herberekening af",
+    "De huidige DR degradeert naar BDR en de huidige BDR wordt direct een DROther",
+    "De OSPF adjacency wordt geblokkeerd omdat een prioriteitsverschil van meer dan 100 verboden is"
+   ],
+   "answer": 0
+  }
+ ],
+ "production": {
+  "type": "explain",
+  "lang": "nl",
+  "minWords": 100,
+  "prompt": "**Productiecase: Datacenter Core Incident & OSPF Migratie.**\n\nTijdens een migratieweekend in een Brussels datacenter sluit een netwerkengineer een nieuwe core router (Router Core-2, OpenWrt/FRRouting) via een 10 Gbps trunk aan op een bestaande Cisco Catalyst 9500 (Router Core-1). Beide routers draaien OSPFv2 in Area 0.\n\nNa het inschakelen merkt de helpdesk dat het dataverkeer tussen de serverracks traag blijft en over een omweg (een oude 1 Gbps backuplink via Core-3) blijft lopen. De engineer onderzoekt de situatie en stelt twee alarmerende zaken vast:\n1. De OSPF-sessie over de nieuwe 10 Gbps directe link tussen Core-1 en Core-2 bereikt nooit de toestand `Full`; in `show ip ospf neighbor` blijft de sessie continu hangen in `ExStart`.\n2. Op de bestaande router Core-1 heeft de oude 1 Gbps verbinding naar Core-3 exact dezelfde OSPF-kost als een 100 Mbps managementlink.\n\nBeantwoord de volgende vier vragen puntsgewijs en met concrete technische diepgang:\n1. **Root Cause ExStart**: Wat is de exacte technische oorzaak dat de OSPF adjacency tussen Core-1 en Core-2 vastzit in de `ExStart`-toestand? Welk pakkettype en welke header-waarde veroorzaken deze blokkade?\n2. **Remediatie ExStart**: Welke concrete commando's of configuratieaanpassingen los je dit probleem mee op?\n3. **Kostenberekening & Oorzaak Suboptimaal Pad**: Waarom zag Core-1 de 1 Gbps link en de 100 Mbps link als gelijkwaardig? Toon de OSPF-kostenformule en geef de commando's om de referentiebandbreedte op beide routers naar 100 Gbps te brengen.\n4. **DR/BDR Hardening**: Stel dat Core-1 en Core-2 op een gedeeld VLAN zitten met 8 access switches. Welke instelling pas je toe op de 8 access switches om te garanderen dat Core-1 en Core-2 altijd DR en BDR worden?",
+  "model": "1. **Root Cause ExStart Hangup**:\nDe OSPF adjacency blijft steken in ExStart doordat er een **MTU-mismatch** bestaat tussen Core-1 (bijvoorbeeld standaard Ethernet MTU 1500 bytes) en Core-2 (bijvoorbeeld Jumbo Frames MTU 9000 of een getagde trunk/tunnel MTU van 1492/1504 bytes). Tijdens de ExStart-toestand wisselen routers Database Description (DBD) pakketten uit. In de DBD-header staat het veld 'Interface MTU'. Wanneer de router met de kleinere MTU een DBD-pakket ontvangt met een grotere MTU-waarde, weigert hij dit pakket te verwerken. Hierdoor kan de master/slave-onderhandeling en database-uitwisseling niet afronden en flapt de FSM terug naar ExStart.\n\n2. **Remediatie ExStart**:\n- **Structurele oplossing**: De MTU op beide interfaces aan weerszijden van de 10G link exact identiek instellen (bv. `mtu 9000` op beide interfaces voor datacenter switching, of beide op `1500`).\n- **Tijdelijke workaround (Cisco)**: Onder de interface configureren: `ip ospf mtu-ignore`. Dit zorgt ervoor dat de router de MTU-waarde in binnenkomende DBD-pakketten niet langer valideert.\n\n3. **Kostenberekening & Suboptimaal Pad**:\nDe OSPF kost wordt berekend als $\\text{Cost} = \\frac{\\text{Reference Bandwidth}}{\\text{Interface Bandwidth}}$. Standaard gebruikt OSPF een referentiebandbreedte van $10^8 \\text{ bps} = 100 \\text{ Mbps}$.\n- Voor 100 Mbps: $100 / 100 = 1$.\n- Voor 1 Gbps (1 000 Mbps): $100 / 1000 = 0{,}1 \\to$ afgerond naar minimale gehele getal **1**.\nBeide links kregen dus kost 1. Om dit op te lossen verhogen we de referentiebandbreedte naar 100 Gbps (100 000 Mbps) onder het OSPF-proces op alle routers:\n- Op Cisco: `router ospf 1` gevolgd door `auto-cost reference-bandwidth 100000`.\n- Op FRRouting/OpenWrt: `router ospf` gevolgd door `auto-cost reference-bandwidth 100000`.\nHierdoor krijgt 10 Gbps een kost van $100\\,000 / 10\\,000 = 10$ en 1 Gbps een kost van $100\\,000 / 1\\,000 = 100$, waardoor OSPF direct de 10 Gbps link kiest.\n\n4. **DR/BDR Hardening**:\nOp de interfaces van de 8 access switches configureren we `ip ospf priority 0`. Hierdoor zijn de access switches uitgesloten van de verkiezing en kunnen zij nooit DR of BDR worden. Op Core-1 stellen we bijvoorbeeld `ip ospf priority 255` in en op Core-2 `ip ospf priority 200`. Core-1 wordt daardoor betrouwbaar de Designated Router (DR) en Core-2 de Backup Designated Router (BDR).",
+  "rubric": [
+   "Identificeert MTU-mismatch in Database Description (DBD) pakketten als oorzaak van de ExStart-hangup.",
+   "Biedt de juiste remediatie (MTU gelijkmaken op beide kanten of 'ip ospf mtu-ignore').",
+   "Verklaart de 100 Mbps referentiebandbreedte afronding naar 1 en geeft het juiste configuratiecommando ('auto-cost reference-bandwidth 100000').",
+   "Past 'ip ospf priority 0' toe op de access switches om DR/BDR leiderschap voor Core-1 en Core-2 te borgen."
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-l3-01",
+   "skill": "dijkstra-spf-math",
+   "front": "Wat is de OSPF interface link-kostenformule en wat is de standaard referentiebandbreedte?",
+   "back": "Cost = Reference Bandwidth / Interface Bandwidth. De standaard referentie is 100 Mbps ($10^8$ bps)."
+  },
+  {
+   "id": "c-l3-02",
+   "skill": "hello-and-timers",
+   "front": "Wat is de standaard verhouding tussen het OSPF Hello-interval en het Dead-interval op broadcast netwerken?",
+   "back": "Het Dead-interval is standaard 4 keer het Hello-interval (standaard 10s Hello en 40s Dead)."
+  },
+  {
+   "id": "c-l3-03",
+   "skill": "hello-and-timers",
+   "front": "Welk IP protocolnummer gebruikt OSPF direct over Layer 3 (zonder TCP of UDP)?",
+   "back": "IP protocol 89."
+  },
+  {
+   "id": "c-l3-04",
+   "skill": "dr-bdr-and-lsas",
+   "front": "Wat is het verschil in doelgroep tussen multicast-adres 224.0.0.5 en 224.0.0.6?",
+   "back": "224.0.0.5 (AllSPFRouters) wordt beluisterd door alle OSPF routers; 224.0.0.6 (AllDRouters) wordt alleen beluisterd door de DR en BDR."
+  },
+  {
+   "id": "c-l3-05",
+   "skill": "adjacency-states",
+   "front": "Welke storing wijst erop dat twee OSPF-routers oneindig blijven hangen in de toestand 'ExStart' of 'Exchange'?",
+   "back": "Een MTU-mismatch tussen beide interfacekanten bij het uitwisselen van Database Description (DBD) pakketten."
+  },
+  {
+   "id": "c-l3-06",
+   "skill": "dr-bdr-and-lsas",
+   "front": "Wat is het effect van het commando 'ip ospf priority 0' op een interface?",
+   "back": "De router kan nooit verkozen worden als Designated Router (DR) of Backup Designated Router (BDR)."
+  },
+  {
+   "id": "c-l3-07",
+   "skill": "dr-bdr-and-lsas",
+   "front": "Wat is het verschil tussen LSA Type 1 en LSA Type 2?",
+   "back": "Type 1 (Router LSA) wordt door elke router gegenereerd voor zijn eigen links; Type 2 (Network LSA) wordt uitsluitend door de DR gegenereerd voor een multi-access broadcast segment."
+  },
+  {
+   "id": "c-l3-08",
+   "skill": "dr-bdr-and-lsas",
+   "front": "Waarom is de OSPF DR-verkiezing niet-preëmptief?",
+   "back": "Om te voorkomen dat het online komen van een router met hogere prioriteit de actieve DR afzet en daarmee onnodige adjacency-flaps veroorzaakt."
+  }
+ ],
+ "sources": [
+  "Moy, J. (1998). RFC 2328: OSPF Version 2. Internet Engineering Task Force.",
+  "Dijkstra, E. W. (1959). A note on two problems in connexion with graphs. Numerische Mathematik, 1(1), 269-271.",
+  "Cisco Systems (2023). OSPF Design Guide and Adjacency Troubleshooting Architecture."
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-02",
+  "adaptedFor": "Didactisch uitgewerkt voor Thibaud (Handelsingenieur): grondige wiskundige onderbouwing van Dijkstra SPF en OSPF kostenberekening, gecombineerd met enterprise datacenter troubleshooting van MTU mismatches en DR/BDR schaalbaarheid."
+ }
+}
