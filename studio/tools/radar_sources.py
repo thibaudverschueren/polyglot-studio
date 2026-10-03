@@ -6,6 +6,7 @@ article validator (radar.py) only accepts links and quotes that come from these 
 import datetime as dt
 import email.utils
 import gzip
+import os
 import html as _html
 import json
 import re
@@ -144,8 +145,35 @@ def arxiv_meta(aid):
     return rows[0] if rows else None
 
 
+def pdf_text(aid, limit=70000):
+    """Text of an arXiv paper from its PDF (for papers without an HTML version). pdftotext first, pypdf as fallback."""
+    import shutil
+    import subprocess
+    import tempfile
+    data = get(f"https://arxiv.org/pdf/{aid}", raw=True, limit=25_000_000, timeout=90)
+    if data[:4] != b"%PDF":
+        return ""
+    with tempfile.NamedTemporaryFile(suffix=".pdf") as f:
+        f.write(data)
+        f.flush()
+        text = ""
+        exe = shutil.which("pdftotext") or "/opt/homebrew/bin/pdftotext"
+        if os.path.exists(exe):
+            r = subprocess.run([exe, "-enc", "UTF-8", "-nopgbrk", f.name, "-"], capture_output=True, text=True, timeout=120)
+            text = r.stdout if r.returncode == 0 else ""
+        if len(text) < 3000:
+            try:
+                import pypdf
+                text = "\n".join((pg.extract_text() or "") for pg in pypdf.PdfReader(f.name).pages)
+            except Exception:
+                pass
+    text = re.sub(r"(\w)-\n(\w)", r"\1\2", text)  # hyphenated line breaks
+    text = re.sub(r"[ \t]+", " ", text)
+    return re.sub(r"\n{3,}", "\n\n", text).strip()[:limit]
+
+
 def arxiv_source(aid, limit=70000):
-    """Full text of an arXiv paper (HTML version), falling back to the abstract."""
+    """Full text of an arXiv paper: the HTML version, else the PDF; only the abstract when neither exists (full=False)."""
     meta = arxiv_meta(aid) or {"title": aid, "summary": "", "authors": [], "published": ""}
     body = ""
     try:
@@ -153,10 +181,16 @@ def arxiv_source(aid, limit=70000):
     except Exception:
         body = ""
     if len(body) < 3000:
+        try:
+            body = pdf_text(aid, limit)
+        except Exception:
+            body = ""
+    full = len(body) >= 3000
+    if not full:
         body = "(Volledige tekst niet beschikbaar; alleen de samenvatting.)"
     authors = ", ".join(meta["authors"][:12]) + (" e.a." if len(meta["authors"]) > 12 else "")
     text = f"{meta['title']}\n{authors} ({meta['published']})\n\nAbstract: {meta['summary']}\n\n{body}"
-    return {"title": f"{meta['title']} (arXiv {aid})", "url": f"https://arxiv.org/abs/{aid}", "kind": "paper", "text": text[:limit]}
+    return {"title": f"{meta['title']} (arXiv {aid})", "url": f"https://arxiv.org/abs/{aid}", "kind": "paper", "text": text[:limit], "full": full}
 
 
 # ---------------------------------------------------------------- candidates

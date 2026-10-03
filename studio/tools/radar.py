@@ -18,6 +18,7 @@ Antigravity never gets tools or internet here: it only sees the sources this scr
   python3 radar.py --ask "Hoe werkt …?"    # queue a question in requests.json
   python3 radar.py --classic attention     # write one classic now
   python3 radar.py --only-questions        # answer the open questions, no news triage
+  python3 radar.py --backfill [N]          # fact-check N hidden (never verified) articles
 """
 import datetime as dt
 import json
@@ -27,6 +28,7 @@ import re
 import sys
 import time
 import unicodedata
+import urllib.parse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STUDIO = os.path.dirname(HERE)
@@ -215,7 +217,10 @@ def sources_for_pick(p):
     c, srcs = p["cand"], []
     aid = rs.arxiv_id(c["url"]) if "arxiv.org" in c["url"] or c["cid"].startswith("arxiv:") else None
     if aid:
-        _add(srcs, rs.arxiv_source(aid), 70000)
+        src = rs.arxiv_source(aid)
+        if not src.get("full"):  # an article written from an abstract alone can only guess the details
+            raise RuntimeError("volledige tekst van de paper niet beschikbaar (alleen de samenvatting): overgeslagen")
+        _add(srcs, src, 70000)
     else:
         text = rs.page_text(c["url"], 45000)
         if len(text) < 1200:
@@ -497,16 +502,56 @@ def _repair(base, problems, A, intro):
 
 
 def review(A, srcs, cfg, log=print):
-    """Second opinion: a fact-checker compares the article with its sources (overclaims, errors, unsourced specifics)."""
+    """Second opinion: a fact-checker compares the article (incl. quiz) with its sources.
+    Returns a list of findings (empty = nothing found), or None when the check itself failed."""
     prompt = (ag.read(os.path.join(PROMPTS, "RADAR_REVIEW.md")) + "\n\n---\n\n## Artikel\n```json\n"
-              + json.dumps({k: v for k, v in A.items() if k != "quiz"}, ensure_ascii=False) + "\n```\n\n## Bronnen\n"
+              + json.dumps({k: v for k, v in A.items() if k not in ("schema", "id", "kind", "date", "meta")}, ensure_ascii=False) + "\n```\n\n## Bronnen\n"
               + "\n\n".join(f"### [{x['n']}] {x['title']}\nURL: {x['url']}\n<<<\n{x['text']}\n>>>" for x in srcs))
-    out = ag.run_agy(prompt, cfg, model=cfg.get("AGY_MODEL_COACH", "gemini-3.8-flash-high"), timeout=600, log=log)
-    try:
-        issues = ag.extract_json(out).get("issues") or []
-    except Exception:
-        return []
-    return [f"{i.get('where', '?')}: {i.get('problem', '')} → {i.get('fix', '')}" for i in issues if isinstance(i, dict) and i.get("problem")][:8]
+    for attempt in (1, 2):
+        out = ag.run_agy(prompt, cfg, model=cfg.get("AGY_MODEL_COACH", "gemini-3.8-flash-high"), timeout=600, log=log)
+        try:
+            issues = ag.extract_json(out).get("issues")
+            if isinstance(issues, list):
+                return [f"{i.get('where', '?')}: {i.get('problem', '')} → {i.get('fix', '')}" for i in issues if isinstance(i, dict) and i.get("problem")][:8]
+        except Exception:
+            pass
+        log(f"    ⚠ factcheck gaf geen bruikbaar antwoord (poging {attempt})")
+    return None
+
+
+def verify(A, srcs, base, cfg, schema, item_schema, log=print, rounds=3):
+    """Fact-check loop: review → repair → review … The article is returned only when a review finds nothing;
+    otherwise (findings remain, or the check cannot run) it is NOT returned: better no article than a wrong one."""
+    author = cfg.get("AGY_MODEL_AUTHOR", "gemini-3.1-pro-high")
+    cur, last = A, []
+    for rnd in range(1, rounds + 1):
+        issues = review(cur, srcs, cfg, log)
+        if issues is None:
+            return None, ["de factcheck kon niet uitgevoerd worden"]
+        if not issues:
+            log(f"    ✓ factcheck{'' if rnd == 1 else f' (ronde {rnd})'}: niets wezenlijks")
+            return cur, []
+        last = issues
+        log(f"    factcheck ronde {rnd}: {len(issues)} punt(en): {[i[:140] for i in issues[:2]]}")
+        if rnd == rounds:
+            break
+        fixed = None
+        for attempt in (1, 2):
+            out = ag.run_agy(_repair(base, issues, cur, "Een factchecker legde je artikel naast de bronnen en vond deze punten"), cfg, model=author, log=log)
+            try:
+                B = ag._coerce(ag.extract_json(out))
+                errs, _ = validate_article(B, srcs, item_schema, schema)
+            except Exception as e:
+                errs = [f"geen geldig JSON-antwoord: {e}"]
+            if not errs:
+                fixed = B
+                break
+            log(f"    ⚠ verbeterde versie ongeldig (poging {attempt}): {errs[:2]}")
+            issues = issues + [f"(validatie van je vorige verbetering) {e}" for e in errs[:6]]
+        if fixed is None:
+            break
+        cur = fixed
+    return None, last
 
 
 def write(task, srcs, prefs, arts, cfg, today, log=print):
@@ -540,23 +585,16 @@ def write(task, srcs, prefs, arts, cfg, today, log=print):
             json.dump(last, open(os.path.join(d, f"{today}-radar-{slug(task['label'], 30)}.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
         return None
     if cfg.get("RADAR_REVIEW", "1") != "1":
-        return good
-    issues = review(good, srcs, cfg, log)
-    if not issues:
-        log("    ✓ factcheck: niets wezenlijks")
-        return good
-    log(f"    factcheck: {len(issues)} punt(en): {issues[:2]}")
-    out = ag.run_agy(_repair(base, issues, good, "Een factchecker legde je artikel naast de bronnen en vond deze punten"), cfg, model=author, log=log)
-    try:
-        B = ag._coerce(ag.extract_json(out))
-        errs, _ = validate_article(B, srcs, item_schema, schema)
-    except Exception as e:
-        errs = [str(e)]
-    if errs:
-        log(f"    ⚠ verbeterde versie ongeldig ({errs[:2]}); de eerdere geldige versie blijft")
-        return good
-    log("    ✓ factcheck verwerkt")
-    return B
+        return good  # not verified: stays hidden (build only shows meta.verified articles)
+    checked, issues = verify(good, srcs, base, cfg, schema, item_schema, log)
+    if checked is not None:
+        checked["_verified"] = True
+        return checked
+    d = os.path.expanduser("~/scripts/polyglot-data/failed")  # unresolved findings: keep the draft, publish nothing
+    os.makedirs(d, exist_ok=True)
+    json.dump({"article": good, "factcheck": issues}, open(os.path.join(d, f"{today}-radar-unverified-{slug(task['label'], 30)}.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    log("    ✗ factcheck-punten niet verwerkt: dit artikel wordt NIET gepubliceerd (concept bewaard)")
+    return None
 
 
 def save(A, task, srcs, today):
@@ -565,6 +603,8 @@ def save(A, task, srcs, today):
     while os.path.exists(os.path.join(ITEMS, f"{aid}.json")):
         aid, k = f"{base}-{k}", k + 1
     meta = {"author": "antigravity", "created": today, "kind": task["kind"]}
+    if A.pop("_verified", False):
+        meta["verified"] = today  # passed the full fact-check loop: only then does the app show it
     if task["kind"] == "request":
         meta["request"] = task["request"]["id"]
     elif task["kind"] == "classic":
@@ -641,6 +681,87 @@ def run(states, cfg, today, log=print, budget_s=1500, dry=False, only=None, tria
     return made
 
 
+def _sources_for_article(A):
+    """Stored source texts when complete; otherwise fetch the article's own sources again (numbering is kept)."""
+    stored = []
+    p = os.path.expanduser(f"~/scripts/polyglot-data/radar-sources/{A['id']}.json")
+    try:
+        stored = json.load(open(p, encoding="utf-8"))
+    except (OSError, ValueError):
+        pass
+    by_url = {s["url"].rstrip("/"): s for s in stored}
+    srcs = []
+    for s in A.get("sources") or []:
+        url = s.get("url", "")
+        have = by_url.get(url.rstrip("/"))
+        if have and len(have.get("text", "")) > 3500 or (have and "wikipedia.org" in url):
+            srcs.append(dict(have, n=s["n"]))
+            continue
+        try:  # full text was not available when the article was written (e.g. a brand-new arXiv paper): fetch it again
+            aid = rs.arxiv_id(url) if "arxiv.org" in url else None
+            if aid:
+                x = rs.arxiv_source(aid)
+            elif "wikipedia.org/wiki/" in url:
+                x = rs.wiki(urllib.parse.unquote(url.rsplit("/wiki/", 1)[1]).replace("_", " "))
+            else:
+                x = {"title": s.get("title", url), "url": url, "kind": "article", "text": rs.page_text(url, 45000)}
+        except Exception:
+            x = have
+        if x and x.get("text"):
+            srcs.append(dict(x, n=s["n"], url=url))
+    return srcs
+
+
+def backfill(cfg, today, log=print, limit=2, budget_s=1800):
+    """Articles that never passed the full fact-check loop stay hidden; verify (and repair) them, a few per morning.
+    After 3 failed attempts an article is dropped (draft kept in ~/scripts/polyglot-data/failed)."""
+    t0, done = time.time(), []
+    schema = json.load(open(os.path.join(STUDIO, "schema", "lesson.schema.json"), encoding="utf-8"))
+    for A in [a for a in articles() if not (a.get("meta") or {}).get("verified")][:limit]:
+        if time.time() - t0 > budget_s:
+            break
+        path = os.path.join(ITEMS, f"{A['id']}.json")
+        log(f"    ⟳ factcheck van bestaand artikel: {A['title'][:70]}")
+        srcs = _sources_for_article(A)
+        body = {k: v for k, v in A.items() if k not in ("schema", "id", "kind", "date", "meta")}
+        meta = dict(A.get("meta") or {})
+        want = {s.get("url", "").rstrip("/") for s in A.get("sources") or []}
+        if len(srcs) < 1 or any(s.get("full") is False for s in srcs) or len(srcs) < len(want) - 1:
+            # a source is gone (404) or only the abstract exists: it cannot be checked, but it is not ours to delete
+            log("      een bron is niet meer beschikbaar: het artikel blijft verborgen tot er een werkende bron is")
+            continue
+        task = {"kind": A["kind"], "label": A["title"], "angle": A.get("subtitle", ""), "reason": "",
+                "cand": {"cid": meta.get("candidate", ""), "title": A["title"], "source": "bron", "date": A.get("date", ""), "signal": meta.get("signal", ""), "url": srcs[0]["url"]},
+                "request": next((q for q in load(os.path.join(RADAR, "requests.json"), []) if q.get("id") == meta.get("request")), {"id": meta.get("request"), "text": A["title"]}),
+                "canon": next((c for c in load(os.path.join(RADAR, "canon.json"), []) if c["id"] == meta.get("canon")), {"id": "?", "title": A["title"], "by": "", "year": "", "angle": A.get("subtitle", "")})}
+        base = _prompt(task, srcs, {"likes": {}}, [a for a in articles() if a["id"] != A["id"]])
+        good, issues = verify(body, srcs, base, cfg, schema, schema["$defs"]["item"], log)
+        if good is not None:
+            meta["verified"] = today
+            meta.pop("verify_attempts", None)
+            B = {"schema": "polyglot.radar/v1", **good, "id": A["id"], "kind": A["kind"], "date": A["date"], "meta": meta}
+            json.dump(B, open(path + ".tmp", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+            os.replace(path + ".tmp", path)
+            private = os.path.expanduser("~/scripts/polyglot-data/radar-sources")
+            os.makedirs(private, exist_ok=True)
+            json.dump(srcs, open(os.path.join(private, f"{A['id']}.json"), "w", encoding="utf-8"), ensure_ascii=False)
+            done.append(A["id"])
+            log(f"    ✓ gecontroleerd en zichtbaar: {A['id']}")
+        else:
+            meta["verify_attempts"] = int(meta.get("verify_attempts", 0)) + 1
+            if meta["verify_attempts"] >= 3:
+                d = os.path.expanduser("~/scripts/polyglot-data/failed")
+                os.makedirs(d, exist_ok=True)
+                json.dump({"article": A, "factcheck": issues}, open(os.path.join(d, f"{today}-radar-dropped-{A['id'][:40]}.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+                os.remove(path)
+                log(f"    ✗ na 3 pogingen nog niet schoon: artikel verwijderd (concept bewaard)")
+            else:
+                A2 = dict(A, meta=meta)
+                json.dump(A2, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+                log(f"    ✗ nog niet schoon (poging {meta['verify_attempts']}/3); blijft verborgen")
+    return done
+
+
 def main(argv):
     from cloud import connect, load_env
     cfg = load_env()
@@ -667,6 +788,10 @@ def main(argv):
             print(f"onbekende klassieker: {cid}")
             return 1
         run(states, cfg, today, only=[{"kind": "classic", "canon": e, "label": e["title"]}])
+        return 0
+    if "--backfill" in argv:
+        n = argv[argv.index("--backfill") + 1] if len(argv) > argv.index("--backfill") + 1 and argv[argv.index("--backfill") + 1].isdigit() else "2"
+        print("gecontroleerd:", backfill(cfg, today, limit=int(n)))
         return 0
     if "--triage" in argv:
         tasks, note, _, _ = plan(states, cfg, triage_now=True)

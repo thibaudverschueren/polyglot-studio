@@ -73,7 +73,7 @@ def extract_json(text):
         raise ValueError("leeg antwoord")
     m = re.search(r"```(?:json)?\s*(\{[\s\S]*\})\s*```", text)
     blob = m.group(1) if m else text[text.find("{"): text.rfind("}") + 1]
-    obj = json.loads(blob)
+    obj = json.loads(blob, strict=False)  # models sometimes leave raw newlines/tabs inside strings
     for k in ("toolAction", "toolSummary"):
         obj.pop(k, None)
     return obj

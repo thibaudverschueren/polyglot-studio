@@ -120,9 +120,13 @@ def render_radar(A):
 def render_radar_all(problems):
     """All articles → (index for the list, {id: rendered JSON}). A broken article is skipped, never fatal."""
     index, files = [], {}
+    hidden = 0
     for p in sorted(glob.glob(os.path.join(CONTENT, "radar", "items", "*.json"))):
         try:
             A = load(p)
+            if not (A.get("meta") or {}).get("verified"):  # never shown before it passed the full fact-check loop
+                hidden += 1
+                continue
             md.MATH.clear()
             md._MATH_INDEX.clear()
             R, _ = render_math(render_radar(A))
@@ -135,6 +139,8 @@ def render_radar_all(problems):
                       "tldr": R["tldr"][0] if R["tldr"] else "", "minutes": A.get("minutes"), "date": A.get("date"),
                       "request": (A.get("meta") or {}).get("request"), "v": hashlib.sha256(body.encode("utf-8")).hexdigest()[:8]})
     index.sort(key=lambda x: (x.get("date") or "", x["id"]), reverse=True)
+    if hidden:
+        print(f"ℹ {hidden} artikel(s) wachten op de factcheck en zijn verborgen")
     return index, files
 
 

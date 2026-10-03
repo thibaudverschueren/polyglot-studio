@@ -15,6 +15,7 @@ daily.py — the 07:30 loop of Polyglot Studio (called by ~/scripts/daily_orches
   python3 daily.py            # full run
   python3 daily.py --dry-run  # plan only, no agy calls, no push, no reminders
   python3 daily.py --no-agy   # everything except content generation
+  python3 daily.py --catch-up # like a full run, but only when today's run has not finished cleanly (for extra launchd triggers)
 """
 import datetime as dt
 import glob
@@ -227,7 +228,10 @@ def sync_reminders(model, idx):
                         "highlights": [o["id"] for o in L["objectives"][:3]]})
     payload = {"masterTitle": "Polyglot", "masterUrl": SITE, "lessons": lessons}
     r = subprocess.run(["swift", SWIFT, "sync", json.dumps(payload, ensure_ascii=False)], capture_output=True, text=True, timeout=120)
-    log("  " + (r.stdout.strip() or r.stderr.strip())[:300])
+    out = (r.stdout.strip() or r.stderr.strip())
+    log("  " + out[:300])
+    if r.returncode != 0 or '"error"' in out:
+        raise RuntimeError(f"herinneringen niet bijgewerkt: {out[:160]}")
 
 
 def write_profile_compat(model):
@@ -321,12 +325,26 @@ def publish(report, today, push):
 
 
 # ------------------------------------------------------------------ main
+def done_today(today):
+    """True when today's run finished cleanly (no failed step, internet and server were reachable)."""
+    try:
+        r = json.load(open(os.path.join(DATA, "runs", f"{today}.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not r.get("finished") or "fatal" not in r or r["fatal"]:  # old-format or failed report: run again
+        return False
+    return not any(e.startswith(("database", "geen internet", "offsite")) for e in r.get("errors", []))
+
+
 def main(argv):
     dry = "--dry-run" in argv
     no_agy = "--no-agy" in argv or dry
     cfg = load_env()
     today = dt.date.today().isoformat()
     os.makedirs(os.path.join(DATA, "runs"), exist_ok=True)
+    if "--catch-up" in argv and done_today(today):  # extra launchd triggers later in the day: nothing to do when the morning run went fine
+        log(f"Al gedaan vandaag ({today}).")
+        return 0
     lock = os.path.join(DATA, "daily.lock")
     if os.path.exists(lock) and time.time() - os.path.getmtime(lock) < 3 * 3600:
         log("Er loopt al een run (lock). Stop.")
@@ -442,6 +460,7 @@ def main(argv):
                 def radar_step():
                     import radar
                     report["radar"] = radar.run(states, cfg, today, log=log, budget_s=float(cfg.get("RADAR_BUDGET_MIN", 30)) * 60)
+                    report["radar_verified"] = radar.backfill(cfg, today, log=log, limit=int(cfg.get("RADAR_BACKFILL", 2)), budget_s=float(cfg.get("RADAR_BUDGET_MIN", 30)) * 60)
                 phase("radar", radar_step)
         elif dry and cfg.get("RADAR", "1") == "1":
             step("[4b] Onder de motorkap (plan)")
@@ -463,7 +482,12 @@ def main(argv):
                     return
                 idx, items = learner.content_index(STUDIO)
                 model2 = learner.build_model(states, ctx["events"], idx, items)
-                sync_reminders(model2, idx)
+                try:
+                    sync_reminders(model2, idx)
+                except RuntimeError as e:  # e.g. macOS revoked the Reminders permission: report it, but do not redo the whole run for it
+                    report["errors"].append(str(e))
+                    log(f"    ⚠ {e}")
+                    notify("Polyglot: herinnering niet bijgewerkt", str(e)[:150])
                 write_profile_compat(model2)
             phase("herinneringen", reminders)
 
