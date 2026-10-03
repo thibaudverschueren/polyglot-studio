@@ -29,7 +29,9 @@ CONTENT = os.path.join(STUDIO, "content")
 APP = os.path.join(STUDIO, "app")
 PROFILE = os.path.expanduser("~/scripts/student_profile.json")
 NODE = shutil.which("node") or "/opt/homebrew/bin/node"
-TRACKS = ["greek", "french", "spanish", "solidity", "ai", "automation", "jev", "routing"]
+import tracks as trk  # noqa: E402  (single source of truth: content/tracks.json)
+
+TRACKS = trk.ids()
 
 
 def load(path):
@@ -102,6 +104,7 @@ def render_radar(A):
         "id": A.get("id"), "kind": A.get("kind"), "topic": A.get("topic"), "title": A.get("title", ""), "date": A.get("date"), "minutes": A.get("minutes"),
         "subtitle": md.inline(A.get("subtitle", "")),
         "tldr": [md.inline(x) for x in A.get("tldr", [])],
+        "plain": md.render(A["plain"]) if A.get("plain") else "",
         "why": md.render(A.get("why", "")),
         "sections": [{"title": md.inline(x.get("title", "")), "html": md.render(x.get("md", ""))} for x in A.get("sections", [])],
         "numbers": [{"value": md.inline(n.get("value", "")), "label": md.inline(n.get("label", "")), "quote": n.get("quote", ""), "source": n.get("source")} for n in A.get("numbers", [])],

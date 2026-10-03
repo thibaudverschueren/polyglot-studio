@@ -15,6 +15,9 @@ import unicodedata
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STUDIO = os.path.dirname(HERE)
+sys.path.insert(0, HERE)
+import tracks as trk  # noqa: E402  (single source of truth: content/tracks.json)
+
 SCHEMA_PATH = os.path.join(STUDIO, "schema", "lesson.schema.json")
 DAILY_SCHEMA_PATH = os.path.join(STUDIO, "schema", "daily.schema.json")
 
@@ -147,13 +150,42 @@ def check_item(it, where, obj_ids, track, errs, warns, drill=False):
         errs.append(f"{where}:{it.get('id', '?') if isinstance(it, dict) else '?'}: ongeldig item ({type(e).__name__}: {e})")
 
 
+def _plain_letters(s):
+    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn").lower().replace("ς", "σ")
+
+
+def accent_only_variants(variants, lang):
+    """Pairs of accepted answers that differ only in diacritics. In es/fr/el that defeats the accent check
+    (¿Por que…? accepted as correct). Transliterations (all ASCII) and the French circumflex-on-i/u reform are fine."""
+    if lang not in ("es", "fr", "el"):
+        return []
+    vs = [v.strip() for v in variants if isinstance(v, str) and v.strip()]
+    out = []
+    for i in range(len(vs)):
+        for j in range(i + 1, len(vs)):
+            a, b = vs[i].lower(), vs[j].lower()
+            if a == b or _plain_letters(a) != _plain_letters(b):
+                continue
+            if a.isascii() and b.isascii():
+                continue
+            if lang == "fr" and a.replace("î", "i").replace("û", "u") == b.replace("î", "i").replace("û", "u"):
+                continue
+            if lang == "el":
+                if not (GREEK.search(a) or GREEK.search(b)):  # Latin transliteration: accents are not graded
+                    continue
+                if a.replace("μία", "μια") == b.replace("μία", "μια"):  # both spellings are standard
+                    continue
+            out.append((vs[i], vs[j]))
+    return out
+
+
 def _check_item(it, where, obj_ids, track, errs, warns, drill=False):
     t = it.get("type")
     iid = it.get("id", "?")
     loc = f"{where}:{iid}"
     skill = it.get("skill", "")
     if drill:
-        if not re.match(r"^(greek|french|spanish|solidity|ai|automation|jev):\d+/[a-z0-9-]+$", skill):
+        if not re.match(rf"^({trk.pattern()}):\d+/[a-z0-9-]+$", skill):
             errs.append(f"{loc}: drill skill must look like 'greek:5/objective-id'")
     elif skill not in obj_ids:
         errs.append(f"{loc}: skill '{skill}' is not an objective id ({sorted(obj_ids)})")
@@ -181,6 +213,8 @@ def _check_item(it, where, obj_ids, track, errs, warns, drill=False):
         if not ans or not all(isinstance(a, int) and 0 <= a < len(opts) for a in ans) or len(ans) == len(opts):
             errs.append(f"{loc}: multi answers must be valid indices (not all options) — answers = lijst met indexen van de juiste opties, minstens 1 en niet allemaal; nu {it.get('answers')} bij {len(it.get('options') or [])} opties")
     elif t in ("type",):
+        for a, b in accent_only_variants(it.get("answers") or [], lang):
+            warns.append(f"{loc}: accent-only variant accepted: “{a}” and “{b}” differ only in accents — the unaccented one must not count as correct")
         ans = it.get("answers", [])
         if not ans or not all(isinstance(a, str) and a.strip() for a in ans):
             errs.append(f"{loc}: type needs non-empty string answers (answers = lijst met strings)")
@@ -198,6 +232,9 @@ def _check_item(it, where, obj_ids, track, errs, warns, drill=False):
             errs.append(f"{loc}: empty blank")
         if any(re.match(r"\s*\$|.*\$(json|input|node|now|today)\b|.*\$\(", b) for b in blanks):
             errs.append(f"{loc}: cloze blank looks like an n8n expression — {{{{ }}}} is voor invulgaten; vraag één woord of gebruik jsexpr")
+        for b in blanks:
+            for a1, b1 in accent_only_variants(b.split("|"), lang):
+                warns.append(f"{loc}: accent-only variant accepted: “{a1}” and “{b1}” differ only in accents — the unaccented one must not count as correct")
         if any(GREEK.search(b) for b in blanks) and lang != "el":
             it["lang"] = "el"
     elif t == "order":
@@ -271,6 +308,7 @@ def _check_item(it, where, obj_ids, track, errs, warns, drill=False):
 
 def validate_lesson(L, schema, fname=""):
     errs, warns = [], []
+    schema = trk.patch_schema(schema)  # the track list always comes from tracks.json
     errs += schema_errors(L, schema, schema)
     if errs:
         return errs, warns
@@ -378,7 +416,7 @@ def validate_daily(D, schema=None):
         if not isinstance(d, dict) or not isinstance(d.get("items", []), list):
             errs.append(f"drills[{di}]: must be {{track, focus, items: [...]}}")
             continue
-        if d.get("track") not in ("greek", "french", "spanish", "solidity", "ai", "automation", "jev"):
+        if d.get("track") not in trk.ids():
             errs.append(f"drill track invalid: {d.get('track')}")
         for ii, it in enumerate(d.get("items", [])):
             se = schema_errors(it, schema["$defs"]["item"], schema, f"$.drills[{di}].items[{ii}]")
@@ -405,6 +443,9 @@ def main(paths):
             if f.endswith(".json"):
                 paths.append(os.path.join(base, "daily", f))
     bad = 0
+    for problem in trk.check_consistency():  # a new track must be complete, or things break later
+        bad += 1
+        print(f"✗ vakken: {problem}")
     for p in sorted(paths):
         try:
             data = json.load(open(p, encoding="utf-8"))

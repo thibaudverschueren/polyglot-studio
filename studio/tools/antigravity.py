@@ -19,17 +19,22 @@ STUDIO = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
 import md  # noqa: E402
+import tracks as trk  # noqa: E402
 import build  # noqa: E402
 from validate import validate_lesson, validate_daily  # noqa: E402
 
 PROMPTS = os.path.join(STUDIO, "prompts")
 SCHEMA_PATH = os.path.join(STUDIO, "schema", "lesson.schema.json")
 NODE = shutil.which("node") or "/opt/homebrew/bin/node"
-TRACK_NAMES = {"greek": "Nieuwgrieks", "french": "Frans (C1→C2)", "spanish": "Spaans (A0→B2)", "solidity": "Solidity & de EVM", "ai": "AI & LLM's", "automation": "Workflow Automation & API Engineering (n8n)", "jev": "Jev & Decision AI"}
 
 
 def read(p):
     return open(p, encoding="utf-8").read()
+
+
+def author_prompt():
+    """LESSON_AUTHOR.md with the track table filled in from tracks.json (so a new track is known at once)."""
+    return read(os.path.join(PROMPTS, "LESSON_AUTHOR.md")).replace("{{TRACK_TABLE}}", trk.table_md())
 
 
 # ------------------------------------------------------------------ agy
@@ -156,7 +161,7 @@ def check_lesson(L):
         errs += render_math_errors(build.render_lesson, L)
     if not errs:
         errs += verify_code(L)
-    serious_warns = [w for w in warns if any(k in w for k in ("tonos", "σ", "accenten", "production-type", "identical", "longest", "theory is short", "vocab entries", "diagnostic"))]
+    serious_warns = [w for w in warns if any(k in w for k in ("tonos", "σ", "accenten", "production-type", "identical", "longest", "theory is short", "vocab entries", "diagnostic", "accent-only variant"))]
     return errs, serious_warns
 
 
@@ -185,7 +190,7 @@ def lesson_context(track, lesson_id, topic, model, idx, syllabus, instructions, 
     gold_id = min(idx[track]) if idx[track] else None
     gold = read(idx[track][gold_id]["file"]) if gold_id else "{}"
     parts = [
-        f"# Opdracht\nVandaag is het {today}. Schrijf **les {lesson_id}** voor het vak **{TRACK_NAMES[track]}** (`track: \"{track}\"`, `id: {lesson_id}`).",
+        f"# Opdracht\nVandaag is het {today}. Schrijf **les {lesson_id}** voor het vak **{trk.prompt_name(track)}** (`track: \"{track}\"`, `id: {lesson_id}`).",
         f"## Doel van het vak\n{syl.get('goal', '')}\n\nPrincipes:\n" + "\n".join(f"- {p}" for p in syl.get("principles", [])),
         f"## Roadmap-onderwerp voor deze les\nGebruik `\"roadmap\": \"{(topic or {}).get('id', '')}\"`.\n```json\n{_json(topic)}\n```" if topic else "",
         ("## Daarna volgt (voor samenhang — niet behandelen)\n" + "\n".join(f"- `{x['id']}`: {x['title']}" for x in upcoming)) if upcoming else "",
@@ -193,7 +198,7 @@ def lesson_context(track, lesson_id, topic, model, idx, syllabus, instructions, 
         f"## Leerdersprofiel (dit vak)\n```json\n{_json(tm, 12000)}\n```",
         f"## Aanpassingsopdracht\n{instructions or 'Geen bijzonderheden: volg de roadmap op het geplande niveau.'}",
         f"## Voorbeeldles (goudstandaard voor stijl, diepgang en structuur — niet de inhoud kopiëren)\n```json\n{gold}\n```",
-        f"## JSON-schema van een les\n```json\n{read(SCHEMA_PATH)}\n```",
+        f"## JSON-schema van een les\n```json\n{json.dumps(trk.patch_schema(json.load(open(SCHEMA_PATH, encoding='utf-8'))), ensure_ascii=False, indent=2)}\n```",
     ]
     return "\n\n".join(p for p in parts if p)
 
@@ -248,7 +253,7 @@ def _shrunk(prev, L):
 
 
 def author_lesson(track, lesson_id, topic, model, idx, syllabus, cfg, today, mode="generate", current=None, extra=None, log=print):
-    base = read(os.path.join(PROMPTS, "LESSON_AUTHOR.md"))
+    base = author_prompt()
     head = base if mode == "generate" else read(os.path.join(PROMPTS, "LESSON_REVISER.md")) + "\n\n---\n\n" + base
     ctx = lesson_context(track, lesson_id, topic, model, idx, syllabus, instructions_for(track, model, mode, extra), today)
     if current is not None:
@@ -268,7 +273,7 @@ def author_lesson(track, lesson_id, topic, model, idx, syllabus, cfg, today, mod
             continue
         if L.get("unchanged"):
             log(f"    = ongewijzigd: {L.get('reason', '')[:200]}")
-            return None
+            return {"unchanged": True, "reason": L.get("reason", "")}
         L = _coerce(_normalize_lesson(L, track, lesson_id, (topic or {}).get("id") or (current or {}).get("roadmap"), today, "consolidation" if mode == "consolidate" else None))
         errs, warns = check_lesson(L)
         if last is not None and not errs:
@@ -298,7 +303,7 @@ def author_lesson(track, lesson_id, topic, model, idx, syllabus, cfg, today, mod
 
 
 def coach_pack(model, cfg, today, log=print):
-    author = read(os.path.join(PROMPTS, "LESSON_AUTHOR.md"))
+    author = author_prompt()
     rules = author[author.index("## 3. "):author.index("## 6. ")]  # item rules, markdown subset, per-track rules
     item_schema = json.load(open(SCHEMA_PATH, encoding="utf-8"))["$defs"]["item"]
     prompt = (read(os.path.join(PROMPTS, "DAILY_COACH.md"))

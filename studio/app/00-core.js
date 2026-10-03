@@ -217,18 +217,44 @@ PS.compare = (user, answers, o = {}) => {
   return { score: 0, kind: 'wrong', answer: list[best] };
 };
 
+/* Numbers typed by a Dutch/Flemish reader: "0,149" is 0.149, "1.250" may be 1250 or 1.25. When a separator can be read two ways
+   (exactly three digits follow it), both readings are tried and the one that fits the expected value counts. */
+PS.numberCandidates = (txt) => {
+  const raw = String(txt == null ? '' : txt).trim().replace(/[\s ']/g, '');
+  if (!raw) return [];
+  const sci = raw.match(/^([-+]?\d[\d.,]*)[x×*]10\^?([-+]?\d+)/i);
+  if (sci) return PS.numberCandidates(sci[1]).map((v) => v * Math.pow(10, Number(sci[2])));
+  const m = raw.match(/^[-+]?\d[\d.,]*(?:e[-+]?\d+)?/i) || raw.match(/^[-+]?[.,]\d+/);   /* leading number; a unit after it ("tokens", "%", "ms") is ignored */
+  if (!m) return [];
+  let t = m[0].replace(/[.,]$/, '');
+  const exp = t.match(/e[-+]?\d+$/i); const e = exp ? Number(exp[0].slice(1)) : 0; if (exp) t = t.slice(0, -exp[0].length);
+  const out = new Set(); const add = (str) => { const v = Number(str); if (str && isFinite(v)) out.add(v * Math.pow(10, e)); };
+  const commas = (t.match(/,/g) || []).length; const dots = (t.match(/\./g) || []).length;
+  if (commas && dots) {                       /* 1.250,5 or 1,250.5: the last separator is the decimal one */
+    const dec = t.lastIndexOf(',') > t.lastIndexOf('.') ? ',' : '.'; const th = dec === ',' ? '.' : ',';
+    add(t.split(th).join('').replace(dec, '.'));
+  } else if (commas + dots === 1) {           /* one separator: decimal, or thousands when a valid group of exactly three digits follows (not "0,149") */
+    const sep = commas ? ',' : '.';
+    add(t.replace(sep, '.'));
+    if (new RegExp(`^[-+]?[1-9]\\d{0,2}\\${sep}\\d{3}$`).test(t)) add(t.replace(sep, ''));
+  } else if (commas + dots > 1) {             /* 1.234.567 or 1,234,567: only valid thousands groups */
+    const sep = commas ? ',' : '.';
+    if (new RegExp(`^[-+]?[1-9]\\d{0,2}(\\${sep}\\d{3})+$`).test(t)) add(t.split(sep).join(''));
+  } else add(t);
+  return [...out];
+};
 PS.compareNumeric = (user, item) => {
-  const raw = String(user || '').trim().replace(/\s/g, '').replace(/,(?=\d{3}(\D|$))/g, '').replace(',', '.');
-  if (!raw) return { score: 0, kind: 'empty' };
-  let v = Number(raw.replace(/[^0-9eE.+\-]/g, ''));
-  const m = raw.match(/^([-+]?[\d.]+(?:e[-+]?\d+)?)\s*[x×*]\s*10\^?([-+]?\d+)$/i);
-  if (m) v = Number(m[1]) * Math.pow(10, Number(m[2]));
-  if (!isFinite(v)) return { score: 0, kind: 'wrong' };
+  if (!String(user == null ? '' : user).trim()) return { score: 0, kind: 'empty' };
   const target = Number(item.value);
   const tol = item.abs != null ? Number(item.abs) : Math.abs(target) * (item.tolerance != null ? Number(item.tolerance) : 0.01);
-  if (Math.abs(v - target) <= tol + 1e-12) return { score: 1, kind: 'exact' };
-  if (item.tolerance2 != null && Math.abs(v - target) <= Math.abs(target) * item.tolerance2) return { score: 0.5, kind: 'close' };
-  return { score: 0, kind: 'wrong' };
+  let best = { score: 0, kind: 'wrong' };
+  for (const v of PS.numberCandidates(user)) {
+    let r = { score: 0, kind: 'wrong' };
+    if (Math.abs(v - target) <= tol + 1e-12) r = { score: 1, kind: 'exact' };
+    else if (item.tolerance2 != null && Math.abs(v - target) <= Math.abs(target) * item.tolerance2) r = { score: 0.5, kind: 'close' };
+    if (r.score > best.score) best = r;
+  }
+  return best;
 };
 
 /* Character-level diff (LCS) → {user, correct} as HTML with <del>/<ins> */

@@ -1,6 +1,6 @@
 # AGENTS.md — Polyglot Studio
 
-Persoonlijke leerapp van Thibaud: **Nieuwgrieks, Frans C1–C2, Spaans A0–B2, Solidity, AI/LLM, Workflow Automation (n8n) en Jev & Decision AI**. Statische single-page app op GitHub Pages; voortgang in de eigen Supabase op MacBook 2 (tabellen `polyglot_*`); elke ochtend om 07:30 stuurt Antigravity de lessen bij.
+Persoonlijke leerapp van Thibaud: **Nieuwgrieks, Frans C1–C2, Spaans A0–B2, Solidity, AI/LLM, Workflow Automation (n8n), Jev & Decision AI en Netwerken & Routing** (de actuele lijst staat in `studio/content/tracks.json`). Statische single-page app op GitHub Pages; voortgang in de eigen Supabase op MacBook 2 (tabellen `polyglot_*`); elke ochtend om 07:30 stuurt Antigravity de lessen bij.
 
 ## Structuur
 
@@ -42,3 +42,9 @@ python3 studio/tools/radar.py --classic attention      # één klassieker nu sch
 6. Apple Herinneringen: exact één algemene herinnering `Polyglot` (met als doelstelling minstens 1 les per dag), datum vandaag, **geen uur en geen alarm**. Alleen via EventKit (`sync_reminders.swift`), nooit AppleScript.
 7. Taal van de interface en uitleg: Nederlands. Griekse accenten, Franse spelling en Spaanse tildes (RAE) zijn niet onderhandelbaar.
 8. Werk op de lokale APFS-schijf; niets in OneDrive.
+9. **Een nieuw vak toevoegen** doe je in deze volgorde, en nergens anders (de tools lezen de lijst uit `tracks.json`; een hardcoded lijst crasht de ochtendrun, zoals gebeurde met `routing` op 3 oktober):
+   1. `studio/content/tracks.json`: titel, `short`, `glyph`, `emoji`, `promptName`, `levels`, `goal`, `subtitle`, `lang`;
+   2. `studio/content/syllabus/<vak>.json`;
+   3. kleurvariabelen `--<vak>`, `--<vak>-soft`, `--<vak>-ink` (licht én donker) en `[data-track="<vak>"]` in `studio/app/styles.css`, in een tint die zichtbaar verschilt van alle bestaande vakken;
+   4. de lessen zelf.
+   Daarna moeten `python3 studio/tools/validate.py` (controleert stappen 1 tot 3) **en** `python3 ~/scripts/daily_orchestrator.py --dry-run` (moet tot het einde lopen) slagen vóór je pusht.

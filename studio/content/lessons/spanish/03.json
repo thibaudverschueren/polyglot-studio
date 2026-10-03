@@ -241,7 +241,7 @@
      "level": 2,
      "prompt": "Vul **por qué** of **porque** in.",
      "explain": "De vraagwaarde (waarom?) eist twee woorden mét tilde. Het antwoord (omdat) is één woord zonder tilde.",
-     "text": "¿{{Por qué|Por que}} trabajas mucho? {{Porque}} tengo muchos clientes.",
+     "text": "¿{{Por qué}} trabajas mucho? {{Porque}} tengo muchos clientes.",
      "lang": "es"
     }
    ]
@@ -466,7 +466,7 @@
    "level": 2,
    "prompt": "Kies tussen **por qué** en **porque**.",
    "explain": "Vraag = *por qué* (twee woorden met tilde), Antwoord = *porque* (één woord zonder tilde).",
-   "text": "¿{{Por qué|Por que}} estudias español? {{Porque}} tengo clientes en España.",
+   "text": "¿{{Por qué}} estudias español? {{Porque}} tengo clientes en España.",
    "lang": "es"
   },
   {
@@ -921,6 +921,7 @@
  "meta": {
   "author": "antigravity",
   "created": "2026-09-27",
-  "adaptedFor": "Tempo is standaard gehouden; aangezien er 0 oefenpogingen waren in de afgelopen 7 dagen, is de theorie fors uitgebreid (1100+ woorden) met veel uitgewerkte voorbeelden per werkwoordsgroep en expliciete contrasten met het Frans."
+  "adaptedFor": "Tempo is standaard gehouden; aangezien er 0 oefenpogingen waren in de afgelopen 7 dagen, is de theorie fors uitgebreid (1100+ woorden) met veel uitgewerkte voorbeelden per werkwoordsgroep en expliciete contrasten met het Frans.",
+  "notes": "corrigeer 2026-10-03: \"Por que\" zonder tilde werd ten onrechte goed gerekend bij het vraagwoord."
  }
 }

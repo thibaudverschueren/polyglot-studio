@@ -6,7 +6,9 @@
     "glyph": "Ω",
     "lang": "el-GR",
     "levels": "A0 → B1",
-    "goal": "Doel: vlot en correct communiceren op B1-niveau (ERK): je redt je in elk alledaags gesprek, begrijpt nieuwsberichten en schrijft foutloze korte teksten met correcte accenten."
+    "goal": "Doel: vlot en correct communiceren op B1-niveau (ERK): je redt je in elk alledaags gesprek, begrijpt nieuwsberichten en schrijft foutloze korte teksten met correcte accenten.",
+    "emoji": "🇬🇷",
+    "promptName": "Nieuwgrieks"
   },
   "french": {
     "title": "Français soutenu",
@@ -15,7 +17,9 @@
     "glyph": "É",
     "lang": "fr-FR",
     "levels": "C1 → C2",
-    "goal": "Doel: foutloos en genuanceerd Frans op C2-niveau (DALF): synthese, argumentatie, correspondentie en debat — ook in economische en juridische context."
+    "goal": "Doel: foutloos en genuanceerd Frans op C2-niveau (DALF): synthese, argumentatie, correspondentie en debat — ook in economische en juridische context.",
+    "emoji": "🇫🇷",
+    "promptName": "Frans (C1→C2)"
   },
   "spanish": {
     "title": "Español",
@@ -24,7 +28,9 @@
     "glyph": "Ñ",
     "lang": "es-ES",
     "levels": "A0 → B2",
-    "goal": "Doel: vlot en correct Spaans op B2-niveau (DELE B2): gesprekken, vergaderingen en e-mails met Spanjaarden en Latijns-Amerikanen — met je Frans als hefboom en zonder de valkuilen die daarbij horen."
+    "goal": "Doel: vlot en correct Spaans op B2-niveau (DELE B2): gesprekken, vergaderingen en e-mails met Spanjaarden en Latijns-Amerikanen — met je Frans als hefboom en zonder de valkuilen die daarbij horen.",
+    "emoji": "🇪🇸",
+    "promptName": "Spaans (A0→B2)"
   },
   "solidity": {
     "title": "Solidity & de EVM",
@@ -34,7 +40,9 @@
     "glyphMono": true,
     "lang": "en",
     "levels": "Beginner → auditor-minded",
-    "goal": "Doel: zelfstandig veilige, gas-efficiënte smart contracts schrijven, testen en auditen (ERC-20/721/4626, proxies, signatures, DeFi-mechanica)."
+    "goal": "Doel: zelfstandig veilige, gas-efficiënte smart contracts schrijven, testen en auditen (ERC-20/721/4626, proxies, signatures, DeFi-mechanica).",
+    "emoji": "⛓️",
+    "promptName": "Solidity & de EVM"
   },
   "ai": {
     "title": "AI & Large Language Models",
@@ -43,7 +51,9 @@
     "glyph": "∇",
     "lang": "en",
     "levels": "Gevorderd",
-    "goal": "Doel: moderne LLM-systemen tot op de formule én de Python-code (PyTorch, Hugging Face, LoRA, inferentie) doorgronden, trainen en bouwen — met visuele schema's, tensor-inzicht en compute-calculaties."
+    "goal": "Doel: moderne LLM-systemen tot op de formule én de Python-code (PyTorch, Hugging Face, LoRA, inferentie) doorgronden, trainen en bouwen — met visuele schema's, tensor-inzicht en compute-calculaties.",
+    "emoji": "🤖",
+    "promptName": "AI & LLM's"
   },
   "automation": {
     "title": "Workflow Automation & API Engineering",
@@ -54,7 +64,9 @@
     "lang": "en",
     "levels": "Praktijk → productie-expert",
     "icon": "zap",
-    "goal": "Doel: betrouwbare n8n-automatiseringen en AI-workflows ontwerpen, beveiligen, hosten en onderhouden voor B2B-klanten — met onderbouwde inschattingen en retainers."
+    "goal": "Doel: betrouwbare n8n-automatiseringen en AI-workflows ontwerpen, beveiligen, hosten en onderhouden voor B2B-klanten — met onderbouwde inschattingen en retainers.",
+    "emoji": "⚡",
+    "promptName": "Workflow Automation & API Engineering (n8n)"
   },
   "jev": {
     "title": "Jev & Decision AI",
@@ -65,7 +77,9 @@
     "lang": "en",
     "levels": "Fundament → Productie-architect",
     "icon": "cpu",
-    "goal": "Doel: Jev en snelle beslissingsmodellen (OpenRouter, lokale SLM's en constrained classifiers) doorgronden, benchmarken en integreren in software en workflows — met de juiste balans tussen snelheid, kosten, privacy en determinisme."
+    "goal": "Doel: Jev en snelle beslissingsmodellen (OpenRouter, lokale SLM's en constrained classifiers) doorgronden, benchmarken en integreren in software en workflows — met de juiste balans tussen snelheid, kosten, privacy en determinisme.",
+    "emoji": "⑂",
+    "promptName": "Jev & Decision AI"
   },
   "routing": {
     "title": "Netwerken & Autonomous Routing",
@@ -76,6 +90,8 @@
     "lang": "en",
     "levels": "Fundament → Router-engineer",
     "icon": "share-2",
-    "goal": "Doel: netwerkarchitectuur, routering (RIB/FIB, OSPF, BGP) en edge gateways (NAT, DHCP, DNS, bufferbloat) tot in detail doorgronden — met als einddoel het bouwen van een applicatiespecifieke reasoning LLM die autonoom netwerkstoringen op routers oplost."
+    "goal": "Doel: netwerkarchitectuur, routering (RIB/FIB, OSPF, BGP) en edge gateways (NAT, DHCP, DNS, bufferbloat) tot in detail doorgronden — met als einddoel het bouwen van een applicatiespecifieke reasoning LLM die autonoom netwerkstoringen op routers oplost.",
+    "emoji": "🌐",
+    "promptName": "Netwerken & Autonomous Routing"
   }
 }

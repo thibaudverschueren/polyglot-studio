@@ -34,13 +34,14 @@ sys.path.insert(0, HERE)
 
 import antigravity as ag  # noqa: E402
 import radar_sources as rs  # noqa: E402
+import tracks as trk  # noqa: E402
 from validate import check_item, schema_errors  # noqa: E402
 
 RADAR = os.path.join(STUDIO, "content", "radar")
 ITEMS = os.path.join(RADAR, "items")
 PROMPTS = os.path.join(STUDIO, "prompts")
 TOPICS = ("ai", "chips", "crypto", "systems", "automation")
-TRACKS = ("greek", "french", "spanish", "solidity", "ai", "automation", "jev", "routing")
+TRACKS = tuple(trk.ids())
 QUIZ_TYPES = {"mcq", "multi", "type", "numeric", "order"}
 KIND_LABEL = {"news": "Doorbraak", "paper": "Paper", "classic": "Klassieker", "request": "Op jouw vraag"}
 
@@ -122,6 +123,8 @@ def gather_candidates(interests, log=print):
         key = c["cid"]
         if key not in uniq or c.get("score", 0) > uniq[key].get("score", 0):
             uniq[key] = c
+    for c in uniq.values():  # which pond does it come from? (used for fair quotas in the triage)
+        c["pond"] = c["source"] if c["source"] not in ("Hugging Face Daily Papers", "arXiv", "Hacker News") else c["source"].split()[0]
     if errors:
         log("    ⚠ bronnen: " + "; ".join(errors)[:300])
     return list(uniq.values())
@@ -136,20 +139,38 @@ def prescore(c, interests):
     return best + math.log1p(c.get("score", 0)) + (1.5 if c.get("signal", "").startswith("officieel") else 0)
 
 
+def fair_top(cands, interests, n):
+    """Best candidates per source first (so 100 papers cannot crowd out chip, crypto or systems news), then the rest by score."""
+    ponds = {}
+    for c in cands:
+        ponds.setdefault(c["pond"], []).append(c)
+    quota = {"Hugging": 28, "arXiv": 14, "Hacker": 20}
+    chosen, seen = [], set()
+    for pond, items in ponds.items():
+        for c in sorted(items, key=lambda c: -prescore(c, interests))[:quota.get(pond, 6)]:
+            chosen.append(c)
+            seen.add(c["cid"])
+    rest = sorted((c for c in cands if c["cid"] not in seen), key=lambda c: -prescore(c, interests))
+    return (chosen + rest)[:n]
+
+
 def triage(cands, interests, prefs, arts, cfg, max_picks, log=print):
     covered = {(A.get("meta") or {}).get("candidate") for A in arts}
     cands = [c for c in cands if c["cid"] not in covered]
     if not cands or max_picks <= 0:
         return [], "geen kandidaten"
-    top = sorted(cands, key=lambda c: -prescore(c, interests))[:80]
+    top = fair_top(cands, interests, 90)
     liked = [A["title"] for A in arts if prefs["likes"].get(A["id"]) == 1][-8:]
     disliked = [A["title"] for A in arts if prefs["likes"].get(A["id"]) == -1][-8:]
+    recent = [f"{A.get('topic')}: {A['title']}" for A in sorted(arts, key=lambda a: a.get("date", ""))[-6:]]
     lines = [f"- `{c['cid']}` · {c['source']} · {c.get('date', '')} · {c.get('signal', '')}\n  **{c['title']}** — {c.get('summary', '')[:300]}" for c in top]
     prompt = (ag.read(os.path.join(PROMPTS, "RADAR_TRIAGE.md"))
               + "\n\n---\n\n## Interesses (gewicht)\n" + "\n".join(f"- `{t}` {s['label']} ({s['weight']}): {', '.join(s['keywords'])}" for t, s in interests["topics"].items())
               + "\n\n## Vond hij goed\n" + ("\n".join(f"- {x}" for x in liked) or "- (nog niets)")
               + "\n\n## Vond hij minder\n" + ("\n".join(f"- {x}" for x in disliked) or "- (nog niets)")
               + "\n\n## Eerder behandeld\n" + ("\n".join(f"- {A['title']}" for A in arts[-60:]) or "- (nog niets)")
+              + "\n\n## De laatste artikels (onderwerp: titel)\n" + ("\n".join(f"- {x}" for x in recent) or "- (nog niets)")
+              + f"\n\n## Spreiding\n{interests.get('diversity', '')}"
               + f"\n\n## Kandidaten ({len(top)})\n" + "\n".join(lines)
               + f"\n\nKies er maximaal {max_picks}.")
     out = ag.run_agy(prompt, cfg, model=cfg.get("AGY_MODEL_COACH", "gemini-3.8-flash-high"), timeout=600, log=log)
@@ -279,10 +300,46 @@ def _norm(s):
     return re.sub(r"\s+", " ", s).strip()
 
 
+def _loose(s):
+    """Like _norm, but blind to LaTeX markup: arXiv sources say `$512$ weakest … $79.8\\%$`, a reader (and the model) writes `512 weakest … 79.8%`."""
+    s = _norm(s).replace("\\%", "%").replace("\\,", " ").replace("\\ ", " ").replace("\\;", " ").replace("~", " ")
+    s = re.sub(r"[$\\{}]", "", s)
+    s = re.sub(r"\s+([,.;:%)])", r"\1", s)       # "79.8 %" and "512 ." (LaTeX spacing) read the same as "79.8%" and "512."
+    return re.sub(r"\s+", " ", s).strip()
+
+
 def _grounded(quote, corpus):
-    frags = [f.strip(" \"'.,;:") for f in re.split(r"\.\.\.|…", _norm(quote))]
-    frags = [f for f in frags if len(f) >= 12] or [_norm(quote).strip(" \"'.,;:")]
+    frags = [f.strip(" \"'.,;:") for f in re.split(r"\.\.\.|…", _loose(quote))]
+    frags = [f for f in frags if len(f) >= 12] or [_loose(quote).strip(" \"'.,;:")]
     return all(f in corpus for f in frags)
+
+
+HYPE_ALWAYS = ["revolutionair", "geniaal", "geniale", "magisch", "gamechanger", "game changer", "ijzeren wet", "verbrijzel", "keihard", "keiharde",
+               "krachtpatser", "spectaculair", "pertinent", "buitengewoon", "ultieme"]
+HYPE_SOFT = ["uiterst", "razendsnel", "indrukwekkend", "overtuigend", "absoluut", "doorbreekt", "doorbraak", "bewijst", "bewezen", "elegant",
+             "drastisch", "extreem", "enorm", "fundamenteel", "ongelooflijk", "briljant", "verbluffend"]
+
+
+def style_problems(A):
+    """Deterministic style rules (hype words, sentence length) → quality points for the repair round."""
+    parts = [A.get("title", ""), A.get("subtitle", ""), A.get("plain", ""), A.get("why", ""), A.get("caveats", "")] + list(A.get("tldr") or []) \
+        + [x.get("md", "") for x in A.get("sections") or [] if isinstance(x, dict)]
+    text = " ".join(p for p in parts if isinstance(p, str)).lower()
+    out = []
+    always = sorted({w for w in HYPE_ALWAYS if w in text})
+    if always:
+        out.append(f"hypewoorden: {', '.join(always)} — schrijf neutraal en laat de cijfers spreken")
+    soft = {w: len(re.findall(rf"\b{re.escape(w)}", text)) for w in HYPE_SOFT}
+    soft = {w: n for w, n in soft.items() if n}
+    if sum(soft.values()) >= 3:
+        out.append(f"te veel versterkers/overdrijving ({', '.join(f'{w} ×{n}' for w, n in sorted(soft.items(), key=lambda x: -x[1])[:6])}) — gebruik toont/meet/suggereert in plaats van bewijst; schrap bijvoeglijke naamwoorden zonder cijfer")
+    for i, t in enumerate(A.get("tldr") or []):
+        n = len(str(t).split())
+        if n > 26:
+            out.append(f"tldr[{i}] telt {n} woorden (maximum 22): splits of vereenvoudig, in gewone taal")
+    if len(str(A.get("why", "")).split()) > 130:
+        out.append("why is te lang (maximum 90 woorden)")
+    return out
 
 
 UNITS = {  # unit in the article → how sources may write it
@@ -317,7 +374,7 @@ def _urls(text):
 def validate_article(A, srcs, item_schema, schema):
     errs, warns = [], []
     allowed = {s["url"].rstrip("/") for s in srcs}
-    corpus = _norm(" ".join(s["text"] for s in srcs))
+    corpus = _loose(" ".join(s["text"] for s in srcs))
     for k in ("title", "subtitle", "why", "caveats"):
         if not isinstance(A.get(k), str) or not A[k].strip():
             errs.append(f"'{k}' ontbreekt")
@@ -335,9 +392,14 @@ def validate_article(A, srcs, item_schema, schema):
     for i, s in enumerate(secs):
         if not isinstance(s, dict) or not s.get("title") or len(s.get("md", "")) < 250:
             errs.append(f"sections[{i}]: title + md van minstens 250 tekens")
-    words = len(re.findall(r"\w+", " ".join([A.get("why", ""), A.get("caveats", "")] + [s.get("md", "") for s in secs if isinstance(s, dict)])))
-    if words < 650:
-        errs.append(f"te kort: {words} woorden in why + sections + caveats (minstens 800)")
+    plain = A.get("plain")
+    if not isinstance(plain, str) or not 50 <= len(plain.split()) <= 230:
+        errs.append("plain: ‘In gewone woorden’ ontbreekt of is niet 80–160 woorden")
+    elif "$" in plain:
+        errs.append("plain: geen formules in ‘In gewone woorden’")
+    words = len(re.findall(r"\w+", " ".join([A.get("why", ""), A.get("caveats", ""), plain if isinstance(plain, str) else ""] + [s.get("md", "") for s in secs if isinstance(s, dict)])))
+    if words < 700:
+        errs.append(f"te kort: {words} woorden in plain + why + sections + caveats (minstens 900)")
     elif words > 3200:
         errs.append(f"te lang: {words} woorden (maximaal 2200)")
     for i, n in enumerate(A.get("numbers") or []):
@@ -392,6 +454,8 @@ def validate_article(A, srcs, item_schema, schema):
     if not errs:
         import build
         errs += ag.render_math_errors(build.render_radar, A)
+    for w in style_problems(A):
+        warns.append(w)
     for q in ungrounded_quantities(A, corpus):
         warns.append(f"cijfer zonder bron: “{q}” staat niet in de bronnen — zet het met een letterlijk citaat in numbers, vermeld de juiste waarde uit de bron, of laat het weg")
     return errs, warns

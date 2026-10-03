@@ -19,14 +19,36 @@ UA = "PolyglotStudio/1.0 (personal learning app; +https://thibaudverschueren.git
 ATOM = "{http://www.w3.org/2005/Atom}"
 
 
+_LAST = {}
+SPACING = {"export.arxiv.org": 3.2, "arxiv.org": 1.2, "en.wikipedia.org": 0.3}  # seconds between two calls to the same host
+
+
 def get(url, timeout=25, limit=4_000_000, raw=False, accept="*/*"):
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": accept})
-    with urllib.request.urlopen(req, timeout=timeout) as r:  # follows redirects
-        data = r.read(limit)
-        charset = r.headers.get_content_charset() or "utf-8"
-        if r.headers.get("Content-Encoding") == "gzip" or data[:2] == b"\x1f\x8b":
-            data = gzip.decompress(data)
-    return data if raw else data.decode(charset, "replace")
+    host = urllib.parse.urlparse(url).hostname or ""
+    for attempt in range(4):
+        wait = SPACING.get(host, 0) - (time.time() - _LAST.get(host, 0))
+        if wait > 0:
+            time.sleep(wait)
+        _LAST[host] = time.time()
+        req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": accept})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:  # follows redirects
+                data = r.read(limit)
+                charset = r.headers.get_content_charset() or "utf-8"
+                if r.headers.get("Content-Encoding") == "gzip" or data[:2] == b"\x1f\x8b":
+                    data = gzip.decompress(data)
+            return data if raw else data.decode(charset, "replace")
+        except urllib.error.HTTPError as e:
+            if e.code in (429, 503) and attempt < 3:  # rate limited: wait as asked, then try again
+                ra = e.headers.get("Retry-After", "")
+                time.sleep(min(float(ra) if ra.isdigit() else 6 * 3 ** attempt, 60))
+                continue
+            raise
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            if attempt < 2:
+                time.sleep(3)
+                continue
+            raise
 
 
 def get_json(url, **kw):

@@ -124,6 +124,7 @@ PS.radar = {
       <h1 class="display radar-title">${PS.esc(a.title)}</h1><p class="lede">${a.subtitle}</p>
       ${a.meta && a.meta.signal ? `<p class="tiny muted">${PS.esc(a.meta.signal)}</p>` : ''}
       <section class="card card-pad tldr"><div class="eyebrow">In 60 seconden</div><ul>${(a.tldr || []).map((t) => `<li>${t}</li>`).join('')}</ul></section>
+      ${a.plain ? `<section class="card card-pad plain-words"><div class="eyebrow">In gewone woorden</div><div class="prose">${a.plain}</div></section>` : ''}
       <div class="prose article-body"><h2>Waarom dit ertoe doet</h2>${a.why}${(a.sections || []).map((s) => `<h2>${s.title}</h2>${s.html}`).join('')}${numbers}<h2>Kanttekeningen</h2>${a.caveats}${glossary}</div>
       ${related.length ? `<div class="card card-pad radar-related"><div class="eyebrow" style="margin-bottom:6px">Sluit aan bij je vakken</div>${related.map((r) => `<a class="small" href="#/pad/${r.track}" data-track="${r.track}"><strong>${PS.esc(PS.C.track(r.track).short)}</strong> — ${r.why}</a>`).join('<br>')}</div>` : ''}
       ${(a.quiz || []).length ? `<div class="section-head"><span class="h3">Test je begrip</span></div><div class="stack" data-quiz></div>` : ''}

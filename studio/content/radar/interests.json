@@ -154,8 +154,49 @@
    "name": "Ethereum Foundation",
    "url": "https://blog.ethereum.org/en/feed.xml",
    "topic": "crypto"
+  },
+  {
+   "name": "Apple Machine Learning Research",
+   "url": "https://machinelearning.apple.com/rss.xml",
+   "topic": "chips"
+  },
+  {
+   "name": "NVIDIA Technical Blog",
+   "url": "https://developer.nvidia.com/blog/feed/",
+   "topic": "chips"
+  },
+  {
+   "name": "Semiconductor Engineering",
+   "url": "https://semiengineering.com/feed/",
+   "topic": "chips"
+  },
+  {
+   "name": "Google Research",
+   "url": "https://research.google/blog/rss/",
+   "topic": "ai"
+  },
+  {
+   "name": "Microsoft Research",
+   "url": "https://www.microsoft.com/en-us/research/feed/",
+   "topic": "ai"
+  },
+  {
+   "name": "Cloudflare",
+   "url": "https://blog.cloudflare.com/rss/",
+   "topic": "systems"
+  },
+  {
+   "name": "Meta Engineering",
+   "url": "https://engineering.fb.com/feed/",
+   "topic": "systems"
+  },
+  {
+   "name": "Vitalik Buterin",
+   "url": "https://vitalik.eth.limo/feed.xml",
+   "topic": "crypto"
   }
  ],
  "hn_min_points": 200,
- "max_per_day": 2
+ "max_per_day": 2,
+ "diversity": "Varieer: heeft Thibaud de laatste artikels vooral over één onderwerp gelezen, kies dan bij gelijke waarde een ander onderwerp. Chips, crypto en systemen zijn even belangrijk als AI."
 }
