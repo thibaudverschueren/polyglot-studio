@@ -745,7 +745,7 @@ def backfill(cfg, today, log=print, limit=2, budget_s=1800, on_done=None):
         body = {k: v for k, v in A.items() if k not in ("schema", "id", "kind", "date", "meta")}
         meta = dict(A.get("meta") or {})
         want = {s.get("url", "").rstrip("/") for s in A.get("sources") or []}
-        if len(srcs) < 1 or any(s.get("full") is False for s in srcs) or len(srcs) < len(want) - 1:
+        if len(srcs) < 1 or any(s.get("full") is False for s in srcs) or len(srcs) < len(want):
             # a source is gone (404) or only the abstract exists: it cannot be checked, but it is not ours to delete
             log("      een bron is niet meer beschikbaar: het artikel blijft verborgen tot er een werkende bron is")
             continue
