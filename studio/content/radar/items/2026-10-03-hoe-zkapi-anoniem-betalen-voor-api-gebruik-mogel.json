@@ -153,6 +153,7 @@
   "kind": "news",
   "candidate": "url:https://blog.ethereum.org/en/2026/10/01/introducing-zkapi",
   "signal": "officieel bericht van Ethereum Foundation",
-  "significance": 4
+  "significance": 4,
+  "verified": "2026-10-03"
  }
 }
