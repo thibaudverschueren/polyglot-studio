@@ -712,7 +712,7 @@ def _sources_for_article(A):
     return srcs
 
 
-def backfill(cfg, today, log=print, limit=2, budget_s=1800):
+def backfill(cfg, today, log=print, limit=2, budget_s=1800, on_done=None):
     """Articles that never passed the full fact-check loop stay hidden; verify (and repair) them, a few per morning.
     After 3 failed attempts an article is dropped (draft kept in ~/scripts/polyglot-data/failed)."""
     t0, done = time.time(), []
@@ -747,6 +747,8 @@ def backfill(cfg, today, log=print, limit=2, budget_s=1800):
             json.dump(srcs, open(os.path.join(private, f"{A['id']}.json"), "w", encoding="utf-8"), ensure_ascii=False)
             done.append(A["id"])
             log(f"    ✓ gecontroleerd en zichtbaar: {A['id']}")
+            if on_done:
+                on_done(A["id"])
         else:
             meta["verify_attempts"] = int(meta.get("verify_attempts", 0)) + 1
             if meta["verify_attempts"] >= 3:
