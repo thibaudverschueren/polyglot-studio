@@ -736,8 +736,9 @@ def backfill(cfg, today, log=print, limit=2, budget_s=1800, on_done=None):
     After 3 failed attempts an article is dropped (draft kept in ~/scripts/polyglot-data/failed)."""
     t0, done, outages = time.time(), [], 0
     schema = json.load(open(os.path.join(STUDIO, "schema", "lesson.schema.json"), encoding="utf-8"))
-    for A in [a for a in articles() if not (a.get("meta") or {}).get("verified")][:limit]:
-        if time.time() - t0 > budget_s:
+    processed = 0
+    for A in [a for a in articles() if not (a.get("meta") or {}).get("verified")]:
+        if processed >= limit or time.time() - t0 > budget_s:
             break
         path = os.path.join(ITEMS, f"{A['id']}.json")
         log(f"    ⟳ factcheck van bestaand artikel: {A['title'][:70]}")
@@ -748,12 +749,13 @@ def backfill(cfg, today, log=print, limit=2, budget_s=1800, on_done=None):
         if len(srcs) < 1 or any(s.get("full") is False for s in srcs) or len(srcs) < len(want):
             # a source is gone (404) or only the abstract exists: it cannot be checked, but it is not ours to delete
             log("      een bron is niet meer beschikbaar: het artikel blijft verborgen tot er een werkende bron is")
-            continue
+            continue  # does not count against the daily limit
         task = {"kind": A["kind"], "label": A["title"], "angle": A.get("subtitle", ""), "reason": "",
                 "cand": {"cid": meta.get("candidate", ""), "title": A["title"], "source": "bron", "date": A.get("date", ""), "signal": meta.get("signal", ""), "url": srcs[0]["url"]},
                 "request": next((q for q in load(os.path.join(RADAR, "requests.json"), []) if q.get("id") == meta.get("request")), {"id": meta.get("request"), "text": A["title"]}),
                 "canon": next((c for c in load(os.path.join(RADAR, "canon.json"), []) if c["id"] == meta.get("canon")), {"id": "?", "title": A["title"], "by": "", "year": "", "angle": A.get("subtitle", "")})}
         base = _prompt(task, srcs, {"likes": {}}, [a for a in articles() if a["id"] != A["id"]])
+        processed += 1
         good, issues = verify(body, srcs, base, cfg, schema, schema["$defs"]["item"], log)
         if good is not None:
             meta["verified"] = today
