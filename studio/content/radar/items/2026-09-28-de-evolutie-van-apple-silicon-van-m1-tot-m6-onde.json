@@ -1,48 +1,49 @@
 {
  "schema": "polyglot.radar/v1",
- "title": "De Evolutie van Apple Silicon: Van M1 tot M6 Onder de Motorkap",
- "subtitle": "Hoe Apple de bottleneck tussen geheugen en rekenkracht doorbrak met Unified Memory, en wat dit betekent voor lokale AI-workloads.",
+ "title": "Onder de motorkap van Apple Silicon",
+ "subtitle": "Hoe de overstap naar gedeeld geheugen de verhouding tussen bandbreedte en rekenkracht fundamenteel verandert voor lokale AI-workloads.",
  "topic": "chips",
- "minutes": 11,
+ "minutes": 9,
  "tldr": [
-  "Apple's overstap naar een Unified Memory Architecture (UMA) elimineert de traditionele PCIe-bottleneck, wat essentieel is voor geheugenintensieve taken zoals LLM-inferentie.",
-  "Door agressieve schaling in procestechnologie en 'Fusion Architecture' bereikt de geheugenbandbreedte binnen de M5-generatie een theoretisch maximum van 614 GB/s voor de M5 Max.",
-  "De Neural Engine (ANE) combineert hoge efficiëntie met een 'wide accumulator', waardoor grote matrixvermenigvuldigingen hun precisie behouden zonder dure fp32-datapaden te gebruiken.",
-  "Ondanks de sterke energie-efficiëntie bij inferentie, blijft Apple Silicon achter bij het trainen van modellen; dit komt primair door beperkte FP16-rekenkracht (gebrek aan Tensor Cores) en secundair door systeem-overhead zoals page faults."
+  "Klassieke computers scheiden werk- en videogeheugen, waardoor grote AI-modellen traag data uitwisselen of simpelweg niet in het geheugen passen.",
+  "Apple's Unified Memory Architecture verhelpt dit door de CPU, GPU en Neural Engine één fysieke geheugenpoel te laten delen.",
+  "Dit maakt zware modellen lokaal draaibaar; bij geteste 256-kanaals 3x3-convoluties rekent de Neural Engine negen keer energie-efficiënter dan de GPU.",
+  "Bij training missen GPU-kernen van oudere Apple-chips specifieke matrix-hardware, wat vertraagt tenzij het model niet in een reguliere videokaart past."
  ],
- "why": "Als handelsingenieur wil je niet alleen weten dát een LLM of AI-model lokaal draait, maar ook wat de onderliggende economische en technische drijfveren zijn. De verschuiving naar lokale AI vereist een fundamenteel begrip van hardware-bottlenecks: waarom bepaalt geheugenbandbreedte de snelheid van tekstgeneratie, en niet pure rekenkracht (TOPS)? De M-serie van Apple illustreert perfect hoe een geïntegreerde architectuur de cost-function van AI-inferentie radicaal verandert. Inzicht in deze hardware helpt je bij het bouwen van efficiënte n8n-workflows of Python-scripts die lokaal draaien, omdat je leert optimaliseren voor de sterktes (inferentie, energieverbruik) en beperkingen (training-overhead, fp16-math) van de chip.",
+ "plain": "Stel je voor dat je een archief beheert en een analist boeken nodig heeft om een rapport te schrijven. In een gewone opstelling werkt de analist in een apart gebouw en moet een koerier telkens honderd boeken heen en weer rijden. Dit wachten op de overdracht kost onnodig veel tijd en energie. Apple bedacht een systeem waarbij de analist direct in het midden van het archief zit. Iedereen kan direct bij de boeken zonder ze eerst te verplaatsen. Daardoor gaat het inlezen van bestaande teksten veel sneller en efficiënter; de processor hoeft immers niet te wachten op de koerier. Deze vergelijking houdt echter op wanneer de analist plots zelf nieuwe boeken moet drukken en inbinden, omdat hij daarvoor op oudere systemen simpelweg niet de juiste grafische drukpersen in handen heeft gekregen.",
+ "why": "De verschuiving naar lokale AI vereist een helder begrip van hardware-bottlenecks: bij de inferentie van taalmodellen bepaalt de geheugenbandbreedte de snelheid, niet pure rekenkracht. De M-serie van Apple toont hoe een geïntegreerde architectuur de kosten van AI verandert. Dit inzicht beïnvloedt hoe je AI lokaal inzet via n8n of Python. Je leert optimaliseren voor de hardware: de sterktes liggen bij inferentie en energieverbruik, terwijl de zwaktes zitten in de training-overhead en de beperkte fp16-rekenkracht door het ontbreken van gespecialiseerde matrix-hardware in de GPU-kernen van oudere generaties.",
  "sections": [
   {
-   "title": "Het fundament: Unified Memory Architecture (UMA)",
-   "md": "In klassieke pc's zijn het werkgeheugen (RAM) van de CPU en het videogeheugen (VRAM) van de GPU fysiek gescheiden. Als een neuraal netwerk wordt ingeladen, moet de data via een trage PCIe-bus van het systeemgeheugen naar de GPU worden gekopieerd. Met de M1-chip bracht Apple het *System-in-a-Package* (SiP) ontwerp en de Unified Memory Architecture (UMA) naar de Mac, waarbij de CPU, GPU en de Neural Engine (ANE) één fysieke poel van geheugen delen (een concept dat in andere vormen al decennia bestaat en door Apple zelf sinds de A4-chip werd gebruikt).\n\nVoor AI-modellen, en specifiek Large Language Models (LLM's), is dit een gamechanger. Het genereren van tekst (autoregressive decoding) is zwaar geheugengebonden: voor elk nieuw woord moet het model miljarden gewichten inlezen uit het geheugen om slechts één Matrix-Vector vermenigvuldiging uit te voeren. Rekenkracht is hierbij zelden de bottleneck; geheugenbandbreedte wel.\n\nMet de overstap naar LPDDR5X en steeds bredere geheugenbussen, schaalde de theoretische maximale geheugenbandbreedte van de M5 Max op naar 614 GB/s. Ter vergelijking: dit is de bandbreedte die traditioneel exclusief is voor high-end server-GPU's, maar dan beschikbaar voor het hele systeem."
+   "title": "Het fundament van gedeeld geheugen",
+   "md": "In klassieke pc's zijn het werkgeheugen (RAM) van de CPU en het videogeheugen (VRAM) van de GPU fysiek gescheiden. Als een neuraal netwerk wordt ingeladen, moet de data via een trage PCIe-bus van het systeemgeheugen naar de GPU worden gekopieerd. Met de introductie van de M1-chip bracht Apple het *System-in-a-Package* (SiP) ontwerp en de Unified Memory Architecture (UMA) naar de Mac. Hierbij delen de CPU, GPU en de Neural Engine (een onderdeel dat sinds de A11-chip bestaat) één fysieke poel van geheugen.\n\nVoor AI-modellen, en specifiek Large Language Models (LLM's), is deze gedeelde architectuur essentieel. Het genereren van tekst (autoregressive decoding) is zwaar geheugengebonden: voor elk nieuw woord moet het model miljarden gewichten inlezen uit het geheugen, waarbij elk ingelezen gewicht slechts voor één bewerking per token wordt aangesproken. Rekenkracht is hierbij zelden de bottleneck, geheugenbandbreedte wel.\n\nMet de overstap naar sneller LPDDR5X-geheugen (9600 MT/s) in de latere generaties, nam de maximale geheugenbandbreedte van de M5 Max toe naar 614 GB/s. Ter vergelijking: dit is een bandbreedte die traditioneel bij server-GPU's hoort, maar bij Apple nu beschikbaar is voor het hele systeem."
   },
   {
-   "title": "Schaalvergroting: Van 3nm naar 2nm en Fusion Architecture",
-   "md": "De constante toename in prestaties wordt mogelijk gemaakt door TSMC's procestechnologie. Kleinere transistoren schakelen sneller en verbruiken minder stroom. De originele chips startten met miljarden transistoren, maar de recente M6-chip verpakt maar liefst 46 miljard transistoren in uitsluitend de basisconfiguratie.\n\nEen belangrijke architectonische sprong vond plaats bij de M5 Pro en Max. Apple introduceerde hier de **Fusion Architecture**. In plaats van één immens grote silicium-die te bakken (wat de kans op fabricagefouten vergroot en de yield verlaagt), worden twee dies fysiek aan elkaar gekoppeld met een verbinding met gigantische bandbreedte. Het besturingssysteem en de software zien deze twee chips nog steeds als één enkel SoC met gedeeld werkgeheugen. Dit concept zagen we voorheen alleen bij de 'Ultra'-modellen, maar is nu doorgedrongen tot de Pro- en Max-lijnen om de schaalbaarheid te garanderen."
+   "title": "Schaalvergroting en de Fusion Architecture",
+   "md": "De toename in prestaties wordt mogelijk gemaakt door een steeds kleinere procestechnologie. Kleinere transistoren schakelen sneller en verbruiken minder stroom. De recente M6-chip verpakt 46 miljard transistoren in uitsluitend de basisconfiguratie.\n\nEen belangrijke architectonische sprong vond plaats bij de M5 Pro en Max. Apple introduceerde hier de **Fusion Architecture**, een primeur voor Apple Silicon waarbij twee afzonderlijke silicium-dies fysiek tot één enkel SoC (System on a Chip) worden gebonden. Dit verschilt substantieel van eerdere ontwerpen zoals de M1 Ultra, waarbij twee aparte Max-SoC's via een UltraFusion-brug met elkaar werden verbonden. Bij de Fusion Architecture vormen de twee dies samen daadwerkelijk één eenheid met een gedeelde geheugencontroller. Dit stelt Apple in staat om voorbij de fysieke limieten van een enkele die te schalen, zonder de voordelen van het gedeelde geheugen op te geven."
   },
   {
-   "title": "GPU-architectuur: Dynamic Caching en geïntegreerde Neural Accelerators",
-   "md": "Vanaf de introductie van de M3-chip (en doorontwikkeld in de M4, M5 en M6) kreeg de GPU een forse upgrade. Naast de toevoeging van hardware-versnelde ray tracing en mesh shading, was **Dynamic Caching** de belangrijkste vernieuwing.\n\nNormaal gesproken wijst een compiler vooraf de maximale hoeveelheid geheugen toe die een taak nodig zou kunnen hebben, wat leidt tot braakliggend geheugen dat andere processen niet kunnen gebruiken. Dynamic Caching wijst lokaal cachegeheugen in real-time toe op hardwareniveau, exact naar behoefte, waardoor de gemiddelde GPU-bezetting drastisch stijgt.\n\nIn de M5 en M6 is Apple nog een stap verder gegaan door AI-rekenkracht te decentraliseren. Naast de centrale Neural Engine, bevat nu *elke individuele GPU-core* een eigen 'Neural Accelerator'. Ontwikkelaars kunnen deze direct aanspreken via Tensor API's, wat de AI-rekenkracht op de GPU fors vergroot."
+   "title": "Dynamic Caching en geïntegreerde rekenkernen",
+   "md": "In eerdere generaties introduceerde Apple al hardware-versnelde ray tracing en Dynamic Caching, functies die in de M5 zijn doorontwikkeld naar respectievelijk de derde en tweede generatie.\n\nNormaal gesproken wijst een compiler vooraf de maximale hoeveelheid geheugen toe die een taak nodig zou kunnen hebben, wat leidt tot braakliggend geheugen dat andere processen niet mogen aanspreken. Dynamic Caching wijst lokaal GPU-geheugen en registerruimte in real-time toe op hardwareniveau, exact naar behoefte, waardoor de gemiddelde hardware-bezetting stijgt.\n\nIn de M5- en M6-chips decentraliseert Apple de AI-rekenkracht verder in de architectuur. Naast de centrale Neural Engine bevat nu elke individuele GPU-core een eigen 'Neural Accelerator'. Ontwikkelaars kunnen deze specifieke hardware direct aanspreken via de Tensor API's in Metal 4, wat de lokale piekprestaties van de GPU voor AI-taken fors verhoogt."
   },
   {
-   "title": "De magie van de Neural Engine ontrafeld",
-   "md": "De Apple Neural Engine (ANE) is een zogenaamde *fixed-function matrix accelerator*, bedoeld voor efficiënte forward-passes van neurale netwerken. Op de M1 levert de ANE ongeveer 12 TFLOP/s aan rekenkracht in fp16.\n\nHet technische meesterwerk zit in de manier waarop de ANE afrondingsfouten voorkomt. Het gehele datapad (inputs, gewichten en outputs) werkt in 16-bit floating point (fp16). Echter, de interne lopende som (de *accumulator*) is een breder register uit de fp32-klasse.\n\n> [!note] Waarom een wide accumulator cruciaal is\n> Bij fp16-wiskunde is de stapgrootte tussen twee getallen afhankelijk van de grootte van het getal zelf (gedefinieerd als `$\\text{ulp}(p) = 2^{\\lfloor\\log_{2}p\\rfloor-10}$`). Zodra een som groter wordt dan 2048, is de kleinst mogelijke stap groter dan 1. Tel je er vervolgens een reeks enen bij op, dan rondt het systeem dit af naar beneden en vallen de enen in het niet. \n\nOmdat de ANE een 'wide accumulator' gebruikt, kun je probleemloos tot zestienduizend enen exact bij elkaar optellen zonder precisieverlies. Hierdoor blijven convoluties accuraat, terwijl het stroomverbruik extreem laag blijft: specifiek gemeten op de M1-chip bij een 256-kanaals 3x3 convolutie, draait dit op de ANE ongeveer 3.8 keer sneller dan op de GPU van diezelfde chip, met een factor 9 betere energie-efficiëntie."
+   "title": "Hoe de Neural Engine precisie behoudt",
+   "md": "De Apple Neural Engine (ANE) is een zogenaamde *fixed-function matrix accelerator*, bedoeld voor efficiënte forward-passes van neurale netwerken. Op de M1 levert de ANE ongeveer 12 TFLOP/s aan rekenkracht in fp16.\n\nHet mechanisme rust op de manier waarop de ANE afrondingsfouten voorkomt. Het gehele datapad (inputs, gewichten en outputs) werkt in 16-bit floating point (fp16). De interne lopende som (de *accumulator*) is echter een breder register uit de fp32-klasse.\n\n> [!note] Waarom een wide accumulator werkt\n> Bij fp16-wiskunde is de stapgrootte tussen twee getallen afhankelijk van de grootte van het getal zelf (gedefinieerd als `$\\text{ulp}(p) = 2^{\\lfloor\\log_{2}p\\rfloor-10}$`). Zodra een som groter wordt dan 2048, is de kleinst mogelijke stap groter dan 1. Tel je er vervolgens een reeks enen bij op, dan valt een toevoeging van 1 onder de drempel van een halve stap (bij round-to-nearest), waardoor de toegevoegde enen simpelweg worden genegeerd en wegvallen. \n\nOmdat de ANE een 'wide accumulator' gebruikt, kun je probleemloos zestienduizend enen (in testen 16.000) exact bij elkaar optellen zonder precisieverlies. Hierdoor blijven opstapelende berekeningen zoals convoluties accuraat, al biedt de wide accumulator geen bescherming tegen precisieverlies bij netwerken met sterke subtractieve uitdoving (cancellation), waar de fp16-afronding van de inputs aan de poort alsnog tot fouten leidt. Het stroomverbruik blijft ondertussen laag dankzij het smalle fp16-datapad en de fixed-function pipeline van de ANE: gemeten op de M1-chip bij een 256-kanaals 3x3 convolutie loopt dit op de ANE ongeveer 3,8 keer sneller dan op de GPU van diezelfde chip, met een energie-efficiëntie die een factor 9 hoger ligt."
   },
   {
-   "title": "De harde realiteit: AI-training op Apple Silicon",
-   "md": "Ondanks de sterke energie-efficiëntie bij lokale inferentie, heerst NVIDIA nog steeds in het trainen van modellen. Onderzoek naar end-to-end LLM-training toont de valkuilen van de Apple Silicon architectuur.\n\nDe primaire bottleneck bij GPU-training op Apple Silicon is de beperkte FP16-rekenkracht in de BLAS-kernels vergeleken met NVIDIA. Apple's GPU's missen gespecialiseerde hardware, zoals Tensor Cores, voor deze snelle matrixberekeningen, wat de trainingssnelheid direct beperkt. Een secundaire factor is het geheugenbeheer. Waar NVIDIA alle benodigde data in één keer in het VRAM pompt, vult het Unified Memory van Apple Silicon zich geleidelijk tijdens de GPU-training. Dit veroorzaakt systeem-overhead door een aanhoudende stroom aan **page faults** (het besturingssysteem moet de processor pauzeren om missende data op te halen).\n\nEr is echter één lichtpuntje: efficiëntie. Het energieverbruik per trainings-iteratie op Apple Silicon is vergelijkbaar met dat van een losse high-end GPU, maar zonder de 70W extra overhead die een typische pc nodig heeft voor zijn afzonderlijke CPU en systeemgeheugen."
+   "title": "De grens bij het trainen van modellen",
+   "md": "Bij het lokaal trainen van modellen kent Apple Silicon duidelijke grenzen en onverwachte sterktes. In een standaardscenario waar het AI-model in het geheugen past, presteert NVIDIA doorgaans sneller. De onderzochte end-to-end training onthulde dat tekortkomingen in de rekenkracht van BLAS-kernels de primaire oorzaak vormen van deze trainingsachterstand. Systeemfactoren zoals opstartvertragingen (kernel launch latency) en geheugenbeheer zijn hierbij secundaire factoren.\n\nBij gebruik van PyTorch met de MPS-backend vult het Unified Memory zich geleidelijk met data, wat resulteert in een stroom aan **page faults** omdat de processor voortdurend moet pauzeren om data op te halen. MLX stabiliseert het geheugengebruik en versnelt de training. Hoewel NVIDIA in de meeste scenario's met voldoende VRAM voorblijft, weet de M2 Ultra met MLX in specifieke gevallen (zoals GPT2-large pre-training zonder Hugging Face-overhead) de RTX A6000 zelfs te verslaan. In het onderzoek werd voor beide platforms standaard in FP32 getraind; daarnaast werd op NVIDIA ter vergelijking ook met mixed-precision (AMP.FP16 en AMP.BF16) getraind, een optimalisatie die PyTorch op Apple Silicon destijds nog niet ondersteunde. In geïsoleerde benchmarks met 16-bit wiskunde (FP16 BLAS) tikte het ontbreken van gespecialiseerde matrix-hardware, zoals Tensor Cores, in de GPU's van oudere M2-chips bovendien hard door. Vanaf de M5-generatie heeft Apple wel 'Neural Accelerators' in de GPU-cores toegevoegd.\n\nOndanks de vaak lagere absolute snelheid toonde de Apple GPU zich qua energieverbruik per iteratie al vergelijkbaar met de RTX 4090 en aanzienlijk efficiënter dan de RTX A6000. Die efficiëntiekloof wordt nog verder vergroot wanneer ook het stroomverbruik van de externe CPU en het systeemgeheugen op het pc-moederbord (doorgaans nog eens 70W extra) wordt meegeteld.\n\nEr ontstaat tevens een omslagpunt qua pure snelheid zodra een model te groot is voor het videogeheugen (VRAM) van een NVIDIA-GPU en ZeRO-Offload nodig is. Apple Silicon toont zich in dat scenario eveneens sneller doordat de enorme data-overhead via de trage PCIe-bus van de pc wegvalt."
   }
  ],
  "numbers": [
   {
    "value": "614 GB/s",
-   "label": "Maximale geheugenbandbreedte van de M5 Max",
+   "label": "maximale geheugenbandbreedte van de M5 Max",
    "quote": "with a theoretical maximum bandwidth of up to 460 GB/s for the 32-core GPU configuration and 614 GB/s for the 40-core GPU configuration.",
    "source": 5
   },
   {
-   "value": "46 billion",
-   "label": "Aantal transistoren op de M6 basischip",
+   "value": "46",
+   "label": "miljard transistoren op de M6 basischip",
    "quote": "It has a total of around 46 billion transistors.",
    "source": 6
   },
@@ -54,30 +55,30 @@
   },
   {
    "value": "2048",
-   "label": "Limietwaarde waarbij fp16-precisie een stapgrootte groter dan 1 krijgt",
+   "label": "limietwaarde waarbij fp16-precisie een stapgrootte groter dan 1 krijgt",
    "quote": "so once $p>2048$ the spacing exceeds $1$ and an added unit increment falls below half a step and is swallowed.",
    "source": 8
   },
   {
    "value": "3.8",
-   "label": "Snelheidswinst van ANE vs GPU op een 3x3 convolutie",
+   "label": "snelheidswinst van de ANE vergeleken met de GPU op een convolutie",
    "quote": "On a 256-channel 3x3 convolution it runs about 3.8 times faster than the same chip's GPU",
    "source": 8
   },
   {
    "value": "9",
-   "label": "Energie-efficiëntiewinst van ANE vs GPU",
+   "label": "energie-efficiëntiewinst van de ANE vergeleken met de GPU",
    "quote": "On a 256-channel 3x3 convolution it runs about 3.8 times faster than the same chip's GPU and 9 times more energy-efficient.",
    "source": 8
   },
   {
    "value": "70W",
-   "label": "Extra stroomverbruik van CPU en geheugen op een typische pc",
+   "label": "het extra stroomverbruik van een losse CPU en geheugen op een pc",
    "quote": "the Nvidia GPU platforms need additional power supply for their CPU and memory, which will usually be about 70W",
    "source": 7
   }
  ],
- "caveats": "We missen diepe, onafhankelijk geverifieerde architectonische documentatie voor de M2- en M3-generaties in de bronnen (de bronnen focussen voornamelijk op M1, M4, M5 en M6). Verder geeft Apple nauwelijks officiële details vrij over de ANE, waardoor de prestatie-analyses van de Neural Engine gebaseerd zijn op academisch reverse-engineering (paper 8) van specifiek de M1 en M5. Of de gemeten roofline ridge points direct vertalen naar de exacte specificaties van de M6 blijft speculatief. Tot slot meldt de bron dat Apple de M6 Pro en Max heeft overgeslagen om zich op de M7 te richten, maar we hebben nog geen data over de concrete invulling van deze verwachte M7.",
+ "caveats": "Hoewel de M2 diepgaand is onderzocht voor trainingsworkloads, ontbreekt in de bronnen vergelijkbare architectonische profilingdata voor de M3-generatie. Verder geeft Apple nauwelijks officiële details vrij over de ANE, waardoor de prestatie-analyses van de Neural Engine gebaseerd zijn op academisch reverse-engineering van specifiek de M1 en M5. Of de gemeten roofline ridge points direct vertalen naar de exacte specificaties van de M6 blijft een speculatieve aanname. Tot op heden meldt de bron dat Apple de M6 Pro en Max heeft overgeslagen om zich op de aankomende M7 te richten, maar de documentatie biedt nog geen inzage in de concrete invulling van deze nieuwe architectuur.",
  "glossary": [
   {
    "term": "Unified Memory Architecture (UMA)",
@@ -85,19 +86,19 @@
   },
   {
    "term": "Dynamic Caching",
-   "def": "Een hardwarefunctie (vanaf de M3 GPU) die lokaal geheugen in real-time exact naar behoefte toewijst, om onderbenutting van het geheugen te voorkomen."
+   "def": "Een hardwarefunctie die lokaal GPU-geheugen en registers in real-time exact naar behoefte toewijst aan de execution units, om ongebruikt geheugen te voorkomen."
   },
   {
    "term": "Wide Accumulator",
-   "def": "Een breed register in de Neural Engine dat een lopende som intern met hogere precisie (fp32-klasse) bijhoudt, ondanks dat het inkomende en uitgaande rekenpad op lagere precisie (fp16) draait."
+   "def": "Een breed register in de Neural Engine dat een lopende som intern met hogere precisie (fp32-klasse) bijhoudt, ondanks dat het rekenpad op 16-bit draait."
   },
   {
    "term": "Page fault",
-   "def": "Een situatie waarbij een processor data probeert aan te spreken die nog niet in het fysieke werkgeheugen geladen is, wat reken-overhead en vertraging oplevert."
+   "def": "Een situatie waarbij een processor data probeert aan te spreken die nog niet direct beschikbaar is, waardoor het besturingssysteem het proces pauzeert om data op te halen."
   },
   {
-   "term": "Roofline model",
-   "def": "Een visueel prestatiemodel dat laat zien of een berekening beperkt wordt door de maximale geheugenbandbreedte (geheugenmuur) of door de maximale rekenkracht (compute roof)."
+   "term": "ZeRO-Offload",
+   "def": "Een techniek waarbij een AI-model tijdelijk data opslaat in het tragere systeemgeheugen van een computer omdat het snelle videogeheugen op de GPU te klein is."
   }
  ],
  "quiz": [
@@ -144,13 +145,13 @@
     1,
     3
    ],
-   "explain": "De Fusion Architecture, Neural Accelerators in de GPU-cores en de bandbreedte tot 614 GB/s (Max) zijn nieuw in de M5. Hardware ray tracing werd al geïntroduceerd in de M3, en het 2nm productieproces behoort toe aan de M6."
+   "explain": "De Fusion Architecture, Neural Accelerators in de GPU-cores en de bandbreedte tot 614 GB/s (Max) zijn nieuw in de M5. Hardware ray tracing werd in eerdere generaties al geïntroduceerd (in de M5 zit de derde generatie), en het 2nm productieproces behoort toe aan de M6."
   }
  ],
  "related": [
   {
    "track": "ai",
-   "why": "Deze materie toont de exacte fysieke grenzen waarmee je rekening moet houden bij het lokaal hosten of trainen van AI-modellen, specifiek rondom hardware-geheugenlimieten."
+   "why": "Deze materie toont de exacte fysieke grenzen waarmee je rekening moet houden bij het lokaal hosten of trainen van AI-modellen."
   }
  ],
  "sources": [
@@ -158,11 +159,6 @@
    "n": 2,
    "title": "Wikipedia — Apple M1",
    "url": "https://en.wikipedia.org/wiki/Apple_M1"
-  },
-  {
-   "n": 3,
-   "title": "Wikipedia — Apple M4",
-   "url": "https://en.wikipedia.org/wiki/Apple_M4"
   },
   {
    "n": 5,
@@ -192,6 +188,7 @@
   "author": "antigravity",
   "created": "2026-09-28",
   "kind": "request",
-  "request": "rq-1790586699"
+  "request": "rq-1790586699",
+  "verified": "2026-10-03"
  }
 }
