@@ -527,12 +527,13 @@ def review(A, srcs, cfg, log=print):
     return None
 
 
-def verify(A, srcs, base, cfg, schema, item_schema, log=print, rounds=4):
+def verify(A, srcs, base, cfg, schema, item_schema, log=print, rounds=6):
     """Fact-check loop: review → repair → review … An article is returned only when no *blocking* finding (a factual error,
     a fabricated or out-of-context number/quote, an unsourced specific claim) remains; nuances are repaired but never block.
     If the check cannot run, or errors remain after the last round, nothing is returned: better no article than a wrong one."""
     author = cfg.get("AGY_MODEL_AUTHOR", "gemini-3.1-pro-high")
-    cur, last = A, []
+    cur, last, best, stall = A, [], None, 0
+    verify.last_draft = A  # the best version so far: a failed run keeps it (hidden) so the next attempt continues from there
     for rnd in range(1, rounds + 1):
         found = review(cur, srcs, cfg, log)
         if found is None:
@@ -545,7 +546,12 @@ def verify(A, srcs, base, cfg, schema, item_schema, log=print, rounds=4):
             return cur, []
         last = blocking
         log(f"    factcheck ronde {rnd}: {len(blocking)} fout(en), {len(nuances)} nuance(s): {[t[:140] for t in blocking[:2]]}")
-        if rnd == rounds:
+        if best is None or len(blocking) < best:  # keep going while the number of errors keeps falling; stop after two rounds without progress
+            best, stall = len(blocking), 0
+            verify.last_draft = cur
+        else:
+            stall += 1
+        if rnd == rounds or stall >= 2:
             break
         issues = ["[FOUT] " + t for t in blocking] + ["[nuance] " + t for t in nuances]
         fixed = None
@@ -778,9 +784,10 @@ def backfill(cfg, today, log=print, limit=2, budget_s=1800, on_done=None):
                 os.remove(path)
                 log(f"    ✗ na 3 pogingen nog niet schoon: artikel verwijderd (concept bewaard)")
             else:
-                A2 = dict(A, meta=meta)
+                draft = getattr(verify, "last_draft", None) or body  # the improved version, not the original: progress is kept
+                A2 = {"schema": "polyglot.radar/v1", **draft, "id": A["id"], "kind": A["kind"], "date": A["date"], "meta": meta}
                 json.dump(A2, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-                log(f"    ✗ nog niet schoon (poging {meta['verify_attempts']}/3); blijft verborgen")
+                log(f"    ✗ nog niet schoon (poging {meta['verify_attempts']}/3); de verbeterde versie blijft verborgen bewaard")
     return done
 
 
