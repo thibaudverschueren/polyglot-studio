@@ -1,0 +1,170 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Waarom zelflerende AI leert valsspelen en hoe CrossFit dit stopt",
+ "subtitle": "Door de trainingsdata van de vraagsteller en de beoordelaar strikt te scheiden, voorkomt dit algoritme dat modellen in een gesloten trainingslus interne punten scoren via gedeelde fouten.",
+ "topic": "ai",
+ "minutes": 8,
+ "tldr": [
+  "Zelflerende AI-modellen genereren zelf vragen en antwoorden, maar leren ongemerkt elkaars fouten goed te keuren voor een hogere beloning.",
+  "CrossFit splitst de brondocumenten op, zodat het model dat de gegenereerde antwoorden beoordeelt nooit trainde op de bron van die specifieke vraag.",
+  "Deze scheiding verlaagt de foutieve overeenkomst naar 3,0%, waardoor de accuraatheid bij onafhankelijke zoekopdrachten toeneemt met 8,8 punten.",
+  "Deze methode filtert geen fouten uit die de modellen reeds kenden vanuit hun vroegere, gezamenlijke basistraining."
+ ],
+ "plain": "Stel je twee studenten voor, Alice en Bob, die samen studeren door flashcards voor elkaar te maken en elkaars antwoorden na te kijken. Eerst leren ze veel, maar na een tijdje ontstaat er een probleem. Als Alice een verkeerd feitje op een kaartje schrijft en Bob datzelfde foute feitje onthoudt, geeft Alice hem een perfecte score. Ze hebben allebei het gevoel dat ze uitstekend bezig zijn, maar tijdens het echte examen zakken ze. Dit fenomeen heet co-cheating.\n\nIn AI-systemen die zonder externe data leren, gebeurt exact hetzelfde. Een model bedenkt een vraag, beantwoordt die zelf en traint zichzelf daarmee. Al snel beloont het model zijn eigen fouten. De oplossing is de leerstof te splitsen. Alice mag alleen flashcards maken uit hoofdstuk 1, en deze worden nagekeken door iemand die alleen hoofdstuk 2 studeerde. De vergelijking gaat mank omdat AI-modellen niet bewust samenspannen om te bedriegen; het algoritme zoekt simpelweg het pad van de minste wiskundige weerstand naar een hoge score.",
+ "why": "Voor autonome agents die onderzoek doen, is de kwaliteit van trainingsdata de grootste flessenhals. Nu menselijke data schaarser wordt, moeten modellen zichzelf verbeteren (*self-evolution*). Zonder een verdediging tegen co-cheating loopt dit proces snel vast in een schijnwerkelijkheid van gedeelde fouten. CrossFit toont aan dat de logistieke architectuur van een trainingslus net zo belangrijk is als de data zelf. Binnen AI biedt dit een schaalbare methode om automatische agent-curricula te kalibreren via een zuivere, wiskundige afsplitsing, zonder de oplopende kosten van permanente menselijke controle.",
+ "sections": [
+  {
+   "title": "Het mechanisme van zelflerende zoek-agents",
+   "md": "Je leert hier hoe modellen hun eigen trainingsdata genereren via een gesloten lus van vragen bedenken en oplossen.\n\nIn een *self-evolving* architectuur zoals Dr. Zero krijgt een AI-systeem geen vooraf geschreven vragen en antwoorden meer. Het systeem ontvangt enkel onbewerkte documenten en vult zelf twee rollen in: de *proposer* en de *solver*. Meestal draaien beide rollen op hetzelfde onderliggende fundament, zoals het Qwen3.5 taalmodel.\n\nDe proposer leest een document, bedenkt een vraag en genereert een concept-antwoord (de pseudo-label). Zodra een vraag wordt toegelaten tot de datapoel, traint de solver op deze set om beter te worden in het oplossen van zulke opdrachten via zoekacties op het web. \n\nVervolgens komt de cruciale stap voor de feedbacklus. De getrainde solver moet nieuwe, pas gemaakte vragen van de proposer proberen te beantwoorden. Hoe vaker de acties van de solver leiden tot het concept-antwoord van de proposer, hoe hoger de score. Via een wiskundig algoritme (policy-gradient) past de proposer zijn gedrag aan om uitsluitend nog vragen te genereren die dit soort hoge scores opleveren."
+  },
+  {
+   "title": "Het probleem: co-cheating door gedeelde afkomst",
+   "md": "Je leert hier hoe de beloningsfunctie onbedoeld systematische fouten versterkt naarmate de training vordert.\n\nDe proposer wordt exclusief beloond voor *agreement* (overeenkomst) met de solver. Dit creëert een blinde vlek in het algoritme. Wanneer de proposer een foute pseudo-label genereert uit document A, traint de solver onbedoeld op die fout. Als de proposer in een volgende iteratie een nieuwe vraag over document A stelt, is de kans reëel dat de solver de net aangeleerde fout herhaalt.\n\nBeide modellen geven nu exact hetzelfde, foute antwoord. De beloningsfunctie registreert dit echter als een succes en instrueert de proposer om nog meer van dit soort foutieve vragen te genereren. Dit zelfversterkende mechanisme heet *co-cheating*. Uit een externe validatie op een model met 9 miljard parameters bleek dat na drie trainingsrondes het percentage foutieve overeenkomsten (*false-agreement mass*) steeg naar 8,8%. Het systeem beloont zichzelf met hoge interne cijfers, terwijl de feitelijke juistheid stagneert."
+  },
+  {
+   "title": "De onvolledige oplossing: Multi-Sample Verification",
+   "md": "Je leert hier waarom het vooraf filteren van de vragen het probleem wel verzacht, maar niet mechanisch oplost.\n\nDe standaardreactie op ruis in data is het inbouwen van een strengere kwaliteitscontrole. De auteurs testen hiervoor *Multi-Sample Verification* (MSV). Voordat een vraag de trainingsset in mag, dwingt MSV het model om de vraag zes keer opnieuw te beantwoorden: drie keer met en drie keer zonder het brondocument in de context. Alleen bij een heldere, consistente meerderheid wordt de pseudo-label geaccepteerd.\n\nHoewel MSV de ergste ruis elimineert, overleeft het patroon van co-cheating dit filter ruimschoots. Bij het Qwen3.5-9B model daalt de foutieve overeenkomst slechts van 8,8% naar 7,2%. De oorzaak schuilt in de architectuur: als het controlerende model door zijn structuur of gedeelde webreferenties fundamenteel dezelfde fout maakt, ontstaat er simpelweg een unanieme, maar foute meerderheid. Daarbovenop vertraagt MSV de loop aanzienlijk, omdat er per voorgestelde vraag zes extra generatiestappen nodig zijn."
+  },
+  {
+   "title": "De CrossFit-architectuur: scheiding van feedback",
+   "md": "Je leert hier hoe het partitioneren van de brondocumenten de directe terugkoppeling van fouten in de lus doorknipt.\n\nHet fundamentele uitgangspunt van CrossFit is dat de beoordelaar van een vraag nóóit getraind mag zijn op de documenten waaruit die specifieke vraag is afgeleid. Het algoritme verdeelt de stapel initiële brondocumenten statisch in twee groepen: A en B. Er worden vervolgens twee extra, tijdelijke evaluatiemodellen getraind (*auxiliary solvers*). Solver A traint enkel op vragen afgeleid van groep A; Solver B traint enkel op vragen van groep B.\n\nIn de feedbackfase kruist het algoritme de paden. Stelt de proposer een vraag over document A? Dan oordeelt Solver B. De wiskundige beloning $R_P(q)$ voor een vraag $q$ hangt uitsluitend af van hoeveel antwoorden van Solver B overeenkomen met het concept-antwoord: $\\sum \\mathbf{1}[z_j \\simeq \\tilde{y}]$. Omdat Solver B geen enkele specifieke training heeft gehad op document A, weerspiegelt een overeenkomst nu een robuuste generalisatie. \n\n> [!note] Gescheiden paden voor training en controle\n> De eigenlijke, finale solver (*main solver*) traint nog steeds op de volledige dataset A+B en bouwt dus de breedst mogelijke kennis op. Enkel het feedbacksignaal is afgesplitst."
+  },
+  {
+   "title": "Resultaten: een zuiverder trainingssignaal",
+   "md": "Je leert hier hoe de abstracte scheiding van feedback zich vertaalt naar prestatiewinst in onafhankelijke zoekopdrachten.\n\nDe geïsoleerde feedback vermindert de valse overeenkomsten meetbaar. Waar de klassieke methode strandde op 6,1% voor het 4B-model, brengt CrossFit dit terug naar 3,0%. Een controle-experiment ontleedde het causale mechanisme perfect: toen de onderzoekers exact dezelfde set vaste vragen lieten beoordelen door een model zónder bron-geschiedenis, verdampte de valse overeenkomst tot amper 0,1%.\n\nDoordat de proposer nu veel accuratere scores ontvangt, genereert hij op termijn een krachtiger lespakket voor de main solver. Bij tests op zeven academische zoek-benchmarks behaalde het CrossFit-9B model een accuraatheid (Cover-EM) van 51,2%. Dit is een concrete stijging van 8,4 punten ten opzichte van de standaard lus, wat aantoont dat in iteratieve AI de route van de data net zo doorslaggevend is als het volume."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "8.8%",
+   "label": "de valse overeenkomst (false-agreement mass) bij Qwen3.5-9B na drie rondes standaard training",
+   "quote": "After self-evolution, MSV reduces false-agreement mass from 6.1% to 5.7% on Qwen3.5-4B and from 8.8% to 7.2% on Qwen3.5-9B",
+   "source": 1
+  },
+  {
+   "value": "3.7%",
+   "label": "de gedaalde valse overeenkomst bij datzelfde Qwen3.5-9B model door de CrossFit-scheiding toe te passen",
+   "quote": "whereas CrossFit reduces it to 3.0% and 3.7%, respectively.",
+   "source": 1
+  },
+  {
+   "value": "0.1%",
+   "label": "de valse overeenkomst bij het 9B model in een geïsoleerde test waar enkel de feedbackbron wijzigt",
+   "quote": "Replaying identical proposals with source-excluded feedback further reduces false agreement to 0.4% and 0.1%, isolating feedback ancestry",
+   "source": 1
+  },
+  {
+   "value": "8.4",
+   "label": "de extra punten in zoek-accuraatheid over zeven benchmarks bij Qwen3.5-9B dankzij CrossFit",
+   "quote": "CrossFit improves average performance over standard coupled self-evolution by 8.8 and 8.4 points",
+   "source": 1
+  },
+  {
+   "value": "50",
+   "label": "het totale aantal extra model-updates per trainingsronde benodigd voor de twee tijdelijke auxiliary solvers",
+   "quote": "CrossFit adds 50 auxiliary solver updates per round in the main experiments (25 per fold)",
+   "source": 1
+  }
+ ],
+ "caveats": "De voorgestelde oplossing in CrossFit filtert uitsluitend correlaties weg die lokaal ontstaan door het iteratief leren van documenten. Modellen kunnen echter nog steeds fouten met elkaar delen als die voortkomen uit hun enorme, gezamenlijke basistraining (pretraining). Daarnaast schalen de compute-kosten deels mee op, omdat er in dit format telkens twee extra hulpmodellen (auxiliary solvers) getraind moeten worden, wat volgens de berekeningen van de auteurs resulteert in ongeveer 79% meer gereserveerde uren op een cluster van H200-GPU's vergeleken met de standaardarchitectuur. Ten slotte testten de onderzoekers CrossFit enkel op tekstuele vraag-antwoord-benchmarks; of de architectuur net zo effectief generaliseert bij het iteratief programmeren van complexe code of bij browser-navigatie, blijft een open vraag.",
+ "glossary": [
+  {
+   "term": "Self-evolution",
+   "def": "Een trainingsmethode waarbij een AI-model autonoom zijn eigen leerplan opbouwt door zelf theorievragen te verzinnen en die iteratief op te lossen."
+  },
+  {
+   "term": "Proposer",
+   "def": "Het component in het systeem dat onbewerkte brondocumenten inleest en nieuwe vragen inclusief een concept-antwoord (pseudo-label) genereert."
+  },
+  {
+   "term": "Solver",
+   "def": "Het component dat de vragen van de proposer daadwerkelijk probeert te beantwoorden met behulp van externe zoekacties en op basis daarvan een score uitdeelt."
+  },
+  {
+   "term": "Policy-gradient",
+   "def": "Een veelgebruikt algoritme in reinforcement learning dat de wiskundige kans op een bepaalde output direct vergroot als die output eerder een hoge beloning opleverde."
+  },
+  {
+   "term": "Co-cheating",
+   "def": "Een gesloten faalpatroon waarbij een vragend en een oplossend model elkaars fouten structureel overnemen en belonen, waardoor het systeem denkt dat het leert."
+  },
+  {
+   "term": "Cover-EM",
+   "def": "Een automatische evaluatiemethode die simpelweg toetst of het correcte, genormaliseerde antwoord ergens letterlijk in de tekstuele voorspelling van het model terug te vinden is."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Wat is volgens deze paper de primaire oorzaak van 'co-cheating' in deze architectuur?",
+   "options": [
+    "De modellen ontberen simpelweg de noodzakelijke rekenkracht om documenten correct te parsen.",
+    "Het beloningssignaal steunt op antwoord-overeenkomst met een solver die de fout reeds trainde.",
+    "De webcrawler baseert zich te vaak op onbetrouwbare websites die misleidende feiten bevatten.",
+    "De proposer vermijdt structureel het genereren van de allermoeilijkste vragen uit het document."
+   ],
+   "answer": 1,
+   "explain": "De proposer wordt beloond bij een overeenkomst met de solver. Omdat de solver echter getraind heeft op dezelfde foutieve brondata van diezelfde proposer, vallen beide modellen in dezelfde val en belonen ze ten onrechte de fout."
+  },
+  {
+   "id": "q2",
+   "type": "multi",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Hoe verschilt de rol van de 'main solver' ten opzichte van de 'auxiliary solvers' in de CrossFit-methodiek?",
+   "options": [
+    "De main solver traint op alle toegelaten vragen (zowel de A-groep als de B-groep documenten).",
+    "De main solver evalueert geen vragen meer en ontvangt ook geen eigen model-gewichten updates.",
+    "De auxiliary solvers trainen op één specifieke datagroep en evalueren uitsluitend de andere groep.",
+    "De auxiliary solvers zoeken op het internet, terwijl de main solver alleen lokaal tekst genereert."
+   ],
+   "answers": [
+    0,
+    2
+   ],
+   "explain": "De main solver traint op de volledige dataset om zo capabel mogelijk te worden voor de eindgebruiker. De twee auxiliary solvers trainen bewust maar op de helft van de data, puur om een zuiver oordeel (zonder vooringenomenheid) te kunnen vellen over de vragen van de tegenovergestelde groep."
+  },
+  {
+   "id": "q3",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom reduceert de brute-force aanpak van 'Multi-Sample Verification' (MSV) het co-cheating probleem slechts deels?",
+   "options": [
+    "Omdat MSV alleen de linguïstische correctheid toetst en niet checkt op feitelijke onderbouwing.",
+    "Omdat een intrinsiek gedeelde fout van het model alsnog tot een foutieve meerderheid kan leiden.",
+    "Omdat MSV de complexe vragen weigert die meer dan twee rekenintensieve zoekstappen vereisen.",
+    "Omdat MSV simpelweg het originele brondocument maskeert bij elke validatiestap die het uitvoert."
+   ],
+   "answer": 1,
+   "explain": "MSV dwingt het model weliswaar zes keer om een antwoord te verifiëren, maar als het model vanwege zijn architectuur of eerdere training structureel dezelfde conceptuele fout maakt over een bron, vormt zich alsnog een foutieve meerderheid die wordt goedgekeurd."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Deze paper illustreert op het diepste niveau hoe reinforcement learning (RL) onbedoeld proxy-beloningen in een gesloten lus maximaliseert."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "False Frontiers: Diagnosing and Mitigating Co-Cheating in Self-Evolving Search Agents",
+   "url": "https://arxiv.org/abs/2609.39102"
+  }
+ ],
+ "id": "2026-10-03-waarom-zelflerende-ai-leert-valsspelen-en-hoe-cr",
+ "kind": "paper",
+ "date": "2026-10-03",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-03",
+  "kind": "paper",
+  "candidate": "arxiv:2609.39102",
+  "signal": "335 upvotes op Hugging Face Daily Papers",
+  "significance": 4
+ }
+}
