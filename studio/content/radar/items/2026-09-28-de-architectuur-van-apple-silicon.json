@@ -1,35 +1,37 @@
 {
  "schema": "polyglot.radar/v1",
- "title": "De architectuur van Apple Silicon",
+ "title": "De architectuur van Apple silicon",
  "subtitle": "Hoe Apple met unified memory, heterogene rekenkernen en de Neural Engine de fysieke limieten van chipdesign opzocht.",
  "topic": "chips",
- "minutes": 11,
+ "minutes": 8,
  "tldr": [
-  "Apple M-chips zijn System-on-a-Chips (SoC) die de CPU, GPU en gespecialiseerde accelerators combineren rondom een gedeelde geheugenpool (unified memory), waardoor data kopiëren overbodig wordt.",
-  "De processor verdeelt werk over snelle, zware prestatiekernen (Firestorm) en uiterst zuinige efficiëntiekernen (Icestorm) die slechts een tiende van het vermogen vragen.",
-  "De Neural Engine haalt zijn extreme efficiëntie uit een datapad op maat voor matrixvermenigvuldigingen, waarbij afrondingsfouten tijdens de accumulatie sterk worden beperkt door een verborgen, brede accumulator te gebruiken."
+  "Traditionele computers verspillen energie door berekeningen en geheugen fysiek te scheiden.",
+  "Apple integreert CPU, GPU en Neural Engine op één chip rondom een gedeelde geheugenpool.",
+  "Door een gespecialiseerd fixed-function fp16-datapad is de Neural Engine bij specifieke taken (zoals 3x3-convoluties) 9 keer energiezuiniger dan de GPU.",
+  "Complexe rekenstappen en vertakkingen kunnen echter niet op deze gespecialiseerde architectuur draaien."
  ],
- "why": "Voor een handelsingenieur is de overstap van Apple naar eigen chips de perfecte illustratie van verticale integratie en economische schaalbaarheid. Waar de rest van de markt leunde op universele componenten, ontwierp Apple hardware puur afgestemd op hun eigen software-ecosysteem. Als je bezig bent met machine learning-projecten, legt dit artikel precies uit waarom perceptie- en computervisiemodellen razendsnel lokaal draaien, waarom grote taalmodellen juist zwaar leunen op de GPU in combinatie met unified memory, en hoe fysieke eigenschappen (zoals stroomweerstand en afrondingsfouten in wiskundige berekeningen) ingenieuze architectuurkeuzes vereisen.",
+ "plain": "Stel je voor dat je een huis bouwt. In een klassieke computer staan de werkplaats (processor) en het magazijn (geheugen) ver uit elkaar. Telkens als de bouwvakkers materiaal nodig hebben, moeten ze rijden. Dat kost brandstof en tijd.\n\nApple's ontwerp plaatst het magazijn in het midden van de werkplaats. Iedereen — de timmerman (CPU), de schilder (GPU) en de metselaar (Neural Engine) — kan direct bij de materialen.\n\nDe Neural Engine werkt als een robotmetselaar. Hij kan maar één ding: stenen in een muur metselen (matrixberekeningen). Doordat hij geen complexe taken uitvoert, werkt hij sneller en zuiniger dan de algemene timmerman.\n\nDeze vergelijking stopt bij de opslag: de chip deelt geen fysieke planken, maar de diverse rekeneenheden delen via eigen adresvertalers direct dezelfde transistoren van het werkgeheugen, waardoor data niet heen en weer hoeft te worden gereden.",
+ "why": "De overstap naar eigen chips toont de waarde van verticale integratie en economische schaalbaarheid. Waar de rest van de markt leunde op universele componenten, ontwierp Apple hardware puur afgestemd op hun eigen software-ecosysteem. In AI-vakken of bij het ontwerpen van n8n-workflows legt dit artikel precies uit waarom perceptiemodellen lokaal efficiënt draaien, waarom grote taalmodellen zwaar leunen op de GPU in combinatie met unified memory, en hoe fysieke eigenschappen zoals lijncapaciteit op frequenties of afrondingsfouten in wiskundige berekeningen specifieke architectuurkeuzes vereisen.",
  "sections": [
   {
    "title": "Van losse componenten naar een System-on-a-Chip (SoC)",
-   "md": "In traditionele computersystemen bestaan de centrale processor (CPU), grafische kaart (GPU) en het geheugen (RAM) uit fysiek gescheiden componenten op een moederbord. Deze architectuur introduceert echter een bottleneck. Elke keer als de GPU iets moet berekenen op basis van data uit de CPU, moet die data via draden over het moederbord worden gekopieerd. Binnen een computer kost datatransport over koperbanen veel elektrische stroom, wegens elektrische weerstand ($P=I^2R$, oftewel het vermogensverlies is de stroom in het kwadraat maal de weerstand).\n\nApple M-chips hanteren daarom een *System-on-a-Chip* (SoC) benadering, vaak verpakt als een *System-in-a-Package*. Hierbij zitten alle belangrijke componenten op één microchip of extreem dicht bij elkaar in één behuizing. \n\n> [!note] Analogie: De vergadertafel\n> Traditionele ontwerpen werken als werknemers in aparte kantoren. Als afdeling A (de CPU) data heeft voor afdeling B (de GPU), kopiëren ze het dossier en sturen ze het via interne post (de systeembus). In een SoC met *unified memory* zitten alle afdelingen aan één grote vergadertafel. De CPU legt een document op tafel en de GPU kan het direct lezen. Er wordt niets gekopieerd.\n\nDit *unified memory* gebruikt bij de M1 snelle LPDDR4X SDRAM-chips met een brede databus (128-bit) om een geheugenbandbreedte van 68,25 GB/s te bereiken. Voor zwaardere chips zoals de M1 Pro en M1 Max is dit opgeschaald naar LPDDR5-geheugen met een bredere bus, waardoor bandbreedtes tot 400 GB/s mogelijk worden."
+   "md": "In traditionele computersystemen bestaan de centrale processor (CPU), grafische kaart (GPU) en het geheugen (RAM) uit fysiek gescheiden componenten op een moederbord. Deze architectuur introduceert echter een bottleneck. Elke keer als de GPU iets moet berekenen op basis van data uit de CPU, moet die data via koperbanen over het moederbord worden gekopieerd. Binnen een computer kost dit datatransport veel energie. Dit komt door de lijncapaciteit van de sporen: deze koperbaantjes moeten op hoge frequentie voortdurend worden opgeladen en ontladen ($P=CV^2f$).\n\nApple M-chips hanteren daarom een *System-on-a-Chip* (SoC) benadering, vaak verpakt als een *System-in-a-Package*. Hierbij zitten de componenten op één microchip of dicht bij elkaar in één behuizing.\n\n> [!note] Analogie: De vergadertafel\n> Traditionele ontwerpen werken als werknemers in aparte kantoren. Als afdeling A (de CPU) data heeft voor afdeling B (de GPU), kopiëren ze het dossier en sturen ze het via interne post (de systeembus). In een SoC met *unified memory* zitten alle afdelingen aan één grote vergadertafel. De CPU legt een document op tafel en de GPU kan het direct lezen.\n\nDit *unified memory* gebruikt bij de M1 snelle LPDDR4X SDRAM-chips met een brede databus (128-bit) om een theoretische geheugenbandbreedte van 68,25 GB/s te bereiken. Voor zwaardere chips zoals de M1 Pro en M1 Max is dit opgeschaald naar LPDDR5-geheugen, waardoor bandbreedtes tot 400 GB/s mogelijk worden."
   },
   {
-   "title": "Heterogene rekenkracht: Prestatie vs. Efficiëntie",
-   "md": "Een andere pijler van het ontwerp is een *heterogene CPU-topologie*, gebaseerd op ARM's big.LITTLE-concept. In plaats van een reeks identieke kernen in de CPU, bevat de chip twee totaal verschillende soorten kernen die wel dezelfde instructieset (ISA) begrijpen.\n\nDe M1 heeft vier zware prestatiekernen (P-kernen, genaamd *Firestorm*) en vier zuinige efficiëntiekernen (E-kernen, genaamd *Icestorm*).\n*   **De P-kernen** zijn ontworpen voor absolute snelheid. Ze bevatten ongewoon grote caches (zoals 192 KB L1-instructiecache) om zo min mogelijk op het tragere hoofdgeheugen te hoeven wachten. Ze draaien op een hoge klokfrequentie en verbruiken veel stroom.\n*   **De E-kernen** zijn klein, hebben kleinere caches (128 KB instructie, 64 KB data) en draaien op een lagere frequentie.\n\nHet besturingssysteem verdeelt taken intelligent. Achtergrondprocessen, zoals het ophalen van e-mails of het indexeren van bestanden, worden stilletjes door de E-kernen afgehandeld op slechts een fractie van het stroomverbruik, terwijl de zware Firestorm-kernen uitgeschakeld blijven totdat je bijvoorbeeld code compileert of een game opstart."
+   "title": "Heterogene rekenkracht: prestatie vs. efficiëntie",
+   "md": "Een andere pijler van het ontwerp is een *heterogene CPU-topologie*, gebaseerd op ARM's big.LITTLE-concept. In plaats van een reeks identieke kernen in de CPU, bevat de chip twee totaal verschillende soorten kernen die wel dezelfde instructieset (ISA) begrijpen.\n\nDe M1 heeft vier grote prestatiekernen (P-kernen, genaamd *Firestorm*) en vier zuinige efficiëntiekernen (E-kernen, genaamd *Icestorm*).\n*   **De P-kernen** zijn ontworpen voor snelheid. Ze bevatten ongewoon grote caches (zoals 192 KB L1-instructiecache) om zo min mogelijk op het tragere hoofdgeheugen te hoeven wachten. Ze draaien op een hoge klokfrequentie en verbruiken meer stroom.\n*   **De E-kernen** zijn klein, hebben kleinere caches (128 KB instructie, 64 KB data) en draaien op een lagere frequentie.\n\nHet besturingssysteem verdeelt taken intelligent. Achtergrondprocessen, zoals het ophalen van e-mails of het indexeren van bestanden, worden door de E-kernen afgehandeld op slechts een fractie van het stroomverbruik, terwijl de Firestorm-kernen uitgeschakeld blijven totdat je bijvoorbeeld code compileert of een zwaar programma opstart."
   },
   {
    "title": "De Apple Neural Engine (ANE) onder de motorkap",
-   "md": "Waar de CPU een algemene processor is, is de Apple Neural Engine (ANE) een zogenaamde *fixed-function matrix accelerator*. Hij is uitsluitend ontworpen voor één taak: het extreem snel en zuinig uitvoeren van wiskundige matrixberekeningen die cruciaal zijn voor neurale netwerken.\n\n> [!rule] Harde limieten: Het roofline-model\n> De prestaties van de ANE op de M1 worden fysiek begrensd door twee daken (rooflines): de rekenkracht van maximaal $\\approx 12$ fp16 TFLOP/s, en de snelheid waarmee data kan worden aangevoerd (de geheugenbandbreedte) van $\\approx 85$ GB/s. Als een taak meer data vraagt dan het geheugen kan leveren (bandwidth-bound), moet de ANE wachten.\n\nDoordat de ANE geen complexe logica (zoals *if/else* statements of datagedreven vertakkingen) ondersteunt, bestaat zijn architectuur bijna geheel uit reken-eenheden (ALU's) in plaats van stuurlogica. De ANE werkt via een *walked graph*: het doorloopt blindelings een vooraf vastgestelde graaf van bewerkingen. Daardoor gaat bijna alle energie naar daadwerkelijk rekenen."
+   "md": "Waar de CPU een algemene processor is, is de Apple Neural Engine (ANE) een zogenaamde *fixed-function matrix accelerator*. Hij is ontworpen voor één specifieke taak: het uitvoeren van wiskundige matrixberekeningen die de basis vormen van neurale netwerken.\n\n> [!rule] Harde limieten: het roofline-model\n> De prestaties van de ANE op de M1 worden fysiek begrensd door twee daken (rooflines). Het eerste is de rekenkracht van $\\approx 12$ fp16 TFLOP/s. Het tweede is de empirische DRAM-doorvoer-roofline van $\\approx 85$ GB/s uit het prestatiemodel voor de ANE, afgezet tegen de theoretische specificatie van 68,25 GB/s voor de 128-bits geheugenbus van de M1. Vraagt een taak meer data dan het geheugen kan leveren (bandwidth-bound), dan moet de ANE wachten.\n\nDoordat de ANE geen complexe logica zoals datagedreven vertakkingen ondersteunt, bestaat zijn architectuur nagenoeg geheel uit een *multiply array* (matrix-vermenigvuldigers) in plaats van stuurlogica. De ANE werkt via een *walked graph*: een controle-eenheid doorloopt een vooraf vastgestelde graaf van bewerkingen. Daardoor stroomt de meeste energie naar het daadwerkelijk rekenen."
   },
   {
    "title": "Het datapad en de brede accumulator",
-   "md": "Machine learning werkt vaak met getallen met 16-bits precisie (fp16). Het hele datapad van de ANE is fp16: de input is fp16, de gewichten van het netwerk zijn fp16 en de output is fp16. Dit minimaliseert het aantal bits dat fysiek verplaatst moet worden, wat enorm veel energie bespaart vergeleken met 32-bits (fp32) of vector-units in een standaard GPU.\n\nEr is echter een wiskundig probleem met fp16. Als je duizenden kleine getallen bij een groot getal optelt, stopt de optelling op een gegeven moment omdat de 'stappen' tussen de getallen in fp16 te groot worden. (Stel je voor dat je millimeters optelt op een meetlat die alleen streepjes per centimeter heeft).\n\nOm dit te voorkomen gebruikt de ANE intern een **wide accumulator** (een brede opteller) van fp32-klasse. \n1. Getallen komen binnen in 'tiles' van 4 en worden afgerond op fp16.\n2. Ze worden vermenigvuldigd in fp16.\n3. **Cruciaal:** De tussenstand (lopende som) wordt in een zeer brede buffer bewaard die niet lijdt onder de fp16-stappen.\n4. Alleen het eindresultaat wordt aan de uitgang weer afgerond op fp16.\n\nHierdoor levert de ANE vrijwel exacte resultaten voor diepe sommaties (zoals bij beeld- en audioherkenning), terwijl hij de efficiëntie van een smal fp16-datapad behoudt. Kanttekening: afronding in de input-tiles en sterke annulatie (*heavy cancellation*, zoals bij transformer-decoders) kunnen alsnog tot enig precisieverlies leiden."
+   "md": "Machine learning werkt vaak met getallen met 16-bits precisie (fp16). Het datapad van de ANE is fp16: de input is fp16, de gewichten van het netwerk zijn fp16 en de output is fp16. Dit minimaliseert het aantal bits dat fysiek verplaatst moet worden, wat energie bespaart vergeleken met vector-units in een standaard GPU.\n\nEr is echter een wiskundig probleem met fp16. Als je duizenden kleine getallen bij een groot getal optelt, stopt de optelling op een gegeven moment omdat de 'stappen' tussen de getallen in fp16 te groot worden.\n\nOm dit te voorkomen gebruikt de ANE intern een **wide accumulator** van fp32-klasse. Het proces werkt als volgt:\n1. De invoer en de gewichten worden eerst vermenigvuldigd direct in fp16.\n2. Daarna begint de eerste optelfase (reductie). Hierbij worden vier rekenlanes gegroepeerd in *tiles van 4*, waarbij een afronding naar fp16 plaatsvindt.\n3. Vervolgens stroomt het resultaat naar de brede accumulator, die de lopende som bewaart zonder het typische verdere fp16-afrondingsverlies.\n4. Ten slotte wordt het eindresultaat aan de uitgang weer afgerond naar fp16.\n\nDoor deze architectuur kan de ANE diepe optellingen exact bijhouden. Toch treedt er binnen de initiële 4-lane tiles nog afronding op: wanneer een invoerwaarde binnen zo'n tile 4096 of groter is, verdwijnt een optelling van 1 in diezelfde tile omdat de fp16-stapgrootte daar 4 bedraagt (waardoor 1 onder de afrondingsdrempel van 2 valt)."
   },
   {
-   "title": "Schaalbaarheid: Binning en UltraFusion",
-   "md": "Om een complete serie chips te maken (van MacBooks tot Mac Studios) gebruikt Apple twee strategieën om ontwerpkosten en fabricageverlies (yield) te optimaliseren.\n\nTen eerste **chip binning**. Het komt vaak voor dat in de TSMC-fabriek een minuscuul stofje een klein deel van de chip (bijvoorbeeld één GPU-kern) beschadigt. In plaats van de chip weg te gooien, schakelt Apple de defecte kern op hardwareniveau uit. De chip wordt dan verkocht als een goedkoper binned model, wat verklaart waarom instap-MacBooks soms 7 GPU-kernen hebben in plaats van 8.\n\nVoor de allerzwaarste workstations (zoals de M1 Ultra) bedacht Apple **UltraFusion**. Fysiek is het heel moeilijk om de omvang van een chip (de *die size*) onbeperkt te vergroten zonder exponentieel meer printfouten te krijgen. Daarom bestaat de M1 Ultra uit twee losse M1 Max-chips. Deze zijn echter niet met kabels verbonden, maar met een silicium interposer binnen de chipbehuizing (package) die data met extreem hoge bandbreedte doorgeeft. Voor het besturingssysteem lijken de twee fysieke chips daardoor precies één grote processor, met dubbel zoveel kernen en dubbel zoveel geheugen."
+   "title": "Schaalbaarheid: binning en UltraFusion",
+   "md": "Om een complete serie chips te maken gebruikt Apple twee strategieën om ontwerpkosten en fabricageverlies (yield) te optimaliseren.\n\nTen eerste **chip binning**. Het komt voor dat in de TSMC-fabriek een minuscuul stofje een klein deel van de chip (zoals één GPU-kern) beschadigt. In plaats van de chip af te keuren, schakelt Apple de defecte kern op hardwareniveau uit. De chip wordt dan verkocht als een binned model, wat verklaart waarom instap-MacBooks soms 7 GPU-kernen hebben in plaats van 8.\n\nVoor de zwaardere workstations, zoals de M1 Ultra, past Apple een koppeling toe om de fysieke limieten van de omvang van een chip te omzeilen. De M1 Ultra bestaat feitelijk uit twee losse M1 Max-chips. Deze worden onderling verbonden met een zogeheten *UltraFusion-interconnect* binnen de chipbehuizing (package) die data met hoge bandbreedte doorgeeft. Voor het besturingssysteem opereren deze twee fysieke eenheden daardoor precies als één processor, met een verdubbeling van de specificaties."
   }
  ],
  "numbers": [
@@ -41,7 +43,7 @@
   },
   {
    "value": "one-tenth",
-   "label": "relatief stroomverbruik van de E-kernen",
+   "label": "relatief stroomverbruik van de E-kernen vergeleken met P-kernen",
    "quote": "Apple claims the energy-efficient cores use one-tenth the power of the high-performance ones.",
    "source": 2
   },
@@ -53,7 +55,7 @@
   },
   {
    "value": "9 times",
-   "label": "energie-efficiëntievoorsprong van ANE op GPU bij een 3x3-convolutie (256 kanalen)",
+   "label": "energie-efficiëntievoorsprong van ANE op GPU bij een 3x3-convolutie",
    "quote": "A 3x3 convolution at 256 channels runs about 3.8 times faster than the same work on the GPU and about 9 times more energy efficient",
    "source": 5
   },
@@ -70,7 +72,7 @@
    "source": 2
   }
  ],
- "caveats": "Hoewel de M-chips op hardwareniveau zeer efficiënt ontworpen zijn, wordt het gebruik van gespecialiseerde kernen zoals de Neural Engine sterk bewaakt. Apple dwingt ontwikkelaars om via hun eigen 'Core ML'-framework te werken, waarbij Apple's ondoorzichtige software (de placement planner) zélf beslist of een model op de CPU, GPU of ANE draait. Het is als ontwikkelaar mogelijk om de ANE via ongedocumenteerde kanalen direct aan te spreken, maar dit is fragiel en wordt niet officieel ondersteund (het wijzigt soms bij macOS-updates). Daarnaast adverteert Apple dat de ANE bepaalde operaties ondersteunt (zoals driedimensionale convoluties), maar in de praktijk wijst analyse uit dat hun eigen compilers deze operaties simpelweg niet op de ANE kunnen uitvoeren en ze geruisloos verplaatsen.",
+ "caveats": "Hoewel de M-chips op hardwareniveau efficiënt ontworpen zijn, is het gebruik van gespecialiseerde kernen zoals de Neural Engine afgeschermd. Ontwikkelaars gebruiken doorgaans het 'Core ML'-framework, waarbij een ondoorzichtige *placement planner* beslist of een model op de CPU, GPU of ANE draait. Het is mogelijk om de ANE direct aan te spreken, maar deze route is fragiel en niet officieel ondersteund. Daarbij adverteert Apple dat de ANE bepaalde bewerkingen ondersteunt, zoals driedimensionale convoluties. In werkelijkheid kan de ANE-compiler deze operaties niet omzetten (loweren) naar de hardware, waarna de placement planner van Core ML ze geruisloos toewijst aan de CPU of GPU.",
  "glossary": [
   {
    "term": "System-on-a-Chip (SoC)",
@@ -82,11 +84,11 @@
   },
   {
    "term": "big.LITTLE",
-   "def": "Een architectuurconcept van ARM waarbij een chip zowel krachtige (zware) als uiterst zuinige (lichte) rekenkernen met dezelfde instructieset bezit."
+   "def": "Een architectuurconcept van ARM waarbij een chip zowel krachtige (zware) als zuinige (lichte) rekenkernen met dezelfde instructieset bezit."
   },
   {
    "term": "Chip binning",
-   "def": "Het productieproces waarbij chips met defecte kernen deels worden uitgeschakeld en voor een lagere prijs (als een iets zwakkere chip) worden verkocht om productieverlies te voorkomen."
+   "def": "Het productieproces waarbij chips met defecte kernen deels worden uitgeschakeld en voor een lagere prijs worden verkocht om productieverlies te voorkomen."
   },
   {
    "term": "fp16",
@@ -99,7 +101,7 @@
    "type": "mcq",
    "skill": "begrip",
    "level": 2,
-   "prompt": "Waarom lijdt de Apple Neural Engine (ANE) bij de optelling van duizenden kleine waarden niet aan afrondingsfouten die normaal wel optreden bij het 16-bits (fp16) formaat?",
+   "prompt": "Waarom lijdt de Apple Neural Engine (ANE) bij de optelling van duizenden kleine waarden na de eerste reductiefase niet meer aan afrondingsfouten die normaal wel optreden bij het 16-bits (fp16) formaat?",
    "options": [
     "Omdat de chip bij zware berekeningen automatisch overschakelt naar de zware Firestorm-kernen van de CPU.",
     "Omdat de lopende tussenstanden worden opgeslagen in een veel bredere interne accumulator van fp32-klasse.",
@@ -107,7 +109,7 @@
     "Omdat alle wegingen in AI-modellen van tevoren worden samengeperst (compressed) naar gehele getallen (integers)."
    ],
    "answer": 1,
-   "explain": "De ingang en de uitgang van het datapad zijn weliswaar fp16, maar de daadwerkelijke lopende som (waarbij veel kleine getallen bij elkaar optellen) wordt vastgehouden in een 'wide accumulator' met fp32-capaciteit. Hierdoor verdwijnen kleine optellingen niet door afronding."
+   "explain": "De ingang en de uitgang van het datapad zijn weliswaar fp16, maar de daadwerkelijke lopende som (waarbij veel kleine getallen bij elkaar optellen na de 4-lane tiles) wordt vastgehouden in een 'wide accumulator' met fp32-capaciteit. Hierdoor verdwijnen kleine optellingen in die fase niet meer door afronding."
   },
   {
    "id": "q2",
@@ -116,29 +118,29 @@
    "level": 2,
    "prompt": "Hoe verschilt 'unified memory' fundamenteel van klassieke architecturen bij het uitvoeren van een taak op de GPU?",
    "options": [
-    "In plaats van data van het systeemgeheugen fysiek over het moederbord naar videogeheugen te kopiëren, leest de GPU direct in dezelfde fysieke geheugenpool als de CPU.",
+    "In plaats van data van het systeemgeheugen over het moederbord naar videogeheugen te kopiëren, leest de GPU direct in dezelfde fysieke geheugenpool.",
     "Unified memory vereist dat data wordt gecomprimeerd met een hardwarematige media-engine, voordat de GPU het mag inlezen.",
     "Klassieke geheugenarchitecturen slaan programma's op een harde schijf op, terwijl unified memory programma's altijd permanent op de SoC opslaat.",
     "De CPU hoeft bij unified memory de GPU niet meer aan te sturen; de GPU neemt zelf het besturingssysteem over."
    ],
    "answer": 0,
-   "explain": "Bij unified memory zit het RAM in dezelfde verpakking (System-in-a-Package) en delen de CPU, GPU en ANE exact dezelfde geheugenadressen. Data hoeft dus nooit onnodig via stroomverslindende interne bussen gekopieerd te worden."
+   "explain": "Bij unified memory hebben de CPU, GPU en ANE via een eigen adresvertaler (ATU) direct toegang tot dezelfde fysieke geheugenpool (DRAM). Data hoeft dus niet eerst te worden gekopieerd, in tegenstelling tot traditionele architecturen."
   },
   {
    "id": "q3",
    "type": "numeric",
    "skill": "begrip",
    "level": 3,
-   "prompt": "Op de M1-chip haalt de Neural Engine een uiterst hoge rekenefficiëntie ten opzichte van de interne GPU. Hoeveel keer energie-efficiënter is de ANE dan de GPU bij het uitvoeren van een 3x3 convolutie (met 256 kanalen)?",
+   "prompt": "Op de M1-chip haalt de Neural Engine een hoge rekenefficiëntie ten opzichte van de interne GPU. Hoeveel keer energie-efficiënter is de ANE dan de GPU bij het uitvoeren van een 3x3 convolutie (met 256 kanalen)?",
    "value": 9,
    "tolerance": 0.0,
-   "explain": "De vaste opbouw (fixed-function) en het smalle datapad van de ANE zorgen ervoor dat dit soort specifieke matrixbewerkingen veel zuiniger worden uitgevoerd, met een efficiëntievoorsprong van een factor 9."
+   "explain": "De vaste opbouw (fixed-function) en het smalle datapad van de ANE zorgen ervoor dat dit soort specifieke convolutiebewerkingen zuiniger worden uitgevoerd, met een efficiëntievoorsprong van een factor 9."
   }
  ],
  "related": [
   {
    "track": "ai",
-   "why": "Deze chiparchitectuur dicteert exact welke soort AI-modellen razendsnel lokaal kunnen draaien en welke stuklopen op afrondingsfouten of geheugenlimieten."
+   "why": "Deze chiparchitectuur dicteert exact welke soort AI-modellen efficiënt lokaal kunnen draaien en welke stuklopen op afrondingsfouten of geheugenlimieten."
   }
  ],
  "sources": [
@@ -170,6 +172,7 @@
   "author": "antigravity",
   "created": "2026-09-28",
   "kind": "request",
-  "request": "rq-seed-m-series"
+  "request": "rq-seed-m-series",
+  "verified": "2026-10-03"
  }
 }
