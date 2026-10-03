@@ -537,15 +537,17 @@ def verify(A, srcs, base, cfg, schema, item_schema, log=print, rounds=4):
         found = review(cur, srcs, cfg, log)
         if found is None:
             return None, [CHECK_FAILED]
-        blocking = [t for b, t in found if b]
+        errs, warns = validate_article(cur, srcs, item_schema, schema)  # current format rules: ‘In gewone woorden’, quotes in the sources, lengths
+        blocking = [t for b, t in found if b] + [f"(opmaak) {e}" for e in errs]
+        nuances = [t for b, t in found if not b] + [f"(stijl) {w}" for w in warns]
         if not blocking:
-            log(f"    ✓ factcheck{'' if rnd == 1 else f' (ronde {rnd})'}: geen fouten" + (f" ({len(found)} nuance(s) niet-blokkerend)" if found else ""))
+            log(f"    ✓ factcheck{'' if rnd == 1 else f' (ronde {rnd})'}: geen fouten" + (f" ({len(nuances)} nuance(s) niet-blokkerend)" if nuances else ""))
             return cur, []
         last = blocking
-        log(f"    factcheck ronde {rnd}: {len(blocking)} fout(en), {len(found) - len(blocking)} nuance(s): {[t[:140] for t in blocking[:2]]}")
+        log(f"    factcheck ronde {rnd}: {len(blocking)} fout(en), {len(nuances)} nuance(s): {[t[:140] for t in blocking[:2]]}")
         if rnd == rounds:
             break
-        issues = [("[FOUT] " if b else "[nuance] ") + t for b, t in found]
+        issues = ["[FOUT] " + t for t in blocking] + ["[nuance] " + t for t in nuances]
         fixed = None
         for attempt in (1, 2):
             out = ag.run_agy(_repair(base, issues, cur, "Een factchecker legde je artikel naast de bronnen en vond deze punten ([FOUT] moet hersteld; [nuance] verbeter je waar het kan)"), cfg, model=author, log=log)
