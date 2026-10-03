@@ -143,6 +143,7 @@
   "kind": "paper",
   "candidate": "arxiv:2609.26333",
   "signal": "71 upvotes op Hugging Face Daily Papers",
-  "significance": 4
+  "significance": 4,
+  "verify_attempts": 1
  }
 }
