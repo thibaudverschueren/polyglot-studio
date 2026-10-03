@@ -501,9 +501,12 @@ def _repair(base, problems, A, intro):
             + f"\n\nVorige versie:\n```json\n{json.dumps(A, ensure_ascii=False)}\n```\n\nLever het **volledige** gecorrigeerde artikel; pas alleen aan wat hierboven staat en behoud al het overige.")
 
 
+CHECK_FAILED = "de factcheck kon niet uitgevoerd worden"  # Antigravity itself failed: says nothing about the article
+
+
 def review(A, srcs, cfg, log=print):
     """Second opinion: a fact-checker compares the article (incl. quiz) with its sources.
-    Returns a list of findings (empty = nothing found), or None when the check itself failed."""
+    Returns [(blocking, text), …] (empty = nothing found), or None when the check itself failed."""
     prompt = (ag.read(os.path.join(PROMPTS, "RADAR_REVIEW.md")) + "\n\n---\n\n## Artikel\n```json\n"
               + json.dumps({k: v for k, v in A.items() if k not in ("schema", "id", "kind", "date", "meta")}, ensure_ascii=False) + "\n```\n\n## Bronnen\n"
               + "\n\n".join(f"### [{x['n']}] {x['title']}\nURL: {x['url']}\n<<<\n{x['text']}\n>>>" for x in srcs))
@@ -512,32 +515,40 @@ def review(A, srcs, cfg, log=print):
         try:
             issues = ag.extract_json(out).get("issues")
             if isinstance(issues, list):
-                return [f"{i.get('where', '?')}: {i.get('problem', '')} → {i.get('fix', '')}" for i in issues if isinstance(i, dict) and i.get("problem")][:8]
+                res = []
+                for i in issues:
+                    if isinstance(i, dict) and i.get("problem"):
+                        blocking = str(i.get("severity", "fout")).lower().startswith("fout")  # unknown severity counts as blocking
+                        res.append((blocking, f"{i.get('where', '?')}: {i.get('problem', '')} → {i.get('fix', '')}"))
+                return sorted(res, key=lambda x: not x[0])[:8]
         except Exception:
             pass
         log(f"    ⚠ factcheck gaf geen bruikbaar antwoord (poging {attempt})")
     return None
 
 
-def verify(A, srcs, base, cfg, schema, item_schema, log=print, rounds=3):
-    """Fact-check loop: review → repair → review … The article is returned only when a review finds nothing;
-    otherwise (findings remain, or the check cannot run) it is NOT returned: better no article than a wrong one."""
+def verify(A, srcs, base, cfg, schema, item_schema, log=print, rounds=4):
+    """Fact-check loop: review → repair → review … An article is returned only when no *blocking* finding (a factual error,
+    a fabricated or out-of-context number/quote, an unsourced specific claim) remains; nuances are repaired but never block.
+    If the check cannot run, or errors remain after the last round, nothing is returned: better no article than a wrong one."""
     author = cfg.get("AGY_MODEL_AUTHOR", "gemini-3.1-pro-high")
     cur, last = A, []
     for rnd in range(1, rounds + 1):
-        issues = review(cur, srcs, cfg, log)
-        if issues is None:
-            return None, ["de factcheck kon niet uitgevoerd worden"]
-        if not issues:
-            log(f"    ✓ factcheck{'' if rnd == 1 else f' (ronde {rnd})'}: niets wezenlijks")
+        found = review(cur, srcs, cfg, log)
+        if found is None:
+            return None, [CHECK_FAILED]
+        blocking = [t for b, t in found if b]
+        if not blocking:
+            log(f"    ✓ factcheck{'' if rnd == 1 else f' (ronde {rnd})'}: geen fouten" + (f" ({len(found)} nuance(s) niet-blokkerend)" if found else ""))
             return cur, []
-        last = issues
-        log(f"    factcheck ronde {rnd}: {len(issues)} punt(en): {[i[:140] for i in issues[:2]]}")
+        last = blocking
+        log(f"    factcheck ronde {rnd}: {len(blocking)} fout(en), {len(found) - len(blocking)} nuance(s): {[t[:140] for t in blocking[:2]]}")
         if rnd == rounds:
             break
+        issues = [("[FOUT] " if b else "[nuance] ") + t for b, t in found]
         fixed = None
         for attempt in (1, 2):
-            out = ag.run_agy(_repair(base, issues, cur, "Een factchecker legde je artikel naast de bronnen en vond deze punten"), cfg, model=author, log=log)
+            out = ag.run_agy(_repair(base, issues, cur, "Een factchecker legde je artikel naast de bronnen en vond deze punten ([FOUT] moet hersteld; [nuance] verbeter je waar het kan)"), cfg, model=author, log=log)
             try:
                 B = ag._coerce(ag.extract_json(out))
                 errs, _ = validate_article(B, srcs, item_schema, schema)
@@ -547,7 +558,7 @@ def verify(A, srcs, base, cfg, schema, item_schema, log=print, rounds=3):
                 fixed = B
                 break
             log(f"    ⚠ verbeterde versie ongeldig (poging {attempt}): {errs[:2]}")
-            issues = issues + [f"(validatie van je vorige verbetering) {e}" for e in errs[:6]]
+            issues = issues + [f"[FOUT] (validatie van je vorige verbetering) {e}" for e in errs[:6]]
         if fixed is None:
             break
         cur = fixed
@@ -715,7 +726,7 @@ def _sources_for_article(A):
 def backfill(cfg, today, log=print, limit=2, budget_s=1800, on_done=None):
     """Articles that never passed the full fact-check loop stay hidden; verify (and repair) them, a few per morning.
     After 3 failed attempts an article is dropped (draft kept in ~/scripts/polyglot-data/failed)."""
-    t0, done = time.time(), []
+    t0, done, outages = time.time(), [], 0
     schema = json.load(open(os.path.join(STUDIO, "schema", "lesson.schema.json"), encoding="utf-8"))
     for A in [a for a in articles() if not (a.get("meta") or {}).get("verified")][:limit]:
         if time.time() - t0 > budget_s:
@@ -749,7 +760,14 @@ def backfill(cfg, today, log=print, limit=2, budget_s=1800, on_done=None):
             log(f"    ✓ gecontroleerd en zichtbaar: {A['id']}")
             if on_done:
                 on_done(A["id"])
+        elif issues == [CHECK_FAILED]:  # an outage of the model service says nothing about the article: no attempt counted
+            outages += 1
+            log("      factcheck viel uit (storing bij Antigravity?): geen poging geteld")
+            if outages >= 2:
+                log("    ⏸ twee storingen op rij: het herstel stopt tot de volgende run")
+                break
         else:
+            outages = 0
             meta["verify_attempts"] = int(meta.get("verify_attempts", 0)) + 1
             if meta["verify_attempts"] >= 3:
                 d = os.path.expanduser("~/scripts/polyglot-data/failed")
