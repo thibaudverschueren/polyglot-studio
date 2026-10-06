@@ -1,0 +1,165 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe Ethereum met EIP-7906 transacties achteraf controleert via native asserties",
+ "subtitle": "Door regels over de gewenste netto toestandswijzigingen direct in de transactie mee te geven en op protocolniveau te valideren, kan Ethereum onverwachte verliezen door hacks en prijsmanipulaties voorkomen.",
+ "topic": "crypto",
+ "minutes": 8,
+ "tldr": [
+  "Ethereum voert code blindelings uit, wat bij gehackte websites of prijsmanipulaties leidt tot transacties met onverwachte en schadelijke gevolgen.",
+  "EIP-7906 voegt 'native asserties' toe: logica die na de uitvoering de netto veranderingen in de state controleert.",
+  "In plaats van 36.000 dollar over te houden van een miljoenen-swap, draait de transactie terug als de eindbalans niet klopt.",
+  "Oude, onveranderlijke smart contracts kunnen niet worden aangepast om deze nieuwe controles af te dwingen op inkomende transacties."
+ ],
+ "plain": "Stel je voor dat je in een restaurant een blanco cheque tekent voor 'het gerecht van de dag', in de veronderstelling dat het een pasta is. De ober brengt echter kaviaar en vult de cheque in voor duizend euro. Dit is hoe blockchain-transacties tot nu toe werken: je ondertekent een opdracht, en pas tijdens de uitvoering wordt duidelijk wat de precieze gevolgen voor je bankrekening zijn.\n\nDe nieuwe update voegt een voorwaarde toe aan je handtekening. Je tekent nu voor 'het gerecht van de dag, op voorwaarde dat mijn eindsaldo maximaal twintig euro daalt'. Zodra de ober kaviaar brengt en duizend euro wil afschrijven, blokkeert het betaalsysteem de transactie en wordt de bestelling geannuleerd. De analogie stopt bij het feit dat het systeem de keuken wel laat koken (de code wordt uitgevoerd) en je een kleine vergoeding betaalt voor de moeite (de gas-fee), maar de dure maaltijd wordt niet afgerekend als de voorwaarde faalt.",
+ "why": "Voor wie werkt met Solidity, zal deze voorgestelde update het ontwerppatroon voor veiligheid veranderen. Waar je nu handmatig functies inbouwt die saldi voor en na een actie controleren, kun je in de toekomst bouwen op native asserties. Het netwerk doet dit niet vanzelf: protocollen moeten expliciet verifiëren dat een inkomende oproep van een frame-transactie met de juiste assertie komt. Hoewel je die verificatie moet toevoegen, hoef je zelf minder complexe logica te schrijven om gebruikers te beschermen tegen drainers. Je delegeert de controle op de eindtoestand.",
+ "sections": [
+  {
+   "title": "Het probleem: het verschil tussen intentie en uitvoering",
+   "md": "Je leert hier waarom een geldige handtekening op Ethereum niet garandeert dat de transactie de uitkomst heeft die je verwacht.\n\nWanneer je een transactie ondertekent op Ethereum, geef je toestemming voor een specifieke actie, zoals het aanroepen van een smart contract met bepaalde parameters. De Ethereum Virtual Machine (EVM) voert deze actie blindelings uit tegen de code en de staat van de blockchain op het exacte moment van uitvoering. Omdat die staat kan veranderen tussen het moment van ondertekenen en de daadwerkelijke uitvoering in een blok, is de uitkomst onzeker. Een *sandwich attack* kan de prijs in een liquiditeitspool verschuiven, of een gehackte interface kan je een andere transactie laten tekenen dan je denkt. In een opvallend incident tekende een gebruiker voor een ruil van miljoenen dollars aan cryptomunten, maar door een gebrek aan liquiditeit was de opbrengst slechts ongeveer 36.000 dollar.\n\nBestaande verdedigingslinies schieten tekort. Simulaties proberen de transactie vooraf door te rekenen, maar malware op het apparaat van de ondertekenaar kan op het laatste moment een kwaadaardige payload injecteren (zoals bij een aanval op Radiant Capital). Huidige controles in smart contracts, zoals een minimale opbrengst bij een ruil of de `checkAfterExecution`-functie van Safe, kunnen alleen specifieke, vooraf gekozen variabelen controleren. Ze zijn afhankelijk van de publieke functies van andere contracten, zoals het opvragen van een saldo via `balanceOf`. Als een contract die data niet deelt, kan een bewakingsfunctie de verandering niet valideren. Bovendien kunnen ze niet de volledige set van veranderingen in het systeem overzien, waardoor ongewenste neveneffecten onopgemerkt blijven."
+  },
+  {
+   "title": "Het concept: native asserties als vangnet",
+   "md": "Je leert hier hoe native asserties de volledige nettomutaties van een transactie achteraf inspecteren en evalueren.\n\nOm de kloof tussen intentie en uitvoering te dichten, werkt de Ethereum Foundation aan 'native transactie-asserties'. Dit mechanisme stelt de code op de blockchain in staat om, net na de uitvoering van de transactie, alle resulterende veranderingen in het systeem in één keer in te zien. Een assertie is een stukje logica met enkel leesrechten dat de begin- en eindwaarden van de transactie vergelijkt met een vooraf opgestelde regel. Voldoet de eindtoestand niet aan de regel? Dan worden de uitgevoerde acties teruggedraaid (een *revert*), terwijl de transactie zelf als mislukt geregistreerd blijft.\n\nDe regel zelf wordt toegevoegd aan de transactie en mee ondertekend met de initiële acties. Het dekt netto veranderingen aan saldi, de opslagruimte van contracten, uitgerolde code en netwerkgebeurtenissen (events). Zo kan een regel eisen dat een saldo met een exact minimumbedrag stijgt, dat er geen nieuwe goedkeuringen voor uitgaven worden gecreëerd, of dat de configuratie en beheerslogica van een account ongewijzigd blijven. Het cruciale verschil met bestaande systemen is dat deze controle op een dieper protocolniveau plaatsvindt en toegang heeft tot de ruwe mutaties, onafhankelijk van wat externe smart contracts wel of niet willen delen."
+  },
+  {
+   "title": "Het mechanisme onder de motorkap: EIP-7906 en de POST_TX frame",
+   "md": "Je leert hier hoe de nieuwe opcodes en het transactieformaat de controle in de Ethereum Virtual Machine afdwingen.\n\nEen mogelijke technische implementatie is EIP-7906, die gebruikmaakt van een nieuw type transactie: de *frame transaction* (volgens EIP-8141). Dit formaat knipt een transactie op in opeenvolgende stappen. EIP-7906 voegt daar een laatste, statische stap aan toe: het `POST_TX`-frame. De EVM aggregeert alle netto veranderingen die door de transactie zijn veroorzaakt, zoals fluctuaties in ether-saldi, nieuwe contracten en mutaties in de contractopslag (storage), voor inspectie binnen dit frame. Als een variabele tijdens de transactie vijf keer wordt aangepast maar eindigt op de startwaarde, registreert het systeem simpelweg geen verandering.\n\nOm deze data uit te lezen, introduceert de update drie nieuwe instructies voor de processor, zogenaamde *opcodes*. `TXTRACE` somt de netto veranderingen en events op. `TXDIFF` haalt gericht de start- en eindwaarde van specifieke adressen en opslaglocaties op. `EVENTDATACOPY` kopieert de inhoud van een event naar het lokale geheugen voor verdere analyse. Omdat deze opcodes uitsluitend werken in het statische `POST_TX`-frame, kunnen ze de uitkomst veilig valideren zonder zelf nieuwe veranderingen te veroorzaken. Faalt de controle, dan wordt de actie teruggedraaid. De transactie blijft echter geregistreerd als mislukt en het gebruikte rekenwerk (de gas) wordt wel in rekening gebracht bij de gasbetaler (*gas payer*). Dit voorkomt dat aanvallers het netwerk gratis kunnen bestoken met zware, falende transacties."
+  },
+  {
+   "title": "De implementatie: verantwoordelijkheden voor wallets en protocollen",
+   "md": "Je leert hier waarom deze bescherming niet automatisch werkt en actie vereist van ontwikkelaars.\n\nHoewel EIP-7906 krachtig is, dwingt het protocol het gebruik van asserties niet af voor iedere transactie. Ontwikkelaars van wallets moeten hun software zo aanpassen dat elke transactie die zij bouwen, netjes wordt ingepakt in een frame dat de gewenste assertie bevat. De regels hiervoor kunnen voortkomen uit een gesimuleerde berekening of uit een algemeen veiligheidsbeleid van de gebruiker.\n\nAan de andere kant moeten de protocollen zelf, zoals uitleenplatformen of gedecentraliseerde beurzen, hun functies bijwerken. Zij moeten code schrijven die controleert of een inkomend verzoek afkomstig is van een *frame transaction* én of deze exact de vereiste assertie bevat. Normale transacties zonder vangnet moeten zij consequent weigeren. Het gevolg hiervan is dat bestaande, onveranderlijke (immutable) contracten deze nieuwe verplichte controle niet kunnen inbouwen. De techniek biedt wel nieuwe mogelijkheden, zoals veiligere delegatie: je kunt een geautomatiseerde agent de vrijheid geven om transacties uit te voeren, zolang de native assertie garandeert dat de uitkomst van die specifieke transactie binnen jouw vooraf bepaalde grenzen blijft."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "$50.4 million",
+   "label": "de waarde van de aEthUSDT die de gebruiker in het Aave/CoW-incident wilde omwisselen",
+   "quote": "In the Aave and CoW collateral swap, a user asked to swap about $50.4 million of aEthUSDT for aEthAAVE.",
+   "source": 1
+  },
+  {
+   "value": "99.9 percent",
+   "label": "de waarschuwing voor de prijsimpact die de interface toonde voordat de gebruiker alsnog tekende",
+   "quote": "The interface displayed a 99.9 percent price impact warning and required the user to confirm that the entire value could be lost.",
+   "source": 1
+  },
+  {
+   "value": "$36,000",
+   "label": "de werkelijke waarde van de ontvangen tokens na de transactie door een gebrek aan liquiditeit",
+   "quote": "The user signed anyway and received tokens worth about $36,000.",
+   "source": 1
+  }
+ ],
+ "caveats": "EIP-7906 bevindt zich nog in de ontwerpfase en heeft momenteel de status 'Considered for Inclusion', wat betekent dat het nog niet definitief is goedgekeurd voor de volgende grote netwerkupdate. De tekst benoemt niet de precieze impact van de nieuwe opcodes op het gas-verbruik; het vereist extra rekenkracht om de netto veranderingen aan het einde van een transactie te compileren en analyseren. Omdat de implementatie afhankelijk is van aanpassingen door wallet-bouwers en protocol-ontwikkelaars, zal adoptie waarschijnlijk langzaam verlopen, en blijven gebruikers van oudere contracten onbeschermd.",
+ "glossary": [
+  {
+   "term": "Blind signing",
+   "def": "Het goedkeuren van een cryptografische transactie zonder dat de exacte gevolgen of de onderliggende code volledig inzichtelijk zijn voor de gebruiker."
+  },
+  {
+   "term": "EVM (Ethereum Virtual Machine)",
+   "def": "De softwareomgeving binnen Ethereum die smart contracts uitvoert en de toestand van het netwerk berekent."
+  },
+  {
+   "term": "Smart contract",
+   "def": "Een programma op de blockchain dat automatisch afspraken uitvoert wanneer aan vooraf bepaalde voorwaarden is voldaan."
+  },
+  {
+   "term": "Opcode",
+   "def": "Een basisinstructie die door de processor van een computer of een virtuele machine kan worden begrepen en uitgevoerd."
+  },
+  {
+   "term": "Gas",
+   "def": "De eenheid waarmee de hoeveelheid rekenkracht wordt gemeten die nodig is om een bewerking op het Ethereum-netwerk uit te voeren."
+  },
+  {
+   "term": "Sandwich attack",
+   "def": "Een vorm van marktmanipulatie waarbij een bot een eigen koop- en verkooporder vlak voor en na de transactie van een slachtoffer plaatst om te profiteren van prijsverschillen."
+  },
+  {
+   "term": "State",
+   "def": "De volledige, actuele verzameling van alle saldi, opslaggegevens en contractcodes op een specifiek moment in de blockchain."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom schieten huidige oplossingen zoals de `checkAfterExecution`-functie van Safe tekort in vergelijking met native asserties?",
+   "options": [
+    "Ze kunnen de netto veranderingen in de hele blockchain-toestand niet onafhankelijk inzien zonder dat externe contracten daar specifieke functies voor aanbieden.",
+    "Ze worden uitgevoerd voordat de daadwerkelijke transactie plaatsvindt, waardoor de staat van het netwerk tussentijds nog kan veranderen.",
+    "Ze vereisen dat de gebruiker twee keer een handtekening plaatst, wat de gebruikerservaring aanzienlijk vertraagt.",
+    "Ze draaien de transactie niet terug bij een fout, maar geven enkel een waarschuwing in de wallet."
+   ],
+   "answer": 0,
+   "explain": "Huidige contractcontroles hebben geen toegang tot de ruwe staat van veranderingen op protocolniveau en zijn afhankelijk van de leesfuncties (zoals `balanceOf`) die andere contracten expliciet beschikbaar stellen."
+  },
+  {
+   "id": "q2",
+   "type": "multi",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Welke van de volgende elementen kunnen door het POST_TX frame via de nieuwe opcodes direct worden geverifieerd? (Kies alle juiste antwoorden)",
+   "options": [
+    "De netto veranderingen van ether-saldi van gebruikers.",
+    "De broncode van de wallet-interface die de transactie heeft opgestart.",
+    "De wijzigingen in de opslaglocaties van smart contracts.",
+    "De cryptografische hashes van nieuw uitgerolde contractcodes.",
+    "Het netwerkverkeer van off-chain orakels."
+   ],
+   "answers": [
+    0,
+    2,
+    3
+   ],
+   "explain": "Het POST_TX frame inspecteert de netto veranderingen op de blockchain zelf, waaronder balansen, opslag (storage) en nieuw uitgerolde contracten en hun hashes, evenals events. Externe of off-chain data vallen hierbuiten."
+  },
+  {
+   "id": "q3",
+   "type": "order",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Zet de onderstaande stappen van een transactie met een native assertie in de juiste chronologische volgorde, volgens EIP-7906.",
+   "tiles": [
+    "De gebruiker ondertekent een verzoek dat naast de actie ook een specifieke eindregel bevat.",
+    "De Ethereum Virtual Machine voert de acties uit en muteert de toestand van het netwerk.",
+    "Het systeem/de EVM aggregeert alle aanpassingen van de transactie tot netto verschillen.",
+    "De assertielogica gebruikt de TXTRACE- en TXDIFF-opcodes om de data op te halen en evalueert of de mutaties voldoen aan de ondertekende regel.",
+    "Als de regel faalt, draaien de acties terug, maar betaalt de gasbetaler voor het rekenwerk."
+   ],
+   "explain": "De cyclus begint altijd bij de ondertekening inclusief regel, gevolgd door uitvoering. Pas daarna aggregeert het systeem de data, die de assertielogica via de opcodes ophaalt en controleert. Een mislukte controle resulteert in een revert met gas-betaling."
+  }
+ ],
+ "related": [
+  {
+   "track": "solidity",
+   "why": "Native asserties verschuiven de verantwoordelijkheid voor het controleren van de eindtoestand deels van de Solidity-code naar de Ethereum Virtual Machine, wat de complexiteit in contracten reduceert."
+  },
+  {
+   "track": "automation",
+   "why": "Door strikte eindregels in te bouwen, kun je in automatiseringen veiliger on-chain acties uitvoeren en agents delegeertaken geven met een gegarandeerde maximale impact."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "How native transaction assertions could enforce a transaction's final outcome",
+   "url": "https://blog.ethereum.org/en/2026/10/05/transaction-assertions"
+  }
+ ],
+ "id": "2026-10-06-hoe-ethereum-met-eip-7906-transacties-achteraf-c",
+ "kind": "news",
+ "date": "2026-10-06",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-06",
+  "kind": "news",
+  "verified": "2026-10-06",
+  "candidate": "url:https://blog.ethereum.org/en/2026/10/05/transaction-assertions",
+  "signal": "officieel bericht van Ethereum Foundation",
+  "significance": 4
+ }
+}
