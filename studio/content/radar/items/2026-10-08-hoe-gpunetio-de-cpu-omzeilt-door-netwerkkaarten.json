@@ -1,0 +1,162 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe GPUNetIO de CPU omzeilt door netwerkkaarten direct vanuit CUDA-kernels aan te sturen",
+ "subtitle": "Door hardware-registers in de geheugenruimte van de GPU te mappen, sturen CUDA-kernels netwerkpakketten zonder tussenkomst van de CPU.",
+ "topic": "systems",
+ "minutes": 7,
+ "tldr": [
+  "Bij gedistribueerde GPU-toepassingen vormt de CPU vaak een vertragende tussenpersoon voor het netwerkverkeer.",
+  "NVIDIA mapt netwerkqueues en deurbelregisters van de netwerkkaart rechtstreeks in het virtuele geheugen van de GPU.",
+  "Hierdoor sturen CUDA-kernels zelfstandig netwerkpakketten aan; in een specifieke directe FPGA-testopstelling bedroeg de minimale round-trip latentie 2.6 microseconden.",
+  "De CPU blijft wel nodig om de netwerkverbinding één keer te configureren en de virtuele adressen toe te wijzen."
+ ],
+ "plain": "Stel je een groot restaurant voor waar de koks (GPU's) aan de lopende band gerechten bereiden, maar elke bestelling eerst via de enige ober (CPU) naar de bezorger (de netwerkkaart) moet. Als de koks sneller koken dan de ober kan lopen, ontstaat er een file. Wat GPUNetIO doet, is een doorgeefluik bouwen tussen de keuken en de parkeerplaats. De ober stelt aan het begin van de avond het luik één keer in. Daarna leggen de koks de gerechten zelf in het luik en drukken ze op een bel die direct bij de bezorger rinkelt. De ober hoeft er niet meer tussen te komen. Hierdoor verdwijnt de wachtrij volledig. De vergelijking gaat mank omdat de koks in werkelijkheid geen losse bestellingen afleveren, maar instructies in een wachtrij schrijven en daarna wachten op een digitaal bewijs van aflevering.",
+ "why": "Voor wie AI-modellen traint of high-performance netwerken bouwt, verdwijnt een hardnekkige flessenhals. Traditioneel verbruikt netwerkcommunicatie in een cluster veel CPU-rekenkracht. Door netwerk-I/O direct door de GPU te laten afhandelen, schalen operaties veel beter, zeker bij kleine datapakketten. Bibliotheken zoals NCCL en NVSHMEM maken hier nu onder de motorkap gebruik van via een gedeelde GPUNetIO-laag. Je zult dit op termijn merken aan efficiëntere gedistribueerde trainingen in AI, zonder dat je zelf hardware-aansturing of complexe netwerkcode hoeft te schrijven.",
+ "sections": [
+  {
+   "title": "De CPU als onnodige tussenpersoon",
+   "md": "Je leert hier waarom het aansturen van een netwerkkaart door een CPU de schaalbaarheid van GPU-clusters beperkt.\n\nModerne applicaties voor datacenters sturen voortdurend data tussen verschillende computers (nodes) in een cluster. Een netwerkkaart (NIC) verwerkt dit verkeer. Traditioneel gaat dit via het besturingssysteem op de CPU. Technieken zoals Remote Direct Memory Access (RDMA) lieten de netwerkkaart al direct in het werkgeheugen lezen en schrijven, wat een grote verbetering was.\n\nToch bleef er een structureel probleem: de applicatie op de CPU moet de netwerkkaart vertellen wát er verzonden moet worden. In een cluster waar de GPU het rekenwerk doet, betekent dit dat de GPU zijn taak afrondt en een seintje geeft aan de CPU, waarna de CPU de verzendopdracht in de wachtrij van de netwerkkaart plaatst. Omdat de GPU met duizenden CUDA-threads parallel werkt, vormt deze verplichte sequentiële tussenstop via de CPU een rem op de doorvoer, zeker bij een stroom van kleine datapakketten."
+  },
+  {
+   "title": "Transportobjecten exporteren naar de GPU",
+   "md": "Je leert hier hoe de CPU de controle over de netwerkkaart eenmalig overdraagt.\n\nOm de CPU uit de datastroom (de *data path*) te halen, moet de GPU zelf de netwerkkaart kunnen instrueren. GPUNetIO maakt hiervoor een strikte scheiding tussen de initiële configuratie (*control path*) en de daadwerkelijke verzending.\n\nDe CPU behoudt de controle over de configuratie. De CPU (via DOCA-bibliotheken) initialiseert de netwerkkaart, reserveert het geheugen en maakt een wachtrij (queue) aan voor netwerktaken. Daarna verpakt een CPU-functie de eigenschappen van deze wachtrij en exporteert ze naar een datastructuur die in het geheugenadresbereik van de GPU wordt geplaatst. Vanaf dat moment heeft de GPU rechtstreeks toegang tot de virtuele eigenschappen van het communicatiekanaal en trekt de CPU zich terug uit het verdere proces."
+  },
+  {
+   "title": "Work Queue Entries en Memory-Mapped deurbellen",
+   "md": "Je leert hier hoe CUDA-threads via virtueel geheugen commando's aan de netwerkkaart doorgeven.\n\nDe daadwerkelijke communicatie gebeurt binnen een functie op de GPU (de CUDA-kernel). Eén of meerdere threads schrijven een *Work Queue Entry* (WQE) naar de virtuele wachtrij in het GPU-geheugen. Dit is een commando dat de hardware exact vertelt welk geheugenblok verstuurd moet worden en naar waar.\n\nDaarna moet de netwerkkaart dit opmerken. Dit gebeurt door een hardwarematige 'deurbel' in te drukken, wat fysiek overeenkomt met het wegschrijven van data naar een specifiek register op de netwerkkaart. In de architectuur van GPUNetIO zijn deze registers via Memory-Mapped I/O (MMIO) toegankelijk gemaakt in de adresruimte van de GPU. Een CUDA-thread schrijft een waarde naar dat virtuele adres, wat via de interne PCIe-bus resulteert in een fysieke toestandswijziging in het register van de netwerkkaart. De netwerkkaart reageert hierop door het WQE op te halen en de taak uit te voeren."
+  },
+  {
+   "title": "Afronding en een gedeelde architectuur",
+   "md": "Je leert hier hoe de GPU zelfstandig de afronding controleert en waarom één centrale bibliotheek hiervoor voordelen biedt.\n\nNadat de netwerkkaart de taak heeft uitgevoerd, plaatst deze een *Completion Queue Entry* (CQE) in een voltooiingswachtrij in het geheugen. De GPU-threads kunnen de status van dit adres polsen (pollen) om de verzending te bevestigen, al is deze afrondingsstap optioneel. Omdat de CUDA-kernel zelfstandig de netwerkverzoeken initieert en aanbiedt aan de netwerkkaart, wordt dit ontwerpprincipe *GPUDirect Async Kernel-Initiated* (GDA-KI) genoemd.\n\nVoor de komst van GPUNetIO bouwde elke communicatiebibliotheek, zoals NVSHMEM of de AI-netwerklaag NCCL, een eigen versie van deze complexe low-level interactie met de netwerkkaart. Het afzonderlijk onderhouden van die code leidde tot versnippering. GPUNetIO biedt nu een open-source Verbs-implementatie als gedeelde basis, aangevuld met een uitgebreidere DOCA SDK-superset. Hogere applicaties gebruiken hierdoor dezelfde netwerkbasis, wat implementatiefouten voorkomt en zorgt dat nieuwe optimalisaties direct aan alle bibliotheken ten goede komen."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "2.6 microseconden",
+   "label": "de minimale round-trip latentie voor netwerk-forwarding tussen GPU en FPGA in de testopstelling",
+   "quote": "The minimum reported latency, measured as the time between packet transmission and reception at the FPGA, is approximately 2.6 microseconds",
+   "source": 1
+  },
+  {
+   "value": "3.7",
+   "label": "de versie van NVSHMEM die een nieuw, optioneel transport op basis van GPUNetIO introduceerde",
+   "quote": "With the release of the open-source GPUNetIO library, NVSHMEM 3.7 introduced a new GPUNetIO-based transport.",
+   "source": 1
+  },
+  {
+   "value": "2.27",
+   "label": "de versie van NCCL die deze methodiek open-source integreerde",
+   "quote": "Since NCCL 2.27, GIN has integrated GDA-KI as a backend leveraging the open-source GPUNetIO Verbs path.",
+   "source": 1
+  }
+ ],
+ "caveats": "Hoewel de architectuur de latentie in theorie minimaliseert, zijn de absolute metingen (zoals 2.6 microseconden) afkomstig van een specifieke NVIDIA-testopstelling, rechtstreeks verbonden met een FPGA via een OSFP-kabel. In een reëel datacenter verhogen de switch-infrastructuur en de fysieke afstanden de vertraging. Bovendien is hardware-integratie een vereiste: voor nodes zonder een directe PCIe-link tussen de GPU en de netwerkkaart valt het systeem terug op een zogenaamde *CPU-assisted doorbell*. Hierbij scant de CPU het geheugen om de deurbel in te drukken, wat de efficiëntiewinst deels tenietdoet.",
+ "glossary": [
+  {
+   "term": "RDMA (Remote Direct Memory Access)",
+   "def": "Een techniek waarbij een computer direct data in het geheugen van een andere computer schrijft of leest, zonder dat het besturingssysteem daar rekenkracht aan besteedt."
+  },
+  {
+   "term": "MMIO (Memory-Mapped I/O)",
+   "def": "Een ontwerppatroon waarbij de hardware-registers van randapparatuur benaderbaar via normale geheugenadressen zijn gemaakt, wat directe communicatie via adrespointers mogelijk maakt."
+  },
+  {
+   "term": "WQE (Work Queue Entry)",
+   "def": "Een blokje data in een wachtrij dat een specifieke taak omschrijft, zoals het verzenden van een datapakket, gericht aan de hardware."
+  },
+  {
+   "term": "GDA-KI (GPUDirect Async Kernel-Initiated)",
+   "def": "Een technologie waarbij de CUDA-threads op een GPU zelfstandig netwerkoperaties starten (en optioneel afronden), met de CPU buitenspel."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Wat is het primaire doel van de GPUNetIO's GDA-KI implementatie?",
+   "options": [
+    "Het versnellen van de CPU door netwerktaken naar een hardwarematige TCP-engine te verplaatsen.",
+    "CUDA-kernels in staat stellen om netwerkkaarten direct aan te sturen zonder proxy via de CPU.",
+    "Het besturingssysteem optimaliseren voor traditionele RDMA I/O-bewerkingen in de kernel.",
+    "De netwerkbandbreedte van Ethernet-verbindingen verhogen via compressie op de GPU."
+   ],
+   "answer": 1,
+   "explain": "GDA-KI en GPUNetIO elimineren de CPU als bottleneck door GPU-threads de mogelijkheid te geven direct Work Queue Entries te posten en de netwerkkaart aan te sturen."
+  },
+  {
+   "id": "q2",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Hoe weet de netwerkkaart (NIC) dat een GPU een nieuwe taak voor hem in de wachtrij heeft gezet?",
+   "options": [
+    "De CPU stuurt na het afronden van een CUDA-kernel een interrupt-signaal naar de netwerkkaart.",
+    "De netwerkkaart scant met een vaste interval het volledige werkgeheugen van de GPU.",
+    "Een CUDA-thread schrijft via Memory-Mapped I/O (MMIO) direct een toestandswijziging naar een fysiek register van de netwerkkaart.",
+    "De TCP/IP-stack in het besturingssysteem stuurt een ontwaaksignaal over de PCIe-bus."
+   ],
+   "answer": 2,
+   "explain": "De GPU 'ringt de deurbel' door direct naar MMIO-gemapte hardware-registers van de netwerkkaart te schrijven."
+  },
+  {
+   "id": "q3",
+   "type": "multi",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Welke twee stappen vallen uitsluitend onder het configuratiepad (control path) bij het opzetten van GPUNetIO?",
+   "options": [
+    "Het genereren van Work Queue Entries (WQE) door threads.",
+    "Het initiëren van netwerktransportobjecten, zoals queues, door de CPU via userspace-bibliotheken (zoals DOCA Verbs of mlx5dv).",
+    "Het pollen van de Completion Queue voor verzendbevestiging.",
+    "Het exporteren van de eigenschappen van de wachtrij naar de GPU."
+   ],
+   "answers": [
+    1,
+    3
+   ],
+   "explain": "De control path (afgehandeld door de CPU) richt de objecten in en deelt ze. De data path (WQE's posten, registers wegschrijven en CQE's pollen) gebeurt uitsluitend op de GPU in de GDA-KI stroom."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Deze directe netwerktoegang op hardwareniveau is vereist om grote neurale netwerken over duizenden GPU's te trainen zonder vast te lopen op CPU-bottlenecks."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "How DOCA GPUNetIO Unifies GPU-Initiated Networking Across the NVIDIA Software Stack",
+   "url": "https://developer.nvidia.com/blog/doca-gpunetio-gda-ki-unified-gpu-networking/"
+  },
+  {
+   "n": 2,
+   "title": "Remote direct memory access",
+   "url": "https://en.wikipedia.org/wiki/Remote_direct_memory_access"
+  },
+  {
+   "n": 3,
+   "title": "Network interface controller",
+   "url": "https://en.wikipedia.org/wiki/Network_interface_controller"
+  },
+  {
+   "n": 4,
+   "title": "CUDA",
+   "url": "https://en.wikipedia.org/wiki/CUDA"
+  }
+ ],
+ "id": "2026-10-08-hoe-gpunetio-de-cpu-omzeilt-door-netwerkkaarten",
+ "kind": "news",
+ "date": "2026-10-08",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-08",
+  "kind": "news",
+  "verified": "2026-10-08",
+  "candidate": "url:https://developer.nvidia.com/blog/doca-gpunetio-gda-ki-unified-gpu-networking/",
+  "signal": "officieel bericht van NVIDIA Technical Blog",
+  "significance": 4
+ }
+}
