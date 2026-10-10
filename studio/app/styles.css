@@ -958,11 +958,102 @@ textarea.answer-input { min-height: 120px; resize: vertical; font-size: 17px; li
 [data-topic="crypto"] { --topic: var(--solidity); --topic-soft: var(--solidity-soft); }
 [data-topic="systems"] { --topic: var(--jev); --topic-soft: var(--jev-soft); }
 [data-topic="automation"] { --topic: var(--automation); --topic-soft: var(--automation-soft); }
+[data-topic="routing"] { --topic: var(--routing); --topic-soft: var(--routing-soft); }
 .radar-tabs { margin-top: 18px; }
-.chips-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 18px; }
+.chips-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 14px; }
 .chip-on { background: var(--ink); color: var(--bg); }
 .chips-row .chip { cursor: pointer; }
 .chip-topic { background: var(--topic-soft, var(--surface-2)); color: var(--topic, var(--ink)); }
+.chip-year { font-variant-numeric: tabular-nums; opacity: 0.85; }
+.chip-signal {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+[data-theme="dark"] .chip-signal {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+.chip-signal-classic {
+  background: rgba(168, 85, 247, 0.12);
+  color: #7e22ce;
+  border: 1px solid rgba(168, 85, 247, 0.28);
+}
+[data-theme="dark"] .chip-signal-classic {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.35);
+}
+
+.radar-controls { margin: 8px 0 18px; display: flex; flex-direction: column; gap: 10px; }
+.radar-search-wrap { position: relative; display: flex; align-items: center; width: 100%; }
+.radar-search-icon { position: absolute; left: 14px; color: var(--ink-3); pointer-events: none; display: inline-flex; align-items: center; }
+.radar-search-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 38px 0 38px;
+  border-radius: var(--radius-sm, 10px);
+  border: 1.5px solid var(--line-2);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14.5px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.radar-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.radar-search-clear {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+.radar-search-clear:hover { color: var(--ink); }
+
+.radar-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 10px);
+}
+.radar-control-group { display: inline-flex; align-items: center; gap: 6px; }
+.radar-select {
+  height: 32px;
+  padding: 0 28px 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line-2);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 550;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+.radar-select:focus { border-color: var(--accent); }
+.radar-count { margin-left: auto; font-size: 12.5px; }
 .radar-card { display: block; padding: 18px 20px; }
 .radar-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .radar-card .title { font-family: var(--font-display); font-size: 21px; line-height: 1.25; margin: 10px 0 4px; color: var(--ink); }

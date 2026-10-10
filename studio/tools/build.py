@@ -121,7 +121,16 @@ def render_radar_all(problems):
     """All articles → (index for the list, {id: rendered JSON}). A broken article is skipped, never fatal."""
     index, files = [], {}
     hidden = 0
-    for p in sorted(glob.glob(os.path.join(CONTENT, "radar", "items", "*.json"))):
+    radar_dir = os.path.join(CONTENT, "radar")
+    canon_map = {}
+    canon_file = os.path.join(radar_dir, "canon.json")
+    if os.path.exists(canon_file):
+        try:
+            canon_map = {c["id"]: c.get("year") for c in load(canon_file) if isinstance(c, dict)}
+        except Exception:
+            pass
+
+    for p in sorted(glob.glob(os.path.join(radar_dir, "items", "*.json"))):
         try:
             A = load(p)
             if not (A.get("meta") or {}).get("verified"):  # never shown before it passed the full fact-check loop
@@ -135,9 +144,56 @@ def render_radar_all(problems):
             continue
         body = json.dumps(R, ensure_ascii=False, separators=(",", ":"))
         files[A["id"]] = body
-        index.append({"id": A["id"], "kind": A.get("kind"), "topic": A.get("topic"), "title": A.get("title", ""), "subtitle": R["subtitle"],
-                      "tldr": R["tldr"][0] if R["tldr"] else "", "minutes": A.get("minutes"), "date": A.get("date"),
-                      "request": (A.get("meta") or {}).get("request"), "v": hashlib.sha256(body.encode("utf-8")).hexdigest()[:8]})
+
+        meta = A.get("meta") or {}
+        year = canon_map.get(meta.get("canon"))
+        cand = meta.get("candidate", "")
+        if not year and cand:
+            m_ar = re.search(r'arxiv:(\d{2})', cand)
+            if m_ar:
+                yp = int(m_ar.group(1))
+                year = 2000 + yp if yp < 50 else 1900 + yp
+        if not year:
+            for s in A.get("sources", []):
+                u = s.get("url", "")
+                t = s.get("title", "")
+                m_ar = re.search(r'arxiv\.org/abs/(\d{2})', u)
+                if m_ar:
+                    yp = int(m_ar.group(1))
+                    year = 2000 + yp if yp < 50 else 1900 + yp
+                    break
+                m_u = re.search(r'/(19\d{2}|20\d{2})/', u)
+                if m_u:
+                    year = int(m_u.group(1))
+                    break
+                m_t = re.search(r'\b(19\d{2}|20\d{2})\b', t)
+                if m_t:
+                    year = int(m_t.group(1))
+                    break
+        if not year and A.get("date"):
+            try:
+                year = int(A["date"][:4])
+            except Exception:
+                year = 2026
+
+        sig = meta.get("signal") or ""
+        score = 0
+        m_up = re.search(r'(\d+)\s*(?:upvotes|punten)', sig)
+        if m_up:
+            score = int(m_up.group(1))
+        elif A.get("kind") == "classic":
+            score = 500
+        elif meta.get("significance"):
+            score = int(meta.get("significance")) * 50
+        else:
+            score = 50
+
+        index.append({
+            "id": A["id"], "kind": A.get("kind"), "topic": A.get("topic"), "title": A.get("title", ""), "subtitle": R["subtitle"],
+            "tldr": R["tldr"][0] if R["tldr"] else "", "minutes": A.get("minutes"), "date": A.get("date"),
+            "year": year, "signal": sig, "significance": meta.get("significance"), "score": score,
+            "request": meta.get("request"), "v": hashlib.sha256(body.encode("utf-8")).hexdigest()[:8]
+        })
     index.sort(key=lambda x: (x.get("date") or "", x["id"]), reverse=True)
     if hidden:
         print(f"ℹ {hidden} artikel(s) wachten op de factcheck en zijn verborgen")

@@ -134,8 +134,8 @@
   "sources": [
     {
       "n": 1,
-      "title": "Diogo Almeida — How to Use LLMs with Jev + AI Agents (TypeSafe AI)",
-      "url": "https://typesafe.ai/blog/how-to-use-llms-with-jev"
+      "title": "Diogo Almeida — Introducing System One Models & Jev (TypeSafe AI)",
+      "url": "https://typesafe.ai/blog/introducing-system-one-models-and-jev"
     },
     {
       "n": 2,
@@ -152,6 +152,7 @@
     "author": "antigravity",
     "created": "2026-09-28",
     "kind": "paper",
+    "verified": "2026-10-10",
     "candidate": "diogo-almeida:how-to-use-llms-with-jev",
     "signal": "Diogo Almeida / TypeSafe AI Paper on Agentic LLM Architectures",
     "significance": 5
