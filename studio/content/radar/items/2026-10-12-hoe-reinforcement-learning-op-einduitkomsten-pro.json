@@ -1,0 +1,181 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe reinforcement learning op einduitkomsten procesbeloningen leert zonder tussenstappen te labelen",
+ "subtitle": "Door een redeneerketen te genereren voor een eindoordeel, dwingt uitkomstgerichte versterkingslering een taalmodel om wiskundige tussenstappen nauwkeurig te verifiëren.",
+ "topic": "ai",
+ "minutes": 9,
+ "tldr": [
+  "Modellen die redeneerstappen controleren vergen kostbare handmatige labels of tienduizenden trage simulaties per tussenstap om fouten te leren herkennen.",
+  "Het kader TIPS traint verificateurs uitsluitend op de juistheid van het eindoordeel over het redeneertraject, na een hardop geformuleerde tussenstapcontrole.",
+  "Met 3.200 voorbeelden behaalt een compact model 85,2 F1 op ProcessBench en overtreft het veel grotere gespecialiseerde verificateurs.",
+  "De methode werkt minder goed bij computertaken waarbij een foute uitkomst niet direct volgt uit één duidelijke eerdere tussenstap."
+ ],
+ "plain": "Stel je een leraar voor die het wiskundehuiswerk van leerlingen nakijkt. Normaal moet een inspecteur elke tussenstapbeoordeling van die leraar controleren om te zien of hij goed verbetert. Dat kost uren werk.\n\nIn plaats daarvan geeft de inspectie de leraar alleen een punt als zijn eindcijfer klopt: een 1 bij een juist eindoordeel en een 0 bij een fout eindoordeel. Als een berekening drie stappen telt (5 plus 5 is 10, maal 2 is 20, plus 4 is 24), kan de leraar het eindantwoord pas betrouwbaar beoordelen als hij eerst stap voor stap narekent waar het misging. Door hem te belonen voor juiste einduitkomsten, leert hij vanzelf tussenstappen nauwkeurig te inspecteren.\n\nDe vergelijking loopt spaak zodra een leerling met twee opeenvolgende rekenfouten toevallig toch op het juiste eindgetal uitkomt; in dat uitzonderlijke geval ontvangt het eindoordeel van de leraar over het traject een positieve beloning ondanks foutieve tussenstappen, waardoor de koppeling tussen tussenstapcorrectheid en uitkomstbeloning verbroken wordt.",
+ "why": "Bij complexe redeneertaken en software-agents bepaalt test-time compute hoe betrouwbaar een model presteert: het systeem genereert meerdere antwoorden en kiest het beste via een verificateur. Tot nu toe vereiste het trainen van zo'n tussenstap-beoordelaar kostbare handmatige annotaties of tienduizenden trage Monte Carlo-rollouts. TIPS toont dat ontwikkelaars met slechts 3.200 uitkomstgelabelde voorbeelden een nauwkeurige stap-voor-stap verificateur kunnen trainen via gerichte versterkingslering. Dit verlaagt de drempel om betrouwbare kwaliteitscontroles in te bouwen voor autonome taken en wiskundige redeneerpaden.",
+ "sections": [
+  {
+   "title": "Het schaalbaarheidsprobleem van tussenstapverificatie",
+   "md": "Je leert hier waarom het beoordelen van afzonderlijke redeneerstappen belangrijk is voor redeneermodellen en waarom bestaande trainingsmethoden botsen op menselijke kosten en wiskundige ruis.\n\n### Van einduitkomst naar procescontrole\nBij complexe taken in wiskunde, logica of programmacode schieten standaard taalmodellen vaak tekort wanneer ze direct naar een antwoord springen. Om betrouwbaardere antwoorden te genereren, zetten ontwikkelaars zogeheten *test-time compute* in: het model genereert meerdere kandidaatoplossingen, waarna een afzonderlijk verificatiemodel de meest kansrijke oplossing selecteert.\n\nEen verificateur kan op twee niveaus opereren:\n1. **Uitkomstbeloningsmodellen (*Outcome Reward Models* of ORMs)** beoordelen uitsluitend of het uiteindelijke antwoord klopt. Ze negeren hoe de berekening tot stand kwam.\n2. **Procesbeloningsmodellen (*Process Reward Models* of PRMs)** evalueren elke individuele tussenstap in de redeneerketen op logische correctheid.\n\nOnderzoek van Lightman et al. toonde aan dat PRMs beter presteren dan ORMs bij het sturen van zoekprocessen. Een ORM beloont immers ook oplossingen die door toeval of elkaar opheffende fouten op het juiste getal uitkomen, terwijl een PRM de vinger op de exacte fout kan leggen.\n\n### Waarom bestaande PRMs niet schalen\nHet bouwen van een betrouwbare PRM stuitte tot nu toe op drie methodologische hindernissen:\n- **Handmatige annotatie**: Het labelen van honderdduizenden individuele wiskundige tussenstappen (zoals in de PRM800K-dataset) vereist domeinexperts en duizenden werkuren. Dit schaalt moeilijk naar nieuwe domeinen.\n- **Monte Carlo-schattingen**: Systemen zoals Math-Shepherd of SCAN genereren labels automatisch. Vanaf een tussenstap genereert het systeem tientallen willekeurige voltooide paden (*rollouts*). Als een hoog percentage van die paden het juiste eindantwoord bereikt, krijgt de tussenstap een positief label. Dit vergt echter tienduizenden netwerkdoorgangen per trainingsvoorbeeld. Belangrijker nog: zoals Zhang et al. aantonen, betekent de mogelijkheid om vanaf een tussenstap alsnog een juist antwoord te vinden niet dat die tussenstap zelf wiskundig klopt.\n- **Impliciete uitkomstmodellen**: Eerdere methoden zoals AutoPSV en ImplicitPRM probeerden procesbeloningen af te leiden uit enkel uitkomstlabels via een lineaire classificatiekop bovenop de representatie van het model. Zonder expliciete redeneerruimte slagen deze methoden er echter niet in om fouten betrouwbaar te lokaliseren: AutoPSV behaalt op de ProcessBench-benchmark een F1-score van slechts 45,3."
+  },
+  {
+   "title": "De architectuur van TIPS: denken vóór het oordelen",
+   "md": "Je leert hier hoe TIPS een taalmodel eerst een denkketen laat formuleren en het netwerk via groepsrelatieve versterkingslering optimaliseert met uitsluitend een binaire uitkomstbeloning.\n\n### Generatieve verificatie in plaats van classificatiekoppen\nFan et al. stellen een ander mechanisme voor: TIPS (*Thinking-Induced Process Supervision*). In plaats van het taalmodel te gebruiken als een statische encoder met een aparte scorekop, formuleren ze procesverificatie als een generatieve taak.\n\nHet model doorloopt een vaste sequentie. Gegeven een vraag $q$ en een kandidaat-oplossing $\\mathbf{x} = (x_1, x_2, \\dots, x_n)$ met $n$ tussenstappen, genereert het model $\\pi_\\theta$ achtereenvolgens:\n1. **Denkketen ($Z$)**: Het model produceert eerst een redeneerketen in natuurlijke taal waarin het de stappen logisch analyseert: $Z \\sim \\pi_\\theta(\\cdot \\mid q, \\mathbf{x})$.\n2. **Proceslabels ($\\mathbf{\\hat{Y}}$)**: Conditioneel op de denkketen $Z$ voorspelt het model voor elke tussenstap $x_t$ een binair label $\\hat{Y}_t \\in \\{0, 1\\}$, waarbij 1 staat voor een geldige stap en 0 voor een foutieve stap.\n3. **Uitkomstlabel ($\\hat{D}$)**: Aan het einde voorspelt het model een globaal oordeel $\\hat{D} \\in \\{0, 1\\}$ over de geldigheid van het volledige traject.\n\n### De beloningsfunctie en GRPO\nDe kern van TIPS is dat er tijdens de training **geen enkel proceslabel** wordt gesuperviseerd. De beloning $r$ hangt zuiver af van het voorspelde eindresultaat $\\hat{D}$ ten opzichte van de werkelijke uitkomst $D$:\n\n$$r = \\begin{cases} 1, & \\text{als } \\hat{D} = D, \\\\ 0, & \\text{als } \\hat{D} \\neq D. \\end{cases}$$\n\nDe optimalisatie verloopt via *Group Relative Policy Optimization* (GRPO), een variant van PPO zonder afzonderlijk criticus-netwerk. Voor elk trainingsvoorbeeld $(q, \\mathbf{x})$ genereert het oude beleid $\\pi_{\\theta_{\\text{oud}}}$ een groep van $G$ onafhankelijke rollouts:\n\n$$\\{(Z^{(i)}, \\mathbf{\\hat{Y}}^{(i)}, \\hat{D}^{(i)})\\}_{i=1}^G$$\n\nElke rollout $i$ ontvangt een binaire beloning $r^{(i)}$. Vervolgens berekent het algoritme de groepsrelatieve voordeelscore $\\hat{A}^{(i)}$ door het groepsgemiddelde af te trekken:\n\n$$\\hat{A}^{(i)} = r^{(i)} - \\frac{1}{G} \\sum_{j=1}^G r^{(j)}$$\n\nDe modelparameters $\\theta$ worden bijgewerkt door de geknipte doelstellingsfunctie te maximaliseren:\n\n$$\\mathcal{J}_{\\text{GRPO}}(\\theta) = \\mathbb{E} \\left[ \\frac{1}{G} \\sum_{i=1}^G \\frac{1}{|\\mathbf{o}^{(i)}|} \\sum_{t=1}^{|\\mathbf{o}^{(i)}|} \\min \\left( \\rho_t^{(i)}(\\theta) \\hat{A}^{(i)}, \\text{clip}(\\rho_t^{(i)}(\\theta), 1-\\epsilon, 1+\\epsilon) \\hat{A}^{(i)} \\right) \\right]$$\n\nwaarbij $\\rho_t^{(i)}(\\theta)$ de kansverhouding tussen het nieuwe en oude beleid voor token $t$ voorstelt en $|\\mathbf{o}^{(i)}|$ de responsengte is.\n\n> [!note] Gelijke voordeelscore over alle tokens\n> Omdat de voordeelscore $\\hat{A}^{(i)}$ wordt toegepast op elk token in de respons, ontvangen de tokens in de denkketen $Z$ en de proceslabels $\\mathbf{\\hat{Y}}$ exact hetzelfde signaal als het uitkomstlabel $\\hat{D}$. Rollouts waarin het model een tussenfout correct herkent, voorspellen het eindresultaat consistenter en ontvangen daardoor een positieve voordeelscore."
+  },
+  {
+   "title": "Het informatietheoretische mechanisme achter procesoverdracht",
+   "md": "Je leert hier via informatietheorie waarom optimalisatie op een einduitkomst het model wiskundig dwingt om tussenstapinformatie vast te leggen in zijn denkketen.\n\n### Hoe uitkomstfout leidt tot tussenstapinformatie\nWaarom zou een netwerk dat uitsluitend wordt afgerekend op de einduitkomst betrouwbare tussenstaplabels genereren? Fan et al. leveren hiervoor een analyse op basis van voorwaardelijke wederzijdse informatie (*conditional mutual information*).\n\nZij modelleren het proces met de volgende variabelen:\n- $Q, \\mathbf{X}$: de vraag en de kandidaat-oplossing.\n- $R = \\text{enc}_\\theta(Q, \\mathbf{X})$: de interne representatie van de invoer vóórdat het genereren start.\n- $Z \\sim \\pi_\\theta(\\cdot \\mid Q, \\mathbf{X})$: de gegenereerde denkketen.\n- $D \\in \\{0, 1\\}$: het werkelijke uitkomstlabel.\n- $\\mathbf{Y} = (Y_1, \\dots, Y_n)$: de werkelijke labels van de tussenstappen.\n- $\\hat{D} = g(R, Z)$: het voorspelde uitkomstlabel via een deterministische parser $g$.\n\nDe auteurs stellen dat bij niet-triviale taken de initiële representatie $R$ onvoldoende is om de uitkomst te bepalen: er bestaat een $\\varepsilon > 0$ zodanig dat de conditionele entropie $H(D \\mid R) \\ge \\varepsilon$.\n\n### De ondergrens voor procesinformatie\nVia Fano's ongelijkheid tonen de auteurs aan dat de wederzijdse informatie tussen de denkketen $Z$ en de uitkomst $D$, gegeven representatie $R$, begrensd wordt door de uitkomstfout $P_e = \\mathbb{P}[\\hat{D} \\neq D]$:\n\n$$I(Z; D \\mid R) \\ge H(D \\mid R) - H_b(P_e)$$\n\nwaarbij $H_b(P_e) = -P_e \\log_2(P_e) - (1-P_e) \\log_2(1-P_e)$ de binaire entropiefunctie is. Wanneer de optimalisatie de uitkomstfout $P_e$ verlaagt, krimpt $H_b(P_e)$ en moet de denkketen $Z$ informatie over de uitkomst bevatten.\n\nVervolgens verbinden de auteurs dit via de kettingregel met de tussenstaplabels $\\mathbf{Y}$:\n\n$$I(Z; \\mathbf{Y} \\mid R) \\ge \\underbrace{H(D \\mid R)}_{\\text{verificatiemoeilijkheid}} - \\underbrace{H_b(P_e)}_{\\text{uitkomstfout}} - \\underbrace{H(D \\mid \\mathbf{Y}, R)}_{\\text{restonzekerheid}}$$\n\n> [!rule] Drie voorwaarden voor effectieve overdracht\n> De ondergrens toont direct wanneer procesinformatie noodzakelijkerwijs in de denkketen belandt:\n> 1. **Verificatiemoeilijkheid ($H(D \\mid R)$) is positief**: de taak kan niet direct worden opgelost uit de ruwe invoer zonder redenering.\n> 2. **Uitkomstfout ($H_b(P_e)$) is laag**: de versterkingslering slaagt erin om het eindresultaat accuraat te voorspellen.\n> 3. **Restonzekerheid ($H(D \\mid \\mathbf{Y}, R)$) is klein**: de correctheid van de tussenstappen bepaalt het eindresultaat.\n\nIn wiskundige afleidingen is de restonzekerheid $H(D \\mid \\mathbf{Y}, R)$ nagenoeg nul: als alle stappen kloppen, is de uitkomst correct. Hierdoor dwingt een lage uitkomstfout wiskundig af dat de denkketen $Z$ informatie over de proceslabels $\\mathbf{Y}$ bevat."
+  },
+  {
+   "title": "Empirische evaluatie op wiskunde en computertaken",
+   "md": "Je leert hier hoe TIPS presteert op wiskundige foutopsporing en test-time selectie vergeleken met modellen die tot twintigmaal groter zijn.\n\n### Resultaten op ProcessBench\nProcessBench meet of een verificateur de eerste fout in een redeneerspoor kan aanwijzen of kan vaststellen dat alle stappen kloppen.\n\n| Model | Type supervisie | Omvang | ProcessBench Avg. F1 (%) |\n|---|---|---|---|\n| AutoPSV (197K data) | Alleen uitkomst | 4B | 45,3 |\n| ImplicitPRM (197K data) | Alleen uitkomst | 4B | 41,5 |\n| SCAN-PRM | Monte Carlo | 4B | 61,7 |\n| Qwen2.5-Math-7B-PRM800K | Menselijke annotaties | 7B | 56,5 |\n| GenPRM-32B | Monte Carlo + Distillatie | 32B | 77,6 |\n| Qwen2.5-Math-PRM-72B | Monte Carlo + Distillatie | 72B | 78,3 |\n| GPT-5.4-Instruct | Prompt-only beoordelaar | Onbekend | 79,4 |\n| Claude-4.7-Opus | Prompt-only beoordelaar | Onbekend | 79,3 |\n| **TIPS-Qwen3-4B-Instruct** | **Alleen uitkomst (3,2K)** | **4B** | **77,7** |\n| **TIPS-Qwen3-4B-Thinking** | **Alleen uitkomst (3,2K)** | **4B** | **85,2** |\n| OpenAI o1-mini | Prompt-only beoordelaar | Onbekend | 87,9 |\n\nMet 3.200 voorbeelden behaalt TIPS-Qwen3-4B-Thinking een F1-score van 85,2. Dit overtreft alle geteste getrainde PRMs (inclusief 72B-modellen) en grote commerciële modellen die als prompt-gebaseerde beoordelaar functioneren. Het model blijft enkel achter bij OpenAI o1-mini (87,9 F1).\n\n### Selectie tijdens testtijd (Best-of-8)\nIn een Best-of-8 evaluatie over vijf wiskundebenchmarks genereerde een beleidsmodel (Qwen2.5-7B-Instruct) acht antwoorden per vraag. TIPS filterde eerst de kandidaattrajecten waarvan de voorspelde uitkomst onjuist was, en koos vervolgens de overgebleven oplossing met de hoogste gemiddelde stapscore.\n\nHierbij overtrof TIPS-Qwen3-4B-Thinking zowel de meerderheidsstemming (Majority Vote@8) als het met Monte Carlo-rollouts getrainde SCAN-PRM, terwijl het nog onder de theoretische bovengrens van een perfecte orakelkiezer (Pass@8) bleef.\n\n### Beperktere overdracht bij interactieve agent-taken\nOp AgentProcessBench (computertaken zoals HotPotQA, GAIA en BFCL) verbetert TIPS de gemiddelde First-Error Accuracy voor alle drie geteste backbones, waarbij denkmodellen een grotere gemiddelde vooruitgang tonen (+5,4 en +4,5 procentpunt) dan het instructiemodel (+2,5 procentpunt). De verbetering is echter kleiner dan bij wiskunde en niet uniform: zo daalt de score voor Qwen3-8B-Thinking op HotPotQA licht (-3,2 procentpunt).\n\nDe theoretische oorzaak is de restonzekerheid $H(D \\mid \\mathbf{Y}, R)$:\nBij software-agents ontstaat een foutieve uitkomst vaak door het ontbreken van een cruciale stap of door inefficiënte verkenning, en niet door één aantoonbaar foutieve actie. Doordat de relatie tussen stapkwaliteit en taaksucces losser is, wordt het leersignaal minder specifiek overgedragen naar de tussenstappen."
+  },
+  {
+   "title": "Randvoorwaarden, faalmodi en de rol van modelpriors",
+   "md": "Je leert hier welke factoren bepalen of het trainingsproces leidt tot betrouwbare procescontrole dan wel ontspoort via oppervlakkige sluiproutes.\n\n### De denkketen is onmisbaar\nOm te bepalen of de denkketen daadwerkelijk verantwoordelijk is voor de procesverbetering, vergeleken de onderzoekers TIPS met een variant die uitsluitend labels produceert (*Label-only*).\n\nZonder denkketen behaalde Qwen3-4B-Instruct een initiële F1 van 47,5 en boekte na training slechts 0,7 F1-punt winst. De beleidsentropie daalde naar 0,002 en de gemiddelde responsengte bleef beperkt tot 47,9 tokens. Mét denkketen steeg de F1 met 13,9 punten bij een gemiddelde responsengte van 1828,7 tokens. Zonder de gegenereerde redeneerruimte kan de versterkingslering de tussenstapverificatie niet vormen.\n\n### Trainingsdynamiek en modelpriors\nTijdens de training van drie backbones verbeteren de ORM-nauwkeurigheid en de processtatistieken over het algemeen samen, met Pearson-correlaties tussen 0,78 en 1,00. De stabiliteit van deze overdracht hangt echter sterk af van de initiële eigenschappen van het basismodel:\n- **Shortcut learning**: Bij Qwen2.5-7B-Instruct verbeterde de uitkomstbeoordeling snel, maar de ProcessBench F1 piekte vroegtijdig en nam daarna af. Het model leerde oppervlakkige kenmerken van foute oplossingen herkennen zonder de afzonderlijke stappen daadwerkelijk na te rekenen.\n- **Sterke redeneerpriors**: Een model gedestilleerd uit DeepSeek-R1 handhaafde daarentegen gekoppelde en stabiele verbeteringen in zowel uitkomst- als proceskwaliteit.\n\n> [!warning] Vroegtijdig stoppen zonder proceslabels\n> Omdat er tijdens training geen proceslabels voorhanden zijn, ontwikkelden de auteurs een vuistregel: stop de training zodra de nauwkeurigheid op de einduitkomst stabiliseert en de lengte van de gegenereerde denkketen begint te dalen. Dit voorkomt dat het model overgaat op oppervlakkige sluiproutes.\n\n### Verificatie versus direct probleemoplossend vermogen\nDe auteurs onderzochten tevens of TIPS simpelweg de rekenvaardigheid van het model vergroot. Een vergelijking met een standaard oplosser getraind met RLVR (*Reinforcement Learning with Verifiable Rewards* op DAPO-Math-17K) toont dat die oplosser weliswaar iets hoger scoort bij het zelfstandig oplossen van wiskundewedstrijden dan TIPS-Qwen3-4B-Instruct-2507 (55,8% tegenover 53,3% op AIME; 33,3% tegenover 31,8% op HMMT), maar op ProcessBench 14,9 F1-punten achterblijft op diezelfde instruct-variant (62,8 tegenover 77,7 F1). Het primaire denkmodel (TIPS-Qwen3-4B-Thinking-2507) scoort met 80,8% op AIME en 85,2 F1 op ProcessBench op beide vlakken veel hoger dan deze RLVR-oplosser. TIPS traint dus specifiek het verificatiegedrag, niet simpelweg het genereren van oplossingen."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "85.2",
+   "label": "F1-score van TIPS-Qwen3-4B-Thinking-2507 op ProcessBench na training op 3.200 uitkomsttrajecten",
+   "quote": "With only a 4B-scale backbone, Tips-Qwen3-4B-Thinking-2507 achieves 85.2 average F1 on ProcessBench, outperforming previous state-of-the-art baselines, including Qwen2.5-Math-PRM-72B and GenPRM-32B",
+   "source": 1
+  },
+  {
+   "value": "3.2K",
+   "label": "aantal publiek beschikbare, uitkomst-gelabelde redeneertrajecten gebruikt om het 4B-model te trainen",
+   "quote": "Tips achieves strong performance using a 4B-parameter model trained on only 3.2K publicly available, outcome-labeled reasoning traces.",
+   "source": 1
+  },
+  {
+   "value": "78.3%",
+   "label": "percentage van de ProcessBench-steekproef waarin TIPS-Qwen3-4B-Instruct de eerste fout correct lokaliseerde volgens menselijke experts",
+   "quote": "The model correctly localized the first error in 47/60 cases (78.3%).",
+   "source": 1
+  },
+  {
+   "value": "63.3%",
+   "label": "percentage van de ProcessBench-steekproef met zowel een correcte foutlokalisatie als een door experts gevalideerde uitleg",
+   "quote": "Thus, 38/60 cases (63.3%) exhibited both correct error localization and a human-validated explanation.",
+   "source": 1
+  },
+  {
+   "value": "24.9",
+   "label": "toename in ProcessBench F1-punten voor Qwen3-4B-Thinking-2507 na training met TIPS",
+   "quote": "As shown in Table 5, Tips improves ProcessBench F1 by 24.9 points for Qwen3-4B-Thinking-2507 and 13.9 points for Qwen3-4B-Instruct-2507.",
+   "source": 1
+  },
+  {
+   "value": "14.9",
+   "label": "aantal ProcessBench F1-punten waarmee een standaard RLVR-oplosser achterblijft op TIPS-Qwen3-4B-Instruct",
+   "quote": "This baseline scores higher than TIPS-Qwen3-4B-Instruct-2507 on both AIME 2026 and HMMT February 2026, but trails it by 14.9 F1 points on ProcessBench.",
+   "source": 1
+  }
+ ],
+ "caveats": "De methode kent duidelijke randvoorwaarden en open vragen die de praktische inzetbaarheid afbakenen:\n\n1. **Beperkt tot tekstuele en agent-trajecten**: De experimenten richten zich uitsluitend op zuivere tekst en code-omgevingen. De bronnen bieden geen data over multimodale taken waarbij tussenstappen gekoppeld zijn aan beelden, diagrammen of fysieke observaties.\n2. **Afhankelijkheid van stap-uitkomstkoppeling**: De theoretische ondergrens toont dat de methode verzwakt zodra de restonzekerheid $H(D \\mid \\mathbf{Y}, R)$ toeneemt. Bij taken waar een mislukking ontstaat door weglating, incomplete context of inefficiëntie (zoals in complexe agent-omgevingen), leidt een uitkomstbeloning tot minder scherpe tussenstapcorrecties.\n3. **Risico op sluiproutes bij zwakke priors**: Modellen zonder sterke ingebouwde redeneerstructuur kunnen vervallen in *shortcut learning*, waarbij ze de uitkomst voorspellen via oppervlakkige patronen terwijl de tussenstapbeoordeling verslechtert. De techniek vereist daarom basismodellen met een goede redeneerbasis of een strikte vroegtijdige stopregel.\n4. **Geen formele garantie op tussenstapcorrectheid**: Omdat de proceslabels een indirect bijproduct zijn van een binaire uitkomstbeloning, bieden ze geen wiskundige garantie van correctheid. In kritieke toepassingen mogen deze gegenereerde labels niet zonder menselijke controle als definitieve grondwaarheid worden beschouwd.\n5. **Achterstand op OpenAI o1-mini**: Hoewel TIPS-Qwen3-4B-Thinking grotere open PRMs en commerciële modellen zoals GPT-5.4-Instruct (79,4 F1) en Claude-4.7-Opus (79,3 F1) overtreft, blijft het met 85,2 F1 achter bij OpenAI o1-mini (87,9 F1).",
+ "glossary": [
+  {
+   "term": "PRM (Process Reward Model)",
+   "def": "Een evaluatiemodel dat elke individuele redeneerstap in een oplossing beoordeelt op logische en inhoudelijke correctheid."
+  },
+  {
+   "term": "ORM (Outcome Reward Model)",
+   "def": "Een evaluatiemodel dat uitsluitend beoordeelt of het uiteindelijke eindantwoord van een taak correct is."
+  },
+  {
+   "term": "GRPO (Group Relative Policy Optimization)",
+   "def": "Een versterkingsleeralgoritme zonder afzonderlijk criticus-netwerk dat beleidsupdates berekent op basis van relatieve scores binnen een groep gesamplede antwoorden."
+  },
+  {
+   "term": "Test-time compute",
+   "def": "Extra rekenkracht die tijdens de inferentiefase wordt ingezet om meerdere redeneerpaden te genereren en evalueren voor een definitieve keuze."
+  },
+  {
+   "term": "Voorwaardelijke wederzijdse informatie",
+   "def": "Een informatietheoretische maatstaf die kwantificeert hoeveel resterende onzekerheid over één variabele verdwijnt door een tweede variabele te observeren, gegeven een derde variabele."
+  },
+  {
+   "term": "Fano's ongelijkheid",
+   "def": "Een wiskundige stelling die de minimale foutkans bij het schatten van een toevalsvariabele relateert aan de voorwaardelijke entropie."
+  },
+  {
+   "term": "Monte Carlo-rollout",
+   "def": "Een schattingsprocedure waarbij een model vanaf een tussenstap meerdere willekeurige paden voltooit om de succeskans van die tussenstap statistisch te benaderen."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom leidt een beloningssignaal dat uitsluitend het eindantwoord beoordeelt er in TIPS toe dat het model ook betere tussenstaplabels leert genereren?",
+   "options": [
+    "Omdat een accurate tussenstapcontrole in de denkketen de kans vergroot op een correct eindoordeel, waardoor die volledige generatie via GRPO een positieve voordeelscore ontvangt.",
+    "Omdat het GRPO-algoritme via een apart criticus-netwerk expliciet controleert of de gegenereerde tussenstaplabels overeenkomen met handmatige annotaties.",
+    "Omdat de binaire entropie van het eindantwoord wiskundig gelijk wordt gesteld aan de waarschijnlijkheid van de afzonderlijke tokens in de tussenstappen.",
+    "Omdat Monte Carlo-rollouts vanaf elke tussenstap worden berekend en als directe gewichten aan de verliesfunctie worden gekoppeld."
+   ],
+   "answer": 0,
+   "explain": "In TIPS berekent GRPO een groepsrelatieve voordeelscore op basis van de uitkomstbeloning en past deze toe op alle tokens van de respons (inclusief denkketen en staplabels). Omdat een correcte tussenstapverificatie leidt tot een betrouwbaarder eindoordeel, krijgen denkketens met accurate tussenstapcontroles vaker een hogere beloning en worden ze versterkt."
+  },
+  {
+   "id": "q2",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Welke term in de informatietheoretische ondergrens I(Z; Y | R) >= H(D | R) - H_b(P_e) - H(D | Y, R) verklaart waarom TIPS minder effectief is op computertaken (zoals in AgentProcessBench) dan op wiskunde?",
+   "options": [
+    "De restonzekerheid H(D | Y, R) is bij agent-taken groter, omdat taakfalen vaak ontstaat door ontbrekende acties of inefficiëntie in plaats van één direct herleidbare foute tussenstap.",
+    "De verificatiemoeilijkheid H(D | R) is bij agent-taken gelijk aan nul, waardoor het taalmodel het eindresultaat al direct uit de invoerrepresentatie kan afleiden.",
+    "De binaire entropie van de uitkomstfout H_b(P_e) kan bij interactieve computertaken nooit worden berekend via Fano's ongelijkheid.",
+    "De denkketen Z kan bij interactieve computertaken geen tokens produceren, waardoor de beleidsentropie instort tot nul."
+   ],
+   "answer": 0,
+   "explain": "De term H(D | Y, R) meet de onzekerheid over de uitkomst wanneer de geldigheid van alle tussenstappen Y al bekend is. In wiskunde is dit nagenoeg nul. Bij agent-taken kan een taak mislukken door ontbrekende stappen of doodlopende verkenningen, waardoor de koppeling tussen stapcorrectheid en eindsucces veel losser is en H(D | Y, R) groot blijft."
+  },
+  {
+   "id": "q3",
+   "type": "order",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Plaats de stappen in de juiste chronologische volgorde waarin TIPS tijdens een trainingsepisode een invoertraject verwerkt en optimaliseert.",
+   "tiles": [
+    "Het model genereert een denkketen waarin het de tussenstappen van de kandidaat-oplossing analyseert.",
+    "Het model voorspelt conditioneel op zijn denkketen binaire proceslabels per stap en één globaal uitkomstlabel.",
+    "Een binaire beloning (1 of 0) wordt berekend door uitsluitend het voorspelde uitkomstlabel te vergelijken met de werkelijkheid.",
+    "GRPO berekent een groepsrelatieve voordeelscore en past de beleidsupdate uniform toe op alle gegenereerde tokens."
+   ],
+   "explain": "TIPS laat het model eerst een denkketen genereren, conditioneert daarop de staplabels en het uitkomstlabel, evalueert alleen de einduitkomst met een binaire beloning, en werkt via GRPO alle gegenereerde tokens in de sequentie bij."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Dit sluit direct aan bij test-time compute en het trainen van betrouwbare procesverificateurs voor wiskundige redeneermodellen."
+  },
+  {
+   "track": "automation",
+   "why": "In geautomatiseerde workflows biedt stap-voor-stap procesverificatie een methode om autonome acties te valideren zonder handmatige tussenstapsupervisie."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "Inducing Process Supervision from Outcome-Only Reinforcement Learning",
+   "url": "https://arxiv.org/abs/2609.36641"
+  }
+ ],
+ "id": "2026-10-12-hoe-reinforcement-learning-op-einduitkomsten-pro",
+ "kind": "paper",
+ "date": "2026-10-12",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-12",
+  "kind": "paper",
+  "verified": "2026-10-12",
+  "candidate": "arxiv:2609.36641",
+  "signal": "6 upvotes op Hugging Face Daily Papers",
+  "significance": 4
+ }
+}
