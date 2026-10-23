@@ -19,7 +19,11 @@ import md
 
 def check_html_text(text, context_label):
     issues = []
-    
+
+    # 0. Internal stash placeholders (NUL-delimited) left in the output, e.g. an escaped \$ inside a formula
+    if "\x00" in text:
+        issues.append("Internal NUL placeholder left in the output (escaped character inside math?)")
+
     # 1. Math placeholders not substituted
     if "@@M" in text:
         matches = re.findall(r"@@M\d+@@", text)

@@ -81,13 +81,17 @@ def inline(text, greek_say=True):
         stash.append(s)
         return f"\x00{len(stash) - 1}\x00"
 
+    def tex(s):
+        # a \$ inside a formula is a literal dollar for KaTeX, not the stash placeholder it became above
+        return re.sub(r"\x00(\d+)\x00", lambda m: "\\$" if stash[int(m.group(1))] == "$" else m.group(0), s)
+
     t = text.replace("\\$", keep("$"))
     # code spans
     t = re.sub(r"`([^`\n]+)`", lambda m: keep(f"<code>{_html.escape(m.group(1), quote=False)}</code>"), t)
     # display math inside a line
-    t = re.sub(r"\$\$(.+?)\$\$", lambda m: keep(f'<span class="katex-block">{math_placeholder(m.group(1), True)}</span>'), t)
+    t = re.sub(r"\$\$(.+?)\$\$", lambda m: keep(f'<span class="katex-block">{math_placeholder(tex(m.group(1)), True)}</span>'), t)
     # inline math: $…$ (no space after opening / before closing, not followed by a digit)
-    t = re.sub(r"(?<![\\$\w])\$(?=\S)([^$\n]+?)(?<=\S)\$(?![\d$])", lambda m: keep(math_placeholder(m.group(1), False)), t)
+    t = re.sub(r"(?<![\\$\w])\$(?=\S)([^$\n]+?)(?<=\S)\$(?![\d$])", lambda m: keep(math_placeholder(tex(m.group(1)), False)), t)
     # speakable chips [[el:…]] [[fr:…]] [[say:el|…]]
     def say(m):
         lang, body = m.group(1), m.group(2)

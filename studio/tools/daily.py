@@ -34,7 +34,7 @@ sys.path.insert(0, HERE)
 import learner  # noqa: E402
 import tracks as trk  # noqa: E402
 import antigravity as ag  # noqa: E402
-from cloud import connect, load_env  # noqa: E402
+from cloud import connect, load_env, reachable_host, ssh_hosts  # noqa: E402
 
 DATA = os.path.expanduser("~/scripts/polyglot-data")
 SWIFT = os.path.expanduser("~/scripts/sync_reminders.swift")
@@ -68,16 +68,18 @@ def wait_for_network(cfg):
             log(f"    ⚠ geen internet na {limit / 60:.0f} min: ik ga verder met wat lokaal kan")
             return False, False
         time.sleep(15)
-    host, db_ok, t1 = cfg.get("POLYGLOT_SSH"), True, time.time()
-    if host:
+    hosts, db_ok, t1 = ssh_hosts(cfg), True, time.time()
+    if hosts:
         db_ok = False
         while True:
-            r = subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", host, "true"], capture_output=True, timeout=40)
-            if r.returncode == 0:
+            host = reachable_host(cfg)
+            if host:
                 db_ok = True
+                if host != hosts[0]:
+                    log(f"    server via {host} ({hosts[0]} reageert niet)")
                 break
             if time.time() - t1 > float(cfg.get("DB_WAIT_MIN", 3)) * 60:
-                log(f"    ⚠ server {host} niet bereikbaar na {cfg.get('DB_WAIT_MIN', 3)} min")
+                log(f"    ⚠ server {', '.join(hosts)} niet bereikbaar na {cfg.get('DB_WAIT_MIN', 3)} min")
                 break
             time.sleep(15)
     waited = int(time.time() - t0)

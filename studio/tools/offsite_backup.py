@@ -7,7 +7,7 @@ The morning run calls it last, in a child process with a time limit, because One
 
   python3 offsite_backup.py
 
-~/scripts/polyglot.env: POLYGLOT_SSH=macbook2 · OFFSITE_BACKUP_DIR=… (default: OneDrive/Polyglot Studio/backups)
+~/scripts/polyglot.env: POLYGLOT_SSH=macbook2-ts,macbook2 · OFFSITE_BACKUP_DIR=… (default: OneDrive/Polyglot Studio/backups)
 """
 import datetime as dt
 import gzip
@@ -18,7 +18,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from cloud import load_env  # noqa: E402
+from cloud import load_env, pick_host  # noqa: E402
 
 NAME = re.compile(r"^polyglot-(\d{4}-\d{2}-\d{2})\.sql\.gz$")
 DEFAULT_DIR = "~/Library/CloudStorage/OneDrive-Personnel/Polyglot Studio/backups"
@@ -31,7 +31,7 @@ def ssh(host, command, **kw):
 
 def main():
     env = load_env()
-    host = env.get("POLYGLOT_SSH")
+    host = pick_host(env)
     dest = os.path.expanduser(env.get("OFFSITE_BACKUP_DIR") or DEFAULT_DIR)
     if not host:
         print("geen server ingesteld (POLYGLOT_SSH)")

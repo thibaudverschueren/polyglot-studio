@@ -1,7 +1,7 @@
 """cloud.py — access to the Polyglot tables (polyglot_*) for the morning run. Stdlib only.
 
 Two backends, chosen by ~/scripts/polyglot.env:
-  POLYGLOT_SSH=macbook2             self-hosted Supabase on the home server, read via SSH + psql
+  POLYGLOT_SSH=macbook2-ts,macbook2 self-hosted Supabase on the home server, read via SSH + psql (first alias that answers)
   POLYGLOT_DB_CONTAINER=supabase-db (no keys on this Mac: the existing SSH key is the only access)
 or
   SUPABASE_URL=https://xxxx.supabase.co
@@ -38,6 +38,36 @@ def load_env(path=ENV_PATH):
 UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
 
+def ssh_hosts(env):
+    """POLYGLOT_SSH may list several SSH aliases, comma separated (macbook2-ts,macbook2): Tailscale works anywhere, the LAN name only at home."""
+    return [h.strip() for h in (env.get("POLYGLOT_SSH") or "").split(",") if h.strip()]
+
+
+_UP = {}
+
+
+def reachable_host(env, timeout=8):
+    """First of the POLYGLOT_SSH hosts that answers over SSH, or None."""
+    hosts = tuple(ssh_hosts(env))
+    if hosts in _UP:
+        return _UP[hosts]
+    for h in hosts:
+        try:
+            r = subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", f"ConnectTimeout={timeout}", h, "true"], capture_output=True, timeout=timeout + 20)
+        except subprocess.TimeoutExpired:
+            continue
+        if r.returncode == 0:
+            _UP[hosts] = h
+            return h
+    return None
+
+
+def pick_host(env):
+    """Host for this run: the first reachable one, else the first listed (so an error message names it)."""
+    hosts = ssh_hosts(env)
+    return reachable_host(env) or (hosts[0] if hosts else "")
+
+
 def connect(env=None):
     env = env or load_env()
     return SshDb(env) if env.get("POLYGLOT_SSH") else Cloud(env)
@@ -47,7 +77,7 @@ class SshDb:
     """Self-hosted Supabase on the home server: psql inside the database container, over SSH."""
 
     def __init__(self, env):
-        self.host = env.get("POLYGLOT_SSH", "")
+        self.host = pick_host(env)
         self.container = env.get("POLYGLOT_DB_CONTAINER") or "supabase-db"
         uid = (env.get("POLYGLOT_USER_ID") or "").lower()
         self.user_id = uid if UUID.match(uid) else ""
