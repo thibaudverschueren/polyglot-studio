@@ -7,7 +7,7 @@
  "subtitle": "BPE trainen en toepassen, tokens als kostenpost, de embeddingmatrix en rotatie als positie-encoding",
  "level": "advanced",
  "minutes": 50,
- "summary": "Alles wat een LLM kost en kan, begint bij de tokenizer: hoeveel tokens je tekst oplevert bepaalt prijs, snelheid en contextruimte. Daarna maken embeddings en RoPE van losse ID's betekenisvolle, geordende vectoren.",
+ "summary": "Alles wat een Large Language Model (LLM) kost en kan, begint bij de tokenizer: hoeveel tokens je tekst oplevert bepaalt de operationele kostprijs, rekensnelheid en contextruimte. In deze les leer je de Byte-Pair Encoding (BPE)-algoritmes met de hand simuleren, tokenkosten en meertalige overhead exact doorrekenen voor bedrijfscases, de geheugen- en parameterkost van embedding-matrices berekenen, en begrijpen hoe Rotary Position Embedding (RoPE) positiecodeert via relatieve rotaties in een hoogdimensionale ruimte.",
  "objectives": [
   {
    "id": "bpe",
@@ -31,7 +31,7 @@
   }
  ],
  "diagnostic": {
-  "intro": "Je hebt een stevige ML-basis. Deze test meet hoe diep je LLM-kennis al gaat — van basis tot expert — zodat je coach de volgende lessen kan inkorten of verdiepen. Geen idee? Kies ‘Weet ik niet’.",
+  "intro": "Je hebt een stevige ML-basis (ML = machine learning). Deze test meet hoe diep je LLM-kennis al gaat — van basis tot expert — zodat je coach de volgende lessen kan inkorten of verdiepen. Geen idee? Kies ‘Weet ik niet’.",
   "bands": [
    "basis",
    "gevorderd",
@@ -43,8 +43,8 @@
     "type": "mcq",
     "skill": "tokens",
     "level": 1,
-    "prompt": "Wat is een token voor een LLM?",
-    "explain": "Moderne LLM's gebruiken subwoorden (BPE of verwant).",
+    "prompt": "Wat is een token voor een Large Language Model (LLM)?",
+    "explain": "Een Large Language Model (LLM) verwerkt geen ruwe tekst of losse letters, maar splitst tekst op in subwoordfragmenten (via Byte-Pair Encoding) die elk gekoppeld zijn aan een uniek numeriek token-ID in het vocabulaire.",
     "options": [
      "Een subwoordfragment met een vast ID",
      "Altijd precies één volledig woord",
@@ -60,7 +60,7 @@
     "skill": "softmax",
     "level": 1,
     "prompt": "Waar telt de output van een softmax altijd toe op?",
-    "explain": "Softmax geeft een kansverdeling.",
+    "explain": "De softmax-functie zet een vector van onbegrensde reële getallen (logits) om naar een geldige kansverdeling door de exponenten te normaliseren over hun totale som: $\\sum_i \\frac{e^{z_i}}{\\sum_j e^{z_j}} = 1$.",
     "options": [
      "1",
      "0",
@@ -76,7 +76,7 @@
     "skill": "ml",
     "level": 1,
     "prompt": "Je trainingsverlies daalt, je validatieverlies stijgt. Wat gebeurt er?",
-    "explain": "Het model memoriseert de trainingsdata.",
+    "explain": "Wanneer het trainingsverlies continu blijft dalen terwijl het validatieverlies begint te stijgen, generaliseert het model niet meer naar ongeziene data: het leert de specifieke ruis en voorbeelden uit de trainingsset uit het hoofd (overfitting).",
     "options": [
      "Overfitting",
      "Underfitting",
@@ -92,7 +92,7 @@
     "skill": "tokens",
     "level": 1,
     "prompt": "Hoeveel tokens zijn ongeveer 3 000 Engelse woorden, bij 0,75 woord per token?",
-    "explain": "3 000 / 0,75 = 4 000.",
+    "explain": "Bij een gemiddelde verhouding van 0,75 woord per token levert een tekst van 3 000 woorden exact: $\\frac{3\\,000\\text{ woorden}}{0{,}75\\text{ woord/token}} = 4\\,000\\text{ tokens}$ op.",
     "value": 4000,
     "tolerance": 0.02,
     "band": "basis"
@@ -103,7 +103,7 @@
     "skill": "attention",
     "level": 2,
     "prompt": "Waarom deel je in attention door $\\sqrt{d_k}$?",
-    "explain": "Het inproduct van twee willekeurige vectoren heeft variantie ~$d_k$.",
+    "explain": "Zonder schaling met $\\sqrt{d_k}$ groeit de variantie van het inproduct $q^\\top k$ evenredig met dimensie $d_k$. Grote waarden drijven de softmax-functie naar uitersten (verzadiging) waar de gradiënten nagenoeg nul worden, wat het leerproces blokkeert.",
     "options": [
      "Om de variantie van de scores rond 1 te houden zodat softmax niet satureert",
      "Om de som van de gewichten op 1 te brengen",
@@ -118,8 +118,8 @@
     "type": "numeric",
     "skill": "kv-cache",
     "level": 2,
-    "prompt": "KV-cache in FP16 voor 32 lagen, 8 KV-heads, head-dim 128, 4 096 tokens, 1 gebruiker. Hoeveel MiB?",
-    "explain": "2 · 32 · 8 · 128 · 4 096 · 2 bytes = 536 870 912 B = 512 MiB.",
+    "prompt": "Key-Value cache (KV-cache) in 16-bit floating point (FP16) voor 32 lagen, 8 KV-heads, head-dimensie 128, 4 096 tokens, 1 gebruiker. Hoeveel MiB?",
+    "explain": "De Key-Value cache (KV-cache) slaat 2 vectoren (Key en Value) op per token, laag en KV-head. Berekening: $2 \\times 32\\text{ lagen} \\times 8\\text{ heads} \\times 128\\text{ dim} \\times 4\\,096\\text{ tokens} \\times 2\\text{ bytes (FP16)} = 536\\,870\\,912\\text{ bytes} = 512\\text{ MiB}$ (delen door $1024^2$).",
     "value": 512,
     "tolerance": 0.02,
     "unit": "MiB",
@@ -130,8 +130,8 @@
     "type": "mcq",
     "skill": "lora",
     "level": 2,
-    "prompt": "Wat is de rang $r$ in LoRA?",
-    "explain": "ΔW = BA met rang ≤ r.",
+    "prompt": "Wat is de rang $r$ in Low-Rank Adaptation (LoRA)?",
+    "explain": "Low-Rank Adaptation (LoRA) ontbindt gewichtsupdates $\\Delta W \\in \\mathbb{R}^{d \\times k}$ in het product van twee laag-rangige matrices $B \\in \\mathbb{R}^{d \\times r}$ en $A \\in \\mathbb{R}^{r \\times k}$. De rang $r \\ll \\min(d,k)$ vormt de centrale flessenhalsdimensie en bepaalt het aantal trainbare parameters.",
     "options": [
      "De binnenste dimensie van de matrices B (d×r) en A (r×k)",
      "Het aantal lagen dat je fine-tunet",
@@ -147,7 +147,7 @@
     "skill": "scaling",
     "level": 2,
     "prompt": "Wat is de Chinchilla-vuistregel voor compute-optimaal trainen?",
-    "explain": "Hoffmann et al. 2022: $D \\approx 20N$.",
+    "explain": "De Chinchilla-scaling wet (Hoffmann et al., 2022) toont aan dat voor een minimaal validatieverlies bij een gegeven compute-budget (FLOPs), de datasetomvang $D$ (in tokens) en modelgrootte $N$ (in parameters) proportioneel moeten groeien volgens de vuistregel $D \\approx 20N$.",
     "options": [
      "≈ 20 tokens per parameter",
      "≈ 1 token per parameter",
@@ -162,8 +162,8 @@
     "type": "numeric",
     "skill": "flops",
     "level": 3,
-    "prompt": "Trainings-FLOPs voor een model van 7·10⁹ parameters op 2·10¹² tokens, met C ≈ 6ND?",
-    "explain": "6 · 7·10⁹ · 2·10¹² = 8,4·10²².",
+    "prompt": "Trainings-Floating Point Operations (FLOPs) voor een model van 7·10⁹ parameters op 2·10¹² tokens, met $C \\approx 6ND$?",
+    "explain": "Pretraining vereist ca. 2 FLOPs per parameter voor de forward pass en 4 FLOPs voor de backward pass per token: $C \\approx 6ND$. Hier: $6 \\times (7 \\times 10^9\\text{ parameters}) \\times (2 \\times 10^{12}\\text{ tokens}) = 8{,}4 \\times 10^{22}$ Floating Point Operations (FLOPs).",
     "value": 8.4e+22,
     "tolerance": 0.02,
     "unit": "FLOP",
@@ -174,8 +174,8 @@
     "type": "mcq",
     "skill": "dpo",
     "level": 3,
-    "prompt": "Wat is het belangrijkste verschil tussen DPO en PPO-gebaseerde RLHF?",
-    "explain": "De reward wordt impliciet uitgedrukt via $\\pi_\\theta/\\pi_{ref}$.",
+    "prompt": "Wat is het belangrijkste verschil tussen Direct Preference Optimization (DPO) en op Proximal Policy Optimization (PPO) gebaseerde RLHF (reinforcement learning from human feedback)?",
+    "explain": "In tegenstelling tot Proximal Policy Optimization (PPO), dat een afzonderlijk getraind reward model en actieve online sampling vereist, optimaliseert Direct Preference Optimization (DPO) direct een gesloten analytisch verlies op gelabelde voorkeursparen (geprefereerd vs afgewezen) relatief ten opzichte van een referentiemodel.",
     "options": [
      "Rechtstreeks op voorkeursparen, zonder apart reward model of sampling",
      "DPO gebruikt geen referentiemodel en geen KL-term",
@@ -190,8 +190,8 @@
     "type": "mcq",
     "skill": "gqa",
     "level": 3,
-    "prompt": "64 query-heads, 8 KV-heads (GQA). Met welke factor krimpt de KV-cache t.o.v. MHA?",
-    "explain": "KV-heads 64 → 8.",
+    "prompt": "64 query-heads, 8 KV-heads in Grouped-Query Attention (GQA). Met welke factor krimpt de KV-cache t.o.v. Multi-Head Attention (MHA)?",
+    "explain": "In Grouped-Query Attention (GQA) delen groepen query-heads dezelfde Key- en Value-heads. Bij een overgang van Multi-Head Attention (64 KV-heads) naar 8 KV-heads krimpt het geheugenbeslag van de Key-Value cache (KV-cache) precies evenredig met factor $64 / 8 = 8\\times$.",
     "options": [
      "8×",
      "64×",
@@ -207,7 +207,7 @@
     "skill": "speculative",
     "level": 3,
     "prompt": "Wat garandeert speculative decoding met correcte rejection sampling?",
-    "explain": "Verliesloos: de marginale verdeling blijft $p$.",
+    "explain": "Speculative decoding laat een klein, snel model voorstellen genereren en toetst deze parallel via het grote doelmodel met een aangepaste rejection sampling stap. Wiskundig garandeert deze acceptatiedrempel dat de getrokken tokens exact getrokken zijn uit de kansverdeling van het grote model, zonder kwaliteitsverlies.",
     "options": [
      "Exact dezelfde outputverdeling als het grote model",
      "Hogere kwaliteit dan het grote model",
@@ -223,7 +223,7 @@
   {
    "id": "keten",
    "title": "Van tekst naar getallen",
-   "md": "Een taalmodel ziet geen letters of woorden, alleen **getallen**. Elke tekst doorloopt dezelfde keten:\n\n$$\\text{tekst} \\;\\to\\; \\text{tokens } t_1,\\dots,t_T \\;\\to\\; \\text{ID's } x_i \\in \\{0,\\dots,V-1\\} \\;\\to\\; e_i = W_E[x_i] \\in \\mathbb{R}^d \\;\\to\\; \\text{+ positie} \\;\\to\\; \\text{transformer}$$\n\n![Transformer Decoder-Only Architectuur](assets/diagrams/transformer-decoder-architecture.svg \"De complete architectuur van een decoder-only LLM: van token-ID's en embeddings tot logits\")\n\nWelke eenheid kies je als token? Dat is een **afweging tussen vocabulairegrootte $V$ en sequentielengte $T$**:\n\n| Eenheid | Vocabulaire $V$ | Lengte $T$ | Probleem |\n|---|---|---|---|\n| tekens | ~ honderden | zeer lang | attention kost $O(T^2)$ — duur |\n| woorden | miljoenen | kort | onbekende woorden (*out-of-vocabulary*), enorme matrices |\n| **subwoorden** | 32k – 200k | gemiddeld | de gulden middenweg — de standaard |\n\nWaarom telt $T$ zo zwaar? De attention-matrix in elke laag heeft $T \\times T$ elementen. Een tekst die 30 % meer tokens oplevert, kost dus meer dan 30 % extra rekenwerk in de attention, en vult je **contextvenster** sneller.",
+   "md": "Een Large Language Model (LLM) ziet geen letters of woorden, alleen **getallen**. De berekeningen vinden plaats via lineaire algebra op parallelle hardware zoals een Graphics Processing Unit (GPU) of Central Processing Unit (CPU). Elke tekst doorloopt daarom dezelfde vaste keten van bewerkingen:\n\n$$\\begin{aligned}\\text{tekst} &\\;\\to\\; \\text{tokens } t_1,\\dots,t_T \\;\\to\\; \\text{ID's } x_i \\in \\{0,\\dots,V-1\\} \\\\ &\\;\\to\\; e_i = W_E[x_i] \\in \\mathbb{R}^d \\;\\to\\; \\text{+ positie (RoPE)} \\;\\to\\; \\text{transformer}\\end{aligned}$$\n\n![Schema van een decoder-only transformer: tekst, tokenizer, embeddings, N lagen met self-attention en feed-forward, LM-head en softmax](assets/diagrams/transformer-decoder-architecture.svg \"De complete architectuur van een decoder-only Large Language Model (LLM): van token-ID's en embeddings tot logits\")\n\n### De strategische afweging: vocabulairegrootte vs sequentielengte\nAls manager of ingenieur sta je voor een fundamentele trade-off tussen de omvang van het vocabulaire $V$ (de vaste catalogus van bekende fragmenten) en de resulterende sequentielengte $T$ (het aantal eenheden waarin een document uiteenvalt):\n\n| Eenheid | Vocabulaire $V$ | Lengte $T$ | Bedrijfseconomische en technische impact |\n|---|---|---|---|\n| **Karakters** | ~ honderden | Zeer lang ($T \\gg$) | Kwadratische computational overhead: self-attention kost $\\mathcal{O}(T^2)$, wat de latency en GPU-kosten per query explodeert. |\n| **Woorden** | Miljoenen | Kort ($T \\ll$) | Onbekende woorden (*out-of-vocabulary*), gigantische embeddingmatrices die gigabytes aan Video RAM (VRAM) verspillen. |\n| **Subwoorden (BPE)** | 32k – 128k+ | Optimaal | **De industriestandaard**: zeldzame woorden worden opgesplitst in bekende morfemen, veelvoorkomende woorden blijven één compact token. |\n\n> [!IMPORTANT] Waarom telt sequentielengte $T$ zo zwaar?\n> De self-attention matrix in elke transformerlaag berekent de interactie tussen elk paar tokens, wat leidt tot een $T \\times T$-matrix. Een tekst die door een inefficiënte tokenizer 30% meer tokens genereert, kost niet 30%, maar tot wel $(1{,}3)^2 = 1{,}69$ (bijna 70%) meer rekenwerk en piekgeheugen in de aandachtslaag. Bovendien raakt het vaste **contextvenster** van je model veel sneller vol.",
    "checks": [
     {
      "id": "c1",
@@ -245,7 +245,7 @@
   {
    "id": "bpe",
    "title": "Byte-Pair Encoding",
-   "md": "**Byte-Pair Encoding** (Sennrich et al., 2016; byte-level sinds GPT-2) leert een subwoord-vocabulaire uit data:\n\n1. Begin met de basiseenheden: de 256 bytes (dus elk teken, elke emoji kan altijd gerepresenteerd worden).\n2. Tel in het hele corpus welk **naast elkaar staand paar** het vaakst voorkomt (gewogen met woordfrequentie).\n3. **Voeg dat paar samen** tot één nieuw token en herhaal — tot je de gewenste $V$ bereikt.\n\nTokeniseren van nieuwe tekst = de geleerde merges **in dezelfde volgorde** toepassen. Frequente woorden worden één token; zeldzame woorden vallen uiteen in stukjes, en in het slechtste geval in losse bytes. Daardoor bestaat er **geen onbekend woord** meer.\n\n> [!example] Uitgewerkt voorbeeld\n> Corpus (met frequenties): *laag* ×4, *lager* ×3, *laagste* ×2, *vlag* ×6, *blaas* ×2. Tel alle paren: het paar **(l, a)** komt $4+3+2+6+2 = 17$ keer voor — vaker dan elk ander paar (bv. (a, g): 15). De eerste merge is dus **l + a → la**.\n\n:::sim bpe {\"corpus\": \"laag laag laag laag lager lager lager laagste laagste vlag vlag vlag vlag vlag vlag blaas blaas\", \"text\": \"de langste vlaggen\", \"merges\": 6}\n:::\n\n| Model | Vocabulaire $V$ |\n|---|---|\n| GPT-2 | 50 257 |\n| Llama 2 | 32 000 |\n| Llama 3 | 128 256 |\n| GPT-4o (o200k) | ~ 200 000 |\n\nEen grotere $V$ maakt teksten korter (minder tokens), maar de embedding- en outputmatrix groeien lineair mee.\n\nIn Python gebruik je Hugging Face `transformers` of OpenAI `tiktoken` om dit exact te zien gebeuren:\n\n```python title=\"tokenizer_demo.py\"\nfrom transformers import AutoTokenizer\n\ntokenizer = AutoTokenizer.from_pretrained(\"gpt2\")\ntekst = \"Polyglot Studio leert AI\"\ntokens = tokenizer.encode(tekst)\n\nprint(\"Token IDs:\", tokens)  # bijv. [47, 8923, 124, ...]\nprint(\"Subwoorden:\", [tokenizer.decode([t]) for t in tokens])\n```",
+   "md": "**Byte-Pair Encoding (BPE)** (oorspronkelijk een datacompressie-algoritme van Gage, 1994; geïntroduceerd voor Natural Language Processing door Sennrich et al., 2016 en byte-level gemaakt door Radford et al. in GPT-2 (Generative Pre-trained Transformer)) construeert het subwoord-vocabulaire datagedreven vanuit een groot trainingscorpus:\n\n1. **Initialisatie:** Begin met de 256 fundamentele bytes als elementaire basiseenheden. Hierdoor kan elk UTF-8 (Unicode Transformation Format, 8 bit) karakter, elk symbool en elke emoji gegarandeerd worden gerepresenteerd.\n2. **Frequentietelling:** Scan het hele corpus en identificeer welk **aangrenzend tokenpaar** het vaakst na elkaar voorkomt (gewogen met de woordfrequenties in de data).\n3. **Iteratieve merge:** Voeg dat frequentste paar samen tot één nieuw samengesteld token. Voeg dit token toe aan het vocabulaire $V$ en herhaal deze stap totdat het gewenste doelvocabulaire $V$ is bereikt.\n\n### Tokeniseren tijdens inferentie\nWanneer een getraind LLM nieuwe tekst ontvangt, past de tokenizer de tijdens de pretraining geleerde merges **in exact dezelfde volgorde** toe. Frequente zakelijke termen of woorden worden één compact token; zeldzame eigennamen of technische vaktaal vallen uiteen in kleinere subwoorden, en in het uiterste geval in losse bytes. \n\n> [!NOTE] Geen out-of-vocabulary problemen meer\n> Omdat de 256 basisbytes altijd aanwezig zijn als vangnet, kent byte-level BPE geen *out-of-vocabulary* (OOV) tokens meer. Het model crasht nooit op onbekende karakters, maar splitst ze desnoods op byte-niveau.\n\n> [!example] Uitgewerkt voorbeeld: BPE-merges tellen\n> Beschouw een mini-corpus met frequenties: *laag* ×4, *lager* ×3, *laagste* ×2, *vlag* ×6, *blaas* ×2. \n> We tellen alle paren: het paar **(l, a)** komt $4 + 3 + 2 + 6 + 2 = 17$ keer voor. Het paar **(a, g)** komt voor in *laag* (4) + *lager* (3) + *laagste* (2) + *vlag* (6) = 15 keer. Het frequentste paar is dus **(l, a)** met 17 voorkomens. De allereerste merge is bijgevolg: **l + a → la**.\n\n:::sim bpe {\"corpus\": \"laag laag laag laag lager lager lager laagste laagste vlag vlag vlag vlag vlag vlag blaas blaas\", \"text\": \"de langste vlaggen\", \"merges\": 6}\n:::\n\n| Model | Vocabulairegrootte $V$ | Strategische motivatie |\n|---|---|---|\n| GPT-2 (2019) | 50 257 | Voldoende voor Engels, maar erg inefficiënt voor code en niet-westerse talen. |\n| Llama 2 (2023) | 32 000 | Compact vocabulaire: houdt de embeddingmatrix klein, maar levert meer tokens per tekst op. |\n| Llama 3 (2024) | 128 256 | 4× groter vocabulaire: Meta meldt tot ~15% minder tokens voor dezelfde tekst dan Llama 2, wat de doorvoersnelheid (*throughput*) verhoogt. |\n| GPT-4o (o200k) | ~ 200 000 | Geoptimaliseerd voor meertaligheid en code; minimale token-expansie over tientallen talen heen. |\n\n> [!TIP] De trade-off van een groot vocabulaire\n> Een grotere $V$ verhoogt de compressieratio (minder tokens $T$ per pagina tekst, dus lagere latency bij het genereren), maar vergroot de embedding- en outputmatrix lineair.\n\nIn Python inspecteer je dit proces rechtstreeks via Hugging Face `transformers` of de `tiktoken`-bibliotheek van OpenAI:\n\n```python title=\"tokenizer_demo.py\"\nfrom transformers import AutoTokenizer\n\n# Laad de BPE-tokenizer van een pre-trained model\ntokenizer = AutoTokenizer.from_pretrained(\"gpt2\")\ntekst = \"Polyglot Studio leert AI\"\ntokens = tokenizer.encode(tekst)\n\nprint(\"Token IDs:\", tokens)  # bijv. [47, 8923, 124, ...]\nprint(\"Gedeconstrueerde subwoorden:\", [tokenizer.decode([t]) for t in tokens])\n```",
    "checks": [
     {
      "id": "c2",
@@ -264,7 +264,7 @@
   {
    "id": "kosten",
    "title": "Tokens zijn geld: taal, kosten en context",
-   "md": "Taalmodellen worden per token gefactureerd en begrensd. Twee vuistregels voor Engels: **1 token ≈ 4 tekens ≈ 0,75 woord**. Andere talen zijn vaak minder efficiënt, omdat de tokenizer vooral op Engels getraind is: Nederlands en Frans kosten doorgaans merkbaar meer tokens per woord, Grieks (ander schrift) kan in oudere tokenizers **2 tot 3 keer** zoveel tokens kosten. Nieuwere, meertalige tokenizers verkleinen die kloof — meet het altijd voor jouw model.\n\nDe kost van een aanroep:\n\n$$\\text{kost} = \\frac{T_{\\text{in}}}{10^6}\\,p_{\\text{in}} + \\frac{T_{\\text{out}}}{10^6}\\,p_{\\text{out}}$$\n\nmet prijzen $p$ per miljoen tokens (output is meestal 3 à 5 keer duurder dan input).\n\n> [!example] Rekenvoorbeeld\n> 1,5 miljoen inputtokens aan \\$3/M en 200 000 outputtokens aan \\$15/M: $1{,}5 \\times 3 + 0{,}2 \\times 15 = 4{,}50 + 3{,}00 = 7{,}50$ dollar.\n\nOok het **contextvenster** is in tokens uitgedrukt: een model met 8 192 tokens context kan bij 0,75 woord/token hooguit zo'n 6 100 Engelse woorden tegelijk ‘zien’ — prompt én antwoord samen.",
+   "md": "Bij commerciële LLM-aanbieders (zoals OpenAI, Anthropic, Google Cloud Vertex AI en AWS (Amazon Web Services) Bedrock) worden API-kosten (API = application programming interface) direct gefactureerd per verwerkt token. Tokens vormen de fundamentele **eenheidskost** (*unit economics*) van generatieve AI-applicaties.\n\n### Vuistregels voor Engels vs andere talen\nVoor Engelstalige teksten gelden twee vuistregels:\n- **1 token ≈ 4 karakters**\n- **1 token ≈ 0,75 woord** (ofwel: 1 000 woorden $\\approx 1\\,333$ tokens)\n\nVoor niet-Engelse talen treedt echter een significante **token-inefficiëntie** op. Omdat BPE-tokenizers hoofdzakelijk worden getraind op Engelse internetdata (Common Crawl), bevat het vocabulaire vooral Engelse morfeemcombinaties. Nederlands en Frans kosten gemiddeld **20% tot 50% meer tokens** voor exact dezelfde semantische inhoud. Talen met een ander schrift (zoals Grieks, Arabisch of Hindi) kunnen in oudere tokenizers zelfs **2 tot 3 keer zoveel tokens per woord** verbruiken. Dit leidt tot een rechtstreekse 'taalbelasting' op de API-factuur en snellere uitputting van het contextvenster.\n\n### De kostenformule voor LLM API's\nDe operationele kostprijs per aanroep (*cost of goods sold*, COGS) wordt berekend als:\n\n$$\\text{Totale kost} = \\frac{T_{\\text{in}}}{10^6}\\,p_{\\text{in}} + \\frac{T_{\\text{out}}}{10^6}\\,p_{\\text{out}}$$\n\nwaarbij $p_{\\text{in}}$ en $p_{\\text{out}}$ de tarieven zijn per 1 miljoen tokens. \n\n> [!IMPORTANT] Waarom is output 3 tot 5 keer duurder dan input?\n> Inputtokens worden door de GPU **volledig parallel** verwerkt tijdens de *prefill*-fase (hoge hardware-benutting). Outputtokens moeten daarentegen **sequentieel token per token** gegenereerd worden (*autoregressieve decode*-fase), waarbij voor elk afzonderlijk gegenereerd woord het gehele model en de Key-Value cache (KV-cache) opnieuw vanuit het trage geheugen naar de GPU-kernen moeten worden geladen.\n\n> [!example] Bedrijfseconomisch rekenvoorbeeld\n> Een enterprise-applicatie verwerkt 1,5 miljoen inputtokens tegen \\$3/M en genereert 200 000 outputtokens tegen \\$15/M (illustratieve tarieven: de actuele prijslijst van je aanbieder verschilt).\n> $$\\text{Kost} = (1{,}5 \\times \\$3{,}00) + (0{,}2 \\times \\$15{,}00) = \\$4{,}50 + \\$3{,}00 = \\$7{,}50$$\n\nHet **contextvenster** van een model stelt bovendien een harde limiet op de capaciteit: een contextvenster van 8 192 tokens kan bij 0,75 woord per token maximaal circa 6 100 Engelse woorden bevatten (inclusief systeeminstructies, documenthistoriek en het gegenereerde antwoord).",
    "checks": [
     {
      "id": "c3",
@@ -282,7 +282,7 @@
   {
    "id": "embeddings",
    "title": "Embeddings: betekenis als geometrie",
-   "md": "Na tokenisatie wordt elk ID een **dichte vector** via de embeddingmatrix $W_E \\in \\mathbb{R}^{V\\times d}$: token $x$ krijgt rij $x$. Wiskundig is dat een one-hot-vector maal $W_E$, in de praktijk een simpele opzoeking.\n\n$$\\#\\text{params}(W_E) = V \\cdot d$$\n\nVoor Llama 3 8B: $128\\,256 \\times 4\\,096 = 525\\,336\\,576$ parameters — ruim een half miljard, alleen om tokens op te zoeken. Aan het einde van het model zet de **output-laag** (*unembedding*) $W_U \\in \\mathbb{R}^{d\\times V}$ de laatste verborgen toestand om naar $V$ logits. Kleinere modellen gebruiken vaak **weight tying** ($W_U = W_E^\\top$) en sparen zo $V\\cdot d$ parameters; Llama 3 8B doet dat niet, dus daar komt nog eens ~525 M bij.\n\nWat betekenen de vectoren? Tijdens training schuiven tokens die in gelijkaardige contexten voorkomen naar elkaar toe. Nabijheid meet je met de **cosinusgelijkenis**:\n\n$$\\cos(\\mathbf a,\\mathbf b) = \\frac{\\mathbf a\\cdot\\mathbf b}{\\lVert\\mathbf a\\rVert\\,\\lVert\\mathbf b\\rVert} \\in [-1, 1]$$\n\nVoorbeeld: $\\mathbf a = (1,2,2)$, $\\mathbf b = (2,1,2)$ geeft $\\frac{2+2+4}{3\\cdot 3} = \\frac{8}{9} \\approx 0{,}889$.\n\n> [!note] Statisch vs contextueel\n> De beroemde analogie *koning − man + vrouw ≈ koningin* komt uit statische woordvectoren (word2vec, 2013). In een LLM is de input-embedding pas het begin: de betekenis van ‘bank’ (zitbank of financiële instelling) ontstaat pas in de hogere lagen, uit de context.\n\nIn PyTorch implementeer je deze lookup-operatie rechtstreeks met `nn.Embedding`:\n\n```python title=\"pytorch_embeddings.py\"\nimport torch\nimport torch.nn as nn\n\n# 1. Batch van token-IDs: shape (batch_size=1, seq_len=3)\ninput_ids = torch.tensor([[124, 8923, 412]])\n\n# 2. Embedding matrix: V=128256, d=4096 (zoals Llama 3)\nembedding = nn.Embedding(num_embeddings=128256, embedding_dim=4096)\n\n# 3. Lookup: haalt 3 vectoren van lengte 4096 op\nx = embedding(input_ids)\nprint(x.shape)  # torch.Size([1, 3, 4096]) -> (B, T, d)\n```",
+   "md": "Nadat de tokenizer een tekstreeks heeft omgezet in discrete token-identificatienummers (ID's) $x_i \\in \\{0, \\dots, V-1\\}$, moet elk discreet getal worden vertaald naar een continue vectorruimte. Dit gebeurt via de **embeddingmatrix** $W_E \\in \\mathbb{R}^{V \\times d}$, waarbij $V$ de vocabulairegrootte is en $d$ de verborgen dimensie (*hidden dimension*) van het model.\n\nHet selecteren van de embeddingvector $e_i = W_E[x_i]$ is wiskundig equivalent aan het vermenigvuldigen van een one-hot-vector met $W_E$, maar wordt in deep learning frameworks geïmplementeerd als een razendsnelle tabelopzoeking (*O(1) lookup*).\n\n### Parameterbudget en geheugenbeslag\nHet totale aantal parameters van de embeddingmatrix bedraagt:\n\n$$\\#\\text{parameters}(W_E) = V \\cdot d$$\n\nVoor **Llama 3 8B** ($V = 128\\,256$, $d = 4\\,096$):\n$$128\\,256 \\times 4\\,096 = 525\\,336\\,576 \\text{ parameters} \\approx 525{,}34 \\text{ miljoen parameters}$$\n\nIn 16-bit precisie (Brain Float 16, BF16 (bfloat16, brain floating point (16 bit)), of FP16, met 2 bytes per parameter) neemt deze matrix alleen al ruim **1,05 GB** aan kostbaar Video RAM (VRAM) in beslag op de GPU.\n\nAan het einde van het model zet de **output-laag** (*unembedding-matrix*) $W_U \\in \\mathbb{R}^{d \\times V}$ de finale verborgen toestand om naar $V$ ongenormaliseerde scores (logits) vóór de softmax. \n- **Weight Tying:** Veel compacte architecturen hanteren *weight tying* ($W_U = W_E^\\top$), waarbij de outputmatrix en inputmatrix exact dezelfde gewichten delen. Dit bespaart $V \\cdot d$ parameters aan geheugen.\n- **Ontkoppelde matrices:** Grotere modellen (zoals Llama 3 8B) ontkoppelen $W_U$ en $W_E$ voor een hogere modelcapaciteit, maar dit verdubbelt de totale parameterkost voor de token-projecties tot meer dan 1,05 miljard parameters (~2,1 GB VRAM).\n\n### Semantiek als geometrie: cosinusgelijkenis\nTijdens de pretraining leren de embeddingvectoren semantische relaties: concepten die in soortgelijke contexten optreden, worden naar elkaar toe getrokken in de vectorruimte $\\mathbb{R}^d$. De hoek tussen twee vectoren $\\mathbf{a}$ en $\\mathbf{b}$ kwantificeert hun semantische overeenkomst via de **cosinusgelijkenis** (*cosine similarity*):\n\n$$\\cos(\\mathbf a,\\mathbf b) = \\frac{\\mathbf a\\cdot\\mathbf b}{\\lVert\\mathbf a\\rVert\\,\\lVert\\mathbf b\\rVert} = \\frac{\\sum_{j=1}^d a_j b_j}{\\sqrt{\\sum_{j=1}^d a_j^2}\\,\\sqrt{\\sum_{j=1}^d b_j^2}} \\in [-1, 1]$$\n\n- $\\cos = +1$: identieke richting (maximale gelijkheid)\n- $\\cos = 0$: orthogonale vectoren (ongecorreleerd)\n- $\\cos = -1$: exact tegengestelde richting\n\n> [!example] Rekenvoorbeeld cosinusgelijkenis\n> Gegeven twee eenvoudige vectoren $\\mathbf a = (1, 2, 2)$ en $\\mathbf b = (2, 1, 2)$ in $\\mathbb{R}^3$:\n> Inproduct: $\\mathbf a \\cdot \\mathbf b = (1 \\times 2) + (2 \\times 1) + (2 \\times 2) = 2 + 2 + 4 = 8$\n> Normen: $\\lVert\\mathbf a\\rVert = \\sqrt{1^2+2^2+2^2} = \\sqrt{9} = 3$ en $\\lVert\\mathbf b\\rVert = \\sqrt{2^2+1^2+2^2} = 3$\n> $$\\cos(\\mathbf a,\\mathbf b) = \\frac{8}{3 \\times 3} = \\frac{8}{9} \\approx 0{,}889$$\n\n> [!NOTE] Statische input-embeddings vs contextuele representaties\n> De klassieke vectoralgebra (*koning − man + vrouw ≈ koningin*) stamt uit statische modellen zoals Word2Vec (2013). In een moderne transformer is de input-embedding slechts het statische startpunt. Het woord 'bank' heeft bij de input een vaste vector; pas na doorgifte door de opeenvolgende self-attention lagen verkrijgt het token zijn dynamische betekenis (een zitmeubel of een financiële instelling).\n\n```python title=\"pytorch_embeddings.py\"\nimport torch\nimport torch.nn as nn\n\n# 1. Een batch van token-ID's: shape (batch_size=1, seq_len=3)\ninput_ids = torch.tensor([[124, 8923, 412]])\n\n# 2. Embedding-laag: V=128256, d=4096 (conform Llama 3 8B)\nembedding = nn.Embedding(num_embeddings=128256, embedding_dim=4096)\n\n# 3. Lookup: haalt direct de 3 overeenkomstige vectoren op\nx = embedding(input_ids)\nprint(\"Output tensor vorm (B, T, d):\", x.shape)  # torch.Size([1, 3, 4096])\n```",
    "checks": [
     {
      "id": "c4",
@@ -299,7 +299,7 @@
   {
    "id": "rope",
    "title": "Positie: van sinusoïden naar RoPE",
-   "md": "Attention op zich is **permutatie-invariant**: zonder positie-informatie zijn *hond bijt man* en *man bijt hond* dezelfde verzameling tokens. Er moet dus positie bij.\n\n- **Sinusoïdale posities** (Vaswani et al., 2017): tel bij elke embedding een vaste golf op, $PE_{(m,2i)} = \\sin(m/10000^{2i/d})$ en $PE_{(m,2i+1)} = \\cos(m/10000^{2i/d})$.\n- **Geleerde absolute posities** (GPT-2): een tweede opzoektabel per positie — maar werkt niet voorbij de maximale trainingslengte.\n- **Rotary Position Embedding, RoPE** (Su et al., 2021) — de standaard in Llama, Mistral, Qwen en Gemma.\n\nRoPE telt niets op maar **roteert** query- en key-vectoren. De $d$ dimensies worden in $d/2$ paren verdeeld; paar $i$ op positie $m$ draait over hoek $m\\,\\theta_i$ met\n\n$$\\theta_i = 10000^{-2i/d}, \\qquad i = 0,\\dots,\\tfrac d2 - 1.$$\n\nOmdat rotaties orthogonaal zijn ($R_m^\\top R_n = R_{n-m}$), geldt voor elk paar query $q$ op positie $m$ en key $k$ op positie $n$:\n\n$$\\langle R_m q,\\; R_n k\\rangle = q^\\top R_{n-m}\\, k$$\n\nHet inproduct — en dus de attention-score — hangt **alleen af van de relatieve afstand** $n-m$. Lage $i$ roteren snel (fijne, lokale positie), hoge $i$ traag (grove, verre positie). Door $\\theta$ te herschalen kan een model later langere contexten aan (les 13).\n\n:::sim rope {\"d\": 64}\n:::",
+   "md": "Het self-attention mechanisme van een transformer is van nature **permutatie-invariant**: de rekenkundige operatie berekent gewogen sommen over een verzameling zonder intrinsiek besef van volgorde. Zonder expliciete positie-informatie behandelt het model de zinnen *'de hond bijt de man'* en *'de man bijt de hond'* als exact identieke zakken met woorden.\n\n### De evolutie van positie-codering\n1. **Sinusoïdale posities (Vaswani et al., 2017):** Vaste, niet-leerbare sinus- en cosinusgolven van verschillende frequenties werden direct opgeteld bij de input-embeddings: $PE_{(m,2i)} = \\sin(m/10000^{2i/d})$.\n2. **Geleerde absolute posities (GPT-2, 2019):** Een trainbare opzoektabel per positie-index $m \\in \\{0, \\dots, T_{\\max}-1\\}$. Beperking: het model faalt volledig wanneer de invoer langer is dan de vaste trainingslengte $T_{\\max}$.\n3. **Rotary Position Embedding, RoPE (Su et al., 2021):** De moderne industriestandaard (toegepast in o.a. Llama 2/3, Mistral, Qwen en Gemma).\n\n### Hoe werkt RoPE?\nIn plaats van een positievector op te tellen bij de embedding, past RoPE een **rotatietransformatie** toe op de Query ($q$) en Key ($k$) vectoren binnen de attention-laag.\n\nDe dimensie per head $d$ wordt opgesplitst in $d/2$ orthogonale tweedimensionale vlakken. Elk 2D-paar $i \\in \\{0, \\dots, d/2 - 1\\}$ op positie $m$ wordt geroteerd over een hoek $m\\,\\theta_i$, waarbij de basishoekfrequentie exponentieel daalt met de index:\n\n$$\\theta_i = 10000^{-2i/d}, \\qquad i = 0,\\dots,\\tfrac d2 - 1$$\n\nDe 2D-rotatiematrix $R_m^{(i)}$ voor dimensiepaar $i$ op positie $m$ luidt:\n$$R_m^{(i)} = \\begin{pmatrix} \\cos(m\\theta_i) & -\\sin(m\\theta_i) \\\\ \\sin(m\\theta_i) & \\cos(m\\theta_i) \\end{pmatrix}$$\n\n### Wiskundige elegantie: relatieve afstand\nOmdat 2D-rotaties orthogonale transformaties zijn, geldt $R_m^\\top R_n = R_{n-m}$. Wanneer we het inproduct berekenen tussen een Query op positie $m$ en een Key op positie $n$, gebeurt er iets cruciaals:\n\n$$\\langle R_m q,\\; R_n k\\rangle = (R_m q)^\\top (R_n k) = q^\\top \\left(R_m^\\top R_n\\right) k = q^\\top R_{n-m}\\, k$$\n\n> [!IMPORTANT] Relatieve afstand bepaalt de aandacht\n> Het resulterende inproduct — en daarmee de resulterende attention-score — hangt **uitsluitend af van de relatieve afstand** $n - m$ tussen de tokens, en niet van hun absolute positie in het document. \n> - **Lage dimensies ($i \\approx 0$):** Hoge frequentie (grote $\\theta_i$), roteren zeer snel per stap $\\to$ coderen lokale grammaticale patronen en directe woordvolgorde.\n> - **Hoge dimensies ($i \\to d/2$):** Lage frequentie (zeer kleine $\\theta_i$), roteren langzaam $\\to$ coderen lange-afstandsrelaties en globale alineacontext.\n\n:::sim rope {\"d\": 64}\n:::\n\n> [!TIP] Schalen naar langere contexten\n> Doordat RoPE wiskundig gemodelleerd is via continue rotatiefrequenties $\\theta_i$, kan een model na de pretraining worden uitgebreid naar langere contextvensters (bijvoorbeeld van 8k naar 128k tokens) door de basisfrequenties $\\theta_i$ gecontroleerd te herschalen (o.a. RoPE frequency scaling en YaRN (Yet another RoPE extensioN), behandeld in les 13).",
    "checks": [
     {
      "id": "c5",
@@ -322,7 +322,7 @@
    "skill": "pipeline",
    "level": 1,
    "prompt": "Welke keten is correct?",
-   "explain": "Eerst opsplitsen, dan nummeren, dan opzoeken.",
+   "explain": "De correcte volgorde in de pipeline: ruwe tekst wordt geknipt in subwoord-tokens, gekoppeld aan vaste numerieke ID's, omgezet in dichte vectoren via de embeddingmatrix, verrijkt met positie-informatie (zoals RoPE) en vervolgens verwerkt door de opeenvolgende transformer-lagen.",
    "options": [
     "tekst → tokens → ID's → embeddings → positie → transformer",
     "tekst → embeddings → tokens → transformer",
@@ -337,7 +337,7 @@
    "skill": "pipeline",
    "level": 2,
    "prompt": "Wat wordt **groter** als je de vocabulaire $V$ verdubbelt?",
-   "explain": "$V\\cdot d$ en de logit-berekening schalen met $V$; teksten worden net korter.",
+   "explain": "Een grotere vocabulairegrootte $V$ vergroot de embeddingmatrix ($V \\times d$) en de uiteindelijke lineaire output-laag, waardoor zowel de parameteromvang als de rekenkost van de logit-berekening en softmax stijgen. Teksten worden daarentegen korter (minder tokens per zin).",
    "options": [
     "het aantal parameters van de embeddingmatrix",
     "de rekenkost van de output-softmax",
@@ -355,7 +355,7 @@
    "skill": "bpe",
    "level": 2,
    "prompt": "Corpus: *laag* ×4, *lager* ×3, *laagste* ×2, *vlag* ×6, *blaas* ×2. Wat is het **eerste** nieuwe token?",
-   "explain": "(l, a) = 17 is het frequentste paar.",
+   "explain": "We tellen de gewogen frequenties van aangrenzende letterparen over alle woorden: (l, a) komt voor in *laag* (4), *lager* (3), *laagste* (2), *vlag* (6) en *blaas* (2), wat een totaal van $4+3+2+6+2 = 17$ oplevert. Dit is strikt hoger dan elk ander paar (bv. (a, g) = 15).",
    "answers": [
     "la"
    ],
@@ -367,7 +367,7 @@
    "skill": "bpe",
    "level": 2,
    "prompt": "Hoe vaak (gewogen) komt het paar (a, g) voor in dat corpus?",
-   "explain": "laag 4 + lager 3 + laagste 2 + vlag 6 = 15 (blaas heeft geen ‘ag’).",
+   "explain": "Het paar (a, g) komt voor in *laag* (4×), *lager* (3×), *laagste* (2×) en *vlag* (6×). In *blaas* komt 'ag' niet voor. Totale som: $4 + 3 + 2 + 6 = 15$.",
    "value": 15,
    "abs": 0
   },
@@ -377,7 +377,7 @@
    "skill": "bpe",
    "level": 2,
    "prompt": "Waarom kent byte-level BPE geen ‘onbekend woord’?",
-   "explain": "Worst case: één token per byte.",
+   "explain": "Omdat Byte-level Byte-Pair Encoding (BPE) begint met alle 256 mogelijke individuele bytes als basisvocabulaire, kan elke denkbare byte-sequentie (inclusief zeldzame symbolen of onbekende UTF-8 karakters) altijd gerepresenteerd worden zonder out-of-vocabulary fouten.",
    "options": [
     "Elke tekst kan desnoods uit de 256 basisbytes opgebouwd worden",
     "Omdat de vocabulaire alle woorden bevat",
@@ -392,7 +392,7 @@
    "skill": "token-economics",
    "level": 1,
    "prompt": "Hoeveel tokens zijn ongeveer 3 000 Engelse woorden (0,75 woord/token)?",
-   "explain": "3 000 / 0,75 = 4 000.",
+   "explain": "Bij een gemiddelde ratio van 0,75 woord per token delen we het aantal woorden door 0,75: $\\frac{3\\,000\\text{ woorden}}{0{,}75\\text{ woord/token}} = 4\\,000\\text{ tokens}$.",
    "value": 4000,
    "tolerance": 0.02
   },
@@ -402,7 +402,7 @@
    "skill": "token-economics",
    "level": 2,
    "prompt": "1,5 M inputtokens aan \\$3/M + 200 000 outputtokens aan \\$15/M. Totale kost in dollar?",
-   "explain": "4,50 + 3,00 = \\$7,50.",
+   "explain": "De totale kostprijs is de som van input- en outputkosten: $\\frac{1{,}5 \\times 10^6}{10^6} \\times \\$3 + \\frac{200\\,000}{10^6} \\times \\$15 = 1{,}5 \\times \\$3 + 0{,}2 \\times \\$15 = \\$4{,}50 + \\$3{,}00 = \\$7{,}50$.",
    "value": 7.5,
    "tolerance": 0.01,
    "unit": "$"
@@ -413,7 +413,7 @@
    "skill": "token-economics",
    "level": 2,
    "prompt": "Een model heeft 8 192 tokens context. Hoeveel Engelse woorden passen er ongeveer in (0,75 woord/token)?",
-   "explain": "8 192 × 0,75 = 6 144.",
+   "explain": "Met de vuistregel van 0,75 woord per token kan een contextvenster van 8 192 tokens maximaal $8\\,192 \\times 0{,}75 = 6\\,144$ Engelse woorden bevatten (inclusief prompt, instructies en antwoord).",
    "value": 6144,
    "tolerance": 0.02
   },
@@ -423,7 +423,7 @@
    "skill": "embeddings",
    "level": 2,
    "prompt": "Cosinusgelijkenis van $(1,2,2)$ en $(2,1,2)$?",
-   "explain": "8 / (3·3) = 0,889.",
+   "explain": "Het inproduct is $(1 \\times 2) + (2 \\times 1) + (2 \\times 2) = 2 + 2 + 4 = 8$. De normen zijn $\\sqrt{1^2+2^2+2^2} = \\sqrt{9} = 3$ en $\\sqrt{2^2+1^2+2^2} = 3$. De cosinusgelijkenis is dus $\\frac{8}{3 \\times 3} = \\frac{8}{9} \\approx 0{,}889$.",
    "value": 0.889,
    "abs": 0.005
   },
@@ -433,7 +433,7 @@
    "skill": "embeddings",
    "level": 2,
    "prompt": "Wat bespaart **weight tying**?",
-   "explain": "$W_U = W_E^\\top$.",
+   "explain": "Bij weight tying deelt de output-unembeddingmatrix exact dezelfde gewichten als de input-embeddingmatrix ($W_U = W_E^\\top$). Dit bespaart $V \\times d$ parameters aan kostbaar GPU-geheugen (VRAM).",
    "options": [
     "Output- en embeddingmatrix delen gewichten: $V\\cdot d$ parameters minder",
     "De helft van de attention-heads in elke laag",
@@ -448,7 +448,7 @@
    "skill": "embeddings",
    "level": 3,
    "prompt": "Hoeveel miljoen parameters heeft de embeddingmatrix van Llama 3 8B ($V$ = 128 256, $d$ = 4 096)?",
-   "explain": "128 256 × 4 096 = 525 336 576 ≈ 525,3 M.",
+   "explain": "Het aantal parameters in een embeddingmatrix is het product van de vocabulairegrootte $V$ en de embeddingdimensie $d$: $128\\,256 \\times 4\\,096 = 525\\,336\\,576 \\approx 525{,}34$ miljoen parameters.",
    "value": 525.34,
    "tolerance": 0.005,
    "unit": "miljoen"
@@ -459,7 +459,7 @@
    "skill": "rope",
    "level": 2,
    "prompt": "Voor paar $i=0$ is $\\theta_0 = 1$ rad per positie. Over hoeveel radialen is dat paar gedraaid op positie $m = 3$?",
-   "explain": "$m\\,\\theta_0 = 3$ rad (≈ 171,9°).",
+   "explain": "De rotatiehoek voor dimensiepaar $i$ op positie $m$ is gegeven door $\\theta = m \\cdot \\theta_i$. Voor paar $i=0$ geldt $\\theta_0 = 10000^0 = 1$ rad per positie. Op positie $m=3$ is de totale hoek dus $3 \\times 1 = 3$ radialen.",
    "value": 3,
    "tolerance": 0.01,
    "unit": "rad"
@@ -470,7 +470,7 @@
    "skill": "rope",
    "level": 2,
    "prompt": "Welke eigenschap maakt RoPE geschikt voor relatieve positie?",
-   "explain": "Rotaties zijn orthogonaal: $R_m^\\top R_n = R_{n-m}$.",
+   "explain": "Dankzij de orthogonaliteit van de 2D-rotatiematrices geldt $\\langle R_m q, R_n k \\rangle = q^\\top R_m^\\top R_n k = q^\\top R_{n-m} k$. De resulterende attention-score hangt wiskundig dus uitsluitend af van de relatieve afstand $n-m$, niet van de absolute posities $m$ of $n$.",
    "options": [
     "$\\langle R_m q, R_n k\\rangle$ hangt enkel af van $n-m$",
     "RoPE telt een vector op bij de embedding",
@@ -485,7 +485,7 @@
    "skill": "rope",
    "level": 3,
    "prompt": "Welke frequentieparen roteren het **snelst** met de positie?",
-   "explain": "$\\theta_i = 10000^{-2i/d}$ daalt met $i$.",
+   "explain": "De hoeksnelheid per stap is $\\theta_i = 10000^{-2i/d}$. Voor lage indices $i$ (dichtbij 0) is $\\theta_i$ het grootst (tot 1 rad/positie), waardoor deze dimensies het snelst roteren en gevoelig zijn voor lokale syntaxis.",
    "options": [
     "lage $i$ (grote $\\theta_i$)",
     "hoge $i$ (kleine $\\theta_i$)",
@@ -500,7 +500,7 @@
    "skill": "token-economics",
    "level": 3,
    "prompt": "Leg in 3–4 zinnen uit aan een manager waarom dezelfde vraag in het Grieks duurder kan zijn dan in het Engels, en wat je eraan kan doen.",
-   "explain": "Vertalen naar zakelijke impact is een kernvaardigheid.",
+   "explain": "Het verklarend modelantwoord toont de bedrijfseconomische vertaling: tokenizers rekenen per subwoord en verwerken niet-westerse talen inefficiënter, wat leidt tot hogere marginale kosten per interactie en snellere verzadiging van het contextvenster.",
    "model": "Taalmodellen rekenen per token, en de tokenizer is vooral op Engels getraind. Griekse tekst (ander schrift) wordt daardoor in meer en kleinere stukjes geknipt: dezelfde vraag kan 2 à 3 keer zoveel tokens kosten. Dat verhoogt de prijs en vult het contextvenster sneller. Oplossingen: een model met een meertalige tokenizer kiezen, prompts en systeeminstructies inkorten of cachen, en het tokenverbruik per taal meten vóór je een prijs afspreekt.",
    "rubric": [
     "Kosten per token als basis",
@@ -517,7 +517,7 @@
    "skill": "bpe",
    "level": 2,
    "prompt": "Corpus: *zee* ×5, *zeer* ×2, *mee* ×3 (woorden beginnen met ▁). Wat is het eerste nieuwe token?",
-   "explain": "(e, e) = 10.",
+   "explain": "In het corpus *zee* (5×), *zeer* (2×) en *mee* (3×) komt het paar (e, e) voor in alle 10 instanties: $5 + 2 + 3 = 10$ keer. Dit is het frequentste naburige paar en vormt dus het eerste samengevoegde token 'ee'.",
    "answers": [
     "ee"
    ],
@@ -529,7 +529,7 @@
    "skill": "bpe",
    "level": 2,
    "prompt": "Hoe vaak (gewogen) komt het paar (z, e) voor in dat corpus?",
-   "explain": "zee 5 + zeer 2 = 7.",
+   "explain": "Het paar (z, e) komt voor in *zee* (5×) en *zeer* (2×), maar niet in *mee*. De gewogen frequentie is dus $5 + 2 = 7$.",
    "value": 7,
    "abs": 0
   },
@@ -539,7 +539,7 @@
    "skill": "bpe",
    "level": 2,
    "prompt": "Je traint BPE met **meer merges**. Wat gebeurt er met het aantal tokens voor dezelfde tekst?",
-   "explain": "Meer merges = grotere $V$ = kortere sequenties.",
+   "explain": "Elke extra merge voegt een frequent subwoordpaar samen tot één nieuw token in het vocabulaire $V$. Woorden worden hierdoor in minder, langere tokens opgeknipt, waardoor het totale aantal tokens voor een identieke tekst daalt.",
    "options": [
     "Het daalt (tokens worden langer)",
     "Het stijgt",
@@ -554,7 +554,7 @@
    "skill": "token-economics",
    "level": 2,
    "prompt": "2 M inputtokens aan \\$2,50/M en 500 000 outputtokens aan \\$10/M. Kost in dollar?",
-   "explain": "5 + 5 = \\$10.",
+   "explain": "Totale kost: inputkost is $2\\text{ M} \\times \\$2{,}50/\\text{M} = \\$5{,}00$; outputkost is $0{,}5\\text{ M} \\times \\$10{,}00/\\text{M} = \\$5{,}00$. Samen: $\\$5{,}00 + \\$5{,}00 = \\$10{,}00$.",
    "value": 10,
    "tolerance": 0.01,
    "unit": "$"
@@ -565,7 +565,7 @@
    "skill": "token-economics",
    "level": 2,
    "prompt": "Een tekst van 12 000 tekens. Hoeveel tokens ongeveer, bij 4 tekens per token?",
-   "explain": "12 000 / 4 = 3 000.",
+   "explain": "Volgens de vuistregel voor Engelse tekst geldt 1 token ≈ 4 karakters: $\\frac{12\\,000\\text{ tekens}}{4\\text{ tekens/token}} = 3\\,000\\text{ tokens}$.",
    "value": 3000,
    "tolerance": 0.02
   },
@@ -575,7 +575,7 @@
    "skill": "token-economics",
    "level": 3,
    "prompt": "Een Nederlandstalige chatbot: 10 000 gesprekken × 800 inputwoorden, 1,5 tokens per woord, \\$3/M input. Inputkost in dollar?",
-   "explain": "10 000 × 800 × 1,5 = 12 M tokens × \\$3/M = \\$36.",
+   "explain": "Het aantal inputtokens bedraagt $10\\,000\\text{ gesprekken} \\times 800\\text{ woorden} \\times 1{,}5\\text{ tokens/woord} = 12\\,000\\text{k} = 12\\text{ M tokens}$. Aan $\\$3/\\text{M}$ is de maandelijkse inputkost: $12 \\times \\$3 = \\$36{,}00$.",
    "value": 36,
    "tolerance": 0.01,
    "unit": "$"
@@ -586,7 +586,7 @@
    "skill": "embeddings",
    "level": 2,
    "prompt": "Cosinusgelijkenis van $(3,4)$ en $(4,3)$?",
-   "explain": "(12 + 12)/(5·5) = 0,96.",
+   "explain": "Inproduct: $(3 \\times 4) + (4 \\times 3) = 12 + 12 = 24$. De Euclidische norm van beide vectoren is $\\sqrt{3^2+4^2} = \\sqrt{25} = 5$. De cosinusgelijkenis is $\\frac{24}{5 \\times 5} = \\frac{24}{25} = 0{,}96$.",
    "value": 0.96,
    "abs": 0.005
   },
@@ -596,7 +596,7 @@
    "skill": "embeddings",
    "level": 1,
    "prompt": "Wat is het bereik van de cosinusgelijkenis?",
-   "explain": "Van tegengesteld (−1) tot identiek gericht (1).",
+   "explain": "De cosinusgelijkenis berekent de cosinus van de ingesloten hoek in een vectorruimte, welke wiskundig begrensd is tussen $-1$ (exact tegengesteld gericht, $180^\\circ$) en $+1$ (exact gelijke richting, $0^\\circ$).",
    "options": [
     "[−1, 1]",
     "[0, 1]",
@@ -611,7 +611,7 @@
    "skill": "embeddings",
    "level": 3,
    "prompt": "Llama 3 8B gebruikt **geen** weight tying. Hoeveel miljoen parameters zitten er samen in embedding- en outputmatrix ($V$ = 128 256, $d$ = 4 096)?",
-   "explain": "2 × 525,34 M ≈ 1 050,7 M.",
+   "explain": "Zonder weight tying bevat het model zowel een embeddingmatrix $W_E \\in \\mathbb{R}^{V \\times d}$ als een ontkoppelde unembeddingmatrix $W_U \\in \\mathbb{R}^{d \\times V}$. Samen: $2 \\times (128\\,256 \\times 4\\,096) = 2 \\times 525\\,336\\,576 = 1\\,050\\,673\\,152 \\approx 1\\,050{,}67$ miljoen parameters.",
    "value": 1050.67,
    "tolerance": 0.005,
    "unit": "miljoen"
@@ -622,7 +622,7 @@
    "skill": "rope",
    "level": 2,
    "prompt": "Wat is $\\theta_i$ voor $d = 128$ en $i = 32$?",
-   "explain": "$10000^{-64/128} = 0{,}01$.",
+   "explain": "Met de RoPE-formule $\\theta_i = 10000^{-2i/d}$: voor $i = 32$ en $d = 128$ geldt $\\frac{2i}{d} = \\frac{64}{128} = 0{,}5$. Dus $\\theta_{32} = 10000^{-0{,}5} = \\frac{1}{\\sqrt{10000}} = \\frac{1}{100} = 0{,}01$ radialen per positie.",
    "value": 0.01,
    "tolerance": 0.01,
    "unit": "rad"
@@ -633,7 +633,7 @@
    "skill": "rope",
    "level": 2,
    "prompt": "Over hoeveel radialen is paar $i = 0$ gedraaid op positie $m = 5$?",
-   "explain": "$\\theta_0 = 1$ → $5$ rad.",
+   "explain": "Voor het eerste dimensiepaar ($i=0$) geldt $\\theta_0 = 10000^0 = 1$ rad. Op positie $m=5$ is de rotatiehoek $m \\cdot \\theta_0 = 5 \\times 1 = 5$ radialen.",
    "value": 5,
    "tolerance": 0.01,
    "unit": "rad"
@@ -644,7 +644,7 @@
    "skill": "rope",
    "level": 3,
    "prompt": "Query op positie 10, key op positie 7. Je verschuift beide met +100. Wat gebeurt er met hun RoPE-inproduct?",
-   "explain": "Alleen $n-m$ telt, en dat blijft −3.",
+   "explain": "Omdat RoPE de Query- en Key-vectoren roteert met relatieve afstanden, hangt de aandachtsvector $\\langle R_m q, R_n k \\rangle$ uitsluitend af van het verschil $n - m$. Aangezien $(7 + 100) - (10 + 100) = 7 - 10 = -3$, blijft het inproduct strikt identiek.",
    "options": [
     "Het blijft gelijk",
     "Het wordt 100 keer groter",
@@ -659,7 +659,7 @@
    "skill": "rope",
    "level": 2,
    "prompt": "Welke positie-encoding gebruikte de originele Transformer (2017)? (één woord)",
-   "explain": "Vaste sinus/cosinusgolven.",
+   "explain": "De baanbrekende Transformer-architectuur ('Attention Is All You Need', 2017) gebruikte vaste sinusoïdale (sinus en cosinus) functies om posities te coderen alvorens over te stappen op leerbare of roterende embeddings.",
    "answers": [
     "sinusoïdaal",
     "sinusoidaal",
@@ -675,7 +675,7 @@
    "skill": "pipeline",
    "level": 2,
    "prompt": "Zet de verwerkingsstappen in de juiste volgorde.",
-   "explain": "Eerst knippen, dan nummeren, opzoeken, positie toevoegen, verwerken.",
+   "explain": "De logische volgorde in de pipeline: ruwe tekst wordt geknipt in tokens, omgezet in integer ID's, opgezocht in de embeddingmatrix, verrijkt met positie-informatie (zoals RoPE) en vervolgens gevoed aan de transformer-lagen.",
    "tiles": [
     "tekst",
     "tokens",
@@ -692,7 +692,7 @@
    "skill": "pipeline",
    "level": 2,
    "prompt": "Waarom kost een langere tokenreeks meer dan lineair extra in de attention?",
-   "explain": "$O(T^2)$.",
+   "explain": "In de self-attention laag berekent elk token een paarsgewijze score met alle $T$ tokens in de reeks, wat resulteert in een aandachtsmatrix van $T \\times T$ elementen. Dit veroorzaakt een kwadratische toename $\\mathcal{O}(T^2)$ in zowel geheugenbeslag als FLOPs.",
    "options": [
     "De attention-matrix heeft $T\\times T$ elementen",
     "Elk token heeft een eigen GPU nodig",
@@ -707,7 +707,7 @@
    "skill": "pipeline",
    "level": 3,
    "prompt": "Welke uitspraak over input-embeddings in een LLM klopt?",
-   "explain": "‘bank’ krijgt pas in context zijn betekenis.",
+   "explain": "De initiële input-embedding is een statische, contextvrije vectorrepresentatie per token. Pas wanneer de opeenvolgende self-attention lagen informatie tussen naburige en verre tokens uitwisselen, ontstaat de rijke contextuele betekenis.",
    "options": [
     "Ze zijn het startpunt; de contextuele betekenis ontstaat in de hogere lagen",
     "Ze bevatten al de volledige betekenis in context",
@@ -721,33 +721,32 @@
   "type": "explain",
   "lang": "nl",
   "minWords": 80,
-  "prompt": "**Klantcase.** Een KMO wil een klantenservice-chatbot in het Nederlands. Verwachting: 10 000 gesprekken per maand, gemiddeld 800 inputwoorden (inclusief systeemprompt en historiek) en 300 outputwoorden per gesprek. Tokenfactor Nederlands: 1,5 tokens per woord. Prijzen: \\$3 per miljoen inputtokens, \\$15 per miljoen outputtokens.\n\n1. Bereken de maandelijkse kost (toon je berekening).\n2. Leg uit wat er gebeurt als de klant ook Grieks wil ondersteunen.\n3. Stel twee concrete maatregelen voor om de kost te verlagen.",
-  "model": "**1. Kost.** Input: 10 000 × 800 × 1,5 = 12 M tokens → 12 × \\$3 = **\\$36**. Output: 10 000 × 300 × 1,5 = 4,5 M tokens → 4,5 × \\$15 = **\\$67,50**. Totaal ≈ **\\$103,50 per maand**.\n\n**2. Grieks.** De tokenizer knipt Grieks (ander schrift) vaak in meer stukjes: afhankelijk van het model 2 à 3 keer zoveel tokens per woord. De kost per Grieks gesprek kan dus verdubbelen tot verdrievoudigen, en het contextvenster raakt sneller vol. Meet dit vooraf per model.\n\n**3. Maatregelen.** (a) De vaste systeemprompt inkorten en *prompt caching* gebruiken; (b) de gespreksgeschiedenis samenvatten in plaats van volledig mee te sturen; (c) een model met een efficiëntere, meertalige tokenizer kiezen; (d) lange antwoorden begrenzen (output is 5× duurder).",
+  "prompt": "**Klantcase.** Een KMO wil een klantenservice-chatbot in het Nederlands. Verwachting: 10 000 gesprekken per maand, gemiddeld 800 inputwoorden (inclusief systeemprompt en historiek) en 300 outputwoorden per gesprek. Tokenfactor Nederlands: 1,5 tokens per woord. Prijzen: $3 per miljoen inputtokens, $15 per miljoen outputtokens.\n\n1. Bereken de maandelijkse operationele kost (toon je volledige berekening).\n2. Analyseer wat er gebeurt met de kosten en contextlimieten als de klant ook Grieks (ander schrift) wil ondersteunen.\n3. Formuleer als adviseur twee concrete technische of architecturale maatregelen om de operationele kosten te drukken.",
+  "model": "**1. Maandelijkse operationele kost.**\n- Inputtokens: 10 000 gesprekken × 800 woorden × 1,5 tokens/woord = 12 000 000 tokens (12 M tokens).\n  Inputkost: 12 M × $3/M = **$36,00**.\n- Outputtokens: 10 000 gesprekken × 300 woorden × 1,5 tokens/woord = 4 500 000 tokens (4,5 M tokens).\n  Outputkost: 4,5 M × $15/M = **$67,50**.\n- **Totale maandelijkse kost:** $36,00 + $67,50 = **$103,50 per maand**.\n\n**2. Impact van Grieks (meertalige overhead).**\nOmdat de meeste Byte-Pair Encoding (BPE)-tokenizers getraind zijn op Latijns schrift (voornamelijk Engels), wordt niet-Latijns schrift zoals het Griekse alfabet versnipperd in veel kortere subwoorden of individuele UTF-8 bytes. De tokenfactor voor Grieks ligt daardoor typisch tussen 2,0 en 3,0 tokens per woord. Gevolg: voor hetzelfde volume verdubbelen tot verdrievoudigen de variabele tokenkosten, en het vaste contextvenster van het model raakt 2 tot 3 keer sneller verzadigd, wat tot eerdere contexttruncatie of geheugendruk leidt.\n\n**3. Twee concrete kostenbesparende maatregelen:**\n1. **Prompt-optimalisatie en context-caching:** De statische systeemprompt en veelgebruikte bedrijfsdocumenten inkorten en cachen via prompt-caching (beschikbaar bij moderne LLM-providers), wat tot 50-80% korting oplevert op herhaalde inputtokens.\n2. **Migratie naar een model met een moderne meertalige tokenizer:** Overschakelen naar een model met een ruimer vocabulaire (zoals Llama 3 met 128k tokens of GPT-4o met 200k tokens), waardoor de tokenfactor voor Nederlands en Grieks drastisch daalt.",
   "rubric": [
-   "Input- en outputtokens correct berekend (12 M en 4,5 M)",
-   "Totaal ≈ \\$103,50 per maand",
-   "Verklaart hogere tokenkost van Grieks via de tokenizer",
-   "Minstens twee concrete kostenmaatregelen",
-   "Duidelijk voor een niet-technische lezer"
+   "Correcte berekening van de maandelijkse kostprijs ($36 input + $67,50 output = $103,50)",
+   "Verklaring van tokenizer-bias bij niet-westerse schriften (Griekse subwoord-versnippering verhoogt tokenfactor)",
+   "Impact op zowel variabele kosten als contextvenster-verzadiging",
+   "Minstens twee onderbouwde technische maatregelen (bv. prompt caching, meertalig model/grotere tokenizer, condensatie)"
   ]
  },
  "cards": [
   {
    "id": "c-rule",
-   "front": "Vuistregel tokens ↔ Engelse woorden?",
-   "back": "1 token ≈ 4 tekens ≈ 0,75 woord",
+   "front": "Wat is de vuistregel voor de omrekening van Engelse tekst naar Large Language Model (LLM)-tokens en woorden?",
+   "back": "1 token ≈ 4 tekens ≈ 0,75 woord (ofwel 1 000 woorden ≈ 1 333 tokens). Voor niet-Engelse talen ligt het aantal tokens per woord significant hoger door tokenizer-bias.",
    "skill": "token-economics"
   },
   {
    "id": "c-bpe",
-   "front": "Hoe kiest BPE de volgende merge?",
-   "back": "Het **frequentste naburige paar** in het corpus (gewogen met woordfrequentie)",
+   "front": "Volgens welk criterium kiest het Byte-Pair Encoding (BPE)-algoritme de volgende merge?",
+   "back": "Het selecteert het **meest frequente aangrenzende tokenpaar** in het trainingscorpus (gewogen naar woordfrequentie) en voegt dit samen tot één nieuw subwoord-token.",
    "skill": "bpe"
   },
   {
    "id": "c-vocab-l3",
-   "front": "Vocabulairegrootte van Llama 3?",
-   "back": "128 256",
+   "front": "Hoe groot is het BPE-vocabulaire $V$ van Llama 3 (vergeleken met 32 000 bij Llama 2)?",
+   "back": "128 256 tokens. Een groter vocabulaire comprimeert tekst sterker (minder tokens per document), maar vergroot de embeddingmatrix.",
    "answers": [
     "128256",
     "128 256",
@@ -758,32 +757,32 @@
   },
   {
    "id": "c-emb-params",
-   "front": "Parameters van de embeddingmatrix?",
-   "back": "$V \\cdot d$",
+   "front": "Hoe bereken je de parameteromvang en het geheugenbeslag van een embeddingmatrix?",
+   "back": "Aantal parameters = $V \\cdot d$ (vocabulairegrootte $\\times$ modeldimensie). In 16-bit precisie (FP16/BF16) kost dit $2 \\times V \\cdot d$ bytes aan Video RAM (VRAM) op de GPU.",
    "skill": "embeddings"
   },
   {
    "id": "c-cos",
-   "front": "Formule cosinusgelijkenis?",
-   "back": "$\\frac{a\\cdot b}{\\lVert a\\rVert\\,\\lVert b\\rVert}$",
+   "front": "Wat is de wiskundige definitie en het waardebereik van de cosinusgelijkenis tussen vectoren $\\mathbf{a}$ en $\\mathbf{b}$?",
+   "back": "$\\cos(\\mathbf{a},\\mathbf{b}) = \\frac{\\mathbf{a}\\cdot\\mathbf{b}}{\\lVert\\mathbf{a}\\rVert\\,\\lVert\\mathbf{b}\\rVert} \\in [-1, 1]$. Een waarde van 1 staat voor identieke richting, 0 voor orthogonaliteit, en -1 voor exact tegengestelde oriëntatie.",
    "skill": "embeddings"
   },
   {
    "id": "c-theta",
-   "front": "RoPE-frequentie $\\theta_i$?",
-   "back": "$10000^{-2i/d}$",
+   "front": "Hoe wordt de basishoekfrequentie $\\theta_i$ berekend in Rotary Position Embedding (RoPE) voor dimensiepaar $i$?",
+   "back": "$\\theta_i = 10000^{-2i/d}$ voor $i \\in \\{0, \\dots, d/2 - 1\\}$. Lage $i$ roteren snel (lokale syntaxis), hoge $i$ roteren traag (globale semantische structuur).",
    "skill": "rope"
   },
   {
    "id": "c-rope-rel",
-   "front": "Waarom is RoPE relatief?",
-   "back": "$\\langle R_m q, R_n k\\rangle = q^\\top R_{n-m} k$ — enkel $n-m$ telt",
+   "front": "Waarom codeert RoPE relatieve in plaats van absolute posities in de self-attention berekening?",
+   "back": "Dankzij orthogonaliteit van rotatiematrices geldt $\\langle R_m q, R_n k\\rangle = q^\\top (R_m^\\top R_n) k = q^\\top R_{n-m} k$. De aandachts-score hangt wiskundig enkel af van het verschil $n-m$.",
    "skill": "rope"
   },
   {
    "id": "c-tying",
-   "front": "Wat is weight tying?",
-   "back": "De outputmatrix hergebruikt de embeddingmatrix: $W_U = W_E^\\top$",
+   "front": "Wat houdt 'weight tying' in en welk technisch/economisch voordeel biedt dit bij LLM-architecturen?",
+   "back": "De unembedding-matrix hergebruikt exact dezelfde gewichten als de embeddingmatrix ($W_U = W_E^\\top$). Dit bespaart $V \\cdot d$ parameters aan kostbaar GPU-geheugen (VRAM).",
    "skill": "embeddings"
   }
  ],
@@ -796,6 +795,8 @@
  "kind": "core",
  "meta": {
   "author": "claude",
-  "created": "2026-09-25"
+  "created": "2026-09-25",
+  "revised": "2026-10-21",
+  "revisionNotes": "Afkortingen voluit geschreven, uitleg verdiept, handelsingenieur-perspectief versterkt"
  }
 }

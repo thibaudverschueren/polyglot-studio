@@ -1,600 +1,403 @@
 {
- "track": "ai",
- "goal": "Moderne LLM-systemen tot op de formule én de Python-code (PyTorch, Hugging Face, training loops, LoRA, inferentie) doorgronden, trainen en bouwen — met visuele architectuurschema's, diep tensor-inzicht en compute-calculaties.",
- "principles": [
-  "Elke les combineert theorie en wiskunde (KaTeX), visuele architectuurschema's/diagrammen en concrete Python-implementaties (PyTorch, Hugging Face transformers, peft).",
-  "Zowel trainen (training loops, loss calculation, backprop, autograd, optimizer, SFT, LoRA) als gebruiken (inference pipelines, KV-cache tensors, embeddings, structured outputs) worden in Python tot op de regel code ontleed.",
-  "Geen black-box code: begrijp wat er met tensors in VRAM en GPU-registers gebeurt bij elke stap (shapes, gradients, memory allocation).",
-  "Cijfers en claims met bronvermelding (paper + jaar); vertaal altijd naar gevolgen voor product, kost en strategie (handelsingenieur)."
- ],
- "modules": [
-  {
-   "id": "fundament",
-   "title": "Fundament — van tekst tot transformer",
-   "topics": [
-    "ai-01-tokenization-embeddings",
-    "ai-02-attention",
-    "ai-19-vlm",
-    "ai-20-diffusion",
-    "ai-21-ssm"
-   ]
-  },
-  {
-   "id": "training",
-   "title": "Training en alignment",
-   "topics": [
-    "ai-03-pretraining-scaling",
-    "ai-04-optimization",
-    "ai-05-distributed",
-    "ai-06-post-training",
-    "ai-07-reasoning",
-    "ai-24-data",
-    "ai-25-distillation",
-    "ai-30-project-finetune"
-   ]
-  },
-  {
-   "id": "inferentie",
-   "title": "Inferentie en efficiëntie",
-   "topics": [
-    "ai-08-decoding",
-    "ai-09-inference",
-    "ai-10-quantization",
-    "ai-11-peft",
-    "ai-12-moe",
-    "ai-13-long-context"
-   ]
-  },
-  {
-   "id": "systemen",
-   "title": "Systemen, evaluatie en strategie",
-   "topics": [
-    "ai-14-evaluation",
-    "ai-15-rag",
-    "ai-16-agents",
-    "ai-17-prompting",
-    "ai-18-structured-output",
-    "ai-22-interpretability",
-    "ai-23-safety",
-    "ai-26-serving-economics",
-    "ai-27-strategy",
-    "ai-28-regulation",
-    "ai-29-project-rag"
-   ]
-  }
- ],
- "topics": [
-  {
-   "id": "ai-01-tokenization-embeddings",
-   "title": "Tokenisatie, embeddings en positie (RoPE)",
-   "level": "advanced",
-   "objectives": [
-    "BPE trainen en toepassen",
-    "embedding-matrix en parameterkost",
-    "RoPE: relatieve positie via rotaties"
-   ],
-   "theory": [
-    "byte-level BPE, vocab 32k–200k",
-    "W_E ∈ R^{V×d}",
-    "⟨R_m q, R_n k⟩ = qᵀR_{n−m}k"
-   ],
-   "example": "Waarom Nederlands meer tokens kost dan Engels (en wat dat kost).",
-   "exercise": "BPE-merges met de hand + simulator.",
-   "test": "Numeriek (parameters, tokens) + concept.",
-   "sims": [
-    "bpe",
-    "rope"
-   ]
-  },
-  {
-   "id": "ai-02-attention",
-   "title": "Attention en het transformerblok",
-   "level": "advanced",
-   "objectives": [
-    "scaled dot-product attention",
-    "causaal masker",
-    "MHA vs GQA vs MQA",
-    "RMSNorm, SwiGLU, residuals"
-   ],
-   "theory": [
-    "softmax(QKᵀ/√d_k + M)V",
-    "variantieargument √d_k",
-    "KV-heads delen"
-   ],
-   "example": "Waarom GQA de KV-cache 8× kleiner maakt.",
-   "exercise": "Attention-gewichten met de hand berekenen.",
-   "test": "Numeriek + matrixvragen.",
-   "sims": [
-    "attention"
-   ]
-  },
-  {
-   "id": "ai-03-pretraining-scaling",
-   "title": "Pretraining, verlies en scaling laws",
-   "level": "advanced",
-   "objectives": [
-    "cross-entropy en perplexity",
-    "C ≈ 6ND",
-    "Kaplan vs Chinchilla",
-    "over-trainen voor inferentie"
-   ],
-   "theory": [
-    "PPL = e^L",
-    "N_opt ∝ C^0.5, D ≈ 20N",
-    "L(N,D) = E + A/N^α + B/D^β"
-   ],
-   "example": "Budgettering van een 8B-model.",
-   "exercise": "Compute- en kostenraming.",
-   "test": "Numeriek.",
-   "sims": [
-    "chinchilla"
-   ]
-  },
-  {
-   "id": "ai-04-optimization",
-   "title": "Optimalisatie: AdamW, LR-schema's en precisie",
-   "level": "advanced",
-   "objectives": [
-    "AdamW-update",
-    "warmup + cosine decay",
-    "bf16/fp8 mixed precision",
-    "gradient clipping"
-   ],
-   "theory": [
-    "m, v, bias-correctie",
-    "weight decay ontkoppeld",
-    "loss spikes"
-   ],
-   "example": "Een trainingsrun die divergeert.",
-   "exercise": "Diagnose en fix voorstellen.",
-   "test": "Concept + numeriek."
-  },
-  {
-   "id": "ai-05-distributed",
-   "title": "Gedistribueerd trainen",
-   "level": "advanced",
-   "objectives": [
-    "data/tensor/pipeline parallelism",
-    "ZeRO/FSDP",
-    "geheugen per GPU berekenen"
-   ],
-   "theory": [
-    "16 bytes/param met Adam (mixed)",
-    "communicatiekost"
-   ],
-   "example": "Hoeveel H100's voor een 70B-model?",
-   "exercise": "Geheugenbudget opstellen.",
-   "test": "Numeriek."
-  },
-  {
-   "id": "ai-06-post-training",
-   "title": "Post-training: SFT, RLHF en DPO",
-   "level": "advanced",
-   "objectives": [
-    "SFT",
-    "reward model + PPO met KL",
-    "DPO-loss",
-    "trade-offs"
-   ],
-   "theory": [
-    "L_DPO = −log σ(β[(log π/π_ref)(y_w) − (log π/π_ref)(y_l)])",
-    "reward hacking"
-   ],
-   "example": "Een assistent die te veel ‘ja’ zegt.",
-   "exercise": "DPO-loss narekenen.",
-   "test": "Numeriek + concept."
-  },
-  {
-   "id": "ai-07-reasoning",
-   "title": "Redeneermodellen en test-time compute",
-   "level": "advanced",
-   "objectives": [
-    "RL met verifieerbare beloningen",
-    "GRPO",
-    "test-time scaling"
-   ],
-   "theory": [
-    "chain-of-thought als latent werk",
-    "pass@k vs majority voting"
-   ],
-   "example": "Wanneer loont een redeneermodel?",
-   "exercise": "Kosten/baten-analyse.",
-   "test": "Concept + numeriek."
-  },
-  {
-   "id": "ai-08-decoding",
-   "title": "Decoding en sampling",
-   "level": "advanced",
-   "objectives": [
-    "temperatuur, top-k, top-p",
-    "beam search",
-    "speculative decoding"
-   ],
-   "theory": [
-    "softmax(z/T)",
-    "acceptatiekans min(1, p/q)"
-   ],
-   "example": "Creatief vs deterministisch genereren.",
-   "exercise": "Verdelingen berekenen.",
-   "test": "Numeriek."
-  },
-  {
-   "id": "ai-09-inference",
-   "title": "Inferentie: prefill, decode en de KV-cache",
-   "level": "advanced",
-   "objectives": [
-    "memory-bound decode",
-    "KV-cache-grootte",
-    "FlashAttention",
-    "PagedAttention/continuous batching"
-   ],
-   "theory": [
-    "KV = 2·L·h_kv·d_h·T·B·bytes",
-    "arithmetic intensity"
-   ],
-   "example": "Hoeveel gebruikers per GPU?",
-   "exercise": "Capaciteitsplanning.",
-   "test": "Numeriek.",
-   "sims": [
-    "kvcache"
-   ]
-  },
-  {
-   "id": "ai-10-quantization",
-   "title": "Quantisatie",
-   "level": "advanced",
-   "objectives": [
-    "INT8/INT4, FP8",
-    "GPTQ, AWQ, NF4",
-    "kwaliteitsverlies meten"
-   ],
-   "theory": [
-    "absmax vs zero-point",
-    "outlier-kanalen"
-   ],
-   "example": "Een 70B-model op één GPU.",
-   "exercise": "Geheugen en kwaliteit afwegen.",
-   "test": "Numeriek."
-  },
-  {
-   "id": "ai-11-peft",
-   "title": "PEFT: LoRA en QLoRA",
-   "level": "advanced",
-   "objectives": [
-    "LoRA-wiskunde",
-    "rang en α",
-    "QLoRA"
-   ],
-   "theory": [
-    "W = W₀ + (α/r)BA, B=0 init",
-    "params r(d+k)"
-   ],
-   "example": "Fine-tunen op bedrijfsdata met één GPU.",
-   "exercise": "Parameter- en geheugenberekening.",
-   "test": "Numeriek.",
-   "sims": [
-    "lora"
-   ]
-  },
-  {
-   "id": "ai-12-moe",
-   "title": "Mixture of Experts",
-   "level": "advanced",
-   "objectives": [
-    "top-k routing",
-    "load balancing loss",
-    "totale vs actieve parameters"
-   ],
-   "theory": [
-    "Mixtral 8×7B: 46,7B totaal, ~12,9B actief"
-   ],
-   "example": "Kosten van een MoE vs dense model.",
-   "exercise": "Actieve parameters berekenen.",
-   "test": "Numeriek."
-  },
-  {
-   "id": "ai-13-long-context",
-   "title": "Lange context",
-   "level": "advanced",
-   "objectives": [
-    "RoPE-scaling (PI, NTK, YaRN)",
-    "sliding window",
-    "lost in the middle"
-   ],
-   "theory": [
-    "θ-schaalfactoren",
-    "KV-kosten bij 128k"
-   ],
-   "example": "Een contract van 300 pagina's analyseren.",
-   "exercise": "Strategie kiezen: lange context vs RAG.",
-   "test": "Concept + numeriek.",
-   "sims": [
-    "rope",
-    "kvcache"
-   ]
-  },
-  {
-   "id": "ai-14-evaluation",
-   "title": "Evaluatie van LLM's",
-   "level": "advanced",
-   "objectives": [
-    "benchmarks en contaminatie",
-    "LLM-as-judge-bias",
-    "eigen evals bouwen"
-   ],
-   "theory": [
-    "pass@k",
-    "Elo/arena"
-   ],
-   "example": "Kiezen tussen twee modellen voor een klant.",
-   "exercise": "Evalplan opstellen.",
-   "test": "Concept."
-  },
-  {
-   "id": "ai-15-rag",
-   "title": "Retrieval-Augmented Generation",
-   "level": "advanced",
-   "objectives": [
-    "embeddings en cosine similarity",
-    "ANN (HNSW)",
-    "chunking en reranking",
-    "RAG evalueren"
-   ],
-   "theory": [
-    "recall@k",
-    "hybrid search (BM25 + dense)"
-   ],
-   "example": "Een kennisbank-assistent voor een KMO.",
-   "exercise": "RAG-architectuur ontwerpen.",
-   "test": "Concept + numeriek."
-  },
-  {
-   "id": "ai-16-agents",
-   "title": "Agents en tool use",
-   "level": "advanced",
-   "objectives": [
-    "function calling",
-    "ReAct-loop",
-    "planning en foutafhandeling",
-    "agent-evaluatie"
-   ],
-   "theory": [
-    "tool-schema's",
-    "MCP"
-   ],
-   "example": "Een agent die facturen verwerkt.",
-   "exercise": "Agent-ontwerp met guardrails.",
-   "test": "Concept."
-  },
-  {
-   "id": "ai-17-prompting",
-   "title": "Prompting en in-context learning",
-   "level": "advanced",
-   "objectives": [
-    "few-shot",
-    "systeemprompts",
-    "ICL-theorie"
-   ],
-   "theory": [
-    "prompt als programma",
-    "consistentie"
-   ],
-   "example": "Een robuuste classificatieprompt.",
-   "exercise": "Prompt schrijven + evalueren.",
-   "test": "Rubric."
-  },
-  {
-   "id": "ai-18-structured-output",
-   "title": "Structured output en constrained decoding",
-   "level": "advanced",
-   "objectives": [
-    "JSON Schema-output",
-    "grammar-constrained decoding",
-    "validatie"
-   ],
-   "theory": [
-    "logit masking",
-    "retry/repair"
-   ],
-   "example": "Betrouwbare extractie uit e-mails.",
-   "exercise": "Schema ontwerpen.",
-   "test": "Concept."
-  },
-  {
-   "id": "ai-19-vlm",
-   "title": "Multimodale modellen: ViT, CLIP en VLM's",
-   "level": "advanced",
-   "objectives": [
-    "patches als tokens",
-    "contrastieve loss",
-    "projectie naar LLM-ruimte"
-   ],
-   "theory": [
-    "N = HW/P²",
-    "InfoNCE"
-   ],
-   "example": "Facturen als afbeelding verwerken.",
-   "exercise": "Tokenkost van beelden berekenen.",
-   "test": "Numeriek."
-  },
-  {
-   "id": "ai-20-diffusion",
-   "title": "Diffusiemodellen",
-   "level": "advanced",
-   "objectives": [
-    "forward/reverse proces",
-    "latent diffusion",
-    "flow matching"
-   ],
-   "theory": [
-    "ε-predictie",
-    "CFG"
-   ],
-   "example": "Productfoto's genereren.",
-   "exercise": "Concept.",
-   "test": "Concept."
-  },
-  {
-   "id": "ai-21-ssm",
-   "title": "Alternatieven voor attention",
-   "level": "advanced",
-   "objectives": [
-    "SSM's (Mamba)",
-    "lineaire attention",
-    "hybride modellen"
-   ],
-   "theory": [
-    "O(T) vs O(T²)"
-   ],
-   "example": "Wanneer is een SSM interessant?",
-   "exercise": "Vergelijking.",
-   "test": "Concept."
-  },
-  {
-   "id": "ai-22-interpretability",
-   "title": "Interpreteerbaarheid",
-   "level": "advanced",
-   "objectives": [
-    "probing",
-    "attention-patronen",
-    "sparse autoencoders en features"
-   ],
-   "theory": [
-    "superpositie"
-   ],
-   "example": "Waarom weigert een model?",
-   "exercise": "Concept.",
-   "test": "Concept."
-  },
-  {
-   "id": "ai-23-safety",
-   "title": "Alignment en veiligheid",
-   "level": "advanced",
-   "objectives": [
-    "reward hacking",
-    "red-teaming",
-    "constitutional AI"
-   ],
-   "theory": [
-    "specification gaming"
-   ],
-   "example": "Risico-analyse voor een klantenservicebot.",
-   "exercise": "Risicoregister.",
-   "test": "Rubric."
-  },
-  {
-   "id": "ai-24-data",
-   "title": "Data: curatie en synthetische data",
-   "level": "advanced",
-   "objectives": [
-    "deduplicatie",
-    "kwaliteitsfilters",
-    "synthetische data"
-   ],
-   "theory": [
-    "MinHash",
-    "model collapse"
-   ],
-   "example": "Een fine-tuning-dataset bouwen.",
-   "exercise": "Dataplan.",
-   "test": "Concept."
-  },
-  {
-   "id": "ai-25-distillation",
-   "title": "Distillatie en kleine modellen",
-   "level": "advanced",
-   "objectives": [
-    "knowledge distillation",
-    "small language models"
-   ],
-   "theory": [
-    "KL tussen teacher en student"
-   ],
-   "example": "Een on-device model.",
-   "exercise": "Kosten/kwaliteit.",
-   "test": "Concept."
-  },
-  {
-   "id": "ai-26-serving-economics",
-   "title": "Serving-economie",
-   "level": "advanced",
-   "objectives": [
-    "throughput vs latency",
-    "kosten per miljoen tokens",
-    "GPU-keuze"
-   ],
-   "theory": [
-    "tokens/s/GPU",
-    "utilisatie"
-   ],
-   "example": "Eigen hosting vs API.",
-   "exercise": "Kostenmodel.",
-   "test": "Numeriek.",
-   "sims": [
-    "kvcache"
-   ]
-  },
-  {
-   "id": "ai-27-strategy",
-   "title": "LLM-productstrategie en unit economics",
-   "level": "advanced",
-   "objectives": [
-    "build vs buy",
-    "moats",
-    "prijsmodellen"
-   ],
-   "theory": [
-    "marge per request"
-   ],
-   "example": "Business case voor een AI-feature.",
-   "exercise": "Business case.",
-   "test": "Rubric."
-  },
-  {
-   "id": "ai-28-regulation",
-   "title": "EU AI Act en governance",
-   "level": "advanced",
-   "objectives": [
-    "risicoklassen",
-    "verplichtingen GPAI",
-    "praktische compliance"
-   ],
-   "theory": [
-    "hoog-risico-systemen",
-    "transparantie"
-   ],
-   "example": "Is jouw toepassing hoog-risico?",
-   "exercise": "Compliance-checklist.",
-   "test": "Concept."
-  },
-  {
-   "id": "ai-29-project-rag",
-   "title": "Project: RAG-systeem ontwerpen en evalueren",
-   "level": "advanced",
-   "objectives": [
-    "end-to-end ontwerp",
-    "evaluatie"
-   ],
-   "theory": [
-    "alles uit eerdere lessen"
-   ],
-   "example": "Kennisbank voor een klant.",
-   "exercise": "Volledig ontwerp.",
-   "test": "Rubric."
-  },
-  {
-   "id": "ai-30-project-finetune",
-   "title": "Project: fine-tuning-plan met kostenraming",
-   "level": "advanced",
-   "objectives": [
-    "data, methode, compute, evaluatie"
-   ],
-   "theory": [
-    "LoRA/QLoRA, budget"
-   ],
-   "example": "Een domeinspecifiek model.",
-   "exercise": "Plan + raming.",
-   "test": "Rubric + numeriek."
-  }
- ]
+  "track": "ai",
+  "goal": "Moderne Large Language Model (LLM)-systemen tot op de formule én de Python-code (PyTorch, Hugging Face, training loops, Low-Rank Adaptation (LoRA), inferentie) doorgronden, trainen en bouwen — met visuele architectuurschema's, diep tensor-inzicht, hardware-optimalisatie en economische compute-calculaties.",
+  "principles": [
+    "Elke les combineert theorie en wiskunde (KaTeX), visuele architectuurschema's/diagrammen en concrete Python-implementaties (PyTorch, Hugging Face transformers, Parameter-Efficient Fine-Tuning (PEFT)).",
+    "Zowel trainen (training loops, loss-berekening, backpropagation, autograd, optimizer, Supervised Fine-Tuning (SFT), Low-Rank Adaptation (LoRA)) als gebruiken (inference pipelines, Key-Value cache (KV-cache) tensors, embeddings, structured outputs) worden in Python tot op de regel code ontleed.",
+    "Geen black-box code: begrijp wat er met tensors in Video RAM (VRAM) en Graphics Processing Unit (GPU)-registers gebeurt bij elke stap (shapes, gradients, memory allocation).",
+    "Cijfers en claims met wetenschappelijke bronvermelding (paper + publicatiejaar); vertaal wiskundige eigenschappen altijd direct naar operationele kosten, investeringsbeslissingen (CapEx vs OpEx) en bedrijfsstrategie (perspectief van de handelsingenieur)."
+  ],
+  "modules": [
+    {
+      "id": "fundament",
+      "title": "Fundament — van tekst tot transformer",
+      "topics": [
+        "ai-01-tokenization-embeddings",
+        "ai-02-attention",
+        "ai-19-vlm",
+        "ai-20-diffusion",
+        "ai-21-ssm"
+      ]
+    },
+    {
+      "id": "training",
+      "title": "Training en alignment",
+      "topics": [
+        "ai-03-pretraining-scaling",
+        "ai-04-optimization",
+        "ai-05-distributed",
+        "ai-06-post-training",
+        "ai-07-reasoning",
+        "ai-24-data",
+        "ai-25-distillation",
+        "ai-30-project-finetune"
+      ]
+    },
+    {
+      "id": "inferentie",
+      "title": "Inferentie en efficiëntie",
+      "topics": [
+        "ai-08-decoding",
+        "ai-09-inference",
+        "ai-10-quantization",
+        "ai-11-peft",
+        "ai-12-moe",
+        "ai-13-long-context"
+      ]
+    },
+    {
+      "id": "systemen",
+      "title": "Systemen, evaluatie en strategie",
+      "topics": [
+        "ai-14-evaluation",
+        "ai-15-rag",
+        "ai-16-agents",
+        "ai-17-prompting",
+        "ai-18-structured-output",
+        "ai-22-interpretability",
+        "ai-23-safety",
+        "ai-26-serving-economics",
+        "ai-27-strategy",
+        "ai-28-regulation",
+        "ai-29-project-rag"
+      ]
+    }
+  ],
+  "topics": [
+    {
+      "id": "ai-01-tokenization-embeddings",
+      "title": "Tokenisatie, embeddings en positie (RoPE)",
+      "theory": [
+        "Byte-level Byte-Pair Encoding (BPE): datacompressie-algoritme dat subwoord-vocabulaires leert (V = 32k tot 128k+) zonder out-of-vocabulary fouten",
+        "Embeddingmatrix W_E in R^{Vxd} en unembeddingmatrix W_U in R^{dxV}: parameter-geheugenbeslag (V·d) en de trade-off van weight tying (W_U = W_E^T)",
+        "Rotary Position Embedding (RoPE): relatieve positiecodering via 2D-rotatiematrices met frequenties theta_i = 10000^{-2i/d}, waarbij <R_m q, R_n k> = q^T R_{n-m} k"
+      ],
+      "example": "Meertalige tokenisatie-overhead: waarom Nederlandse klantenservice-data 30% tot 50% meer tokens kost dan Engels en wat dat betekent voor de operationele API-factuur en contextverzadiging.",
+      "exercise": "BPE-merges handmatig simuleren op een meertalig bedrijfscontract en de jaarlijkse API-kosten berekenen voor 100 000 klantinteracties inclusief meertalige overhead."
+    },
+    {
+      "id": "ai-02-attention",
+      "title": "Attention en het transformerblok",
+      "theory": [
+        "Scaled Dot-Product Attention: softmax((QK^T / sqrt(d_k)) + M)V, waarbij deling door sqrt(d_k) de variantie normaliseert om softmax-saturatie en vanishing gradients te voorkomen",
+        "Causale maskering (M_ij = -oneindig voor j > i): uitsluiten van data leakage tijdens parallelle training op de GPU",
+        "Grouped-Query Attention (GQA) en Multi-Query Attention (MQA) versus Multi-Head Attention (MHA): delen van Key- en Value-heads ter drastische reductie van de Key-Value cache (KV-cache)",
+        "Het transformerblok: Pre-RMSNorm (reductie van geheugenbandbreedte), residual connections (identiteitssnelweg) en SwiGLU feed-forward netwerken"
+      ],
+      "example": "Hardware-sizing voor enterprise LLM-hosting: hoe GQA (factor 8 reductie) het mogelijk maakt om documenten van 50 000 tokens op een enkele GPU te hosten in plaats van een multi-GPU cluster.",
+      "exercise": "Bereken de VRAM-voetafdruk van de KV-cache voor een batch van 32 gebruikers bij 8k context en kwantificeer de CapEx-besparing van de overstap van MHA naar GQA."
+    },
+    {
+      "id": "ai-03-pretraining-scaling",
+      "title": "Pretraining, verlies en scaling laws",
+      "theory": [
+        "Cross-entropy loss L = -ln(p_true) en Perplexity (PPL = e^L) als de effectieve vertakkingsfactor/onzekerheid van het taalmodel",
+        "Computationele trainingsformule: C_train ≈ 6ND FLOPs (2ND forward pass + 4ND backward pass)",
+        "Chinchilla-scaling wetten (Hoffmann et al., 2022): compute-optimaal schalen vereist een symmetrische allocatie van budget met D ≈ 20N tokens per parameter",
+        "De strategische economie van overtrainen (Llama 3): eenmalige trainings-CapEx verhogen (15T tokens) om de marginale inferentie-OpEx per query structureel te minimaliseren"
+      ],
+      "example": "Investeringsanalyse voor een 8B parameter model: berekening van benodigde GPU-uren, stroomkosten en cloud-budgetten voor training versus hosting over een periode van 3 jaar.",
+      "exercise": "Stel een compute- en kostenraming op voor een pretraining-project (FLOPs, benodigde H100 GPU-uren en datacenter-kosten) en beoordeel of zelf trainen rendabeler is dan een commerciële API."
+    },
+    {
+      "id": "ai-04-optimization",
+      "title": "Optimalisatie: AdamW, LR-schema's en precisie",
+      "theory": [
+        "Adam with decoupled Weight decay (AdamW): adaptieve leersnelheden per parameter via momentum m (1ste moment) en ongecentreerde variantie v (2de moment) in FP32",
+        "Learning Rate (LR) planning: lineaire warmup ter stabilisatie van initiële optimizer-statistieken, gevolgd door cosine decay naar 10% voor optimale convergentie",
+        "Numerieke stabiliteit en gradient clipping (L2-norm aftoppen): voorkomen van loss spikes, overflows en fatale NaN-infectie in de weights",
+        "Mixed precision training (BF16 vs FP16) en de 16-byteregel per parameter in VRAM (model 2B, gradiënten 2B, master weights 4B, optimizer states 8B)"
+      ],
+      "example": "Diagnose van een ontspoorde trainingsrun in het datacenter: opsporen van loss spikes veroorzaakt door corrupte trainingsdata en een ontbrekende warmup-fase.",
+      "exercise": "Bereken het exacte VRAM-beslag van een 14B model tijdens mixed precision training met AdamW en ontwerp een gradient clipping en learning rate configuratie ter voorkoming van divergentie."
+    },
+    {
+      "id": "ai-05-distributed",
+      "title": "Gedistribueerd trainen",
+      "theory": [
+        "De 16-byteregel voor VRAM-begroting: waarom pretraining 8 tot 16 keer meer GPU-geheugen eist dan inferentie",
+        "Data Parallelism (DP) en Zero Redundancy Optimizer (ZeRO-1/2/3) / Fully Sharded Data Parallel (FSDP): elimineren van geheugenredundantie via All-Gather en Reduce-Scatter operaties",
+        "Model Parallelism: Pipeline Parallelism (PP en het minimaliseren van de bubble via micro-batches) en Tensor Parallelism (TP binnen nodes via NVLink All-Reduce)",
+        "3D Parallelism en clusterbegroting: berekening van benodigde GPU's via Model FLOPs Utilization (MFU) en tijdslimieten"
+      ],
+      "example": "Capaciteitsplanning voor een 70B parameter pretraining: berekening van het aantal benodigde NVIDIA H100 GPU's om een Chinchilla-optimale run binnen 60 dagen af te ronden.",
+      "exercise": "Ontwerp een clusterarchitectuur (aantal nodes, TP-, PP- en FSDP-configuratie) voor een 30B model inclusief netwerkbandbreedte-eisen en een financiële cloud-offerte."
+    },
+    {
+      "id": "ai-06-post-training",
+      "title": "Post-training: SFT, RLHF en DPO",
+      "theory": [
+        "Supervised Fine-Tuning (SFT) op hoogwaardige instructiedata en verliesfuncties",
+        "Reinforcement Learning from Human Feedback (RLHF): reward modeling, Proximal Policy Optimization (PPO) en het beheersen van reward hacking",
+        "Direct Preference Optimization (DPO): analytisch afleiden van het verlies L_DPO = -log sigma(beta * [(log pi/pi_ref)(y_w) - (log pi/pi_ref)(y_l)]) zonder apart reward model"
+      ],
+      "example": "Alignment van een enterprise chatbot: het corrigeren van sycophancy (te vleiend gedrag dat foutieve antwoorden bevestigt) en het waarborgen van compliance met het bedrijfsbeleid.",
+      "exercise": "Kwantificeer het DPO-verlies op een set van juridische voorkeursparen en analyseer de afweging tussen trainingscomplexiteit (PPO met 4 modellen tegelijk in VRAM) en wiskundige eenvoud (DPO)."
+    },
+    {
+      "id": "ai-07-reasoning",
+      "title": "Redeneermodellen en test-time compute",
+      "theory": [
+        "Test-time compute versus pretraining compute: de wiskundige scaling laws van redeneren (o1/o3-paradigma)",
+        "Chain-of-thought (CoT) prompting en search over latente redeneersporen (tree-of-thought, beam search)",
+        "Statistische evaluatie: pass@k combinatoriek versus majority voting (self-consistency) en de marginale kost per correct antwoord"
+      ],
+      "example": "Kosten-batenanalyse in de financiële sector: wanneer loont het om 10x meer tokens te betalen voor een redeneermodel bij fraudedetectie ten opzichte van een standaard LLM?",
+      "exercise": "Bereken de optimale test-time compute allocatie (aantal redeneer-tokens en samples) voor een portfolio-optimalisatiecase gegeven een maximaal API-budget per transactie."
+    },
+    {
+      "id": "ai-08-decoding",
+      "title": "Decoding en sampling",
+      "theory": [
+        "Autoregressieve kansgeneratie en temperatuurschaling: softmax(z / T) en de entropie van de outputverdeling",
+        "Truncatietechnieken: Top-k sampling (vaste drempel) en Top-p / nucleus sampling (cumulatieve waarschijnlijkheidsmassa)",
+        "Speculative decoding: verliesloze versnelling via een klein concept-model en acceptatie/verwerping via modified rejection sampling"
+      ],
+      "example": "Latency-reductie in een online bankieromgeving: halveren van de time-to-first-token en wachttijden via speculative decoding zonder kwaliteitsverlies.",
+      "exercise": "Bereken de theoretische speedup en verwachte acceptatieratio van speculative decoding bij verschillende convergentiegraad tussen draft- en doelmodel."
+    },
+    {
+      "id": "ai-09-inference",
+      "title": "Inferentie: prefill, decode en de KV-cache",
+      "theory": [
+        "De twee fasen van inferentie: compute-bound prefill (parallelle prompt-verwerking) versus memory-bandwidth-bound decode (sequentiële token-generatie)",
+        "Wiskundige omvang van de KV-cache: VRAM = 2 * n_layers * n_kv_heads * d_head * T * B * bytes",
+        "Arithmetic intensity (FLOPs per byte) en het Roofline-model: waarom decodeer-throughput begrensd wordt door geheugenbandbreedte (HBM) en niet door GPU-rekenkernen",
+        "Geavanceerd geheugenbeheer: PagedAttention (vLLM) tegen interne geheugenfragmentatie"
+      ],
+      "example": "Serverconsolidatie bij een SaaS-bedrijf: hoe overstappen op vLLM met PagedAttention de server-concurrency verviervoudigde op dezelfde hardware.",
+      "exercise": "Voer een capaciteitsplanning uit voor een API-dienst met 500 gelijktijdige gebruikers: bepaal het benodigde aantal GPU's op basis van geheugenbandbreedte en KV-cache dimensies."
+    },
+    {
+      "id": "ai-10-quantization",
+      "title": "Quantisatie",
+      "theory": [
+        "Uniforme kwantisatieformules: absolute maximum (absmax) scaling versus asymmetrische zero-point kwantisatie (INT8, INT4, FP4)",
+        "Post-Training Quantization (PTQ) vs Quantization-Aware Training (QAT): omgaan met systematische activatie-outliers via SmoothQuant en AWQ (Activation-aware Weight Quantization)",
+        "Gewichts-only kwantisatie (GPTQ) vs gewichts- en activatiekwantisatie (FP8) en de impact op matrix-engines (Tensor Cores)"
+      ],
+      "example": "Edge-deployment bij een logistieke onderneming: een 70B parameter model kwantiseren naar 4-bit zodat het lokaal kan draaien op één betaalbare workstation-GPU.",
+      "exercise": "Kwantificeer het trade-off profiel tussen compressieratio (VRAM-besparing), inferentie-latency en kwaliteitsverlies (PPL-toename) voor INT4, INT8 en FP16."
+    },
+    {
+      "id": "ai-11-peft",
+      "title": "PEFT: LoRA en QLoRA",
+      "theory": [
+        "Parameter-Efficient Fine-Tuning (PEFT): wiskundige grondslag van Low-Rank Adaptation (LoRA), met W = W_0 + (alpha/r)BA waarbij B geïnitialiseerd wordt op 0",
+        "Parameter-reductie: r(d + k) parameters trainen in plaats van d*k gewichten, met de schaalfactor alpha/r ter stabilisatie van de learning rate",
+        "Quantized Low-Rank Adaptation (QLoRA): bevriezen van het basismodel in NormalFloat4 (NF4) met Double Quantization en Paged Optimizers om VRAM-pieken op te vangen"
+      ],
+      "example": "Maatwerk-AI voor een advocatenkantoor: een open-source 8B model fine-tunen op tienduizenden vertrouwelijke contracten met behulp van één enkele commerciële GPU.",
+      "exercise": "Bereken exact het aantal trainbare parameters en het VRAM-beslag voor een LoRA-training op alle lineaire projecties van een 8B model bij verschillende rangen r (4, 16, 64)."
+    },
+    {
+      "id": "ai-12-moe",
+      "title": "Mixture of Experts",
+      "theory": [
+        "Mixture of Experts (MoE) architectuur: ontkoppelen van totale modelcapaciteit (totale parameters) en inferentiekost (actieve parameters)",
+        "Gating- en routeringsmechanismen: Top-k routering via softmax met load balancing loss tegen expert-collaps",
+        "De hardware-paradox van MoE: lage rekenkost per token (weinig FLOPs), maar een gigantisch VRAM-geheugenbeslag (alle experts moeten in VRAM geladen blijven)"
+      ],
+      "example": "Kostenefficiëntie van Mixtral 8x7B (46,7B totale parameters, slechts 12,9B actief per token): waarom dit model draait met de snelheid van een 13B model maar presteert als een 70B model.",
+      "exercise": "Vergelijk de operationele eenheidskosten (CapEx en OpEx) van een dense 70B model versus een 8x7B MoE model bij een volume van 10 miljoen tokens per dag."
+    },
+    {
+      "id": "ai-13-long-context",
+      "title": "Lange context",
+      "theory": [
+        "Extrapolatie van contextvensters en RoPE-frequentieschaling (Position Interpolation, NTK-aware scaling en YaRN)",
+        "Computationele flessenhals: kwadratische complexiteit O(T^2) van self-attention en het lineair exploderende KV-cache geheugen bij 128k+ tokens",
+        "Retrieval-evaluatie van lange contexten: de 'Needle In A Haystack' (NIAH) test en het fenomeen 'Lost in the Middle'"
+      ],
+      "example": "Automatisering van een due-diligence onderzoek: analyseren van een overnamedossier van 300 pagina's via een 128k contextmodel versus een gesegmenteerde RAG-pijplijn.",
+      "exercise": "Stel een beslissingsmatrix op (kosten, latency, accuratesse en implementatietijd) voor de keuze tussen een extreem lang contextvenster en een semantische RAG-architectuur."
+    },
+    {
+      "id": "ai-14-evaluation",
+      "title": "Evaluatie van LLM's",
+      "theory": [
+        "Kwantitatieve benchmarks: MMLU, GSM8K, HumanEval en de statistische metriek pass@k",
+        "LLM-as-a-Judge methodologie: geautomatiseerde evaluatie met grotere modellen, inclusief het beheersen van position bias, verbosity bias en self-enhancement bias",
+        "Menselijke evaluatie en Elo-ratingsystemen (LMSYS Chatbot Arena) voor subjectieve kwaliteit en alignment"
+      ],
+      "example": "Aanbestedingsevaluatie voor een multinational: wetenschappelijk onderbouwd kiezen tussen drie open-source en commerciële LLM's voor een klantenservice-toepassing.",
+      "exercise": "Ontwerp een robuust en reproduceerbaar evaluatieplan (inclusief testset-samenstelling, succescriteria en statistische significantietoetsen) voor een interne zakelijke AI-assistent."
+    },
+    {
+      "id": "ai-15-rag",
+      "title": "Retrieval-Augmented Generation",
+      "theory": [
+        "De driedelige RAG-pijplijn: chunking-strategieën, dense retrieval via bi-encoders en generatie via cross-attention contextinjectie",
+        "Wiskundige zoekeigenschappen: cosine similarity in vectorruimten, approximate nearest neighbors (HNSW indexen) en recall@k metrieken",
+        "Geavanceerde RAG-patronen: hybride search (BM25 lexicaal + dichte vectoren), reranking via cross-encoders en query transformation"
+      ],
+      "example": "Implementatie van een enterprise kennisbank voor een accountantskantoor: ontsluiten van 50 000 belastingdocumenten met strikte bronvermelding en minimale hallucinaties.",
+      "exercise": "Ontwerp een end-to-end RAG-architectuur inclusief chunkgrootte-bepaling, vector-database dimensionering en evaluatie via de RAGAS-metrieken (faithfulness en answer relevance)."
+    },
+    {
+      "id": "ai-16-agents",
+      "title": "Agents en tool use",
+      "theory": [
+        "Autonomous Agent loops: ReAct-paradigma (Reasoning + Acting), Plan-and-Solve en reflectie-mechanismen",
+        "Function calling en tool-schema's: JSON-schema validatie, deterministische API-aanroepen en het Model Context Protocol (MCP)",
+        "Systeembetrouwbaarheid: foutafhandeling, timeouts, state management en het mitigeren van oneindige loops"
+      ],
+      "example": "Een autonome procurement-agent: het automatisch matchen van inkomende inkooporders met ERP-facturen en het signaleren van prijsafwijkingen.",
+      "exercise": "Ontwerp een multi-step agent met guardrails voor financiële reconciliatie inclusief foutafhandeling, audit-logging en menselijke interventiepunten (human-in-the-loop)."
+    },
+    {
+      "id": "ai-17-prompting",
+      "title": "Prompting en in-context learning",
+      "theory": [
+        "In-context learning als impliciete optimalisatie: waarom transformers taken leren vanuit voorbeelden in de context zonder gewichtsupdates",
+        "Geavanceerde prompt-architecturen: Few-shot prompting, Chain-of-Thought (CoT), Least-to-Most en System Role conditioning",
+        "Prompt-caching economie: kwantificeren van kosten- en latentievoordelen bij herbruikbare contexten (tot 80% korting op inputtokens)"
+      ],
+      "example": "Optimalisatie van een ticket-classificatiesysteem: het verhogen van de accuratesse van 72% naar 94% door gestructureerde few-shot voorbeelden en prompt-caching.",
+      "exercise": "Herschrijf een onbetrouwbare zakelijke prompt naar een robuust prompt-template met strikte constraints, en meet empirisch de deterministische reproduceerbaarheid."
+    },
+    {
+      "id": "ai-18-structured-output",
+      "title": "Structured output en constrained decoding",
+      "theory": [
+        "Constrained decoding: grammatica-gestuurde generatie via context-vrije grammatica's (CFG's) en reguliere expressies",
+        "Logit masking op tokenizer-niveau: dynamisch maskeren van ongeldige tokens (z_i = -oneindig) vóór de softmax om 100% syntactische JSON-geldigheid te garanderen",
+        "Latency- en rekenimpact: de overhead van constrained decoding versus post-hoc JSON-validatie en reparatie-loops"
+      ],
+      "example": "Geautomatiseerde data-extractie uit ongestructureerde vrachtbrieven rechtstreeks naar een relationele SQL-database zonder parsing-fouten.",
+      "exercise": "Definieer een strikt Pydantic/JSON-schema voor een leningaanvraag en implementeer logit-masking constrained decoding in Python om gegarandeerde schema-compliance af te dwingen."
+    },
+    {
+      "id": "ai-19-vlm",
+      "title": "Multimodale modellen: ViT, CLIP en VLM's",
+      "theory": [
+        "Vision Transformers (ViT): opsplitsen van afbeeldingen in 2D-patches van PxP pixels (N = HW/P^2 patches) behandeld als sequenties van tokens",
+        "Contrastive Language-Image Pretraining (CLIP) en InfoNCE loss: uitlijnen van beeld- en tekstvectoren in een gedeelde multimodale embeddingruimte",
+        "Vision-Language Models (VLM's): cross-attention adapters en projectielagen tussen visuele encoders en decoder-only taalmodellen"
+      ],
+      "example": "Visuele kwaliteitscontrole en factuurverwerking: het analyseren van gescande documenten en productfoto's in een logistieke hub via multimodale modellen.",
+      "exercise": "Bereken de token-equivalentie en bijbehorende verwerkingskosten van hoogresolutie-afbeeldingen onder verschillende patch-groottes en vision-encoders."
+    },
+    {
+      "id": "ai-20-diffusion",
+      "title": "Diffusiemodellen",
+      "theory": [
+        "Wiskundige principes van diffusie: het voorwaartse noising-proces (SDE/ODE) en het leren van het omgekeerde denoising-proces via score-matching en epsilon-predictie",
+        "Latent Diffusion Models (LDM / Stable Diffusion): ruisonderdrukking in de gecomprimeerde latente ruimte van een Variational Autoencoder (VAE) ter verlaging van FLOPs",
+        "Classifier-Free Guidance (CFG): sturen van het generatieve proces via een interpolatieve gewichtsfactor tussen geconditioneerde en ongeconditioneerde voorspellingen"
+      ],
+      "example": "Geautomatiseerde marketing-productie: het genereren van gepersonaliseerde e-commerce productafbeeldingen en achtergronden op industriële schaal.",
+      "exercise": "Analyseer de wiskundige trade-off tussen sampling-stappen (Euler, DPM-Solver), sampling-tijd en beeldkwaliteit (FID-score) voor een online marketing-toepassing."
+    },
+    {
+      "id": "ai-21-ssm",
+      "title": "Alternatieven voor attention",
+      "theory": [
+        "Lineaire State Space Models (SSM's) en continue toestandsvergelijkingen: h'(t) = Ah(t) + Bx(t), y(t) = Ch(t) + Dx(t)",
+        "Selectieve State Spaces (Mamba): data-afhankelijke matrixparameters die dynamisch relevante historische informatie filteren met O(T) lineaire tijd- en geheugencomplexiteit",
+        "Hybride architecturen (Jamba, recurrent-transformer mixes): het combineren van de constante KV-geheugenvoetafdruk van SSM's met de sterke associatieve retrieval van attention"
+      ],
+      "example": "Continue monitoring van IoT-sensordata in een productieomgeving: verwerken van miljoenen opeenvolgende tijdreeksmetingen zonder kwadratische geheugenexplosie.",
+      "exercise": "Vergelijk de theoretische en praktische latency, throughput en geheugenvoetafdruk van een 7B Mamba-model versus een 7B Transformer bij extreem lange sequenties (32k tot 1M tokens)."
+    },
+    {
+      "id": "ai-22-interpretability",
+      "title": "Interpreteerbaarheid",
+      "theory": [
+        "Mechanistische interpreteerbaarheid: probing classifiers, logit lens en circuit-analyse in transformer-lagen",
+        "Lineaire representatiehypothese en superpositie: hoe neurale netwerken meer concepten representeren dan er dimensies d zijn via bijna-orthogonale vectoren",
+        "Sparse Autoencoders (SAE's): ontbinden van verborgen polysemantische activaties in miljoenen interpreteerbare, monosemantische conceptuele features"
+      ],
+      "example": "Audit van een risicomodel bij een verzekeraar: controleren of een LLM stiekem discrimineert op basis van beschermde demografische kenmerken via mechanistische probing.",
+      "exercise": "Analyseer de interne aandachts-patronen van een model op een financiële redeneertaak met behulp van de logit-lens techniek en breng causale aandachts-paden in kaart."
+    },
+    {
+      "id": "ai-23-safety",
+      "title": "Alignment en veiligheid",
+      "theory": [
+        "AI-veiligheidsdreigingen: directe en indirecte prompt injection, jailbreaking, data poisoning en extraction attacks",
+        "Alignment failures: reward hacking, goal misgeneralization en deceptive alignment in geavanceerde modellen",
+        "Defense-in-depth architecturen: input- en output-guardrails (Llama Guard), dual-LLM structuren en sandboxing"
+      ],
+      "example": "Beveiligingsaudit van een bankassistent: verhinderen dat kwaadwillende gebruikers via indirecte prompt injection in e-mails frauduleuze overboekingen initiëren.",
+      "exercise": "Stel een formeel risicoregister en dreigingsmodel (threat model) op voor een enterprise klant-AI, inclusief concrete technische mitigaties tegen jailbreaks en data leakage."
+    },
+    {
+      "id": "ai-24-data",
+      "title": "Data: curatie en synthetische data",
+      "theory": [
+        "Data curation pipelines: kwaliteitsfiltering, deduplicatie op schaal via MinHash LSH (Locality Sensitive Hashing) en taalidentificatie",
+        "Synthetische datageneratie: 'Self-Instruct', UltraFeedback en filtering via verwerpingssampling (best-of-N)",
+        "Model collapse: het wiskundige en empirische verval van taalmodellen wanneer ze worden getraind op data gegenereerd door eerdere generaties LLM's"
+      ],
+      "example": "Data-investeringsstrategie voor een telecombedrijf: het cureren en synthetisch verrijken van een meertalige dataset van 50 miljard tokens voor domeinadaptatie.",
+      "exercise": "Ontwerp een end-to-end data-voorbereidingspijplijn met MinHash deduplicatie, PII-verwijdering (anonimisering) en kwaliteitsclassificatie met een budgetbegroting."
+    },
+    {
+      "id": "ai-25-distillation",
+      "title": "Distillatie en kleine modellen",
+      "theory": [
+        "Knowledge Distillation: overdragen van representaties van een groot 'teacher'-model naar een compact 'student'-model",
+        "Verliesfuncties: interpolatie tussen soft targets (Kullback-Leibler divergentie D_KL(p_teacher || p_student)) en hard targets (cross-entropy)",
+        "On-device AI: optimaliseren van kleine modellen (1B tot 3B parameters) voor lage latency, batterij-efficiëntie en lokale privacy"
+      ],
+      "example": "Distillatie van een medische assistent: comprimeren van een duur 70B cloud-model naar een 3B model dat direct offline draait op tablets van verpleegkundigen.",
+      "exercise": "Kwantificeer de theoretische kostenbesparing en latency-winst van distillatie voor een fintech-app en bereken de vereiste student-model capaciteit bij acceptabel accuratesseverlies."
+    },
+    {
+      "id": "ai-26-serving-economics",
+      "title": "Serving-economie",
+      "theory": [
+        "Serving metrics: Time to First Token (TTFT), Inter-Token Latency (ITL), requests per seconde (RPS) en tokens per seconde per GPU",
+        "Hardware-utilisatie en batching-strategieën: statische batching versus continuous batching / iteration-level scheduling",
+        "Financiële TCO-modellering: kapitaalkosten van GPU-clusters (aanschaf, afschrijving, stroom, koeling en netwerk) versus variabele API-kosten per token"
+      ],
+      "example": "Make-or-buy analyse voor een enterprise SaaS-bedrijf: omslagpunt berekenen tussen het afnemen van OpenAI-tokens versus het leasen van een eigen 8x H100 GPU-cluster.",
+      "exercise": "Bouw een financieel beslismodel in Python/Excel dat het omslagpunt in maandelijks query-volume berekent tussen commerciële cloud API's en dedicated self-hosted open-source clusters."
+    },
+    {
+      "id": "ai-27-strategy",
+      "title": "LLM-productstrategie en unit economics",
+      "theory": [
+        "LLM-waardeketen: hardware (NVIDIA), foundation model providers (OpenAI, Anthropic), model hosting platforms en verticale applicatielagen",
+        "Unit economics van generatieve software: brutomarges onder variabele tokenkosten, defensibility (moats) en data-vliegwielen",
+        "Strategische architectuurkeuzes: de balans tussen modelgrootte, fine-tuning, RAG en prompt-engineering in relatie tot Customer Lifetime Value (CLV)"
+      ],
+      "example": "Strategische herpositionering van een EdTech-startup: beschermen van de winstmarge tegen stijgende API-kosten door over te stappen op een eigen fine-tuned open model.",
+      "exercise": "Ontwerp een volledige business case en P&L-projectie voor een nieuwe AI-functionaliteit binnen een bestaand softwareproduct inclusief gevoeligheidsanalyse op token-prijzen."
+    },
+    {
+      "id": "ai-28-regulation",
+      "title": "EU AI Act en governance",
+      "theory": [
+        "EU AI Act: risicogebaseerde classificatie (onaanvaardbaar risico, hoog risico, specifiek transparantierisico en minimaal risico)",
+        "Verplichtingen voor General Purpose AI (GPAI) modellen: documentatie van trainingsdata, auteursrecht-compliance en evaluatie van systemische risico's",
+        "AI-governance frameworks: audit trails, verklaarbaarheid, databescherming (GDPR-compliance) en ethische toezichtscomités"
+      ],
+      "example": "Compliance-audit voor een HR-tech onderneming: beoordelen van de juridische vereisten voor een AI-systeem dat cv's screent onder de EU AI Act als hoog-risico toepassing.",
+      "exercise": "Stel een compliance-checklist en governance-rapport op voor een AI-gestuurde kredietbeoordelingsapplicatie conform de vereisten van de EU AI Act en GDPR."
+    },
+    {
+      "id": "ai-29-project-rag",
+      "title": "Project: RAG-systeem ontwerpen en evalueren",
+      "theory": [
+        "Integratie van alle fundamenten: BPE-tokenisatie, embeddings, vectorruimten, retrieval-algoritmen, context-injectie en LLM-generatie",
+        "Systeemarchitectuur: end-to-end ontwerp van datastromen, vector-indexen, caching-lagen en monitoring",
+        "Rigoureuze evaluatie: RAGAS-benchmarks, latency-profilering en kwantificering van operationele serving-kosten"
+      ],
+      "example": "Capstone project: het ontwerpen en implementeren van een enterprise RAG-systeem voor een multinational met 100 000 interne beleidsdocumenten.",
+      "exercise": "Bouw een volledig end-to-end RAG-systeem in Python, inclusief evaluatiemetrieken, stress-testing onder hoge concurrency en een directierapport over de business case."
+    },
+    {
+      "id": "ai-30-project-finetune",
+      "title": "Project: fine-tuning-plan met kostenraming",
+      "theory": [
+        "Integratie van geavanceerde technieken: datasetcuratie, QLoRA/LoRA parametrisering, mixed precision training en DPO-alignment",
+        "Financiële begroting: hardware-reservering, trainings-FLOPs, MFU-inschatting en personeelskosten",
+        "Deployment-strategie: quantisatie (vLLM/AWQ), KV-cache sizing en SLA-garanties voor productie"
+      ],
+      "example": "Capstone project: een strategisch en technisch masterplan voor het fine-tunen van een open-weight foundation model voor de financiële sector.",
+      "exercise": "Schrijf een compleet implementatievoorstel inclusief trainingsscript, data-curatieprotocol, validatie-opzet, risico-analyse en gedetailleerde begroting voor het directiecomité."
+    }
+  ]
 }

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 296" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-zero-stages" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-zero-stages" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<text class="d-t" x="20" y="20" text-anchor="start">Bytes per parameter op één GPU (voorbeeld: N = 8 GPU's)</text>
+<text class="d-t" x="20" y="56" text-anchor="start">Klassiek DP</text>
+<text class="d-l" x="20" y="73" text-anchor="start">elke GPU alles</text>
+<rect class="d-box d-info" x="146.0" y="40" width="36.0" height="34" rx="4"/>
+<rect class="d-box d-warn" x="182.0" y="40" width="36.0" height="34" rx="4"/>
+<rect class="d-box d-good" x="218.0" y="40" width="216.0" height="34" rx="4"/>
+<text class="d-t" x="442" y="62" text-anchor="start">16 B</text>
+<text class="d-t" x="20" y="110" text-anchor="start">ZeRO-1</text>
+<text class="d-l" x="20" y="127" text-anchor="start">optimizer verdeeld</text>
+<rect class="d-box d-info" x="146.0" y="94" width="36.0" height="34" rx="4"/>
+<rect class="d-box d-warn" x="182.0" y="94" width="36.0" height="34" rx="4"/>
+<rect class="d-box d-good" x="218.0" y="94" width="27.0" height="34" rx="4"/>
+<text class="d-t" x="253.0" y="116" text-anchor="start">5,5 B</text>
+<text class="d-t" x="20" y="164" text-anchor="start">ZeRO-2</text>
+<text class="d-l" x="20" y="181" text-anchor="start">+ gradiënten</text>
+<rect class="d-box d-info" x="146.0" y="148" width="36.0" height="34" rx="4"/>
+<rect class="d-box d-warn" x="182.0" y="148" width="4.5" height="34" rx="4"/>
+<rect class="d-box d-good" x="186.5" y="148" width="27.0" height="34" rx="4"/>
+<text class="d-t" x="221.5" y="170" text-anchor="start">3,75 B</text>
+<text class="d-t" x="20" y="218" text-anchor="start">ZeRO-3 / FSDP</text>
+<text class="d-l" x="20" y="235" text-anchor="start">+ gewichten</text>
+<rect class="d-box d-info" x="146.0" y="202" width="4.5" height="34" rx="4"/>
+<rect class="d-box d-warn" x="150.5" y="202" width="4.5" height="34" rx="4"/>
+<rect class="d-box d-good" x="155.0" y="202" width="27.0" height="34" rx="4"/>
+<text class="d-t" x="190.0" y="224" text-anchor="start">2 B</text>
+<rect class="d-box d-info" x="20" y="264" width="14" height="14" rx="3"/>
+<text class="d-l" x="40" y="276" text-anchor="start">gewichten 2 B</text>
+<rect class="d-box d-warn" x="148" y="264" width="14" height="14" rx="3"/>
+<text class="d-l" x="168" y="276" text-anchor="start">gradiënten 2 B</text>
+<rect class="d-box d-good" x="290" y="264" width="14" height="14" rx="3"/>
+<text class="d-l" x="310" y="276" text-anchor="start">optimizer-toestand 12 B</text>
+</svg>

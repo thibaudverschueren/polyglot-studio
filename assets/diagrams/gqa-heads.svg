@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 330" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-gqa-heads" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-gqa-heads" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<text class="d-t" x="20" y="36" text-anchor="start">MHA</text>
+<text class="d-l" x="20" y="54" text-anchor="start">8 Q · 8 KV</text>
+<rect class="d-box d-acc" x="126" y="14" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="160" y="14" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="194" y="14" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="228" y="14" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="262" y="14" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="296" y="14" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="330" y="14" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="364" y="14" width="22" height="22" rx="5"/>
+<rect class="d-box d-good" x="126.0" y="70" width="22" height="22" rx="5"/>
+<line class="d-line" x1="137" y1="36" x2="137.0" y2="70"/>
+<rect class="d-box d-good" x="160.0" y="70" width="22" height="22" rx="5"/>
+<line class="d-line" x1="171" y1="36" x2="171.0" y2="70"/>
+<rect class="d-box d-good" x="194.0" y="70" width="22" height="22" rx="5"/>
+<line class="d-line" x1="205" y1="36" x2="205.0" y2="70"/>
+<rect class="d-box d-good" x="228.0" y="70" width="22" height="22" rx="5"/>
+<line class="d-line" x1="239" y1="36" x2="239.0" y2="70"/>
+<rect class="d-box d-good" x="262.0" y="70" width="22" height="22" rx="5"/>
+<line class="d-line" x1="273" y1="36" x2="273.0" y2="70"/>
+<rect class="d-box d-good" x="296.0" y="70" width="22" height="22" rx="5"/>
+<line class="d-line" x1="307" y1="36" x2="307.0" y2="70"/>
+<rect class="d-box d-good" x="330.0" y="70" width="22" height="22" rx="5"/>
+<line class="d-line" x1="341" y1="36" x2="341.0" y2="70"/>
+<rect class="d-box d-good" x="364.0" y="70" width="22" height="22" rx="5"/>
+<line class="d-line" x1="375" y1="36" x2="375.0" y2="70"/>
+<text class="d-l" x="402" y="31" text-anchor="start">Q-heads</text>
+<text class="d-l" x="402" y="87" text-anchor="start">KV-cache 100%</text>
+<text class="d-t" x="20" y="136" text-anchor="start">GQA</text>
+<text class="d-l" x="20" y="154" text-anchor="start">8 Q · 2 KV</text>
+<rect class="d-box d-acc" x="126" y="114" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="160" y="114" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="194" y="114" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="228" y="114" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="262" y="114" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="296" y="114" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="330" y="114" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="364" y="114" width="22" height="22" rx="5"/>
+<rect class="d-box d-good" x="177.0" y="170" width="22" height="22" rx="5"/>
+<line class="d-line" x1="137" y1="136" x2="188.0" y2="170"/>
+<line class="d-line" x1="171" y1="136" x2="188.0" y2="170"/>
+<line class="d-line" x1="205" y1="136" x2="188.0" y2="170"/>
+<line class="d-line" x1="239" y1="136" x2="188.0" y2="170"/>
+<rect class="d-box d-good" x="313.0" y="170" width="22" height="22" rx="5"/>
+<line class="d-line" x1="273" y1="136" x2="324.0" y2="170"/>
+<line class="d-line" x1="307" y1="136" x2="324.0" y2="170"/>
+<line class="d-line" x1="341" y1="136" x2="324.0" y2="170"/>
+<line class="d-line" x1="375" y1="136" x2="324.0" y2="170"/>
+<text class="d-l" x="402" y="131" text-anchor="start">Q-heads</text>
+<text class="d-l" x="402" y="187" text-anchor="start">KV-cache 25%</text>
+<text class="d-t" x="20" y="236" text-anchor="start">MQA</text>
+<text class="d-l" x="20" y="254" text-anchor="start">8 Q · 1 KV</text>
+<rect class="d-box d-acc" x="126" y="214" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="160" y="214" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="194" y="214" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="228" y="214" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="262" y="214" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="296" y="214" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="330" y="214" width="22" height="22" rx="5"/>
+<rect class="d-box d-acc" x="364" y="214" width="22" height="22" rx="5"/>
+<rect class="d-box d-good" x="245.0" y="270" width="22" height="22" rx="5"/>
+<line class="d-line" x1="137" y1="236" x2="256.0" y2="270"/>
+<line class="d-line" x1="171" y1="236" x2="256.0" y2="270"/>
+<line class="d-line" x1="205" y1="236" x2="256.0" y2="270"/>
+<line class="d-line" x1="239" y1="236" x2="256.0" y2="270"/>
+<line class="d-line" x1="273" y1="236" x2="256.0" y2="270"/>
+<line class="d-line" x1="307" y1="236" x2="256.0" y2="270"/>
+<line class="d-line" x1="341" y1="236" x2="256.0" y2="270"/>
+<line class="d-line" x1="375" y1="236" x2="256.0" y2="270"/>
+<text class="d-l" x="402" y="231" text-anchor="start">Q-heads</text>
+<text class="d-l" x="402" y="287" text-anchor="start">KV-cache 12,5%</text>
+<rect class="d-box d-acc" x="20" y="306" width="14" height="14" rx="3"/>
+<text class="d-l" x="40" y="318" text-anchor="start">Q-head (query)</text>
+<rect class="d-box d-good" x="170" y="306" width="14" height="14" rx="3"/>
+<text class="d-l" x="190" y="318" text-anchor="start">KV-head (key + value, wordt gecachet)</text>
+</svg>

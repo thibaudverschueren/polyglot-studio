@@ -8,7 +8,7 @@
  "subtitle": "Wiskundige fundamenten van gekalibreerde AI, Brier-scores en TypeSafe schema's",
  "level": "fundament",
  "minutes": 45,
- "summary": "In deze les kwantificeren we beslissingsmodellen. Je leert de exacte wiskunde achter Noul, Choice en Score, berekent zelf Brier-scores en Expected Calibration Error (ECE), en ontdekt hoe RLCD modellen traint om statistisch eerlijk te zijn in plaats van menselijk vleiend.",
+ "summary": "In deze les kwantificeren we beslissingsmodellen. Je leert de exacte wiskunde achter Noul, Choice en Score, berekent zelf Brier-scores en Expected Calibration Error (ECE), en ontdekt hoe RLCD (Reinforcement Learning for Calibrated Decisions) modellen traint om statistisch eerlijk te zijn in plaats van menselijk vleiend.",
  "objectives": [
   {
    "id": "review-latency",
@@ -24,7 +24,7 @@
   },
   {
    "id": "rlcd-vs-ppo",
-   "text": "Begrijpen hoe RLCD verliesfuncties optimaliseert tegenover PPO/DPO in RLHF."
+   "text": "Begrijpen hoe RLCD verliesfuncties optimaliseert tegenover PPO/DPO (Proximal Policy Optimization / Direct Preference Optimization) in RLHF (reinforcement learning from human feedback)."
   },
   {
    "id": "schema-design",
@@ -35,7 +35,7 @@
   {
    "id": "sec-01",
    "title": "1. Herhaling: Absolute vs. Relatieve Snelheid",
-   "md": "In de vorige les zagen we dat decoders te traag zijn. Bij het benchmarken van een LLM tegenover Jev maken analisten vaak een hardnekkige denkfout: ze halen absolute en relatieve metrieken door elkaar.\n\nAls een frontier LLM 2.500 ms nodig heeft voor een beslissing en Jev 100 ms:\n- De **absolute tijdwinst** is het verschil: $2.500 - 100 = 2.400$ ms. Dit getal is cruciaal voor de UX (gebruikerservaring) en de timeout-instellingen van je API's.\n- De **relatieve snelheid** is de verhouding (quotiënt): $2.500 / 100 = 25\\times$. Jev is hier 25 *keer* sneller. \n\n> [!pitfall] Verhouding of Verschil?\n> Als je $2.500 - 100 = 2.400$ uitrekent wanneer er naar 'hoeveel keer sneller' wordt gevraagd, maak je een categoriefout. Dit beïnvloedt de architectuur: bij een factor $25\\times$ sneller kun je synchrone verwerking overwegen waar je anders asynchrone webhooks nodig had.\n\nAls handelsingenieur moet je deze abstracties zuiver houden. Zowel voor responstijd (ms) als voor tokenkosten (\\$) geldt: bereken het verschil voor je budget en UX, en de factor voor je vergelijkende architectuur.",
+   "md": "In de vorige les zagen we dat decoders te traag zijn. Bij het benchmarken van een LLM (large language model, groot taalmodel) tegenover Jev maken analisten vaak een hardnekkige denkfout: ze halen absolute en relatieve metrieken door elkaar.\n\nAls een frontier LLM 2.500 ms nodig heeft voor een beslissing en Jev 100 ms:\n- De **absolute tijdwinst** is het verschil: $2.500 - 100 = 2.400$ ms. Dit getal is cruciaal voor de UX (gebruikerservaring) en de timeout-instellingen van je API's (application programming interface).\n- De **relatieve snelheid** is de verhouding (quotiënt): $2.500 / 100 = 25\\times$. Jev is hier 25 *keer* sneller. \n\n> [!pitfall] Verhouding of Verschil?\n> Als je $2.500 - 100 = 2.400$ uitrekent wanneer er naar 'hoeveel keer sneller' wordt gevraagd, maak je een categoriefout. Dit beïnvloedt de architectuur: bij een factor $25\\times$ sneller kun je synchrone verwerking overwegen waar je anders asynchrone webhooks nodig had.\n\nAls handelsingenieur moet je deze abstracties zuiver houden. Zowel voor responstijd (ms) als voor tokenkosten (\\$) geldt: bereken het verschil voor je budget en UX, en de factor voor je vergelijkende architectuur.",
    "checks": [
     {
      "id": "c1-1",
@@ -170,7 +170,7 @@
   {
    "id": "sec-05",
    "title": "5. Schema-definities (Question Definitions)",
-   "md": "Omdat Jev non-generatief is, kunnen we niet om JSON vragen via proza in een system prompt. We sturen een strakke **Question Definition** mee, die qua structuur doet denken aan TypeScript of OpenAPI schema's.\n\nDeze schema's binden de output afdwingend aan één van de primitieven en dicteren exact de dimensies van de activeringsfuncties.\n\n```json\n{\n  \"name\": \"SupportRouter\",\n  \"primitive\": \"Choice\",\n  \"options\": [\"facturatie\", \"technisch\", \"verkoop\"],\n  \"description\": \"Bepaal naar welk afdeling dit ticket moet.\"\n}\n```\nDoor in het schema `options` te definiëren als een array van 3 strings, compileert Jev intern direct een Softmax-laag van exact 3 dimensies. De latentie is $O(1)$ en garandeert dat er nimmer een onverwachte vierde optie (of markdown) wordt teruggestuurd.\n\n:::sim decision-engine {}\n:::",
+   "md": "Omdat Jev non-generatief is, kunnen we niet om JSON (JavaScript Object Notation) vragen via proza in een system prompt. We sturen een strakke **Question Definition** mee, die qua structuur doet denken aan TypeScript of OpenAPI schema's.\n\nDeze schema's binden de output afdwingend aan één van de primitieven en dicteren exact de dimensies van de activeringsfuncties.\n\n```json\n{\n  \"name\": \"SupportRouter\",\n  \"primitive\": \"Choice\",\n  \"options\": [\"facturatie\", \"technisch\", \"verkoop\"],\n  \"description\": \"Bepaal naar welk afdeling dit ticket moet.\"\n}\n```\nDoor in het schema `options` te definiëren als een array van 3 strings, compileert Jev intern direct een Softmax-laag van exact 3 dimensies. De latentie is $O(1)$ en garandeert dat er nimmer een onverwachte vierde optie (of markdown) wordt teruggestuurd.\n\n:::sim decision-engine {}\n:::",
    "checks": [
     {
      "id": "c5-1",
@@ -550,7 +550,7 @@
    "type": "numeric",
    "skill": "brier-ece",
    "level": 2,
-   "prompt": "Bereken de kwadratische fout als een AI stelt dat een SQL-injectie zeer onwaarschijnlijk is ($p = 0.10$), maar het blijkt een harde aanval te zijn ($y = 1$).",
+   "prompt": "Bereken de kwadratische fout als een AI stelt dat een SQL-injectie (SQL = Structured Query Language) zeer onwaarschijnlijk is ($p = 0.10$), maar het blijkt een harde aanval te zijn ($y = 1$).",
    "explain": "$(0.10 - 1)^2 = (-0.90)^2 = 0.81$. Hoge overconfidence wordt extreem zwaar bestraft via het kwadraat.",
    "value": 0.81,
    "tolerance": 0.001

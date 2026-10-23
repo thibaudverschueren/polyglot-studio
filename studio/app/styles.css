@@ -519,12 +519,12 @@ a.path-card:hover { background: var(--surface); box-shadow: var(--shadow-1); }
 .callout > .callout-title .icon { width: 16px; height: 16px; }
 .callout > :last-child { margin-bottom: 0; }
 .callout p:first-of-type { margin-top: 0.2em; }
-.callout-rule { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 25%, transparent); }
-.callout-rule > .callout-title { color: var(--accent-ink); }
+.callout-rule, .callout-important { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 25%, transparent); }
+.callout-rule > .callout-title, .callout-important > .callout-title { color: var(--accent-ink); }
 .callout-tip > .callout-title { color: var(--good); }
 .callout-tip { background: var(--good-soft); border-color: var(--good-line); }
-.callout-warning > .callout-title, .callout-pitfall > .callout-title { color: var(--bad); }
-.callout-warning, .callout-pitfall { background: var(--bad-soft); border-color: var(--bad-line); }
+.callout-warning > .callout-title, .callout-pitfall > .callout-title, .callout-caution > .callout-title { color: var(--bad); }
+.callout-warning, .callout-pitfall, .callout-caution { background: var(--bad-soft); border-color: var(--bad-line); }
 .callout-example > .callout-title { color: var(--ink-2); }
 .callout-example { background: var(--surface); }
 .callout-mnemonic > .callout-title { color: var(--warn); }
@@ -854,6 +854,34 @@ textarea.answer-input { min-height: 120px; resize: vertical; font-size: 17px; li
   text-align: center;
   max-width: 620px;
 }
+
+/* Inline SVG diagrams (tools/diagram_lib.py): colours come from the theme, so they follow light/dark and the track colour */
+.figure.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); padding: 14px 10px 12px; box-shadow: var(--shadow-1); }
+.figure.diagram svg { width: 100%; max-width: 560px; height: auto; display: block; margin: 0 auto; overflow: visible; }
+.figure.diagram text { font-family: var(--font-ui); fill: var(--ink); }
+.figure.diagram .d-t { font-size: 14.5px; font-weight: 650; }
+.figure.diagram .d-s { font-size: 12.5px; fill: var(--ink-2); }
+.figure.diagram .d-l { font-size: 12px; fill: var(--ink-3); }
+.figure.diagram .d-m { font-family: var(--font-mono); font-size: 12.5px; fill: var(--ink-2); }
+.figure.diagram .d-box { fill: var(--surface-2); stroke: var(--line-2); stroke-width: 1.2; }
+.figure.diagram .d-acc { fill: var(--accent-soft); stroke: var(--accent); }
+.figure.diagram .d-good { fill: var(--good-soft); stroke: var(--good); }
+.figure.diagram .d-warn { fill: var(--warn-soft); stroke: var(--warn); }
+.figure.diagram .d-bad { fill: var(--bad-soft); stroke: var(--bad); }
+.figure.diagram .d-info { fill: var(--info-soft); stroke: var(--info); }
+.figure.diagram .d-plain { fill: none; stroke: var(--line-2); stroke-dasharray: 5 4; }
+.figure.diagram .d-line { stroke: var(--ink-3); stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.figure.diagram .d-dash { stroke-dasharray: 5 4; }
+.figure.diagram .d-ah { fill: var(--ink-3); }
+.figure.diagram .d-curve { stroke: var(--accent); stroke-width: 2.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.figure.diagram .d-grid { stroke: var(--line-2); stroke-width: 1; }
+.figure.diagram .d-fill-acc { fill: var(--accent); }
+.figure.diagram .d-fill-good { fill: var(--good); }
+.figure.diagram .d-fill-warn { fill: var(--warn); }
+.figure.diagram .d-fill-bad { fill: var(--bad); }
+.figure.diagram .d-fill-info { fill: var(--info); }
+.figure.diagram .d-on { fill: var(--on-accent); }
+
 
 /* ---------- Simulators ---------- */
 .sim { margin: 1.4em 0; border-radius: var(--r-l); background: var(--surface); border: 1px solid var(--line); overflow: hidden; }

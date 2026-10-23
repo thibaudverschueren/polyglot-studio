@@ -8,7 +8,7 @@
  "subtitle": "Hoe een lokaal redenerend AI-model (<3B) router-telemetrie analyseert, een Tree-of-Thoughts RCA uitvoert en netwerkstoringen autonoom herstelt",
  "level": "expert",
  "minutes": 50,
- "summary": "Wanneer het internet uitvalt, kan een router geen cloud-LLM aanroepen. Deze les leert je hoe je een lokaal redenerend AI-model op een router-SoC ontwerpt: van gestructureerde telemetrie-extractie (ip route, conntrack, ethtool) en Tree-of-Thoughts hypothesen tot geautomatiseerde herstelacties met veilige rollback-guardrails.",
+ "summary": "Wanneer het internet uitvalt, kan een router geen cloud-LLM (large language model) aanroepen. Deze les leert je hoe je een lokaal redenerend AI-model op een router-SoC (system on a chip) ontwerpt: van gestructureerde telemetrie-extractie (ip route, conntrack, ethtool) en Tree-of-Thoughts hypothesen tot geautomatiseerde herstelacties met veilige rollback-guardrails.",
  "objectives": [
   {
    "id": "telemetry-extraction",
@@ -16,7 +16,7 @@
   },
   {
    "id": "edge-slm-specs",
-   "text": "Geheugen-, compute- en quantisatie-eisen (Q4_K_M) berekenen voor 0.5B-3B reasoning SLM's op embedded router-SoC's zonder cloud-afhankelijkheid."
+   "text": "Geheugen-, compute- en quantisatie-eisen (Q4_K_M) berekenen voor 0.5B-3B reasoning SLM's (small language model) op embedded router-SoC's zonder cloud-afhankelijkheid."
   },
   {
    "id": "reasoning-tree-rca",
@@ -24,14 +24,14 @@
   },
   {
    "id": "safe-remediation",
-   "text": "Veilige mitigatie-acties (MSS clamping, ARP flush, SQM) uitvoeren via getypeerde function calling met automatische watchdog rollbacks."
+   "text": "Veilige mitigatie-acties (MSS (Maximum Segment Size) clamping, ARP (Address Resolution Protocol) flush, SQM (Smart Queue Management)) uitvoeren via getypeerde function calling met automatische watchdog rollbacks."
   }
  ],
  "sections": [
   {
    "id": "telemetrie-extractie",
    "title": "1. De Zintuigen van de Router AI: Telemetrie naar JSON",
-   "md": "Een LLM kan niet betrouwbaar redeneren over duizenden regels ruwe, knipperende syslog-tekst. Om een redeneermodel op een router te voeden, hebben we een snelle **System 1 parser** nodig die de Linux kernel state condenseert tot een gestructureerde JSON-observatievector.\n\nModerne router-kernels (`iproute2`) ondersteunen de `-j` (JSON) vlag. Hierdoor hoef je geen breekbare regex-parsers te schrijven:\n\n```bash\n# 1. Routing tabel in JSON\nip -j route show\n\n# 2. ARP buren en link-state\nip -j neigh show\n\n# 3. Interface statistieken (drops, errors, carrier)\nip -j -s link show dev eth0\n```\n\nDe System 1 telemetrie-collector destilleert hieruit vijf vitale indicatoren:\n1. **PHY / Carrier status**: Heeft de WAN-poort fysiek signaal (`operstate: UP`) of rapporteert de chip `NO-CARRIER`?\n2. **L2 Neighbor state**: Staat de default gateway op `REACHABLE`, `STALE` of `FAILED` in de ARP-tabel?\n3. **L3 Default Route**: Bevat de FIB een geldige `0.0.0.0/0` prefix met een actieve next-hop?\n4. **Conntrack Saturatie**: Wat is de verhouding tussen actieve connecties en de tabelgrootte ($\\frac{N_{\\text{actief}}}{N_{\\text{max}}}$)? Boven 90% treedt connectie-uitval op.\n5. **DNS Health**: Wat is de RTT naar upstream resolvers en wat is het percentage `SERVFAIL` of timeouts op poort 53?\n\n> [!tip] Token Compressie\n> Door ruwe logs vooraf te reduceren tot deze 5 velden, krimpt de input voor de reasoning LLM van 25.000 tokens naar slechts **180 tokens**. Dit maakt realtime inferentie op een router razendsnel en extreem goedkoop.",
+   "md": "Een LLM kan niet betrouwbaar redeneren over duizenden regels ruwe, knipperende syslog-tekst. Om een redeneermodel op een router te voeden, hebben we een snelle **System 1 parser** nodig die de Linux kernel state condenseert tot een gestructureerde JSON-observatievector (JSON = JavaScript Object Notation).\n\nModerne router-kernels (`iproute2`) ondersteunen de `-j` (JSON) vlag. Hierdoor hoef je geen breekbare regex-parsers te schrijven:\n\n```bash\n# 1. Routing tabel in JSON\nip -j route show\n\n# 2. ARP buren en link-state\nip -j neigh show\n\n# 3. Interface statistieken (drops, errors, carrier)\nip -j -s link show dev eth0\n```\n\nDe System 1 telemetrie-collector destilleert hieruit vijf vitale indicatoren:\n1. **PHY (physical layer, de fysieke laag) / Carrier status**: Heeft de WAN-poort (WAN = wide area network) fysiek signaal (`operstate: UP`) of rapporteert de chip `NO-CARRIER`?\n2. **L2 (OSI-laag 2, de data-linklaag) Neighbor state**: Staat de default gateway op `REACHABLE`, `STALE` of `FAILED` in de ARP-tabel?\n3. **L3 (OSI-laag 3, de netwerklaag) Default Route**: Bevat de FIB (Forwarding Information Base) een geldige `0.0.0.0/0` prefix met een actieve next-hop?\n4. **Conntrack Saturatie**: Wat is de verhouding tussen actieve connecties en de tabelgrootte ($\\frac{N_{\\text{actief}}}{N_{\\text{max}}}$)? Boven 90% treedt connectie-uitval op.\n5. **DNS (Domain Name System) Health**: Wat is de RTT (round-trip time, de heen-en-terugtijd) naar upstream resolvers en wat is het percentage `SERVFAIL` of timeouts op poort 53?\n\n> [!tip] Token Compressie\n> Door ruwe logs vooraf te reduceren tot deze 5 velden, krimpt de input voor de reasoning LLM van 25.000 tokens naar slechts **180 tokens**. Dit maakt realtime inferentie op een router razendsnel en extreem goedkoop.",
    "checks": [
     {
      "id": "c1-01",
@@ -62,7 +62,7 @@
   {
    "id": "zero-cloud-hardware",
    "title": "2. Waarom Zero-Cloud? On-Router SLM Architectuur",
-   "md": "Wanneer een consument of KMO een netwerkstoring ervaart, stuit een cloud-AI op een **fatale paradox**:\n\n$$\\text{Internet verbroken} \\implies \\text{Cloud API onbereikbaar}$$\n\nEen netwerkdiagnose-model dat Claude of GPT-4 via een REST API aanroept, kan zichzelf nooit herstellen op het moment dat het internet platligt. De reasoning engine **moet 100% lokaal draaien op de router-SoC** (zero-cloud dependency).\n\n### De Hardware Realiteit van Moderne Routers\nNieuwe WiFi 6E en WiFi 7 gateways (zoals routers met Qualcomm IPQ807x, MediaTek Filogic 880 of Broadcom BCM4908) zijn volwaardige micro-servers:\n- **CPU**: Quad-core ARM Cortex-A53 of Cortex-A73 (1.8 tot 2.2 GHz).\n- **RAM**: 1 GB tot 2 GB DDR4 werkgeheugen.\n- **NPU / AI-Accelerator**: 1 tot 3 TOPS compute voor matrixvermenigvuldigingen.\n\n### Model Dimensionering: De 0.5B - 1.5B Reasoning Sweet Spot\nEen 70B model past uiteraard niet in een router. We zetten daarom een compact **Reasoning Small Language Model (SLM)** in, zoals `Qwen2.5-0.5B-Instruct`, `SmolLM2-1.7B` of `DeepSeek-R1-Distill-Qwen-1.5B`.\n\n```python\n# Geheugenberekening voor een 1.5B model in 4-bit quantisatie (Q4_K_M):\n# Model parameters: 1.5e9 * 0.55 bytes (4.5 bits/param) ≈ 825 MB\n# Context window (2048 tokens KV-cache in fp16): ≈ 120 MB\n# Runtime overhead (llama.cpp engine op OpenWrt): ≈ 45 MB\n# Totale RAM-voetafdruk: ≈ 990 MB (past perfect in 2GB router-RAM!)\n```\n\nOp een quad-core ARM Cortex-A73 genereert een Q4_K_M gekwantiseerd 1.5B model via `llama.cpp` typisch **18 tot 26 tokens per seconde**. Een volledige diagnostische redeneerstap van 150 tokens kost dus minder dan 7 seconden!",
+   "md": "Wanneer een consument of KMO een netwerkstoring ervaart, stuit een cloud-AI op een **fatale paradox**:\n\n$$\\text{Internet verbroken} \\implies \\text{Cloud API onbereikbaar}$$\n\nEen netwerkdiagnose-model dat Claude of GPT-4 (Generative Pre-trained Transformer) via een REST (Representational State Transfer) API (application programming interface) aanroept, kan zichzelf nooit herstellen op het moment dat het internet platligt. De reasoning engine **moet 100% lokaal draaien op de router-SoC** (zero-cloud dependency).\n\n### De Hardware Realiteit van Moderne Routers\nNieuwe WiFi 6E en WiFi 7 gateways (zoals routers met Qualcomm IPQ807x, MediaTek Filogic 880 of Broadcom BCM4908) zijn volwaardige micro-servers:\n- **CPU** (central processing unit, de processor): Quad-core ARM Cortex-A53 of Cortex-A73 (1.8 tot 2.2 GHz).\n- **RAM** (random-access memory, het werkgeheugen): 1 GB tot 2 GB DDR4 werkgeheugen.\n- **NPU (neural processing unit) / AI-Accelerator**: 1 tot 3 TOPS (tera operations per second) compute voor matrixvermenigvuldigingen.\n\n### Model Dimensionering: De 0.5B - 1.5B Reasoning Sweet Spot\nEen 70B model past uiteraard niet in een router. We zetten daarom een compact **Reasoning Small Language Model (SLM)** in, zoals `Qwen2.5-0.5B-Instruct`, `SmolLM2-1.7B` of `DeepSeek-R1-Distill-Qwen-1.5B`.\n\n```python\n# Geheugenberekening voor een 1.5B model in 4-bit quantisatie (Q4_K_M):\n# Model parameters: 1.5e9 * 0.55 bytes (4.5 bits/param) ≈ 825 MB\n# Context window (2048 tokens KV-cache in fp16): ≈ 120 MB\n# Runtime overhead (llama.cpp engine op OpenWrt): ≈ 45 MB\n# Totale RAM-voetafdruk: ≈ 990 MB (past perfect in 2GB router-RAM!)\n```\n\nOp een quad-core ARM Cortex-A73 genereert een Q4_K_M gekwantiseerd 1.5B model via `llama.cpp` typisch **18 tot 26 tokens per seconde**. Een volledige diagnostische redeneerstap van 150 tokens kost dus minder dan 7 seconden!",
    "checks": [
     {
      "id": "c2-01",
@@ -95,14 +95,14 @@
   {
    "id": "tree-of-thoughts-rca",
    "title": "3. Het Redeneerspoor: Bottom-Up Tree-of-Thoughts RCA",
-   "md": "Generatieve LLM's zonder redeneer-instructie raden vaak wild in het rond wanneer een gebruiker klaagt over traag internet: ze stellen direct voor om de router te herstarten of willekeurige poorten open te zetten.\n\nEen **Application-Specific Reasoning LLM** genereert een formeel redeneerspoor (tussen `<think>` en `</think>`) volgens de strikte wetten van het **Bottom-Up netwerkmodel**:\n\n```\n[Layer 1/2: Fysiek & Data-Link]\n     │ Heeft de interface carrier? Zijn er CRC-fouten? Reageert ARP?\n     ▼\n[Layer 3: Forwarding & Routing]\n     │ Is er een 0.0.0.0/0 route? Pingt de gateway? Is er MTU-blackholing?\n     ▼\n[Layer 4: State & Transport]\n     │ Is conntrack vol? Slagen TCP SYN-ACK handshakes?\n     ▼\n[Layer 7: Applicatie & DNS]\n     │ Reageert de DNS recursor met NOERROR? Zijn er SERVFAIL errors?\n```\n\n### Falsificatie & Red Herrings Uitsluiten\nDe kracht van de reasoning router LLM zit in het elimineren van misleidende signalen (*red herrings*):\n\n> [!example] Casus: De 'Halve' Internetstoring\n> **Klacht**: *'WhatsApp werkt wel op mijn smartphone, maar geen enkele website opent op de laptop.'*\n> \n> **<think> Redeneerspoor van de Router AI**:\n> 1. WhatsApp werkt $\\implies$ Layer 1 (WiFi), Layer 2 (ARP) en Layer 3 (Routing/NAT) functioneren aantoonbaar, want WhatsApp verzendt actieve IP-pakketten over poort 443 en 5222.\n> 2. Websites openen niet op laptop $\\implies$ Browsers steunen zwaar op DNS hostnameresolutie, terwijl WhatsApp vaak gecachte IP's of directe endpoints gebruikt.\n> 3. Hypothese A: 'WiFi-verbinding laptop verbroken' $\\implies$ **Verworpen**: `ip neigh` toont laptop op `192.168.1.142` met status `REACHABLE`.\n> 4. Hypothese B: 'Upstream DNS failure' $\\implies$ **Getest**: `dig @192.168.1.1 google.com` geeft na 5000ms een `connection timed out`. Upstream ISP DNS server `195.130.130.4` reageert niet op UDP 53.\n> 5. **Root Cause**: Upstream DNS resolver gecrasht.\n> 6. **Mitigatie**: Failover naar secundaire resolver (1.1.1.1 / 8.8.8.8).\n> </think>",
+   "md": "Generatieve LLM's zonder redeneer-instructie raden vaak wild in het rond wanneer een gebruiker klaagt over traag internet: ze stellen direct voor om de router te herstarten of willekeurige poorten open te zetten.\n\nEen **Application-Specific Reasoning LLM** genereert een formeel redeneerspoor (tussen `<think>` en `</think>`) volgens de strikte wetten van het **Bottom-Up netwerkmodel**:\n\n```\n[Layer 1/2: Fysiek & Data-Link]\n     │ Heeft de interface carrier? Zijn er CRC-fouten? Reageert ARP?\n     ▼\n[Layer 3: Forwarding & Routing]\n     │ Is er een 0.0.0.0/0 route? Pingt de gateway? Is er MTU-blackholing?\n     ▼\n[Layer 4: State & Transport]\n     │ Is conntrack vol? Slagen TCP SYN-ACK handshakes?\n     ▼\n[Layer 7: Applicatie & DNS]\n     │ Reageert de DNS recursor met NOERROR? Zijn er SERVFAIL errors?\n```\n\n### Falsificatie & Red Herrings Uitsluiten\nDe kracht van de reasoning router LLM zit in het elimineren van misleidende signalen (*red herrings*):\n\n> [!example] Casus: De 'Halve' Internetstoring\n> **Klacht**: *'WhatsApp werkt wel op mijn smartphone, maar geen enkele website opent op de laptop.'*\n> \n> **<think> Redeneerspoor van de Router AI**:\n> 1. WhatsApp werkt $\\implies$ Layer 1 (WiFi), Layer 2 (ARP) en Layer 3 (Routing/NAT) functioneren aantoonbaar, want WhatsApp verzendt actieve IP-pakketten (IP = Internet Protocol) over poort 443 en 5222.\n> 2. Websites openen niet op laptop $\\implies$ Browsers steunen zwaar op DNS hostnameresolutie, terwijl WhatsApp vaak gecachte IP's of directe endpoints gebruikt.\n> 3. Hypothese A: 'WiFi-verbinding laptop verbroken' $\\implies$ **Verworpen**: `ip neigh` toont laptop op `192.168.1.142` met status `REACHABLE`.\n> 4. Hypothese B: 'Upstream DNS failure' $\\implies$ **Getest**: `dig @192.168.1.1 google.com` geeft na 5000ms een `connection timed out`. Upstream ISP (internet service provider) DNS server `195.130.130.4` reageert niet op UDP (User Datagram Protocol) 53.\n> 5. **Root Cause**: Upstream DNS resolver gecrasht.\n> 6. **Mitigatie**: Failover naar secundaire resolver (1.1.1.1 / 8.8.8.8).\n> </think>",
    "checks": [
     {
      "id": "c3-01",
      "type": "order",
      "skill": "reasoning-tree-rca",
      "level": 2,
-     "prompt": "Zet de diagnostische stappen van de bottom-up RCA in de juiste volgorde:",
+     "prompt": "Zet de diagnostische stappen van de bottom-up RCA (root cause analysis, het zoeken naar de grondoorzaak) in de juiste volgorde:",
      "explain": "De router AI controleert eerst fysieke link/ARP, daarna IP-routing/NAT, en pas als dat werkt DNS/applicatielaag.",
      "tiles": [
       "Layer 1/2: Carrier check & ARP neighbor status",
@@ -131,7 +131,7 @@
   {
    "id": "safe-remediation-watchdog",
    "title": "4. Geautomatiseerde Remediatie & De Watchdog Rollback",
-   "md": "Een AI mag op een router **nooit willekeurige shell-commando's** uitvoeren. Eén typefout in een `iptables`-regel of interface-configuratie kan de router onherroepelijk 'bricken' of de gebruiker buitensluiten (*management lockout*).\n\nDaarom communiceert de LLM uitsluitend via **TypeSafe Function Calling** met een voorgedefinieerde remediatietoolbox:\n\n```json\n{\n  \"tool\": \"fix_network_issue\",\n  \"parameters\": {\n    \"action\": \"switch_dns_upstream\",\n    \"primary\": \"1.1.1.1\",\n    \"secondary\": \"8.8.8.8\",\n    \"rollback_timeout_sec\": 45\n  }\n}\n```\n\n### De Vijf Gouden Remediatietools\n1. **`switch_dns_upstream(primary, secondary)`**: Schakelt de router-resolver (`dnsmasq`/`unbound`) over naar betrouwbare Anycast-resolvers bij ISP DNS-uitval.\n2. **`clamp_mss_to_pmtu(interface, mss)`**: Voegt een TCP MSS clamping regel toe om PMTUD black holes op te lossen bij VPN- of PPPoE-tunnels.\n3. **`flush_stale_arp(ip_address)`**: Verwijdert een gecorrumpeerde of verouderde ARP-invoer zodra een nieuw MAC-adres opduikt.\n4. **`expand_dhcp_pool(start_ip, end_ip)`**: Vergroot de dynamische lease-range bij pool exhaustion (APIPA detectie).\n5. **`enable_sqm_cake(upload_kbps, download_kbps)`**: Activeert CAKE Smart Queue Management om bufferbloat-latency onder de 5ms te houden.\n\n### De Dead Man's Switch: Automatische Rollback\nElke actie wordt uitgevoerd met een **hardware watchdog timer**:\n\n$$\\text{Actie toepassen} \\longrightarrow \\text{Start timer (45s)} \\longrightarrow \\text{Slaagt verificatie?} \\begin{cases} \\text{Ja} \\implies \\text{Commit permanent} \\\\ \\text{Nee} \\implies \\text{Kernel rollback!} \\end{cases}$$\n\nAls de router na een configuratiewijziging binnen 45 seconden geen betrouwbare ping naar het internet kan sturen, draait het kernel-script de wijziging automatisch terug naar het vorige checkpoint. De AI kan het netwerk dus nooit permanent afsluiten.",
+   "md": "Een AI mag op een router **nooit willekeurige shell-commando's** uitvoeren. Eén typefout in een `iptables`-regel of interface-configuratie kan de router onherroepelijk 'bricken' of de gebruiker buitensluiten (*management lockout*).\n\nDaarom communiceert de LLM uitsluitend via **TypeSafe Function Calling** met een voorgedefinieerde remediatietoolbox:\n\n```json\n{\n  \"tool\": \"fix_network_issue\",\n  \"parameters\": {\n    \"action\": \"switch_dns_upstream\",\n    \"primary\": \"1.1.1.1\",\n    \"secondary\": \"8.8.8.8\",\n    \"rollback_timeout_sec\": 45\n  }\n}\n```\n\n### De Vijf Gouden Remediatietools\n1. **`switch_dns_upstream(primary, secondary)`**: Schakelt de router-resolver (`dnsmasq`/`unbound`) over naar betrouwbare Anycast-resolvers bij ISP DNS-uitval.\n2. **`clamp_mss_to_pmtu(interface, mss)`**: Voegt een TCP (Transmission Control Protocol) MSS clamping regel toe om PMTUD (Path MTU Discovery) black holes op te lossen bij VPN (virtual private network)- of PPPoE-tunnels (PPPoE = Point-to-Point Protocol over Ethernet).\n3. **`flush_stale_arp(ip_address)`**: Verwijdert een gecorrumpeerde of verouderde ARP-invoer zodra een nieuw MAC-adres (MAC = Media Access Control) opduikt.\n4. **`expand_dhcp_pool(start_ip, end_ip)`**: Vergroot de dynamische lease-range bij pool exhaustion (APIPA (Automatic Private IP Addressing) detectie).\n5. **`enable_sqm_cake(upload_kbps, download_kbps)`**: Activeert CAKE (Common Applications Kept Enhanced) Smart Queue Management om bufferbloat-latency onder de 5ms te houden.\n\n### De Dead Man's Switch: Automatische Rollback\nElke actie wordt uitgevoerd met een **hardware watchdog timer**:\n\n$$\\begin{aligned}&\\text{Actie toepassen} \\longrightarrow \\text{Start timer (45s)} \\longrightarrow \\text{Slaagt verificatie?} \\\\ &\\qquad \\begin{cases} \\text{Ja} \\implies \\text{Commit permanent} \\\\ \\text{Nee} \\implies \\text{Kernel rollback!} \\end{cases}\\end{aligned}$$\n\nAls de router na een configuratiewijziging binnen 45 seconden geen betrouwbare ping naar het internet kan sturen, draait het kernel-script de wijziging automatisch terug naar het vorige checkpoint. De AI kan het netwerk dus nooit permanent afsluiten.",
    "checks": [
     {
      "id": "c4-01",
@@ -190,7 +190,7 @@
    "type": "numeric",
    "skill": "edge-slm-specs",
    "level": 2,
-   "prompt": "Een router met 2 GB (2048 MB) RAM reserveert 600 MB voor het OS en netwerkbuffers. Een 1.5B Q4_K_M model eist 950 MB. Hoeveel MB RAM blijft er over als vrije marge?",
+   "prompt": "Een router met 2 GB (2048 MB) RAM reserveert 600 MB voor het OS (operating system) en netwerkbuffers. Een 1.5B Q4_K_M model eist 950 MB. Hoeveel MB RAM blijft er over als vrije marge?",
    "explain": "2048 - 600 - 950 = 498 MB vrije RAM.",
    "value": 498,
    "abs": 2,
@@ -217,7 +217,7 @@
    "skill": "reasoning-tree-rca",
    "level": 2,
    "prompt": "Rangschik de evaluatiestappen van een reasoning LLM bij een 'geen internet' melding:",
-   "explain": "De AI controleert altijd bottom-up: interface carrier -> L2 ARP -> L3 route/ping -> L7 DNS.",
+   "explain": "De AI controleert altijd bottom-up: interface carrier -> L2 ARP -> L3 route/ping -> L7 (OSI-laag 7, de applicatielaag) DNS.",
    "tiles": [
     "Controleer of de WAN fysieke link 'UP' is",
     "Controleer of de gateway bereikbaar is in 'ip neigh'",
@@ -239,7 +239,7 @@
    "type": "mcq",
    "skill": "safe-remediation",
    "level": 2,
-   "prompt": "Welke herstelactie is het meest effectief wanneer grote downloads wel lukken, maar HTTPS-pagina's oneindig blijven laden over een VPN-tunnel?",
+   "prompt": "Welke herstelactie is het meest effectief wanneer grote downloads wel lukken, maar HTTPS-pagina's (HTTPS = Hypertext Transfer Protocol Secure) oneindig blijven laden over een VPN-tunnel?",
    "explain": "Dit is het klassieke symptoom van een PMTUD black hole; TCP MSS clamping lost dit op.",
    "options": [
     "TCP MSS clamping activeren op de WAN/VPN interface",
@@ -305,7 +305,7 @@
    "skill": "safe-remediation",
    "level": 3,
    "prompt": "Waarom is 'reboot de router' een slechte eerste remediatiestap voor een Autonomous Router LLM?",
-   "explain": "Een reboot wist alle vluchtige telemetrie (kernel buffer, conntrack logs, interface counters) en lost structurele fouten (zoals verkeerde DNS of MTU) niet op.",
+   "explain": "Een reboot wist alle vluchtige telemetrie (kernel buffer, conntrack logs, interface counters) en lost structurele fouten (zoals verkeerde DNS of MTU (Maximum Transmission Unit, de maximale pakketgrootte)) niet op.",
    "options": [
     "Een reboot wist alle diagnostische logs en lost structurele configuratiefouten niet op",
     "Een reboot reset de MAC-adressen van alle LAN-apparaten",
@@ -359,7 +359,7 @@
    "skill": "telemetry-extraction",
    "level": 2,
    "prompt": "Welke velden uit 'ip -j -s link show dev eth0' duiden op een fysiek beschadigde netwerkkabel of duplex-mismatch?",
-   "explain": "CRC errors en frame errors wijzen op signaalcorruptie op de fysieke kabel.",
+   "explain": "CRC (cyclic redundancy check) errors en frame errors wijzen op signaalcorruptie op de fysieke kabel.",
    "options": [
     "Hoge aantallen 'rx_crc_errors' en 'rx_frame_errors'",
     "Het 'mtu' veld staat op 1500",
@@ -446,7 +446,7 @@
    "type": "type",
    "skill": "safe-remediation",
    "level": 2,
-   "prompt": "Welke Anycast DNS IPv4-adressen kan de AI als betrouwbare fallback instellen?",
+   "prompt": "Welke Anycast DNS IPv4-adressen (IPv4 = Internet Protocol versie 4) kan de AI als betrouwbare fallback instellen?",
    "explain": "1.1.1.1 (Cloudflare) of 8.8.8.8 (Google) zijn de standaard fallback resolvers.",
    "answers": [
     "1.1.1.1",
@@ -537,7 +537,7 @@
    "level": 2,
    "prompt": "Vul in over valse correlaties:",
    "text": "Wanneer routers ICMP-antwoorden limiteren om hun CPU te beschermen, creëert dit {{valse|misleidende}} packet loss in traceroutes.",
-   "explain": "ICMP rate limiting ziet eruit als packet loss, maar dataverkeer ondervindt geen hinder."
+   "explain": "ICMP (Internet Control Message Protocol) rate limiting ziet eruit als packet loss, maar dataverkeer ondervindt geen hinder."
   },
   {
    "id": "m15",
@@ -571,7 +571,7 @@
    "skill": "edge-slm-specs",
    "level": 3,
    "prompt": "Vul het runtime framework in:",
-   "text": "Om gekwantiseerde GGUF-modellen efficiënt en zonder zware Python dependencies op embedded Linux routers te draaien, gebruikt men {{llama.cpp|mlc-llm}}.",
+   "text": "Om gekwantiseerde GGUF-modellen (GGUF = het bestandsformaat van llama.cpp voor gequantiseerde modellen) efficiënt en zonder zware Python dependencies op embedded Linux routers te draaien, gebruikt men {{llama.cpp|mlc-llm}}.",
    "explain": "llama.cpp is in puur C/C++ geschreven en draait vlekkeloos op OpenWrt en ARM SoC's."
   },
   {
@@ -593,7 +593,7 @@
  "production": {
   "type": "explain",
   "prompt": "**Case: Ontwerp de AI-Troubleshooting Engine voor een Consumentenrouter.**\n\nJe ontwerpt een ingebouwde 'Self-Healing Network Assistant' die als chip-software wordt meegeleverd op een WiFi 7 consumentenrouter (Quad-core ARM, 2GB RAM).\n\nSchrijf een onderbouwde technische architectuurnota (300-500 woorden) waarin je de volgende vier pijlers uitwerkt:\n1. **Telemetrie & Observatievector**: Welke 4 specifieke Linux kernel commando's gebruik je om telemetrie op te halen, en hoe comprimeer je die data tot een beknopte JSON-vector voor de LLM?\n2. **Modelkeuze & Lokale Hardware-Sizing**: Welk type model (grootte in parameters, quantisatieformaat) kies je, hoeveel RAM kost dit op de router, en waarom is cloud-inferentie uitgesloten?\n3. **Tree-of-Thoughts Redeneerlogica (RCA)**: Beschrijf hoe de AI systematisch bottom-up redeneert over een situatie waarin 'WhatsApp wel werkt, maar webpagina's niet laden'.\n4. **Veilige Remediatie & Rollback**: Hoe voert de AI herstelacties uit (function calling) en hoe voorkomt de 45-seconden watchdog dat een foute actie de gebruiker definitief afsluit?",
-  "model": "### 1. Telemetrie & Observatievector\nOm de AI van realtime context te voorzien zonder de router-CPU te belasten, pollt een lichtgewicht C-daemon elke 10 seconden kernstatistieken via gestructureerde CLI-calls:\n- `ip -j link`: PHY carrier status en interface drop/error counters.\n- `ip -j neigh`: ARP status van default gateway en LAN-clients (REACHABLE vs FAILED).\n- `ip -j route`: Bestaan en next-hop van de `default` route in de FIB.\n- `conntrack -S`: Aantal actieve NAT-sessies tegenover de maximale tabelcapaciteit.\nDeze data wordt gecomprimeerd tot een JSON-snapshot van circa 200 tokens met alleen actuele afwijkingen (bijv. `{ wan_carrier: true, gw_arp: 'REACHABLE', default_route: true, dns_latency_ms: 5000, servfail_pct: 100 }`).\n\n### 2. Modelkeuze & Hardware Sizing\nWe kiezen voor een **DeepSeek-R1-Distill-Qwen-1.5B** of **Qwen2.5-1.5B-Instruct** in **GGUF Q4_K_M** quantisatie. Het model draait via een lokaal gecompileerde `llama.cpp` binary op embedded OpenWrt. Met 4.5 bits per parameter eist het model slechts ~825 MB RAM, plus 120 MB voor een 2048-token KV-cache en 45 MB runtime overhead (totaal ~990 MB). Dit past ruim binnen het 2GB DDR4 werkgeheugen van de quad-core ARM Cortex-A73 SoC (1.8 GHz) en levert circa 20 tokens/sec op. Cloud-inferentie is principieel uitgesloten: wanneer WAN of DNS uitvalt, is er immers geen internet om een cloud-API te contacteren.\n\n### 3. Tree-of-Thoughts Redeneerlogica (RCA)\nBij de casus 'WhatsApp werkt wel, maar websites laden niet' redeneert de LLM bottom-up:\n- *Hypothese 1 (L1/L2)*: Is de WiFi of LAN-verbinding weg? **Verworpen**: WhatsApp stuurt actieve pakketten, dus link en ARP werken.\n- *Hypothese 2 (L3/NAT)*: Is er geen routing of faalt NAT? **Verworpen**: WhatsApp gebruikt IP-verbindingen over poort 443 en 5222 via de WAN-gateway.\n- *Hypothese 3 (L7 DNS)*: Falen hostname lookups voor webpagina's? **Bevestigd**: WhatsApp gebruikt deels hardcoded endpoints of gecachte IP's, terwijl browsers voor elke URL een DNS query afvuren. De telemetrie toont DNS-query timeouts op de ISP resolver.\n- *Root Cause*: De upstream DNS-server van de ISP reageert niet meer.\n\n### 4. Veilige Remediatie & Watchdog Rollback\nDe LLM voert nooit vrije shell-scripts uit, maar genereert een getypeerde function call: `switch_dns_upstream(primary='1.1.1.1', secondary='8.8.8.8', watchdog=45)`. Het router-OS past de configuratie toe en start een 45-seconden watchdog timer. Binnen deze termijn vuurt een validatiescript pings en test-DNS queries af op het internet. Blijft succesvol herstel uit, dan herstelt de kernel automatisch het vorige configuratie-checkpoint. Dit elimineert het risico op permanente management lockouts.",
+  "model": "### 1. Telemetrie & Observatievector\nOm de AI van realtime context te voorzien zonder de router-CPU te belasten, pollt een lichtgewicht C-daemon elke 10 seconden kernstatistieken via gestructureerde CLI-calls (CLI = command-line interface):\n- `ip -j link`: PHY carrier status en interface drop/error counters.\n- `ip -j neigh`: ARP status van default gateway en LAN-clients (REACHABLE vs FAILED).\n- `ip -j route`: Bestaan en next-hop van de `default` route in de FIB.\n- `conntrack -S`: Aantal actieve NAT-sessies tegenover de maximale tabelcapaciteit.\nDeze data wordt gecomprimeerd tot een JSON-snapshot van circa 200 tokens met alleen actuele afwijkingen (bijv. `{ wan_carrier: true, gw_arp: 'REACHABLE', default_route: true, dns_latency_ms: 5000, servfail_pct: 100 }`).\n\n### 2. Modelkeuze & Hardware Sizing\nWe kiezen voor een **DeepSeek-R1-Distill-Qwen-1.5B** of **Qwen2.5-1.5B-Instruct** in **GGUF Q4_K_M** quantisatie. Het model draait via een lokaal gecompileerde `llama.cpp` binary op embedded OpenWrt. Met 4.5 bits per parameter eist het model slechts ~825 MB RAM, plus 120 MB voor een 2048-token KV-cache en 45 MB runtime overhead (totaal ~990 MB). Dit past ruim binnen het 2GB DDR4 werkgeheugen van de quad-core ARM Cortex-A73 SoC (1.8 GHz) en levert circa 20 tokens/sec op. Cloud-inferentie is principieel uitgesloten: wanneer WAN of DNS uitvalt, is er immers geen internet om een cloud-API te contacteren.\n\n### 3. Tree-of-Thoughts Redeneerlogica (RCA)\nBij de casus 'WhatsApp werkt wel, maar websites laden niet' redeneert de LLM bottom-up:\n- *Hypothese 1 (L1/L2)*: Is de WiFi of LAN-verbinding weg? **Verworpen**: WhatsApp stuurt actieve pakketten, dus link en ARP werken.\n- *Hypothese 2 (L3/NAT)*: Is er geen routing of faalt NAT? **Verworpen**: WhatsApp gebruikt IP-verbindingen over poort 443 en 5222 via de WAN-gateway.\n- *Hypothese 3 (L7 DNS)*: Falen hostname lookups voor webpagina's? **Bevestigd**: WhatsApp gebruikt deels hardcoded endpoints of gecachte IP's, terwijl browsers voor elke URL een DNS query afvuren. De telemetrie toont DNS-query timeouts op de ISP resolver.\n- *Root Cause*: De upstream DNS-server van de ISP reageert niet meer.\n\n### 4. Veilige Remediatie & Watchdog Rollback\nDe LLM voert nooit vrije shell-scripts uit, maar genereert een getypeerde function call: `switch_dns_upstream(primary='1.1.1.1', secondary='8.8.8.8', watchdog=45)`. Het router-OS past de configuratie toe en start een 45-seconden watchdog timer. Binnen deze termijn vuurt een validatiescript pings en test-DNS queries af op het internet. Blijft succesvol herstel uit, dan herstelt de kernel automatisch het vorige configuratie-checkpoint. Dit elimineert het risico op permanente management lockouts.",
   "rubric": [
    "Benoemt de specifieke telemetriebronnen (ip link/neigh/route, conntrack) en legt de JSON-tokencompressie uit",
    "Kwantificeert het lokale modelformaat (1B-2B parameters, Q4 quantisatie, ~1GB RAM op ARM) en beargumenteert waarom cloud uitgesloten is",
@@ -611,7 +611,7 @@
   {
    "id": "c-ram-budget",
    "front": "Hoeveel RAM vereist een 1.5B parameter reasoning model in 4-bit (Q4_K_M)?",
-   "back": "Ongeveer **825 MB** voor gewichten, circa **1 GB** inclusief KV-cache en runtime.",
+   "back": "Ongeveer **825 MB** voor gewichten, circa **1 GB** inclusief KV-cache (key-value cache) en runtime.",
    "skill": "edge-slm-specs"
   },
   {
@@ -623,7 +623,7 @@
   {
    "id": "c-apipa-meaning",
    "front": "Wat bewijst een APIPA adres (169.254.x.x) op een client?",
-   "back": "Dat **Layer 1 en 2 werken**, maar de **DHCP-server niet reageert** (DORA faalt).",
+   "back": "Dat **Layer 1 en 2 werken**, maar de **DHCP-server (DHCP = Dynamic Host Configuration Protocol) niet reageert** (DORA (Discover, Offer, Request, Acknowledge) faalt).",
    "skill": "reasoning-tree-rca"
   },
   {
@@ -635,7 +635,7 @@
   {
    "id": "c-mss-clamping",
    "front": "Welke remediatie lost een PMTUD black hole op bij VPN/PPPoE tunnels?",
-   "back": "**TCP MSS clamping** (past MSS in SYN-pakketten aan aan de werkelijke MTU).",
+   "back": "**TCP MSS clamping** (past MSS in SYN-pakketten (SYN = synchronize) aan aan de werkelijke MTU).",
    "skill": "safe-remediation"
   },
   {

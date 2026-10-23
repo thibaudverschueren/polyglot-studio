@@ -4,7 +4,7 @@ md.py — small, strict Markdown subset renderer for Polyglot Studio lessons.
 Block syntax
   ## / ### / ####         headings (rendered one level lower: ## → h3)
   - item / 1. item        lists (nest with 2+ spaces)
-  > [!rule] Title         callouts: rule, tip, warning, pitfall, example, mnemonic, note
+  > [!rule] Title         callouts: rule, important, tip, warning, caution, pitfall, example, mnemonic, note
   > text                  quote
   | a | b |               GFM tables (alignment with :---:)
   ```solidity title       fenced code (solidity, python, js, json, bash, text)
@@ -23,9 +23,12 @@ render every formula in one KaTeX batch.
 """
 import html as _html
 import json
+import os
 import re
 
 from highlight import highlight
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 MATH = []          # list of (tex, display)
 _MATH_INDEX = {}   # (tex, display) -> n
@@ -41,6 +44,8 @@ def math_placeholder(tex, display):
 
 CALLOUTS = {
     "rule": ("Regel", "target"),
+    "important": ("Belangrijk", "target"),
+    "caution": ("Pas op", "alert"),
     "tip": ("Tip", "bulb"),
     "warning": ("Let op", "alert"),
     "pitfall": ("Valkuil", "alert"),
@@ -68,6 +73,25 @@ ALLOWED_TAGS = re.compile(r"</?(?:br|sup|sub|u|kbd)\s*/?>", re.I)
 
 class MdError(ValueError):
     pass
+
+
+def figure(alt, src, cap_html):
+    """<figure> for ![alt](src "caption"). Only local files under assets/ are allowed; an SVG is inlined so it
+    follows the theme (light/dark) and the track colour through the app's CSS variables."""
+    if not re.fullmatch(r"assets/[\w./-]+\.(?:svg|png|jpe?g|webp|gif)", src) or ".." in src:
+        raise MdError(f"image must be a local file under assets/: {src}")
+    path = os.path.join(ROOT, src)
+    if not os.path.isfile(path):
+        raise MdError(f"image not found: {src}")
+    if not alt.strip():
+        raise MdError(f"image without alt text: {src}")
+    if src.endswith(".svg"):
+        svg = re.sub(r"^<\?xml[^>]*>\s*", "", open(path, encoding="utf-8").read().strip())
+        if re.search(r"<script|\bon\w+\s*=|javascript:", svg, re.I):
+            raise MdError(f"script in SVG not allowed: {src}")
+        svg = svg.replace("<svg ", f'<svg role="img" aria-label="{_html.escape(alt, quote=True)}" focusable="false" ', 1)
+        return f'<figure class="figure diagram">{svg}{cap_html}</figure>'
+    return f'<figure class="figure"><img src="{_html.escape(src, quote=True)}" alt="{_html.escape(alt, quote=True)}" loading="lazy">{cap_html}</figure>'
 
 
 # ---------------------------------------------------------------- inline
@@ -107,7 +131,7 @@ def inline(text, greek_say=True):
         src = m.group("src")
         cap = m.group("t1") or m.group("t2") or alt
         cap_html = f'<figcaption>{_html.escape(cap, quote=False)}</figcaption>' if cap else ''
-        return keep(f'<figure class="figure"><img src="{_html.escape(src, quote=True)}" alt="{_html.escape(alt, quote=True)}" loading="lazy">{cap_html}</figure>')
+        return keep(figure(alt, src, cap_html))
     t = re.sub(r"!\[(?P<alt>[^\]]*)\]\((?P<src>[^\s)]+)(?:\s+(?:\"(?P<t1>[^\"]*)\"|'(?P<t2>[^']*)'))?\)", img_rep, t)
     # escape the rest
     t = _html.escape(t, quote=False)
@@ -184,10 +208,10 @@ def _table(lines):
 
 
 def _list(lines):
-    """lines: list of (indent, marker, text) plus continuation strings; returns html."""
-    html_out = []
+    """lines: list of list-item lines plus indented continuation lines; returns html.
 
-    def render(items, start_indent):
+    A continuation that starts with '>' (a callout or quote inside a list item) is rendered as a block."""
+    def render_items(items):
         if not items:
             return ""
         ordered = items[0][1][0].isdigit()
@@ -195,13 +219,14 @@ def _list(lines):
         out = [f"<{tag}>"]
         i = 0
         while i < len(items):
-            ind, mark, text = items[i]
+            ind, mark, text, extra = items[i]
             children = []
             j = i + 1
             while j < len(items) and items[j][0] > ind:
                 children.append(items[j])
                 j += 1
-            out.append(f"<li>{inline(text)}{render(children, ind + 1) if children else ''}</li>")
+            blocks = render("\n".join(extra)) if extra else ""
+            out.append(f"<li>{inline(text)}{blocks}{render_items(children) if children else ''}</li>")
             i = j
         out.append(f"</{tag}>")
         return "".join(out)
@@ -210,11 +235,13 @@ def _list(lines):
     for ln in lines:
         m = LIST_RE.match(ln)
         if m:
-            items.append([len(m.group(1).replace("\t", "    ")), m.group(2), m.group(3)])
+            items.append([len(m.group(1).replace("\t", "    ")), m.group(2), m.group(3), []])
         elif items:
-            items[-1][2] += " " + ln.strip()
-    html_out.append(render(items, 0))
-    return "".join(html_out)
+            if items[-1][3] or ln.strip().startswith(">"):
+                items[-1][3].append(ln.strip())
+            else:
+                items[-1][2] += " " + ln.strip()
+    return render_items(items)
 
 
 def render(md, _depth=0):
@@ -307,7 +334,7 @@ def render(md, _depth=0):
             src = im.group("src")
             cap = im.group("t1") or im.group("t2") or alt
             cap_html = f'<figcaption>{inline(cap, greek_say=False)}</figcaption>' if cap else ''
-            out.append(f'<figure class="figure"><img src="{_html.escape(src, quote=True)}" alt="{_html.escape(alt, quote=True)}" loading="lazy">{cap_html}</figure>')
+            out.append(figure(alt, src, cap_html))
             i += 1
             continue
 

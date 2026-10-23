@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 292" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-lr-schedule" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-lr-schedule" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<line class="d-grid" x1="74" y1="206" x2="496" y2="206"/>
+<line class="d-grid" x1="74" y1="26" x2="74" y2="206"/>
+<line class="d-grid d-dash" x1="74" y1="36" x2="496" y2="36"/>
+<line class="d-grid d-dash" x1="74" y1="189.0" x2="496" y2="189.0"/>
+<text class="d-s" x="66" y="40" text-anchor="end">η<tspan dy="0.32em" font-size="0.78em">max</tspan><tspan dy="-0.32em">&#8203;</tspan></text>
+<text class="d-s" x="66" y="193.0" text-anchor="end">η<tspan dy="0.32em" font-size="0.78em">min</tspan><tspan dy="-0.32em">&#8203;</tspan></text>
+<text class="d-s" x="66" y="210" text-anchor="end">0</text>
+<text class="d-l" x="36" y="121.0" text-anchor="middle">leersnelheid</text>
+<path class="d-curve" d="M74.0 206.0 L103.5 36.0 L110.1 36.1 L116.6 36.4 L123.2 36.9 L129.7 37.7 L136.2 38.6 L142.8 39.7 L149.3 41.1 L155.9 42.6 L162.4 44.3 L168.9 46.2 L175.5 48.3 L182.0 50.6 L188.6 53.0 L195.1 55.6 L201.7 58.4 L208.2 61.3 L214.7 64.4 L221.3 67.5 L227.8 70.8 L234.4 74.2 L240.9 77.8 L247.4 81.4 L254.0 85.1 L260.5 88.9 L267.1 92.7 L273.6 96.6 L280.1 100.5 L286.7 104.5 L293.2 108.5 L299.8 112.5 L306.3 116.5 L312.9 120.5 L319.4 124.5 L325.9 128.4 L332.5 132.3 L339.0 136.1 L345.6 139.9 L352.1 143.6 L358.6 147.2 L365.2 150.7 L371.7 154.2 L378.3 157.5 L384.8 160.6 L391.3 163.7 L397.9 166.6 L404.4 169.4 L411.0 172.0 L417.5 174.4 L424.0 176.7 L430.6 178.8 L437.1 180.7 L443.7 182.4 L450.2 183.9 L456.8 185.3 L463.3 186.4 L469.8 187.3 L476.4 188.1 L482.9 188.6 L489.5 188.9 L496.0 189.0"/>
+<line class="d-grid d-dash" x1="103.54" y1="36" x2="103.54" y2="206"/>
+<text class="d-l" x="74" y="226" text-anchor="middle">0</text>
+<text class="d-l" x="103.54" y="226" text-anchor="middle">T<tspan dy="0.32em" font-size="0.78em">warmup</tspan><tspan dy="-0.32em">&#8203;</tspan></text>
+<text class="d-l" x="496" y="226" text-anchor="middle">T<tspan dy="0.32em" font-size="0.78em">max</tspan><tspan dy="-0.32em">&#8203;</tspan></text>
+<text class="d-l" x="305.0" y="244" text-anchor="middle">trainingsstappen (of tokens)</text>
+<text class="d-l" x="99.54" y="22" text-anchor="start">lineaire warmup</text>
+<text class="d-s" x="305.0" y="88" text-anchor="middle">cosine decay</text>
+<text class="d-l" x="285.0" y="276" text-anchor="middle">Warmup duurt in werkelijkheid slechts 1-2% van alle stappen (hier uitvergroot).</text>
+</svg>

@@ -11,7 +11,7 @@
  "objectives": [
   {
    "id": "json-read",
-   "text": "Je leest JSON feilloos: types, nesting en paden (punt- en haakjesnotatie)."
+   "text": "Je leest JSON (JavaScript Object Notation) feilloos: types, nesting en paden (punt- en haakjesnotatie)."
   },
   {
    "id": "item-model",
@@ -100,7 +100,7 @@
     "type": "mcq",
     "skill": "http",
     "level": 1,
-    "prompt": "Een API antwoordt met **401**. Wat betekent dat?",
+    "prompt": "Een API (application programming interface) antwoordt met **401**. Wat betekent dat?",
     "explain": "401 = Unauthorized (ontbrekende/ongeldige credentials). 403 = wel geauthenticeerd, geen rechten.",
     "options": [
      "Niet (correct) geauthenticeerd",
@@ -273,7 +273,7 @@
     "type": "jscode",
     "skill": "security",
     "level": 3,
-    "prompt": "Verifieer een webhook-handtekening: `signature` = HMAC-SHA256 (hex) van `body` met secret `whsec_123`. Geef per item `{ valid: true/false }` terug.",
+    "prompt": "Verifieer een webhook-handtekening: `signature` = HMAC-SHA256 (HMAC = hash-based message authentication code) (hex) van `body` met secret `whsec_123`. Geef per item `{ valid: true/false }` terug.",
     "explain": "`require('crypto').createHmac('sha256', secret).update(body).digest('hex')` en vergelijk.",
     "mode": "all",
     "starter": "const crypto = require('crypto');\nreturn $input.all();",
@@ -336,7 +336,7 @@
   {
    "id": "json",
    "title": "JSON: de moedertaal van automatisering",
-   "md": "Vrijwel elke API, webhook en AI-model praat **JSON** (*JavaScript Object Notation*). Wie JSON vlot leest, debugt workflows in minuten in plaats van uren. JSON kent maar zes soorten waarden:\n\n| Type | Voorbeeld | Valkuil |\n|---|---|---|\n| object | `{\"name\": \"Acme\", \"vip\": true}` | keys altijd tussen **dubbele** aanhalingstekens |\n| array | `[1, 2, 3]` of `[{\"sku\": \"A-1\"}]` | volgorde telt; index begint bij **0** |\n| string | `\"19.99\"` | een getal tussen aanhalingstekens is **tekst** |\n| number | `19.99` | geen duizendtalscheiding, punt als decimaalteken |\n| boolean | `true` / `false` | kleine letters, geen aanhalingstekens |\n| null | `null` | ≠ ontbrekende key ≠ lege string `\"\"` |\n\nStructuren zijn **genest**: een object kan arrays bevatten die objecten bevatten. Je navigeert met een **pad**: `body.customer.email` of `body.lines[1].sku`. Heeft een key een spatie of een streepje, dan gebruik je haakjes: `body[\"Billing Address\"].City`.\n\n> [!pitfall] JSON is strenger dan JavaScript\n> Geen enkele aanhalingstekens (`'naam'`), geen komma na het laatste element, geen commentaar. Eén foute komma en een API antwoordt met **400 Bad Request** — de meest voorkomende fout bij handmatig gebouwde HTTP-bodies.\n\nHieronder een typische webhook zoals n8n die van een webshop ontvangt. Lees hem rustig: je gebruikt hem in de oefeningen.\n\n```json Webhook-output (1 item)\n{\n  \"headers\": { \"content-type\": \"application/json\", \"user-agent\": \"Shopify-Captain-Hook\" },\n  \"params\": {},\n  \"query\": {},\n  \"body\": {\n    \"id\": 4521,\n    \"customer\": { \"name\": \"Sofie Peeters\", \"email\": \"Sofie.Peeters@Acme.be\", \"vip\": true },\n    \"lines\": [\n      { \"sku\": \"A-1\", \"qty\": 2, \"price\": \"19.99\" },\n      { \"sku\": \"B-7\", \"qty\": 1, \"price\": \"5.50\" }\n    ],\n    \"coupon\": null,\n    \"created_at\": \"2026-09-24T08:15:00Z\"\n  }\n}\n```",
+   "md": "Vrijwel elke API, webhook en AI-model praat **JSON** (*JavaScript Object Notation*). Wie JSON vlot leest, debugt workflows in minuten in plaats van uren. JSON kent maar zes soorten waarden:\n\n| Type | Voorbeeld | Valkuil |\n|---|---|---|\n| object | `{\"name\": \"Acme\", \"vip\": true}` | keys altijd tussen **dubbele** aanhalingstekens |\n| array | `[1, 2, 3]` of `[{\"sku\": \"A-1\"}]` | volgorde telt; index begint bij **0** |\n| string | `\"19.99\"` | een getal tussen aanhalingstekens is **tekst** |\n| number | `19.99` | geen duizendtalscheiding, punt als decimaalteken |\n| boolean | `true` / `false` | kleine letters, geen aanhalingstekens |\n| null | `null` | ≠ ontbrekende key ≠ lege string `\"\"` |\n\nStructuren zijn **genest**: een object kan arrays bevatten die objecten bevatten. Je navigeert met een **pad**: `body.customer.email` of `body.lines[1].sku`. Heeft een key een spatie of een streepje, dan gebruik je haakjes: `body[\"Billing Address\"].City`.\n\n> [!pitfall] JSON is strenger dan JavaScript\n> Geen enkele aanhalingstekens (`'naam'`), geen komma na het laatste element, geen commentaar. Eén foute komma en een API antwoordt met **400 Bad Request** — de meest voorkomende fout bij handmatig gebouwde HTTP-bodies (HTTP = Hypertext Transfer Protocol).\n\nHieronder een typische webhook zoals n8n die van een webshop ontvangt. Lees hem rustig: je gebruikt hem in de oefeningen.\n\n```json Webhook-output (1 item)\n{\n  \"headers\": { \"content-type\": \"application/json\", \"user-agent\": \"Shopify-Captain-Hook\" },\n  \"params\": {},\n  \"query\": {},\n  \"body\": {\n    \"id\": 4521,\n    \"customer\": { \"name\": \"Sofie Peeters\", \"email\": \"Sofie.Peeters@Acme.be\", \"vip\": true },\n    \"lines\": [\n      { \"sku\": \"A-1\", \"qty\": 2, \"price\": \"19.99\" },\n      { \"sku\": \"B-7\", \"qty\": 1, \"price\": \"5.50\" }\n    ],\n    \"coupon\": null,\n    \"created_at\": \"2026-09-24T08:15:00Z\"\n  }\n}\n```",
    "checks": [
     {
      "id": "c1",
@@ -444,7 +444,7 @@
   {
    "id": "datafouten",
    "title": "Klassieke datafouten en hoe je ze herkent",
-   "md": "Negen op de tien ‘mysterieuze’ workflowfouten zijn datafouten. Leer ze herkennen:\n\n1. **Tekst in plaats van getal.** `\"10\" + 5` geeft `\"105\"`. Prijzen komen vaak als string binnen (`\"19.99\"`): zet om met `Number($json.price)`.\n2. **`toFixed` geeft een string terug.** `(45.4789).toFixed(2)` is `\"45.48\"`. Wil je een getal: `Math.round(x * 100) / 100`.\n3. **Ontbrekend vs `null` vs leeg.** `$json.phone` kan `undefined` (key bestaat niet), `null` (expliciet leeg) of `\"\"` zijn. Behandel alle drie.\n4. **Object vs array.** `.map()` bestaat enkel op arrays. “`… is not a function`” betekent bijna altijd: je dacht dat iets een array was.\n5. **Payload zit in `body`.** Bij webhooks: `$json.body.email`, niet `$json.email`.\n6. **JSON-in-een-string.** Sommige API's sturen `\"metadata\": \"{\\\"plan\\\":\\\"pro\\\"}\"`. Eerst `JSON.parse($json.metadata)`.\n7. **Datums en tijdzones.** `2026-09-24T08:15:00Z` is UTC; in België is dat 10:15 (zomertijd). Zet `GENERIC_TIMEZONE` correct op je n8n-server.\n\n> [!rule] Debugmethode in drie stappen\n> 1. Open de uitvoering (*Executions*) en klik op de node **vóór** de fout.\n> 2. Bekijk de **JSON**-weergave van de output: welk type en welk pad heeft het veld echt?\n> 3. Pas je expressie aan en test met **gepinde data** (Pin data) zodat je niet telkens een nieuwe webhook moet sturen.",
+   "md": "Negen op de tien ‘mysterieuze’ workflowfouten zijn datafouten. Leer ze herkennen:\n\n1. **Tekst in plaats van getal.** `\"10\" + 5` geeft `\"105\"`. Prijzen komen vaak als string binnen (`\"19.99\"`): zet om met `Number($json.price)`.\n2. **`toFixed` geeft een string terug.** `(45.4789).toFixed(2)` is `\"45.48\"`. Wil je een getal: `Math.round(x * 100) / 100`.\n3. **Ontbrekend vs `null` vs leeg.** `$json.phone` kan `undefined` (key bestaat niet), `null` (expliciet leeg) of `\"\"` zijn. Behandel alle drie.\n4. **Object vs array.** `.map()` bestaat enkel op arrays. “`… is not a function`” betekent bijna altijd: je dacht dat iets een array was.\n5. **Payload zit in `body`.** Bij webhooks: `$json.body.email`, niet `$json.email`.\n6. **JSON-in-een-string.** Sommige API's sturen `\"metadata\": \"{\\\"plan\\\":\\\"pro\\\"}\"`. Eerst `JSON.parse($json.metadata)`.\n7. **Datums en tijdzones.** `2026-09-24T08:15:00Z` is UTC (Coordinated Universal Time); in België is dat 10:15 (zomertijd). Zet `GENERIC_TIMEZONE` correct op je n8n-server.\n\n> [!rule] Debugmethode in drie stappen\n> 1. Open de uitvoering (*Executions*) en klik op de node **vóór** de fout.\n> 2. Bekijk de **JSON**-weergave van de output: welk type en welk pad heeft het veld echt?\n> 3. Pas je expressie aan en test met **gepinde data** (Pin data) zodat je niet telkens een nieuwe webhook moet sturen.",
    "checks": [
     {
      "id": "c5",

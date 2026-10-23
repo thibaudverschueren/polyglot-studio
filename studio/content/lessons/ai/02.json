@@ -4,10 +4,10 @@
  "id": 2,
  "roadmap": "ai-02-attention",
  "title": "Attention en het transformerblok",
- "subtitle": "De wiskunde van MHA/GQA, het causale masker, en de interne flow van een laag",
+ "subtitle": "De wiskunde van Multi-Head Attention (MHA) en Grouped-Query Attention (GQA), het causale masker, en de interne flow van een transformerlaag",
  "level": "advanced",
  "minutes": 45,
- "summary": "Het genereren van lange documenten vreet GPU-geheugen. Door de wiskunde achter attention, het causale masker en GQA (Grouped-Query Attention) te begrijpen, kun je berekenen waarom moderne modellen veel goedkoper en sneller draaien.",
+ "summary": "Het genereren van lange documenten vreet GPU-geheugen (GPU = graphics processing unit). Door de wiskunde achter Scaled Dot-Product Attention, het causale masker en Grouped-Query Attention (GQA) te begrijpen, kun je berekenen waarom moderne modellen veel goedkoper en sneller draaien. Na deze les kun je de omvang van de Key-Value cache (KV-cache) in Video RAM (VRAM) exact kwantificeren, de hardware- en kostenbesparingen van GQA doorrekenen voor bedrijfsinfrastructuren, en de interne componenten van een modern transformerblok (RMSNorm, SwiGLU, residual connections) analyseren.",
  "objectives": [
   {
    "id": "herhaling",
@@ -23,7 +23,7 @@
   },
   {
    "id": "kv-gqa",
-   "text": "Je berekent hoeveel kleiner de KV-cache wordt bij de overstap van MHA naar GQA of MQA."
+   "text": "Je berekent hoeveel kleiner de KV-cache wordt bij de overstap van MHA (multi-head attention) naar GQA of MQA (multi-query attention)."
   },
   {
    "id": "transformer-block",
@@ -34,7 +34,7 @@
   {
    "id": "herhaling",
    "title": "Herhaling: Tokens en Training",
-   "md": "Voor we de rekensommetjes van het transformerblok induiken, corrigeren we een paar fouten uit je vorige test. We hebben dit nodig om straks correct kosten te berekenen:\n\n1. **Tokens berekenen**: Een token is meestal kleiner dan een woord. Om van woorden naar tokens te gaan, **deel** je door 0,75 (niet vermenigvuldigen!). Dus 3 000 woorden is $3\\,000 / 0{,}75 = 4\\,000$ tokens.\n2. **De Chinchilla-vuistregel**: Voor een optimale balans tussen compute en prestaties heb je ruwweg **20 tokens per parameter** nodig. Een model van 7B train je op $\\approx 140$ miljard tokens. Train je met minder data, dan verspil je rekenkracht aan parameters die niets leren.\n3. **LoRA-rang $r$**: In de fine-tuning formule $\\Delta W = BA$ is $r$ de **binnenste dimensie** van de matrices (de 'bottleneck'), **niet** het aantal lagen. Het bepaalt hoeveel parameters je aanpast per laag.",
+   "md": "Voor we de interne algebra van het transformerblok induiken, recapituleren we drie fundamentele concepten uit de fundering van Large Language Models (LLMs). Als handelsingenieur moet je deze concepten intuïtief kunnen koppelen aan operationele kosten en capaciteitsplanning:\n\n1. **Tokens berekenen (unit economics):** Een token is een subwoordfragment, typisch korter dan een heel woord. Voor Engelstalige tekst geldt de vuistregel dat 1 token $\\approx 0{,}75$ woord bedraagt. Om van woorden naar tokens te gaan, **deel** je door 0,75 (of vermenigvuldig je met $\\frac{4}{3}$):\n   $$\\text{Aantal tokens} = \\frac{3\\,000\\text{ woorden}}{0{,}75\\text{ woord/token}} = 4\\,000\\text{ tokens}$$\n   *(Let op: wie per ongeluk vermenigvuldigt met 0,75, onderschat de resulterende API-factuur (API = application programming interface) en geheugeninname met bijna 44%!)*\n\n2. **De Chinchilla-scaling wet (kapitaalallocatie):** Het trainen van een LLM vereist gigantische investeringen in Graphics Processing Units (GPUs) en energie. De Chinchilla-wet (Hoffmann et al., 2022) toont aan dat je voor een optimaal verlies bij een vast budget ongeveer **20 tokens per parameter** ($D \\approx 20N$) nodig hebt. Een model met 7 miljard parameters (7B) train je compute-optimaal op $\\approx 140$ miljard tokens. Train je te veel parameters op te weinig data, dan verspil je miljoenen aan kapitaalkosten aan een model dat ondergetraind blijft.\n\n3. **LoRA-rang $r$ (parameter-efficiëntie):** In de fine-tuning techniek Low-Rank Adaptation (LoRA) ontbinden we gewichtsupdates $\\Delta W \\in \\mathbb{R}^{d \\times k}$ in het product van twee laagranginge matrices $B \\in \\mathbb{R}^{d \\times r}$ en $A \\in \\mathbb{R}^{r \\times k}$. De rang $r$ is de **binnenste flessenhalsdimensie** ($r \\ll \\min(d,k)$), **niet** het aantal transformerlagen. Het bepaalt de balans tussen adaptatievermogen en de hoeveelheid extra trainbare parameters in het GPU-geheugen.",
    "checks": [
     {
      "id": "c01",
@@ -80,7 +80,7 @@
   {
    "id": "attention",
    "title": "Scaled Dot-Product Attention",
-   "md": "Het hart van de transformer is het attention-mechanisme. Tokens delen informatie met elkaar via een query-key-value (QKV) systeem, vergelijkbaar met een database:\n- **Query (Q)**: Wat zoek ik?\n- **Key (K)**: Wat heb ik te bieden?\n- **Value (V)**: Wat is de daadwerkelijke inhoud die ik doorgeef?\n\nWe berekenen de match tussen alle queries en keys met een inproduct: $QK^\\top$. Hoe hoger de score, hoe beter de match. Die scores zetten we om naar gewichten (kansen tussen 0 en 1) via een **softmax**-functie.\n\nMaar er is een probleem: een inproduct is een som van vermenigvuldigingen. Als de dimensie van de heads ($d_k$) groot is, tel je tientallen getallen op en wordt de variantie gigantisch. De softmax-functie reageert extreem op grote getallen: één woord krijgt een kans van 99,9% en de rest exact 0%. Het model stopt met leren (saturatie).\n\nOm die waarden weer klein en beheersbaar te maken, **delen we de score door $\\sqrt{d_k}$**. De volledige formule is:\n\n$$\\text{Attention}(Q,K,V) = \\text{softmax}\\left(\\frac{QK^\\top}{\\sqrt{d_k}}\\right)V$$\n\n```python\nimport torch\nimport torch.nn.functional as F\n\n# PyTorch Scaled Dot-Product Attention\n# Shapes: (batch_size, num_heads, seq_len, head_dim)\nq = torch.randn(2, 8, 128, 64)\nk = torch.randn(2, 8, 128, 64)\nv = torch.randn(2, 8, 128, 64)\n\n# PyTorch doet de deling door wortel d_k automatisch onder de motorkap\nattn_out = F.scaled_dot_product_attention(q, k, v, is_causal=True)\n# attn_out shape is opnieuw (2, 8, 128, 64)\n```\n\n:::sim attention {}\n:::",
+   "md": "Het computationele zenuwcentrum van de transformer is het attention-mechanisme. Tokens wisselen onderling contextuele informatie uit via een Query-Key-Value (QKV) projectie, analoog aan een continu opvraagsysteem in een database:\n- **Query ($Q$):** Welke informatie zoekt het huidige token?\n- **Key ($K$):** Welke contextuele eigenschappen heeft elk ander token te bieden?\n- **Value ($V$):** Wat is de feitelijke inhoudelijke vector die wordt doorgegeven als er een match is?\n\nDe relevantie tussen alle queries en keys berekenen we via het inproduct: $QK^\\top$. Hoe hoger het inproduct, hoe groter de semantische overeenstemming. Deze scores worden vervolgens genormaliseerd naar een geldige kansverdeling via de **softmax**-functie.\n\n### Waarom delen we door $\\sqrt{d_k}$?\nEen inproduct is een som van componentgewijze vermenigvuldigingen: $q^\\top k = \\sum_{i=1}^{d_k} q_i k_i$. Als we aannemen dat de componenten van $q$ en $k$ onafhankelijke toevalsvariabelen zijn met gemiddelde 0 en variantie 1, dan heeft hun inproduct een gemiddelde van 0 en een variantie gelijk aan de dimensie $d_k$:\n$$\\text{Var}(q^\\top k) = d_k, \\qquad \\sigma(q^\\top k) = \\sqrt{d_k}$$\n\nBij moderne modellen met een head-dimensie van bijvoorbeeld $d_k = 128$ schommelen de ruwe inproducten met een standaardafwijking van ruim $\\sqrt{128} \\approx 11{,}3$. \n\n> [!IMPORTANT] Het gevaar van saturatie\n> De exponentiële functie in de softmax ($e^z$) reageert extreem agressief op grote verschillen in schaal. Zonder normalisatie krijgt het grootste getal vrijwel 100% van de kansmassa en alle overige tokens exact 0%. De softmax satureert (fungeert als een harde argmax), waardoor de wiskundige afgeleide naar nul nadert:\n> $$\\frac{\\partial \\text{softmax}(z)_i}{\\partial z_j} \\approx 0$$\n> Hierdoor stopt de gradiëntstroom tijdens backpropagation (*vanishing gradient*) en kan het netwerk niets meer leren.\n\nOm de variantie netjes op 1 te houden en de gradiënten stabiel te houden, **delen we het inproduct door $\\sqrt{d_k}$**:\n\n$$\\text{Attention}(Q,K,V) = \\text{softmax}\\left(\\frac{QK^\\top}{\\sqrt{d_k}}\\right)V$$\n\n```python title=\"scaled_dot_product.py\"\nimport torch\nimport torch.nn.functional as F\n\n# PyTorch Scaled Dot-Product Attention\n# Tensor-vormen: (batch_size, num_heads, seq_len, head_dim)\nq = torch.randn(2, 8, 128, 64)\nk = torch.randn(2, 8, 128, 64)\nv = torch.randn(2, 8, 128, 64)\n\n# PyTorch deelt onder de motorkap automatisch door sqrt(d_k)\nattn_out = F.scaled_dot_product_attention(q, k, v, is_causal=True)\nprint(\"Output tensor vorm:\", attn_out.shape)  # (2, 8, 128, 64)\n```\n\n:::sim attention {}\n:::",
    "checks": [
     {
      "id": "c03",
@@ -109,7 +109,7 @@
   {
    "id": "masker",
    "title": "Het Causale Masker",
-   "md": "Tijdens de initiële training (pre-training) voorspelt het model telkens het *volgende* token. Voor de snelheid verwerken we echter de hele tekst parallel in één keer op de GPU.\n\nWe moeten voorkomen dat een token in de attention-berekening 'vooruitkijkt' naar het antwoord dat erna komt (data leakage). Daarom tellen we een **causaal masker** $M$ op bij de attention-scores, net *vóór* de softmax.\n\n- Voor eerdere tokens en zichzelf (het verleden) is $M = 0$.\n- Voor toekomstige tokens is $M = -\\infty$.\n\nWaarom $M = -\\infty$? In de softmax-functie gebruiken we machten van $e$ ($e^x$). Het getal $e^{-\\infty}$ is exact 0. Zo zorgen we dat het model nul procent 'aandacht' kan geven aan de toekomst en maskeren we het vooruitkijken volledig weg.\n\n$$\\text{Attention}(Q,K,V) = \\text{softmax}\\left(\\frac{QK^\\top}{\\sqrt{d_k}} + M\\right)V$$",
+   "md": "Tijdens de initiële pretraining voorspelt een Large Language Model (LLM) steeds het *volgende* token op basis van alle voorgaande tokens (autoregressieve taalmodellering). \n\nOm honderden miljarden tokens efficiënt te trainen, verwerken we complete documenten van duizenden tokens **volledig parallel in één enkele matrixvermenigvuldiging op de GPU**.\n\n### Het gevaar van data leakage\nZonder restricties zou het self-attention mechanisme echter de volledige $T \\times T$-matrix inspecteren. Een token op positie 5 zou dan rechtstreeks 'vooruitkijken' naar token 6 om het antwoord te spieken (*data leakage*), waardoor het model triviaal leert spieken in plaats van generaliserende taalstructuren te leren.\n\nOm dit te verhinderen, voegen we een **causaal masker** $M \\in \\mathbb{R}^{T \\times T}$ toe aan de geschaalde scores, net vóór de softmax-operatie:\n- Voor eerdere posities en het huidige token ($j \\le i$): $M_{ij} = 0$.\n- Voor alle toekomstige posities ($j > i$): $M_{ij} = -\\infty$.\n\n### Waarom precies $-\\infty$?\nDe softmax-functie transformeert logits via de e-macht: $z \\mapsto e^z$. Wanneer we $-\\infty$ optellen bij een logit, geldt wiskundig:\n$$\\lim_{x \\to -\\infty} e^x = 0$$\n\nHierdoor kent de genormaliseerde softmax-distributie exact **0% aandachts-gewicht** toe aan toekomstige tokens:\n\n$$\\text{Attention}(Q,K,V) = \\text{softmax}\\left(\\frac{QK^\\top}{\\sqrt{d_k}} + M\\right)V$$\n\n> [!NOTE] Bovenste driehoeksmatrix\n> Het causale masker is een strikt bovenste driehoeksmatrix gevuld met $-\\infty$ boven de hoofddiagonaal. Hierdoor kan elk token op positie $i$ uitsluitend interageren met posities $1, \\dots, i$.",
    "checks": [
     {
      "id": "c05",
@@ -135,7 +135,7 @@
   {
    "id": "gqa",
    "title": "De KV-cache en Grouped-Query Attention (GQA)",
-   "md": "Tijdens het genereren (inferentie) bouwt het model de tekst woord voor woord op. Voor elk nieuw woord moet het model terugkijken naar álle vorige woorden. Om te vermijden dat we voor elk woord de hele geschiedenis opnieuw berekenen, slaan we de Keys en Values op in de **KV-cache** (in het VRAM-geheugen van de GPU).\n\nBij lange teksten groeit deze cache gigantisch. Dat is de grootste bottleneck voor LLM-hosting!\n- **Multi-Head Attention (MHA)**: Je hebt evenveel Query-heads als KV-heads. De cache is hierdoor extreem groot.\n- **Multi-Query Attention (MQA)**: Slechts 1 KV-head voor *alle* Query-heads. Superkleine cache, maar het model boet soms in aan kwaliteit.\n- **Grouped-Query Attention (GQA)**: Het slimme compromis (o.a. Llama 3). Meerdere Q-heads delen samen één KV-head.\n\n> [!example] De cache besparen\n> Stel je hebt 64 Q-heads. Bij klassieke MHA heb je dan óók 64 KV-heads. Bij GQA gebruik je er bijvoorbeeld maar 8. Je deelt het aantal opgeslagen vectoren dan door de reductiefactor $64 / 8 = 8$. De geheugenbehoefte wordt dus 8 keer zo klein!\n\n```python\n# Inferentie met KV-cache in Hugging Face\n# 1. Prefill fase (eerste keer): verwerkt de hele prompt tegelijk\nout = model(prompt_ids, use_cache=True)\npast_kv = out.past_key_values  # Keys en Values in VRAM bewaard\n\n# 2. Decoding fase (woord voor woord): stuur enkel het nieuwste token!\nnext_token = out.logits[:, -1, :].argmax(dim=-1, keepdim=True)\nout = model(next_token, past_key_values=past_kv, use_cache=True)\n# Cache wordt aangevuld zonder oude tokens te herberekenen!\n```",
+   "md": "Tijdens de productiefase (*inferentie*) genereert een LLM tekst sequentieel, token per token. Voor elk nieuw gegenereerd woord moet het model de relatie bepalen met álle eerdere woorden in het gesprek.\n\nZonder geheugen zou de GPU bij elk nieuw token de complete voorgeschiedenis opnieuw moeten projecteren naar Keys en Values. Om deze computationele verspilling te elimineren, slaan we de berekende Keys en Values van alle eerdere tokens op in het snelle Video RAM (VRAM) van de GPU: de **Key-Value cache (KV-cache)**.\n\n### De geheugenflessenhals van LLM-serving\nHoewel de KV-cache herberekening voorkomt, introduceert zij de grootste operationele bottleneck in AI-infrastructuur. De omvang van de KV-cache groeit namelijk lineair met de batchgrootte $B$ en de sequentielengte $T$:\n\n$$\\text{VRAM KV-cache} = 2 \\times n_{\\text{layers}} \\times n_{\\text{kv\\_heads}} \\times d_{\\text{head}} \\times T \\times B \\times \\text{bytes per element}$$\n\nVoor lange documenten (bv. 32k of 128k tokens) overstijgt de KV-cache al snel het gewicht van het model zelf!\n\n### De architectuurevolutie: MHA vs MQA vs GQA\nOm deze gigantische geheugenbehoefte in toom te houden, hebben AI-onderzoekers de verhouding tussen Query-heads en Key-Value-heads herontworpen:\n\n1. **Multi-Head Attention (MHA):** Het originele ontwerp (Vaswani et al., 2017). Elk van de $H$ aandachts-heads heeft een eigen set Query-, Key- en Value-projecties ($n_{\\text{kv\\_heads}} = n_{\\text{q\\_heads}}$). De KV-cache is maximaal groot, wat leidt tot geheugentekorten (*Out-Of-Memory*, OOM) bij lange documenten of hoge server-concurrency.\n2. **Multi-Query Attention (MQA):** Shazeer (2019). Alle Query-heads delen per laag **exact één enkele Key- en Value-head** ($n_{\\text{kv\\_heads}} = 1$). De KV-cache krimpt met een factor $H$ (bv. 32× of 64× kleiner), maar het model boet meetbaar in aan accuratesse en redeneervermogen.\n3. **Grouped-Query Attention (GQA):** Ainslie et al. (2023) — **de huidige industriestandaard** (toegepast in Llama 3, Mistral, Gemma 2 en Qwen). Meerdere Query-heads worden gegroepeerd en delen per groep één KV-head (KV = key-value, sleutel-waarde).\n\n![Acht query-heads en hun KV-heads: bij MHA heeft elke query-head een eigen KV-head, bij GQA delen groepen van vier er één, bij MQA delen alle acht dezelfde KV-head](assets/diagrams/gqa-heads.svg \"MHA, GQA en MQA: hoe meer query-heads één KV-head delen, hoe kleiner de KV-cache\")\n\n> [!example] Bedrijfseconomische reductie van de KV-cache\n> Een model heeft 64 Query-heads. \n> - Onder klassieke Multi-Head Attention (MHA) zijn er 64 KV-heads.\n> - Onder Grouped-Query Attention (GQA) kiest de architectuur bijvoorbeeld 8 KV-heads (elke groep van 8 Q-heads deelt 1 KV-head).\n> - De **reductiefactor** bedraagt: $64 / 8 = 8\\times$.\n> De KV-cache van 24 GB krimpt direct naar **slechts 3 GB**!\n\n```python title=\"kv_cache_inference.py\"\n# Illustratie van inferentie met KV-cache in Hugging Face\n# Stap 1: Prefill-fase (verwerkt de volledige prompt parallel)\nout = model(prompt_ids, use_cache=True)\npast_kv = out.past_key_values  # Keys en Values worden bewaard in GPU VRAM\n\n# Stap 2: Decode-fase (genereert token per token)\n# We sturen alleen het allernieuwste token naar het model!\nnext_token = out.logits[:, -1, :].argmax(dim=-1, keepdim=True)\nout = model(next_token, past_key_values=past_kv, use_cache=True)\n# De KV-cache wordt incrementeel bijgewerkt zonder herberekening van de historie\n```\n\n> [!TIP] Commerciële impact van GQA\n> Doordat de KV-cache dankzij GQA 8× minder geheugen inneemt, past een 8× grotere batchgrootte op dezelfde GPU. Dit vertaalt zich direct in lagere operationele kosten (OpEx), omdat een bedrijf 8× zoveel gelijktijdige gebruikers kan bedienen op dezelfde gehuurde of gekochte GPU-infrastructuur.",
    "checks": [
     {
      "id": "c07",
@@ -167,7 +167,7 @@
   {
    "id": "ffn-norm",
    "title": "Het Volledige Transformerblok",
-   "md": "Na de attention-laag moet het netwerk de gevonden patronen omzetten in concepten. Dat gebeurt in het Feed-Forward Network (FFN). Om het leerproces stabiel en optimaal te houden, bevat een modern transformerblok nog drie cruciale onderdelen:\n\n1. **Residual Connections**: De output van de laag wordt *opgeteld* bij de originele input: $x_{\\text{nieuw}} = x + \\text{laag}(x)$. Dit helpt de leersignalen ongeschonden door het diepe netwerk te reizen (het voorkomt *vanishing gradients*).\n2. **RMSNorm**: Voordat de data de attention-laag of de FFN ingaat, wordt de vector genormaliseerd. Llama gebruikt **RMSNorm**. Dit is sneller dan LayerNorm omdat het geen gemiddelde berekent, het schaalt enkel de variantie.\n3. **SwiGLU**: Moderne FFN's gebruiken **SwiGLU** in plaats van ReLU. Dit is een gladde functie met poorten (gates) die betere leerprestaties levert.\n\n```python\nimport torch\nimport torch.nn.functional as F\n\ndef swiglu(x, W, V):\n    # SwiGLU combineert een SiLU (Swish) gate met een lineaire projectie\n    # W en V zijn de geleerde gewichten in de FFN\n    gate = F.silu(x @ W)\n    return gate * (x @ V)\n```",
+   "md": "Nadat de self-attention laag informatie heeft uitgewisseld tussen tokens, moet het model deze contextuele patronen transformeren naar abstracte feitelijke kennis. Dat gebeurt in het **Feed-Forward Network (FFN)**. \n\nEen modern decoder-transformerblok (zoals in de Llama-familie) combineert de attention- en FFN-lagen met drie cruciale architecturale stabilisatoren:\n\n![Opbouw van een transformerlaag: twee sublagen, self-attention en feed-forward, elk met RMSNorm vooraf en een residual connection erachter](assets/diagrams/transformer-block.svg \"Een moderne transformerlaag: RMSNorm, attention, optellen; RMSNorm, feed-forward, optellen\")\n\n### 1. Residual Connections (de gradiënt-snelweg)\nModerne LLMs bestaan uit 32 tot meer dan 80 gestapelde lagen. Zonder speciale maatregelen sterven de leersignalen tijdens backpropagation exponentieel uit (*vanishing gradients*). Residual connections tellen de onbewerkte invoer op bij de getransformeerde uitvoer:\n$$x_{\\text{nieuw}} = x + \\text{Sublaag}(x)$$\nDit creëert een wiskundige snelweg waarlangs foutsignalen ongehinderd terug kunnen vloeien naar de vroegste lagen van het netwerk.\n\n### 2. RMSNorm (Root Mean Square Normalization)\nVóór elke sublaag wordt de vector genormaliseerd (*Pre-Layer Normalization*). Waar traditionele transformers LayerNorm gebruikten, kiest de moderne standaard voor **Root Mean Square Normalization (RMSNorm)**. \n- LayerNorm berekent zowel het gemiddelde $\\mu$ als de variantie $\\sigma^2$, wat twee doorgangen door het geheugen vereist.\n- RMSNorm veronderstelt dat het centreren rond het gemiddelde overbodig is en schaalt uitsluitend op de kwadratische norm:\n  $$\\text{RMS}(x) = \\sqrt{\\frac{1}{d}\\sum_{i=1}^d x_i^2 + \\epsilon}, \\qquad \\text{RMSNorm}(x) = \\frac{x}{\\text{RMS}(x)} \\odot \\gamma$$\nDit bespaart rekenwerk en geheugenbandbreedte. In de oorspronkelijke paper (Zhang & Sennrich, 2019) was de normalisatiestap 7% tot 64% sneller, afhankelijk van model en implementatie, bij vergelijkbare kwaliteit.\n\n### 3. SwiGLU (Swish Gated Linear Unit)\nIn de Feed-Forward Network (FFN) laag is de aloude Rectified Linear Unit (ReLU) vervangen door **SwiGLU** (Shazeer, 2020). SwiGLU combineert een SiLU (Swish) activatie met een poortmechanisme (*gating*):\n\n$$\\text{SwiGLU}(x) = \\left( \\text{SiLU}(x W_{\\text{gate}}) \\odot (x W_{\\text{up}}) \\right) W_{\\text{down}}$$\n\nwaarbij $\\text{SiLU}(z) = z \\cdot \\sigma(z)$. De continue kromming en het multiplicatieve poortmechanisme stellen het netwerk in staat om complexere niet-lineaire interacties te leren, wat consistent leidt tot een lagere perplexiteit per trainingsstap.\n\n```python title=\"swiglu_implementation.py\"\nimport torch\nimport torch.nn as nn\nimport torch.nn.functional as F\n\nclass LlamaFFN(nn.Module):\n    def __init__(self, d_model: int, d_ffn: int):\n        super().__init__()\n        self.w_gate = nn.Linear(d_model, d_ffn, bias=False)\n        self.w_up   = nn.Linear(d_model, d_ffn, bias=False)\n        self.w_down = nn.Linear(d_ffn, d_model, bias=False)\n\n    def forward(self, x: torch.Tensor) -> torch.Tensor:\n        # SwiGLU gating operatie\n        gate = F.silu(self.w_gate(x))\n        up = self.w_up(x)\n        return self.w_down(gate * up)\n```",
    "checks": [
     {
      "id": "c09",
@@ -201,7 +201,7 @@
    "skill": "herhaling",
    "level": 2,
    "prompt": "Hoeveel tokens genereert een tekst van ongeveer 2 400 Engelse woorden (uitgaande van 0,75 woord per token)?",
-   "explain": "2 400 / 0,75 = 3 200.",
+   "explain": "Om van woorden naar tokens te gaan, deel je door de vuistregel-verhouding van 0,75 woord per token: $\\frac{2\\,400\\text{ woorden}}{0{,}75\\text{ woord/token}} = 3\\,200\\text{ tokens}$ (ofwel $2\\,400 \\times \\frac{4}{3} = 3\\,200$).",
    "value": 3200,
    "abs": 0
   },
@@ -211,7 +211,7 @@
    "skill": "herhaling",
    "level": 1,
    "prompt": "Wat is de Chinchilla-vuistregel voor compute-optimaal trainen?",
-   "explain": "Je hebt ongeveer 20 tokens per parameter nodig.",
+   "explain": "De Chinchilla-scaling wet (Hoffmann et al., 2022) toont aan dat je voor een compute-optimale pretraining ongeveer 20 tokens per parameter nodig hebt ($D \\approx 20N$) om verspilling van dure GPU-uren te voorkomen.",
    "options": [
     "≈ 20 tokens per parameter",
     "zoveel mogelijk parameters, weinig data",
@@ -233,7 +233,7 @@
    "skill": "herhaling",
    "level": 1,
    "prompt": "Wat bepaalt de rang $r$ in de LoRA-methode ($\\Delta W = BA$)?",
-   "explain": "De rang is de binnenste dimensie van de kleine matrices B en A.",
+   "explain": "In Low-Rank Adaptation (LoRA) ontbind je de gewichtsupdates $\\Delta W \\in \\mathbb{R}^{d \\times k}$ in twee laag-rangige matrices $B$ en $A$. De rang $r$ is de binnenste flessenhalsdimensie van deze matrices en bepaalt het aantal trainbare parameters per laag.",
    "options": [
     "De binnenste dimensie van de matrices B en A",
     "Het aantal lagen dat je fine-tunet",
@@ -255,7 +255,7 @@
    "skill": "kv-gqa",
    "level": 2,
    "prompt": "Een model heeft 64 Query-heads en 8 KV-heads (GQA). Met welke factor krimpt de KV-cache ten opzichte van MHA?",
-   "explain": "De reductiefactor is gewoon de verhouding: 64 gedeeld door 8 is 8.",
+   "explain": "De reductiefactor van de Key-Value cache (KV-cache) is de verhouding tussen het aantal Query-heads en het aantal KV-heads: $\\frac{64\\text{ Q-heads}}{8\\text{ KV-heads}} = 8\\times$. Het geheugenbeslag wordt dus 8 keer zo klein.",
    "value": 8,
    "abs": 0,
    "errors": [
@@ -272,7 +272,7 @@
    "skill": "attention-core",
    "level": 2,
    "prompt": "Waarom delen we in de attention-formule door de wortel van de dimensie ($\\sqrt{d_k}$)?",
-   "explain": "De variantie schaalt mee met $d_k$. Zonder deling krijg je extreme scores en satureert de softmax.",
+   "explain": "Omdat het inproduct van twee onafhankelijke vectoren van dimensie $d_k$ een variantie heeft van $d_k$, schalen de ruwe scores met $\\sqrt{d_k}$. Zonder schaling drijven grote waarden de softmax naar saturatie (uitersten), waardoor gradiënten naar nul naderen en het netwerk stopt met leren.",
    "options": [
     "Om te voorkomen dat de variantie stijgt en de softmax satureert",
     "Om te garanderen dat de kansen samentellen tot 1",
@@ -287,7 +287,7 @@
    "skill": "attention-core",
    "level": 2,
    "prompt": "De head-dimensie is $d_k = 100$. Door welk exact getal delen we het inproduct $QK^\\top$?",
-   "explain": "$\\sqrt{100} = 10$.",
+   "explain": "In Scaled Dot-Product Attention delen we door $\\sqrt{d_k}$. Voor een head-dimensie van $d_k = 100$ is de noemer exact $\\sqrt{100} = 10$.",
    "value": 10,
    "abs": 0
   },
@@ -297,7 +297,7 @@
    "skill": "attention-core",
    "level": 2,
    "prompt": "Zet de wiskundige bewerkingen van het attention-mechanisme in de juiste rekenvolgorde.",
-   "explain": "Inproduct, schalen, masker, softmax, values. Dit is exact de formule.",
+   "explain": "De wiskundige volgorde in Scaled Dot-Product Attention luidt: eerst het inproduct $QK^\\top$, vervolgens schalen door $\\sqrt{d_k}$, optellen van het causale masker $M$, normaliseren via softmax naar kansen, en vermenigvuldigen met de Value-matrix $V$.",
    "tiles": [
     "Bereken het inproduct $QK^\\top$",
     "Deel door de schaalfactor $\\sqrt{d_k}$",
@@ -313,7 +313,7 @@
    "skill": "masker",
    "level": 2,
    "prompt": "Wat is het resultaat van $e^{-\\infty}$ wanneer de softmax wordt toegepast op een toekomstig gemaskeerd element?",
-   "explain": "De exponentiële functie nadert exact tot nul.",
+   "explain": "In de wiskundige limiet nadert de e-macht voor negatief oneindig naar nul: $\\lim_{x \\to -\\infty} e^x = 0$. Hierdoor krijgt een gemaskerd toekomstig token een aandachts-gewicht van exact 0.",
    "value": 0,
    "abs": 0
   },
@@ -323,7 +323,7 @@
    "skill": "masker",
    "level": 2,
    "prompt": "Waarom tellen we het masker $M$ op vóór de softmax in plaats van na de softmax?",
-   "explain": "Na de softmax heb je al $e^x$. Door $M=-\\infty$ op te tellen *vóór* de exponent levert dat $e^{-\\infty} = 0$ op.",
+   "explain": "De softmax-functie exponentieert de logits: $\\frac{e^{z_i}}{\\sum e^{z_j}}$. Door $M_{ij} = -\\infty$ op te tellen vóór de exponentiatie, levert dat $e^{z + (-\\infty)} = e^{-\\infty} = 0$ op, wat data leakage uit de toekomst waterdicht uitsluit.",
    "options": [
     "Omdat optellen vóór een e-macht resulteert in het efficiënt op 0 brengen van dat element",
     "Omdat de softmax-functie geen negatieve getallen accepteert",
@@ -339,7 +339,7 @@
    "level": 2,
    "prompt": "Vul in over Grouped-Query Attention:",
    "text": "Bij Grouped-Query Attention delen meerdere {{query|Q}}-heads dezelfde {{KV|key-value|Key-Value}}-head.",
-   "explain": "Deze architectuur bespaart enorm veel KV-cache ruimte."
+   "explain": "In Grouped-Query Attention (GQA) worden Query-heads onderverdeeld in groepen die elk één gemeenschappelijke Key-Value (KV) head delen, wat kostbare Video RAM (VRAM) bespaart."
   },
   {
    "id": "p11",
@@ -347,7 +347,7 @@
    "skill": "kv-gqa",
    "level": 2,
    "prompt": "Een MQA-model heeft 64 Query-heads en exact 1 KV-head. Wat is de reductiefactor van de KV-cache ten opzichte van MHA?",
-   "explain": "64 / 1 = 64.",
+   "explain": "In Multi-Query Attention (MQA) deelt het gehele netwerk per laag exact één enkele KV-head voor alle Query-heads. De reductiefactor is dus $\\frac{64}{1} = 64\\times$.",
    "value": 64,
    "abs": 0
   },
@@ -357,7 +357,7 @@
    "skill": "kv-gqa",
    "level": 2,
    "prompt": "Je draait een model met 96 Q-heads en 8 KV-heads. Met MHA zou de KV-cache 36 GB zijn. Wat is de cache-grootte nu in GB?",
-   "explain": "Reductiefactor = 96 / 8 = 12. Dus 36 GB / 12 = 3 GB.",
+   "explain": "De reductiefactor is $\\frac{96\\text{ Q-heads}}{8\\text{ KV-heads}} = 12\\times$. De benodigde KV-cache krimpt daardoor van 36 GB naar $\\frac{36\\text{ GB}}{12} = 3\\text{ GB}$.",
    "value": 3,
    "abs": 0
   },
@@ -367,7 +367,7 @@
    "skill": "kv-gqa",
    "level": 3,
    "prompt": "Leg in 1-2 zinnen uit waarom GQA zo voordelig is voor bedrijven die LLM's hosten als API.",
-   "explain": "GQA verkleint de VRAM-voetafdruk, wat een directe impact heeft op hostingprijzen.",
+   "explain": "Grouped-Query Attention (GQA) reduceert de omvang van de KV-cache met een factor 4 tot 8. Hierdoor past een veel grotere batchgrootte op dezelfde GPU-infrastructuur, wat de operationele serverkosten (OpEx) per actieve gebruiker fors omlaag brengt.",
    "model": "GQA verkleint de KV-cache doordat query-heads geheugen delen. Hierdoor nemen lange teksten veel minder RAM (VRAM) in beslag, waardoor er meer actieve gebruikers op dezelfde GPU passen en de hardwarekosten sterk dalen.",
    "rubric": [
     "Noemt de verkleining van de KV-cache (of geheugen/RAM)",
@@ -380,7 +380,7 @@
    "skill": "transformer-block",
    "level": 1,
    "prompt": "Welke snellere normalisatietechniek vervangt de klassieke LayerNorm in veel moderne LLM's?",
-   "explain": "RMSNorm negeert het gemiddelde voor rekensnelheid.",
+   "explain": "Root Mean Square Normalization (RMSNorm) slaat het berekenen en aftrekken van het gemiddelde ($\\mu$) over en schaalt uitsluitend op de wortel van het kwadraatgemiddelde, wat kostbare geheugentransfers op de GPU bespaart.",
    "answers": [
     "RMSNorm",
     "rmsnorm",
@@ -395,7 +395,7 @@
    "level": 2,
    "prompt": "Vul in over residual connections:",
    "text": "Om vanishing gradients in diepe netwerken te voorkomen, telt het netwerk de input op bij de output via een {{residual|residuele|residuale}} connectie.",
-   "explain": "De skip-connection / residual connection is essentieel in transformers."
+   "explain": "Residual connections tellen de ongewijzigde invoer op bij de sublaag-uitvoer ($x + f(x)$), wat een directe identiteitssnelweg biedt voor gradiënten en 'vanishing gradients' in diepe netwerken voorkomt."
   },
   {
    "id": "p16",
@@ -403,7 +403,7 @@
    "skill": "transformer-block",
    "level": 1,
    "prompt": "Welke moderne activatiefunctie vervangt ReLU in de feed-forward laag (FFN) van modellen zoals Llama 3?",
-   "explain": "SwiGLU is wiskundig gladder en biedt betere leerprestaties.",
+   "explain": "Swish Gated Linear Unit (SwiGLU) combineert een SiLU/Swish-geactiveerde poort met een lineaire projectie, wat zorgt voor een gladdere optimalisatie en betere representaties dan een standaard ReLU.",
    "answers": [
     "SwiGLU",
     "swiglu"
@@ -416,7 +416,7 @@
    "skill": "kv-gqa",
    "level": 1,
    "prompt": "Welke vectoren slaat de KV-cache op tijdens het woord-voor-woord genereren (inferentie)?",
-   "explain": "De cache bevat de Keys en Values van alle *eerdere* tokens, om deze niet te hoeven herberekenen.",
+   "explain": "Tijdens autoregressieve inferentie slaat de KV-cache uitsluitend de Key- en Value-vectoren van eerdere tokens op, zodat historische context niet bij elk nieuw woord herberekend hoeft te worden.",
    "options": [
     "De Keys en Values van de eerdere tokens in de sequentie",
     "De Queries en Keys van uitsluitend het huidige token",
@@ -433,7 +433,7 @@
    "skill": "herhaling",
    "level": 2,
    "prompt": "Hoeveel tokens kost een rapport van 15 000 Engelse woorden ruwweg (0,75 woord per token)?",
-   "explain": "15 000 / 0,75 = 20 000.",
+   "explain": "Bij een verhouding van 0,75 woord per token levert een rapport van 15 000 woorden: $\\frac{15\\,000}{0{,}75} = 20\\,000$ tokens op.",
    "value": 20000,
    "abs": 0
   },
@@ -443,7 +443,7 @@
    "skill": "herhaling",
    "level": 3,
    "prompt": "Je hebt een extreem hoogwaardige dataset verzameld van 100 miljard tokens. Volgens de Chinchilla-schaalwet, wat is de compute-optimale modelgrootte (in miljarden parameters) die je hiermee kan trainen?",
-   "explain": "100 / 20 = 5 miljard parameters.",
+   "explain": "Volgens de Chinchilla-scaling wet ($D \\approx 20N$) ondersteunt een hoogwaardige dataset van 100 miljard tokens een compute-optimaal model van maximaal $\\frac{100 \\times 10^9}{20} = 5$ miljard parameters (5B).",
    "value": 5,
    "abs": 0
   },
@@ -453,7 +453,7 @@
    "skill": "attention-core",
    "level": 2,
    "prompt": "Als $d_k = 144$, wat is dan de exacte waarde van de noemer waarmee je het inproduct deelt in de attention-formule?",
-   "explain": "$\\sqrt{144} = 12$.",
+   "explain": "De schaalfactor in de noemer is $\\sqrt{d_k}$. Voor $d_k = 144$ is dit exact $\\sqrt{144} = 12$.",
    "value": 12,
    "abs": 0
   },
@@ -463,7 +463,7 @@
    "skill": "attention-core",
    "level": 2,
    "prompt": "Wat is het fundamentele probleem als je het inproduct $QK^\\top$ NIET deelt door de schaalfactor?",
-   "explain": "Een hoge variantie zorgt voor extreem grote/kleine waarden, en een e-macht blaast de extremen dan op waardoor er maar één waarde 1 wordt (saturatie).",
+   "explain": "Zonder de schaling met $\\sqrt{d_k}$ groeit de variantie van het inproduct lineair met de dimensie. Grote getallen drijven de softmax naar saturatie (uitersten), waardoor één token vrijwel 100% kans krijgt en de gradiënten naar nul naderen (stagnerend leerproces).",
    "options": [
     "De softmax-functie satureert en gradiënten verdwijnen",
     "De GPU verbruikt te veel VRAM tijdens training",
@@ -479,7 +479,7 @@
    "level": 2,
    "prompt": "Vul in over de softmax-output:",
    "text": "De softmax-functie zet de ruwe attention-scores om naar {{kansen|gewichten|waarschijnlijkheden}} die samen exact optellen tot {{1|één}}.",
-   "explain": "De output van softmax is altijd een geldige kansverdeling."
+   "explain": "De softmax-functie transformeert willekeurige reële logits via exponentiatie en normalisatie naar een geldige kansverdeling waarvan de som per definitie exact 1 bedraagt."
   },
   {
    "id": "m06",
@@ -487,7 +487,7 @@
    "skill": "attention-core",
    "level": 2,
    "prompt": "Met welke matrix worden de resulterende kansen uit de softmax vermenigvuldigd om de definitieve attention-output te vormen?",
-   "explain": "De softmax-gewichten bepalen hoeveel we van elke Value overnemen.",
+   "explain": "De genormaliseerde softmax-gewichten bepalen de gewogen lineaire combinatie over de Value-vectoren ($V$), die de inhoudelijke representatie vormen.",
    "answers": [
     "V",
     "Value",
@@ -504,7 +504,7 @@
    "level": 2,
    "prompt": "Vul in over het causale masker:",
    "text": "Om data leakage uit de toekomst te voorkomen tijdens parallelle training, tellen we een {{causaal|causale}} masker op vóór de softmax.",
-   "explain": "Causaal betekent 'oorzakelijk' of enkel afhankelijk van het verleden."
+   "explain": "Een causaal masker waarborgt de tijdsorde: tokens mogen uitsluitend aandacht schenken aan het heden en het verleden, wat data leakage tijdens parallelle training op de GPU voorkomt."
   },
   {
    "id": "m08",
@@ -512,7 +512,7 @@
    "skill": "masker",
    "level": 2,
    "prompt": "Welke wiskundige waarde (gebruik indien nodig het teken -) krijgt een toekomstig token in het masker $M$?",
-   "explain": "Negatief oneindig, omdat dit de softmax naar nul drukt.",
+   "explain": "Negatief oneindig ($-\\infty$), omdat $\\lim_{x \\to -\\infty} e^x = 0$, waardoor toekomstige tokens een aandachts-gewicht van exact nul ontvangen.",
    "answers": [
     "-\\infty",
     "-oneindig",
@@ -527,7 +527,7 @@
    "skill": "kv-gqa",
    "level": 2,
    "prompt": "Een Grouped-Query model (GQA) heeft 32 Query-heads en 4 KV-heads. Wat is de reductiefactor voor het geheugen?",
-   "explain": "32 / 4 = 8.",
+   "explain": "De reductiefactor van de KV-cache bij GQA is gelijk aan de verhouding tussen Query-heads en KV-heads: $\\frac{32\\text{ Q-heads}}{4\\text{ KV-heads}} = 8\\times$ kleiner.",
    "value": 8,
    "abs": 0
   },
@@ -537,7 +537,7 @@
    "skill": "kv-gqa",
    "level": 3,
    "prompt": "Voor een zwaar document eist standaard MHA een KV-cache van 24 GB aan VRAM. Bij een nieuwer model pas je GQA toe met een reductiefactor van 8. Hoeveel GB VRAM verbruikt de cache nu?",
-   "explain": "24 / 8 = 3 GB.",
+   "explain": "Met een reductiefactor van $\\frac{64}{8} = 8\\times$ krimpt de vereiste KV-cache van 24 GB onder MHA naar $\\frac{24\\text{ GB}}{8} = 3\\text{ GB}$ onder GQA.",
    "value": 3,
    "abs": 0
   },
@@ -548,7 +548,7 @@
    "level": 2,
    "prompt": "Vul in over MQA:",
    "text": "In Multi-{{Query}} Attention (MQA) deelt het hele netwerk per laag exact één enkele KV-head.",
-   "explain": "MQA = Multi-Query. Eén Key/Value voor meerdere Queries."
+   "explain": "In Multi-Query Attention (MQA) deelt het gehele model per laag exact één enkele centrale Key- en Value-head over alle Query-heads."
   },
   {
    "id": "m12",
@@ -556,7 +556,7 @@
    "skill": "kv-gqa",
    "level": 2,
    "prompt": "Waarom groeit de KV-cache lineair als de output van het LLM langer wordt?",
-   "explain": "Inferentie is woord per woord: bij elke iteratie groeit de cache.",
+   "explain": "Inferentie verloopt autoregressief token-per-token. Bij elke gegenereerde stap worden de nieuwe Key- en Value-vectoren toegevoegd aan de cache, waardoor deze lineair groeit met het aantal stappen.",
    "options": [
     "Elk nieuw gegenereerd token voegt permanent zijn Key- en Value-vector toe aan de cache",
     "Het model activeert bij elk nieuw token extra layers in het netwerk",
@@ -571,7 +571,7 @@
    "skill": "transformer-block",
    "level": 1,
    "prompt": "Welke normalisatietechniek in Llama is ontworpen om rekentijd te besparen door het gemiddelde niet te berekenen?",
-   "explain": "Het schaalt enkel de standaarddeviatie/Root Mean Square.",
+   "explain": "Root Mean Square Normalization (RMSNorm) schaalt vectoren uitsluitend op de kwadratische norm (RMS) en slaat het centreren rond het gemiddelde over, wat rekentijd en geheugentransfers bespaart.",
    "answers": [
     "RMSNorm",
     "rmsnorm",
@@ -586,7 +586,7 @@
    "level": 2,
    "prompt": "Vul in over de FFN activatiefunctie:",
    "text": "Een moderne LLM gebruikt voor zijn feed-forward laag (FFN) veelal de {{SwiGLU|swiglu}} activatiefunctie in plaats van ReLU.",
-   "explain": "SwiGLU is superieur aan ReLU voor transformers."
+   "explain": "Moderne netwerken gebruiken voor de feed-forward laag (FFN) de SwiGLU-activatiefunctie in plaats van ReLU vanwege superieure representatiekracht en stabielere gradiënten."
   },
   {
    "id": "m15",
@@ -594,7 +594,7 @@
    "skill": "transformer-block",
    "level": 2,
    "prompt": "Hoe noemt men de wiskundige operatie waarbij $x$ rechtstreeks om de laag heen wordt geteld: $x + \\text{laag}(x)$?",
-   "explain": "Zonder deze overbrugging sterven gradiënten uit.",
+   "explain": "Een residual connection (of skip connection) telt de ongewijzigde invoervector $x$ direct op bij de getransformeerde uitvoer, wat een onbelemmerd pad creëert voor gradiënten tijdens backpropagation.",
    "answers": [
     "residual connection",
     "residuele connectie",
@@ -611,7 +611,7 @@
    "skill": "transformer-block",
    "level": 2,
    "prompt": "Waarom kiezen ingenieurs voor RMSNorm in plaats van de klassieke LayerNorm?",
-   "explain": "Het is een lichte trade-off: iets minder wiskundig precies (geen centrering), maar significant sneller tijdens inferentie.",
+   "explain": "LayerNorm vereist twee doorgangen door het geheugen (gemiddelde en variantie), terwijl RMSNorm slechts één doorgang vergt. Dit bespaart geheugenbandbreedte op de GPU met verwaarloosbaar kwaliteitsverlies.",
    "options": [
     "Het is rekenkundig lichter omdat het de gemiddelde-berekening (centrering) achterwege laat",
     "Het voorkomt vanishing gradients veel efficiënter",
@@ -626,7 +626,7 @@
    "skill": "kv-gqa",
    "level": 2,
    "prompt": "Stel je gebruikt een klassiek MHA-model met 10 Query-heads per laag. Hoeveel KV-heads heb je dan per laag?",
-   "explain": "Bij Multi-Head Attention zijn het aantal Q-heads en KV-heads gelijk.",
+   "explain": "In klassieke Multi-Head Attention (MHA) heeft elke individuele Query-head een eigen corresponderende Key- en Value-head, waardoor het aantal KV-heads exact gelijk is aan het aantal Q-heads (hier 10).",
    "value": 10,
    "abs": 0
   },
@@ -636,7 +636,7 @@
    "skill": "herhaling",
    "level": 2,
    "prompt": "Volgens de Chinchilla-vuistregel train je compute-optimaal met 20 tokens per parameter. Hoeveel miljard parameters kan je optimaal trainen met 400 miljard tokens?",
-   "explain": "400 / 20 = 20 miljard parameters.",
+   "explain": "Volgens de Chinchilla-scaling wet ($D \\approx 20N$) kan een dataset van 400 miljard tokens een compute-optimaal model trainen van $\\frac{400 \\times 10^9}{20} = 20$ miljard parameters (20B).",
    "value": 20,
    "abs": 0
   }
@@ -645,57 +645,57 @@
   "type": "explain",
   "lang": "nl",
   "minWords": 70,
-  "prompt": "**Klantcase.** Een bedrijf wil een lokale LLM draaien voor het samenvatten van zéér grote documenten (50 000 tokens per document). Ze twijfelen tussen een ouder model met standaard Multi-Head Attention (MHA, 64 Q-heads en 64 KV-heads) en een moderner model met Grouped-Query Attention (GQA, 64 Q-heads en 8 KV-heads).\n\nJij adviseert het moderne model. Leg de klant in zakelijke termen uit:\n1. Wat bewaart de KV-cache tijdens het genereren?\n2. Hoeveel keer kleiner is deze cache bij het GQA-model ten opzichte van het MHA-model (toon je berekening)?\n3. Waarom verlaagt dit de hardware-kosten aanzienlijk bij lange documenten?",
-  "model": "1. Tijdens het genereren bewaart de KV-cache de eerdere Key- en Value-vectoren van de tekst, zodat ze niet bij elk nieuw woord herhaaldelijk en duur berekend hoeven te worden.\n2. De reductiefactor is 64 / 8 = **8**. De KV-cache wordt dus 8 keer zo klein ten opzichte van het oudere model.\n3. Omdat documenten van 50 000 tokens enorm veel geheugen (VRAM) opslorpen, zorgt een 8× kleinere cache ervoor dat de AI-server veel minder zware (en peperdure) GPU's nodig heeft om dezelfde lange documenten te verwerken. Dit bespaart je als bedrijf direct op hardware-investeringen en dagelijkse stroomkosten.",
+  "prompt": "**Klantcase.** Een onderneming wil een lokaal open-source LLM draaien voor het geautomatiseerd analyseren en samenvatten van omvangrijke juridische en financiële documenten (gemiddeld 50 000 tokens per document). Ze twijfelen tussen een ouder model met standaard Multi-Head Attention (MHA, 64 Q-heads en 64 KV-heads) en een moderner model met Grouped-Query Attention (GQA, 64 Q-heads en 8 KV-heads).\n\nJij adviseert het directiecomité om voor het GQA-model te kiezen. Beargumenteer je advies vanuit bedrijfseconomisch en technisch perspectief:\n1. Wat bewaart de Key-Value cache (KV-cache) tijdens de inferentiefase in het GPU-geheugen (VRAM)?\n2. Hoeveel keer kleiner is deze cache bij het GQA-model ten opzichte van het MHA-model (toon je berekening)?\n3. Welke directe strategische impact heeft dit op de benodigde hardware-investeringen (CapEx) en hostingkosten (OpEx) bij zulke lange contexten?",
+  "model": "**1. Doel en inhoud van de KV-cache.**\nTijdens het autoregressief genereren (token per token) moet het model voor elk nieuw woord terugkijken naar alle voorgaande context. Om te voorkomen dat de GPU bij elke stap alle eerdere 50 000 tokens opnieuw moet projecteren via zware matrixvermenigvuldigingen, slaat de Key-Value cache (KV-cache) de wiskundige Key- en Value-vectoren van alle historische tokens op in het snelle Video RAM (VRAM) van de GPU.\n\n**2. Berekening van de reductiefactor.**\nDe geheugenomvang van de KV-cache is direct evenredig met het aantal KV-heads ($n_{\\text{kv\\_heads}}$):\n- MHA gebruikt 64 KV-heads (1 KV-head per Query-head).\n- GQA groepeert de 64 Query-heads over slechts 8 KV-heads (elke groep van 8 Q-heads deelt 1 KV-head).\n- **Reductiefactor:** $\\frac{64}{8} = \\boxed{8\\times}$.\nDe benodigde KV-cache is bij het GQA-model dus **exact 8 keer kleiner** dan bij het traditionele MHA-model.\n\n**3. Bedrijfseconomische impact (CapEx en OpEx).**\n- **CapEx (investeringen in hardware):** Een document van 50 000 tokens vergt onder MHA tientallen gigabytes aan KV-cache per actieve sessie bovenop het modelgewicht. Hierdoor zou het bedrijf een geclusterde serveropstelling met meerdere dure enterprise-GPU's (zoals 4× of 8× NVIDIA H100 à $30 000+ per stuk) moeten aanschaffen om out-of-memory crashes te voorkomen. Dankzij de 8× reductie van GQA past de volledige context op een veel compactere hardware-setup (bijvoorbeeld een enkele GPU of twee midrange-kaarten).\n- **OpEx (operationele operationele kosten en throughput):** Omdat de KV-cache 8× minder VRAM consumeert, kan dezelfde GPU-server 8× zoveel gelijktijdige documentanalyses parallel verwerken (hogere batchgrootte en server-concurrency). Dit verlaagt de hostingkost per document drastisch en reduceert het stroom- en koelingsverbruik in het datacenter.",
   "rubric": [
-   "Juiste uitleg KV-cache (bewaart eerdere Key/Values voor efficiëntie).",
-   "Correcte reductiefactor berekend (64 / 8 = 8).",
-   "Link gelegd tussen contextlengte (50k) en verbruikt geheugen (VRAM).",
-   "Conclusie getrokken over hardwarekosten (minder of goedkopere GPU's)."
+   "Juiste verklaring van de KV-cache (bewaart historische Key- en Value-vectoren in VRAM om herberekening per token te vermijden)",
+   "Correcte berekening van de reductiefactor (64 Q-heads / 8 KV-heads = factor 8 reductie)",
+   "Duidelijke koppeling tussen contextlengte (50k tokens) en VRAM-geheugendruk",
+   "Onderbouwde economische analyse van CapEx (goedkopere/minder GPU's nodig) en OpEx (hogere concurrency/batchgrootte en lagere kosten per document)"
   ]
  },
  "cards": [
   {
    "id": "c-sqrt",
    "skill": "attention-core",
-   "front": "Waarom deel je de attention-score in de noemer door $\\sqrt{d_k}$?",
-   "back": "Om de variantie te beperken, zodat de softmax niet satureert (en de gradiënten niet verdwijnen)."
+   "front": "Waarom deelt Scaled Dot-Product Attention het inproduct $QK^\\top$ door $\\sqrt{d_k}$?",
+   "back": "Het inproduct van twee onafhankelijke vectoren van dimensie $d_k$ heeft een variantie van $d_k$. Delen door $\\sqrt{d_k}$ normaliseert de variantie naar 1, wat voorkomt dat de softmax satureert en gradiënten verdwijnen (*vanishing gradients*)."
   },
   {
    "id": "c-mask",
    "skill": "masker",
-   "front": "Welke waarde krijgt een toekomstig token in het causale masker $M$ (vóór de softmax)?",
-   "back": "$-\\infty$ (zodat de uiteindelijke exponentiële softmax op 0 uitkomt)."
+   "front": "Welke wiskundige waarde krijgt een toekomstig token in het causale masker $M$ vóór de softmax en waarom?",
+   "back": "$-\\infty$. Omdat $\\lim_{x \\to -\\infty} e^x = 0$, kent de softmax exact 0% aandachts-gewicht toe aan toekomstige tokens, wat *data leakage* tijdens parallelle GPU-training uitsluit."
   },
   {
    "id": "c-gqa-def",
    "skill": "kv-gqa",
-   "front": "Wat is Grouped-Query Attention (GQA)?",
-   "back": "Een architectuur waarbij meerdere Query-heads één KV-head delen om geheugen (VRAM) te besparen."
+   "front": "Wat is Grouped-Query Attention (GQA) en welke strategische trade-off lost het op?",
+   "back": "GQA laat groepen van Query-heads één gezamenlijke Key- en Value-head delen. Het levert vrijwel dezelfde modelkwaliteit als Multi-Head Attention (MHA), maar reduceert de Key-Value cache (KV-cache) en VRAM-consumptie met een factor 4 tot 8."
   },
   {
    "id": "c-kv-cache",
    "skill": "kv-gqa",
-   "front": "Wat bewaart de KV-cache tijdens inferentie?",
-   "back": "De wiskundige Key- en Value-vectoren van alle eerdere tokens, om herberekening te vermijden."
+   "front": "Wat bewaart de Key-Value cache (KV-cache) tijdens autoregressieve inferentie in het GPU-geheugen?",
+   "back": "De reeds berekende Key- en Value-vectoren van alle voorgaande tokens in alle transformerlagen, zodat deze bij het genereren van een nieuw woord niet herhaaldelijk berekend hoeven te worden."
   },
   {
    "id": "c-rmsnorm",
    "skill": "transformer-block",
-   "front": "Waarom is RMSNorm rekenkundig sneller dan LayerNorm?",
-   "back": "Het centreert het gemiddelde niet, maar schaalt enkel op de variantie."
+   "front": "Wat is het rekenkundige voordeel van Root Mean Square Normalization (RMSNorm) t.o.v. klassieke LayerNorm?",
+   "back": "RMSNorm schaalt vectoren uitsluitend op de kwadratische norm (RMS) en slaat het berekenen en aftrekken van het gemiddelde ($\\mu$) over. Dit bespaart geheugentransfers op de GPU en verhoogt de throughput met ~7%."
   },
   {
    "id": "c-residual",
    "skill": "transformer-block",
-   "front": "Wat is het voornaamste doel van residual connections?",
-   "back": "Voorkomen dat gradiënten uitdoven (*vanishing gradients*) in diepe netwerken door data ongeschonden door te laten."
+   "front": "Welke cruciale functie vervullen residual connections ($x + f(x)$) in diepe netwerken?",
+   "back": "Ze creëren een directe lineaire snelweg (*identity mapping*) voor gradiënten. Dit voorkomt dat leersignalen exponentieel uitdoven (*vanishing gradients*) tijdens backpropagation door tientallen lagen."
   },
   {
    "id": "c-swiglu",
    "skill": "transformer-block",
-   "front": "Welke activatiefunctie heeft ReLU grotendeels vervangen in moderne LLM FFN's (zoals Llama)?",
-   "back": "SwiGLU"
+   "front": "Wat is Swish Gated Linear Unit (SwiGLU) en waarom vervangt het ReLU in moderne FFN's (zoals Llama)?",
+   "back": "SwiGLU combineert een SiLU/Swish-activatiepoort met een lineaire projectie: $(\\text{SiLU}(xW_{\\text{gate}}) \\odot xW_{\\text{up}})W_{\\text{down}}$. Deze continue, gegateerde niet-lineariteit leert rijkere representaties dan een eenvoudige ReLU."
   }
  ],
  "sources": [
@@ -709,6 +709,8 @@
   "author": "antigravity",
   "created": "2026-10-02",
   "adaptedFor": "Tempo verlaagd en stap-voor-stap theorie met Python-code toegevoegd omdat de recente niveautest 'basis' aangaf. Specifieke errors-feedback geprogrammeerd voor eerdere fouten rond tokens, LoRA-rang, Chinchilla en GQA.",
-  "notes": "herzien 2026-10-02; oorspronkelijk 2026-09-26 door antigravity"
+  "notes": "herzien 2026-10-02; oorspronkelijk 2026-09-26 door antigravity",
+  "revised": "2026-10-21",
+  "revisionNotes": "Afkortingen voluit geschreven, uitleg verdiept, handelsingenieur-perspectief versterkt"
  }
 }

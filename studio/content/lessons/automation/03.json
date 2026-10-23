@@ -31,7 +31,7 @@
   {
    "id": "edit-fields",
    "title": "Data transformeren: de Edit Fields-node",
-   "md": "Je haalt data op uit een API, maar de veldnamen kloppen niet met je CRM. Of je wilt een veld toevoegen met een vaste status (bv. `state: 'nieuw'`). Vroeger gebruikte n8n hiervoor de *Set*-node. Vandaag is er de veel krachtigere **Edit Fields**-node (die onder de motorkap en in oudere tutorials nog vaak *Set* genoemd wordt).\n\nHiermee kan je vier dingen doen zonder een Code-node te gebruiken:\n\n1. **Velden toevoegen of overschrijven (Add Value)**: Wijs een vaste string, een getal, een boolean of een expressie (zoals `` `{{ $json.price * 1.21 }}` ``) toe aan een veld.\n2. **Velden hernoemen (Rename Field)**: Bv. verander `emailAddress` in simpelweg `email`.\n3. **Velden dupliceren (Duplicate Field)**.\n4. **Velden verwijderen (Remove Field / Keep Only Set)**: Dit is cruciaal voor schaalbaarheid. API's (zoals Shopify of WooCommerce) sturen vaak gigantische JSON-objecten terug. Als je al die overtollige data in je workflow houdt, wordt je browser traag, slibben je execution logs dicht en verbruik je onnodig geheugen. Gooi weg wat je niet nodig hebt!\n\n> [!tip] Code vs. No-Code\n> Voor één of twee velden is Edit Fields visueler en makkelijker leesbaar voor klanten dan een Code-node. Maar als je 15 velden moet omzetten of voorwaardelijke logica hebt (`if/else`), grijp dan meteen naar een Code-node. Dat scheelt een hoop muisklikken.",
+   "md": "Je haalt data op uit een API (application programming interface), maar de veldnamen kloppen niet met je CRM. Of je wilt een veld toevoegen met een vaste status (bv. `state: 'nieuw'`). Vroeger gebruikte n8n hiervoor de *Set*-node. Vandaag is er de veel krachtigere **Edit Fields**-node (die onder de motorkap en in oudere tutorials nog vaak *Set* genoemd wordt).\n\nHiermee kan je vier dingen doen zonder een Code-node te gebruiken:\n\n1. **Velden toevoegen of overschrijven (Add Value)**: Wijs een vaste string, een getal, een boolean of een expressie (zoals `` `{{ $json.price * 1.21 }}` ``) toe aan een veld.\n2. **Velden hernoemen (Rename Field)**: Bv. verander `emailAddress` in simpelweg `email`.\n3. **Velden dupliceren (Duplicate Field)**.\n4. **Velden verwijderen (Remove Field / Keep Only Set)**: Dit is cruciaal voor schaalbaarheid. API's (zoals Shopify of WooCommerce) sturen vaak gigantische JSON-objecten (JSON = JavaScript Object Notation) terug. Als je al die overtollige data in je workflow houdt, wordt je browser traag, slibben je execution logs dicht en verbruik je onnodig geheugen. Gooi weg wat je niet nodig hebt!\n\n> [!tip] Code vs. No-Code\n> Voor één of twee velden is Edit Fields visueler en makkelijker leesbaar voor klanten dan een Code-node. Maar als je 15 velden moet omzetten of voorwaardelijke logica hebt (`if/else`), grijp dan meteen naar een Code-node. Dat scheelt een hoop muisklikken.",
    "checks": [
     {
      "id": "c1",
@@ -39,7 +39,7 @@
      "skill": "fields",
      "level": 1,
      "prompt": "Waarom is het verstandig om overbodige velden te verwijderen na een zware API-request?",
-     "explain": "Minder data = minder RAM-gebruik en overzichtelijkere logs. Het heeft geen impact op de rate limits van de API zelf.",
+     "explain": "Minder data = minder RAM-gebruik (RAM = random-access memory, het werkgeheugen) en overzichtelijkere logs. Het heeft geen impact op de rate limits van de API zelf.",
      "options": [
       "Het bespaart geheugen en houdt de execution logs leesbaar",
       "Het voorkomt 429 Rate Limit fouten bij de API",
@@ -53,7 +53,7 @@
   {
    "id": "split-agg",
    "title": "Lijsten in en uit elkaar (Split Out & Aggregate)",
-   "md": "API's sturen vaak een object met daarin een array, bijvoorbeeld één bestelling met 5 orderlijnen in `{\"lines\": [ {…}, {…} ]}`. Als je voor elke orderlijn een aparte factuur moet boeken, moet je die array opsplitsen naar losse n8n-items.\n\n- **Split Out**: Neemt een array in een veld (bv. `lines`) en maakt voor elk element een nieuw n8n-item. De node geeft de overige velden optioneel mee. Van 1 item met 5 orderlijnen maak je **5 items**. Dit is je go-to node vóór een loop of iteratieve API-call.\n- **Aggregate**: Doet precies het omgekeerde. Stel, je hebt zojuist 10 leads verwerkt en wilt ze als één lijst naar een Slack-bericht sturen. Als je Slack direct koppelt, stuurt hij 10 losse berichten (want een node draait per item). Aggregate bundelt alle 10 items in **één nieuw item met een array**, zodat Slack maar één keer draait.\n- **Summarize**: Werkt als Aggregate, maar laat je direct groeperen (bv. per klant) en rekenen (som, gemiddelde, max, min). Dit is de no-code variant van een SQL `GROUP BY` of een JavaScript `reduce()`.\n\n> [!pitfall] Split Out mist de array\n> Als het veld dat je aan Split Out geeft geen array is (maar bv. een object of `null`), faalt de node. Controleer altijd of je doelveld echt een `[ ]` structuur is.",
+   "md": "API's sturen vaak een object met daarin een array, bijvoorbeeld één bestelling met 5 orderlijnen in `{\"lines\": [ {…}, {…} ]}`. Als je voor elke orderlijn een aparte factuur moet boeken, moet je die array opsplitsen naar losse n8n-items.\n\n- **Split Out**: Neemt een array in een veld (bv. `lines`) en maakt voor elk element een nieuw n8n-item. De node geeft de overige velden optioneel mee. Van 1 item met 5 orderlijnen maak je **5 items**. Dit is je go-to node vóór een loop of iteratieve API-call.\n- **Aggregate**: Doet precies het omgekeerde. Stel, je hebt zojuist 10 leads verwerkt en wilt ze als één lijst naar een Slack-bericht sturen. Als je Slack direct koppelt, stuurt hij 10 losse berichten (want een node draait per item). Aggregate bundelt alle 10 items in **één nieuw item met een array**, zodat Slack maar één keer draait.\n- **Summarize**: Werkt als Aggregate, maar laat je direct groeperen (bv. per klant) en rekenen (som, gemiddelde, max, min). Dit is de no-code variant van een SQL (Structured Query Language) `GROUP BY` of een JavaScript `reduce()`.\n\n> [!pitfall] Split Out mist de array\n> Als het veld dat je aan Split Out geeft geen array is (maar bv. een object of `null`), faalt de node. Controleer altijd of je doelveld echt een `[ ]` structuur is.",
    "checks": [
     {
      "id": "c2",
@@ -320,7 +320,7 @@
    "type": "mcq",
    "skill": "clean",
    "level": 1,
-   "prompt": "Welke node gebruik je om te garanderen dat een HTTP-request hoogstens 5 keer draait, ook al komen er 100 items binnen?",
+   "prompt": "Welke node gebruik je om te garanderen dat een HTTP-request (HTTP = Hypertext Transfer Protocol) hoogstens 5 keer draait, ook al komen er 100 items binnen?",
    "explain": "Limit verkleint de lijst items tot een ingesteld maximum.",
    "options": [
     "Limit",

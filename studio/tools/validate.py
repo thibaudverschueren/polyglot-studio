@@ -16,6 +16,7 @@ import unicodedata
 HERE = os.path.dirname(os.path.abspath(__file__))
 STUDIO = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
+import md  # noqa: E402
 import tracks as trk  # noqa: E402  (single source of truth: content/tracks.json)
 
 SCHEMA_PATH = os.path.join(STUDIO, "schema", "lesson.schema.json")
@@ -376,6 +377,10 @@ def validate_lesson(L, schema, fname=""):
     dup = [it["id"] for it in L["mastery"] if norm(re.sub(r'[^\w ]', '', it['prompt']))[:120] in pp and it["type"] not in ("dictation",)]
     if dup:
         warns.append(f"mastery items identical to practice prompts: {dup[:6]}")
+    for s in L["sections"]:  # an unknown [!type] would be shown as plain text
+        for m in re.finditer(r"^\s*>\s*\[!(\w+)\]", s["md"], re.M):
+            if m.group(1).lower() not in md.CALLOUTS:
+                errs.append(f"section '{s['id']}': unknown callout [!{m.group(1)}] (use {', '.join(sorted(md.CALLOUTS))})")
     words = sum(len(re.findall(r"\w+", s["md"])) for s in L["sections"])
     if words < 700:
         warns.append(f"theory is short ({words} words) — aim for 900–2500")

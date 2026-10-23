@@ -5,10 +5,10 @@
  "roadmap": "ai-03-pretraining-scaling",
  "kind": "core",
  "title": "Pretraining, verlies en scaling laws",
- "subtitle": "Compute, Chinchilla en het strategische nut van overtrainen",
+ "subtitle": "Compute, Chinchilla en de strategische implicaties van overtrainen voor bedrijven",
  "level": "advanced",
  "minutes": 45,
- "summary": "Tijdens pretraining optimaliseert een taalmodel de cross-entropy loss. We verkennen hoe de scaling laws van Chinchilla (2022) het trainingsbudget verdelen over parameters en data, en waarom strategisch 'overtrainen' cruciaal is om inferentiekosten te minimaliseren.",
+ "summary": "Tijdens pretraining optimaliseert een Large Language Model (LLM) het cross-entropy verlies. We verkennen hoe de scaling laws van Chinchilla (2022) het trainingsbudget verdelen over parameters en tokens, en analyseren de strategische keuzes tussen zelf pretrainen, fine-tunen of API-consumptie (API = application programming interface). Na deze les kun je trainings- en inferentie-FLOPs (floating-point operations) exact berekenen, de economische trade-off van overtrainen kwantificeren (CapEx vs OpEx), en onderbouwen waarom overtrainen de marginale productiekost per query minimaliseert.",
  "objectives": [
   {
    "id": "cross-entropy",
@@ -28,14 +28,14 @@
   },
   {
    "id": "review",
-   "text": "Je past je voorkennis over tokens, LoRA-rang en GQA KV-cache correct toe."
+   "text": "Je past je voorkennis over tokens, LoRA-rang (LoRA = Low-Rank Adaptation) en GQA (grouped-query attention) KV-cache (key-value cache) correct toe."
   }
  ],
  "sections": [
   {
    "id": "herhaling",
    "title": "Herhaling: de foute antwoorden aangepakt",
-   "md": "Voordat we naar pretraining kijken, frissen we kort een paar concepten op waar je in de niveautest nog op struikelde:\n\n- **Tokens**: 1 token is gemiddeld 0,75 Engels woord. Voor 3.000 woorden heb je dus $3000 / 0{,}75 = 4.000$ tokens nodig.\n- **LoRA (Low-Rank Adaptation)**: we updaten grote matrices via twee kleine matrices, $B$ ($d \\times r$) en $A$ ($r \\times k$). De parameter $r$ is de **binnenste dimensie** (de rang). Hoe kleiner $r$, hoe minder parameters je traint.\n- **GQA (Grouped-Query Attention)**: als je 64 query-heads hebt en maar 8 KV-heads, delen steeds 8 query's dezelfde key en value. De KV-cache wordt hierdoor exact $64/8 = 8$ keer kleiner ten opzichte van Multi-Head Attention.\n\nVandaag gaan we kijken hoe je een heel nieuw model vanaf nul traint.",
+   "md": "Voordat we de grootschalige pretraining en de economische wetmatigheden van AI induiken, recapituleren we drie fundamentele concepten die essentieel zijn voor de financiële en technische besluitvorming rond Large Language Models (LLMs):\n\n- **Tokens berekenen (eenheidskosten):** 1 token is gemiddeld 0,75 Engels woord (1 token ≈ 4 karakters). Om van woorden naar tokens te converteren, deel je door de factor 0,75 (of vermenigvuldig je met $\\frac{4}{3}$):\n  $$\\text{Tokens} = \\frac{3\\,000\\text{ woorden}}{0{,}75\\text{ woord/token}} = 4\\,000\\text{ tokens}$$\n- **Low-Rank Adaptation (LoRA):** We passen bevroren basismodellen aan door gewichtsupdates te ontbinden in twee laag-rangige matrices $B \\in \\mathbb{R}^{d \\times r}$ en $A \\in \\mathbb{R}^{r \\times k}$. De parameter $r$ is de **binnenste flessenhalsdimensie** (de algebraïsche rang). Hoe kleiner $r$, hoe minder parameters getraind en bewaard hoeven te worden in het Video RAM (VRAM) van de GPU (graphics processing unit, de grafische processor).\n- **Grouped-Query Attention (GQA):** Wanneer een architectuur 64 Query-heads koppelt aan slechts 8 Key-Value (KV) heads, delen telkens groepen van 8 Query-heads één gezamenlijke Key- en Value-head. De Key-Value cache (KV-cache) wordt hierdoor exact $64 / 8 = 8\\times$ compacter in vergelijking met klassieke Multi-Head Attention (MHA).\n\nIn deze les analyseren we hoe je een geheel nieuw model vanaf nul traint (*pretraining*), hoeveel kapitaal en rekenkracht dat kost, en welke strategische afwegingen een onderneming moet maken.",
    "checks": [
     {
      "id": "c1",
@@ -67,7 +67,7 @@
   {
    "id": "cross-entropy",
    "title": "Cross-Entropy en Perplexity",
-   "md": "Tijdens pretraining probeert het model constant het volgende token te voorspellen. De output-laag levert een kansverdeling (via een softmax, die optelt tot 1). Stel dat het ware volgende token 'boom' is, en het model gaf dit token een kans $p = 0{,}25$. \n\nHet verlies (de loss) berekenen we met **cross-entropy**:\n$$L = -\\ln(p_{\\text{true}})$$\nVoor $p=0{,}25$ is $L = -\\ln(0{,}25) \\approx 1{,}38$.\n\nIn de praktijk kijken onderzoekers liever naar de **perplexity (PPL)**, de exponent van de loss:\n$$PPL = e^L$$\nAls $L = 1{,}38$, dan is $PPL = e^{1{,}38} \\approx 4$. Dit klopt wiskundig precies met $e^{-\\ln(p)} = \\frac{1}{p}$.\n\n> [!tip] Wat betekent Perplexity intuïtief?\n> Perplexity is de **effectieve vocabulairegrootte** waaruit het model voelt dat het moet kiezen. Een PPL van 4 betekent dat het model even onzeker was als wanneer het eerlijk moest gokken uit 4 even waarschijnlijke opties. Hoe lager, hoe beter (minimaal 1).",
+   "md": "Tijdens de autoregressieve pretraining probeert een Large Language Model (LLM) continu het *volgende* token in een document te voorspellen. De finale output-laag transformeert de verborgen toestand via een softmax-functie naar een kansverdeling $P$ over het gehele vocabulaire $V$ (waarbij $\\sum_{v \\in V} p_v = 1$).\n\n### Cross-Entropy Loss\nStel dat het daadwerkelijke volgende token in de trainingsdata 'winstmarge' is, en het model kende aan dit correcte token een waarschijnlijkheid $p_{\\text{true}} = 0{,}25$ toe. Het verlies (de *loss*) voor deze voorspelling wordt berekend met de **cross-entropy loss**:\n\n$$L = -\\ln(p_{\\text{true}})$$\n\nVoor $p_{\\text{true}} = 0{,}25$ bedraagt het verlies $L = -\\ln(0{,}25) \\approx 1{,}386$. \n- Als het model 100% zeker is van het juiste woord ($p=1$), is het verlies minimaal: $L = -\\ln(1) = 0$.\n- Naarmate de voorspelde kans naar 0 nadert ($p \\to 0$), explodeert het verlies exponentieel naar oneindig ($L \\to \\infty$).\n\n### Perplexity (PPL)\nIn academische publicaties en bedrijfsbenchmarks rapporteren onderzoekers zelden de ruwe natuurlijke logaritme van de loss, maar verkiezen ze de **Perplexity (PPL)**, gedefinieerd als de exponent van de cross-entropy loss:\n\n$$\\text{PPL} = e^L = e^{-\\ln(p_{\\text{true}})} = \\frac{1}{p_{\\text{true}}}$$\n\nVoor ons voorbeeld met $L \\approx 1{,}386$ geldt:\n$$\\text{PPL} = e^{1{,}386} = 4{,}0$$\n\n> [!NOTE] Wat betekent Perplexity intuïtief voor een beslisser?\n> Perplexity meet de **effectieve onzekerheidsfactor** of vertakking van het model. Een PPL van 4 betekent dat het model bij elke stap evenveel twijfel heeft als wanneer het willekeurig moet kiezen uit een uniforme catalogus van 4 even waarschijnlijke woorden. Hoe lager de PPL (met 1 als theoretisch perfecte ondergrens), hoe trefzekerder het model formuleert en hoe betrouwbaarder de feitelijke accuratesse.",
    "checks": [
     {
      "id": "c3",
@@ -99,7 +99,7 @@
   {
    "id": "rekenkracht",
    "title": "De Rekenkracht: FLOPs tellen",
-   "md": "Om een LLM te trainen, sturen we terabytes aan data door het model. Hoeveel rekenkracht kost dat? We meten dit in **FLOPs** (Floating Point Operations).\n\n![De PyTorch Trainingscyclus](assets/diagrams/pytorch-training-loop.svg \"De PyTorch trainingscyclus: van batch en forward pass naar autograd en optimizer-stap\")\n\nVoor een model met $N$ parameters getraind op $D$ tokens:\n1. **Inferentie (Forward pass)**: elke parameter voert grofweg één vermenigvuldiging en één optelling uit per token. Dat zijn 2 FLOPs per parameter. Dus:\n   $$C_{\\text{inf}} \\approx 2ND$$\n2. **Training (Forward + Backward pass)**: de backward pass (het berekenen van de gradiënten en updaten) is dubbel zo zwaar als de forward pass (4 FLOPs). Totaal kom je uit op 6 FLOPs per parameter per token.\n\nDe fundamentele formule voor trainings-compute is dus:\n$$C_{\\text{train}} \\approx 6ND$$\n\n> [!example] Rekenvoorbeeld\n> Llama 1 (65 miljard parameters, 1.400 miljard tokens oftewel 1,4T). De training kostte ongeveer $6 \\cdot 65\\cdot 10^9 \\cdot 1{,}4\\cdot 10^{12} \\approx 5{,}46 \\cdot 10^{23}$ FLOPs.",
+   "md": "Om een foundation model te trainen, worden biljoenen tokens door tientallen miljarden parameters gepompt. De totale benodigde rekenkracht wordt gekwantificeerd in **Floating Point Operations (FLOPs)** — het aantal rekenkundige bewerkingen met drijvende-kommagetallen.\n\n![Zes stappen van de trainingscyclus in PyTorch: batch laden, forward pass, loss, backward pass, clippen en updaten, gradiënten wissen](assets/diagrams/pytorch-training-loop.svg \"De PyTorch trainingscyclus: van batch en forward pass naar autograd en optimizer-stap\")\n\nVoor een architectuur met $N$ modelparameters die getraind wordt op een dataset van $D$ tokens, gelden de volgende fundamentele fysische wetmatigheden:\n\n### 1. Inferentie (Forward pass)\nTijdens de forward pass vereist elke parameter in de lineaire projecties per token grofweg één vermenigvuldiging en één optelling (een *Fused Multiply-Add*, FMA, wat telt als 2 FLOPs). De rekenkost voor inferentie bedraagt:\n$$C_{\\text{inf}} \\approx 2ND \\quad \\text{FLOPs}$$\n\n### 2. Pretraining (Forward + Backward pass)\nTijdens pretraining moet de Graphics Processing Unit (GPU) niet alleen de forward pass uitvoeren ($2N$), maar via backpropagation ook de partiële afgeleiden berekenen naar zowel de activaties ($2N$) als de gewichten ($2N$). De backward pass is daardoor wiskundig **tweemaal zo zwaar** als de forward pass ($4N$ FLOPs).\n\nDe totale computationele kost voor pretraining bedraagt:\n$$C_{\\text{train}} = C_{\\text{fwd}} + C_{\\text{bwd}} \\approx 2ND + 4ND = 6ND \\quad \\text{FLOPs}$$\n\n> [!example] Kapitaalintensief rekenvoorbeeld: Llama 1 65B\n> Llama 1 (65 miljard parameters, getraind op 1 400 miljard tokens oftewel 1,4T tokens):\n> $$C_{\\text{train}} \\approx 6 \\times (65 \\times 10^9) \\times (1{,}4 \\times 10^{12}) \\approx 5{,}46 \\times 10^{23} \\text{ FLOPs}$$\n> Uitgedrukt in hardware: een moderne NVIDIA H100 GPU levert in de praktijk ongeveer $350 \\times 10^{12}$ bruikbare FLOPs per seconde (rekening houdend met 35-40% Model FLOPs Utilization, MFU). Om $5{,}46 \\times 10^{23}$ FLOPs te verwerken, heb je ruim **430 000 GPU-uren** nodig! Tegen een commercieel cloud-tarief van $3 per GPU-uur bedragen de pure compute-kosten voor deze run alleen al **ruim $1,3 miljoen dollar** (exclusief data-engineering, netwerkuitval en personeel).",
    "checks": [
     {
      "id": "c5",
@@ -117,7 +117,7 @@
   {
    "id": "scaling-laws",
    "title": "Scaling Laws en Chinchilla",
-   "md": "Als je een eindig compute-budget $C$ krijgt, maak je het model dan groter (meer $N$) of train je op meer data (meer $D$)?\n\n- **Kaplan et al. (2020)** dachten dat parameters het belangrijkst waren. Gevolg: vroege modellen zoals GPT-3 waren immens groot (175B), maar getraind op 'slechts' 300B tokens.\n- **Hoffmann et al. (2022)** toonden met hun model **Chinchilla** aan dat Kaplan het mis had. Om optimaal te schalen moeten $N$ en $D$ in gelijke mate groeien. Beide schalen proportioneel met $\\sqrt{C}$.\n\nDe **Chinchilla-vuistregel** stelt dat een compute-optimaal getraind model ongeveer 20 tokens per parameter moet zien:\n$$D \\approx 20N$$\n\n> [!pitfall] De valkuil\n> In je niveautest dacht je: \"zoveel mogelijk parameters, weinig data\". Dit was de fundamentele ontwerpfout van de AI-industrie vóór 2022! Volgens Chinchilla is een 175B model trainen op 300B tokens enorme verspilling. Het was zwaar ondergetraind. Voor 175B parameters heb je minimaal 3.500B (3,5T) tokens nodig.\n\n:::sim chinchilla {}\n:::",
+   "md": "Wanneer een onderneming een vast trainingsbudget van $C$ FLOPs toewijst, rijst een strategische allocatievraag: **investeer je in een groter model (meer parameters $N$) of in een grotere dataset (meer tokens $D$)?**\n\n### De historische misvatting: Kaplan et al. (OpenAI, 2020)\nIn de vroege scaling-literatuur concludeerden onderzoekers dat modelgrootte $N$ veel belangrijker was dan datavolume $D$. Volgens hun machtswetten moest $N$ veel sneller groeien dan $D$ ($N \\propto C^{0{,}73}$ vs $D \\propto C^{0{,}27}$). \nGevolg: techbedrijven bouwden gigantische modellen die getraind werden op relatief weinig data. **GPT-3 (175B parameters)** werd getraind op 'slechts' 300 miljard tokens — een schamele verhouding van 1,7 tokens per parameter.\n\n### De correctie: Chinchilla (DeepMind, Hoffmann et al., 2022)\nDeepMind toonde aan dat Kaplan et al. onder meer een leersnelheidsschema (*learning rate schedule*) gebruikten dat niet was afgestemd op de trainingslengte, wat hun conclusies vertekende. Met hun 70B model **Chinchilla** toonden ze aan dat voor een minimaal validatieverlies bij een gegeven compute-budget $C$, modelparameters en datavolume **in gelijke mate moeten schalen**:\n$$N \\propto \\sqrt{C}, \\qquad D \\propto \\sqrt{C}$$\n\nDit leidde tot de befaamde **Chinchilla-vuistregel**:\n$$D \\approx 20N$$\n\n> [!IMPORTANT] De Chinchilla-vuistregel: 20 tokens per parameter\n> Een compute-optimaal model moet tijdens de pretraining ongeveer **20 tokens per parameter** zien. \n> - Een 7B model vereist: $20 \\times 7\\text{B} = 140\\text{ miljard tokens}$.\n> - Een 70B model vereist: $20 \\times 70\\text{B} = 1{,}4\\text{ biljoen (1,4T) tokens}$.\n> - GPT-3 (175B) had eigenlijk minstens $20 \\times 175\\text{B} = 3{,}5\\text{ biljoen (3,5T) tokens}$ nodig! Het model was zwaar **ondergetraind** (*undertrained*): met hetzelfde rekenbudget had een kleiner model dat op veel meer tokens was getraind een lager verlies gehaald.\n\n:::sim chinchilla {}\n:::",
    "checks": [
     {
      "id": "c6",
@@ -135,7 +135,7 @@
   {
    "id": "overtraining",
    "title": "Overtrainen voor inferentie (Llama 3)",
-   "md": "Chinchilla vertelt ons hoe we met een bepaald *trainingsbudget* ($C = 6ND$) de slimste AI krijgen. Maar voor B2B-klanten en API-aanbieders klopt dit economische plaatje niet meer.\n\nAls een model miljoenen keren per dag door gebruikers wordt aangeroepen, domineert de **inferentiekost** in productie ($C_{\\text{inf}} \\approx 2ND$, waarbij $D$ nu de gebruikerstokens zijn). Inferentie wordt rechtstreeks goedkoper naarmate $N$ kleiner is. Hoe krijg je een model dat even slim is als een gigantisch model, maar veel goedkoper om te hosten?\n\nDoor het zwaar **over te trainen**! Llama 3 8B is getraind op 15 biljoen (15T) tokens. Volgens Chinchilla is het optimum voor 8B parameters slechts 160B tokens. Meta heeft het model dus ruim 90 keer langer getraind dan theoretisch 'optimaal' voor het trainingsbudget.\n\nHet resultaat is een compact model met enorme denkkracht, dat pijlsnel en extreem goedkoop te hosten is. Dit is hét strategische wapen van moderne open-weight modellen.",
+   "md": "De wet van Chinchilla formuleert een strakke optimalisatievoorwaarde: *hoe minimaliseer je het pretraining-verlies voor een vastgesteld eenmalig trainingsbudget ($C = 6ND$)?*\n\nVoor hedendaagse softwarebedrijven, hyperscalers en open-source aanbieders schiet dit zuivere trainingsperspectief echter fundamenteel tekort.\n\n### De levenscyclus-economie van een LLM\nIn de reële bedrijfswereld eindigt de investering niet bij de pretraining. De totale levenscycluskosten (*total cost of ownership*, TCO) bestaan uit twee fasen:\n$$\\begin{aligned}\\text{TCO} &= \\text{CapEx (Pretraining: } 6ND_{\\text{train}}) \\\\ &\\quad + \\text{OpEx (Inferentie: } 2ND_{\\text{inferentie}} \\times \\text{aantal gebruikers)}\\end{aligned}$$\n\nWanneer een model door miljoenen zakelijke gebruikers of via een API intensief wordt aangeroepen, kan de cumulatieve inferentiekost de initiële trainingskost al na enkele maanden overtreffen.\n\nTijdens inferentie geldt:\n$$C_{\\text{inf}} \\propto N$$\nDe operationele kostprijs per zoekopdracht of samenvatting schaalt **lineair met de modelgrootte $N$**. Een 70B model is tijdens inferentie circa **9 keer duurder** en vereist meerdere gekoppelde GPU's wegens het VRAM-beslag, terwijl een 8B model moeiteloos op één enkele commerciële server-GPU draait.\n\n### De strategische doorbraak: Bewust overtrainen (Llama 3)\nHoe verkrijg je de superieure intelligentie van een groot model tegen de lage operationele hostingkosten van een klein model? **Door het kleine model extreem zwaar te overtrainen!**\n\n| Model | Parameters $N$ | Trainingsdata $D$ | Chinchilla-optimum ($20N$) | Overtrainingsfactor |\n|---|---|---|---|---|\n| Chinchilla (2022) | 70B | 1,4T tokens | 1,4T tokens | 1,0× (theoretisch optimum) |\n| Llama 1 (2023) | 7B | 1,0T tokens | 140B tokens | 7,1× |\n| Llama 2 (2023) | 7B | 2,0T tokens | 140B tokens | 14,3× |\n| **Llama 3 (2024)** | **8B** | **15,0T tokens** | **160B tokens** | **93,8×** |\n\nMeta trainde Llama 3 8B op 15 biljoen tokens — bijna **94 keer meer data** dan Chinchilla voorschrijft.\n\n> [!TIP] Strategische business-implicaties voor de handelsingenieur\n> - **CapEx verschuiven om OpEx te minimaliseren:** Meta investeerde extra eenmalige trainings-CapEx. In ruil daarvoor haalt dit 8B-model op meerdere benchmarks scores in de buurt van het oudere Llama 2 70B. Het hosten van een 8B-model kost per token ruwweg 88% minder dan een 70B-model ($(70-8)/70$).\n> - **Build vs. Buy vs. Fine-tune beslissing:** \n>   1. *Zelf pretrainen from scratch ($6ND$):* Enkel economisch rendabel voor organisaties met een zeer groot compute-budget en unieke eigen data (bijv. BloombergGPT).\n>   2. *Bestaand overgetraind model fine-tunen (LoRA/PEFT):* De strategische 'sweet spot' voor 95% van de ondernemingen. Je profiteert gratis van de miljoenen die Meta investeerde in de pretraining, en past het compacte 8B model lokaal aan tegen een fractie van een procent van de kosten (<$1 000).\n>   3. *Commerciële API (OpenAI/Anthropic):* Uitstekend voor snelle time-to-market en lage initiële volumes, maar leidt bij miljoenen queries tot structurele marge-erosie door variabele eenheidskosten.",
    "checks": [
     {
      "id": "c7",
@@ -162,7 +162,7 @@
    "skill": "review",
    "level": 2,
    "prompt": "Voor 1.500 Engelse woorden, hoeveel tokens heb je ruwweg nodig (bij 0,75 woord per token)?",
-   "explain": "1.500 / 0,75 = 2.000 tokens.",
+   "explain": "Om van woorden naar tokens te converteren bij de vuistregel van 0,75 woord per token, delen we het aantal woorden door 0,75: $\\frac{1\\,500\\text{ woorden}}{0{,}75\\text{ woord/token}} = 2\\,000\\text{ tokens}$.",
    "value": 2000,
    "tolerance": 0.02,
    "unit": "tokens"
@@ -173,7 +173,7 @@
    "skill": "review",
    "level": 1,
    "prompt": "Tijdens LoRA-finetuning, welke eigenschap van matrices $A$ en $B$ bepaalt hoeveel geheugen we besparen?",
-   "explain": "De rang (de binnenste dimensie $r$) bepaalt het aantal parameters.",
+   "explain": "In Low-Rank Adaptation (LoRA) ontbinden we $\\Delta W$ in matrices $B \\in \\mathbb{R}^{d \\times r}$ en $A \\in \\mathbb{R}^{r \\times k}$. De rang $r$ is de binnenste flessenhalsdimensie die het aantal trainbare parameters en VRAM-geheugeneisen bepaalt.",
    "options": [
     "De rang (de binnenste dimensie)",
     "Het type normalisatie",
@@ -188,7 +188,7 @@
    "skill": "review",
    "level": 2,
    "prompt": "Je model gebruikt GQA met 32 query-heads en 4 KV-heads. Met welke factor verkleint dit de KV-cache ten opzichte van MHA?",
-   "explain": "32 / 4 = 8.",
+   "explain": "De reductiefactor van de Key-Value cache (KV-cache) bij Grouped-Query Attention (GQA) is de verhouding tussen het aantal Query-heads en het aantal KV-heads: $\\frac{32\\text{ Q-heads}}{4\\text{ KV-heads}} = 8\\times$.",
    "value": 8,
    "abs": 0
   },
@@ -198,7 +198,7 @@
    "skill": "cross-entropy",
    "level": 2,
    "prompt": "Het model voorspelt het juiste volgende token met een kans van 50% ($p=0{,}5$). Wat is de cross-entropy loss $L$?",
-   "explain": "$L = -\\ln(0{,}5) \\approx 0{,}693$.",
+   "explain": "Het cross-entropy verlies is gedefinieerd als $L = -\\ln(p_{\\text{true}})$. Voor een voorspelde kans $p = 0{,}5$ is dit exact $L = -\\ln(0{,}5) \\approx 0{,}693$.",
    "value": 0.693,
    "tolerance": 0.02
   },
@@ -208,7 +208,7 @@
    "skill": "cross-entropy",
    "level": 2,
    "prompt": "Wat is de perplexity als het juiste token een voorspelde kans had van $p=0{,}5$?",
-   "explain": "$PPL = 1 / p = 1 / 0{,}5 = 2$.",
+   "explain": "De Perplexity (PPL) is het omgekeerde van de voorspelde kans bij uniforme onzekerheid: $\\text{PPL} = e^L = e^{-\\ln(p)} = \\frac{1}{p} = \\frac{1}{0{,}5} = 2$.",
    "value": 2,
    "abs": 0.01
   },
@@ -218,7 +218,7 @@
    "skill": "cross-entropy",
    "level": 2,
    "prompt": "Vul de logica achter perplexity aan.",
-   "explain": "Perplexity meet de onzekerheid als een effectieve vocabulairegrootte.",
+   "explain": "Perplexity meet de effectieve vertakkingsfactor of onzekerheid van het model. Een hogere PPL impliceert grotere twijfel, vergelijkbaar met willekeurig gokken uit een grotere catalogus van woorden.",
    "text": "Een hoge perplexity betekent dat het model erg {{onzeker}} is over het volgende token, alsof het moet gokken uit een {{grotere}} effectieve vocabulaire."
   },
   {
@@ -227,7 +227,7 @@
    "skill": "cross-entropy",
    "level": 1,
    "prompt": "Wat betekent een perplexity van exact 1?",
-   "explain": "Het best mogelijke scenario: $PPL=1$ komt van $p=1$.",
+   "explain": "Een Perplexity van exact 1 is het absolute theoretische optimum: $e^0 = 1$, wat optreedt wanneer het model met 100% waarschijnlijkheid ($p=1$) en verlies 0 het juiste token voorspelt.",
    "options": [
     "Het model was 100% zeker van het juiste antwoord",
     "Het model koos willekeurig uit de vocabulaire",
@@ -242,7 +242,7 @@
    "skill": "flops",
    "level": 2,
    "prompt": "Bereken de totale trainings-FLOPs voor een LLM met 5 miljard parameters op 100 miljard tokens.",
-   "explain": "$6 \\cdot 5\\cdot 10^9 \\cdot 100\\cdot 10^9 = 3 \\cdot 10^{21}$.",
+   "explain": "De formule voor trainings-FLOPs is $C \\approx 6ND$. Voor $N = 5 \\times 10^9$ parameters en $D = 100 \\times 10^9$ tokens bedraagt dit: $6 \\times (5 \\times 10^9) \\times (100 \\times 10^9) = 3 \\times 10^{21}$ FLOPs.",
    "value": 3e+21,
    "tolerance": 0.01,
    "unit": "FLOPs"
@@ -253,7 +253,7 @@
    "skill": "flops",
    "level": 1,
    "prompt": "Wat is de verhouding aan rekenkracht tussen de backward pass en de forward pass tijdens pretraining?",
-   "explain": "Forward is ~2 FLOPs, backward is ~4 FLOPs.",
+   "explain": "Tijdens training vereist de forward pass $2N$ FLOPs per token en de backward pass $4N$ FLOPs per token (2 voor gradiënten naar activaties en 2 voor gradiënten naar gewichten), wat resulteert in een 1:2 verhouding.",
    "options": [
     "De backward pass is ruwweg dubbel zo zwaar als de forward pass",
     "Ze zijn exact even zwaar",
@@ -268,7 +268,7 @@
    "skill": "scaling",
    "level": 2,
    "prompt": "Wat was de fundamentele fout in de scaling laws van Kaplan (2020) vergeleken met Chinchilla (2022)?",
-   "explain": "Kaplan overschatte het belang van parameters, waardoor vroege modellen 'undertrained' waren.",
+   "explain": "De scaling laws van Kaplan et al. (2020) overschatten het belang van modelparameters t.o.v. data, waardoor vroege LLM's zoals GPT-3 zwaar ondergetraind (*undertrained*) waren relatief ten opzichte van hun compute-budget.",
    "options": [
     "Ze lieten het aantal parameters veel sneller groeien dan het aantal tokens",
     "Ze trainden op veel te veel data",
@@ -283,7 +283,7 @@
    "skill": "scaling",
    "level": 2,
    "prompt": "Hoeveel trainingsdata (in miljarden tokens) dicteert de Chinchilla-vuistregel voor een 10B model?",
-   "explain": "$10B \\cdot 20 = 200B$.",
+   "explain": "Volgens de Chinchilla-scaling wet ($D \\approx 20N$) vereist een model met 10 miljard parameters: $20 \\times 10\\text{B} = 200\\text{ miljard tokens}$ aan trainingsdata.",
    "value": 200,
    "abs": 0,
    "unit": "miljard"
@@ -294,7 +294,7 @@
    "skill": "scaling",
    "level": 3,
    "prompt": "Een collega stelt: 'Bij een vast rekenbudget is het altijd het beste om het model zo groot mogelijk te maken en de dataset in te perken.' Klopt dit?",
-   "explain": "Dit is exact wat Chinchilla ontkrachtte.",
+   "explain": "Chinchilla bewees wiskundig dat het toewijzen van extra budget uitsluitend aan parameters suboptimaal is; parameters $N$ en trainingsdata $D$ moeten gelijkmatig schalen als $\\sqrt{C}$.",
    "options": [
     "Nee, volgens Chinchilla moeten parameters en data in balans (proportioneel aan $\\sqrt{C}$) meegroeien",
     "Ja, dit is de gouden regel van de scaling laws van Kaplan",
@@ -309,7 +309,7 @@
    "skill": "overtraining",
    "level": 2,
    "prompt": "Waarom trainde Meta Llama 3 8B op 15T tokens, ver voorbij het Chinchilla-optimum (160B)?",
-   "explain": "Voor massaal gebruik wil je de inferentiekost $2ND$ minimaliseren door $N$ klein te houden.",
+   "explain": "De inferentiekost in productie schaalt met $2ND_{\\text{inferentie}}$. Door een compacter model ($N=8\\text{B}$) zwaar te overtrainen, behaalt Meta dezelfde intelligentie als een 70B model tegen een fractie van de hardware- en hostingkosten per query.",
    "options": [
     "Om een compact model te creëren dat heel goedkoop is in productie (inferentie)",
     "Omdat ze een fout hadden gemaakt in de FLOP-berekeningen",
@@ -324,7 +324,7 @@
    "skill": "overtraining",
    "level": 3,
    "prompt": "Llama 3 8B is getraind op 15T tokens. Het Chinchilla-optimum was 160B tokens. Hoeveel keer langer hebben ze exact getraind?",
-   "explain": "$15.000 / 160 = 93{,}75$.",
+   "explain": "Voor Llama 3 8B dicteert Chinchilla $20 \\times 8\\text{B} = 160\\text{ miljard tokens}$. Met een werkelijke dataset van 15 biljoen (15 000 miljard) tokens bedraagt de overtrainingsfactor: $\\frac{15\\,000}{160} = 93{,}75\\times$.",
    "value": 93.75,
    "tolerance": 0.01
   },
@@ -334,7 +334,7 @@
    "skill": "flops",
    "level": 2,
    "prompt": "Hoeveel miljard FLOPs kost de inferentie (forward pass) per gegenereerd token voor een 8B model?",
-   "explain": "$C_{\\text{inf}} = 2ND = 2 \\cdot 8\\cdot 10^9 \\cdot 1 = 16 \\cdot 10^9$.",
+   "explain": "De inferentiekost (forward pass) voor één token ($D=1$) is $C_{\\text{inf}} \\approx 2N = 2 \\times 8 \\times 10^9 = 16 \\times 10^9$ FLOPs (16 miljard FLOPs).",
    "value": 16,
    "abs": 0,
    "unit": "miljard"
@@ -345,7 +345,7 @@
    "skill": "overtraining",
    "level": 3,
    "prompt": "Je spreekt met de CFO van een B2B-startup die zelf een model wil trainen en hosten. Ze stelt voor om exact de Chinchilla-vuistregel te volgen, omdat dit de trainings-compute minimaliseert. Leg uit waarom dit op lange termijn een kostbare vergissing kan zijn voor hun bedrijfsmodel.",
-   "explain": "Chinchilla optimaliseert trainings-compute, maar in B2B betaal je vooral voor inferentie op schaal.",
+   "explain": "Chinchilla optimaliseert uitsluitend het eenmalige trainingsbudget. In commerciële B2B-omgevingen domineren de cumulatieve inferentiekosten over de levensduur, waardoor een compacter, overgetraind model op lange termijn veel winstgevender is.",
    "model": "De Chinchilla-regel minimaliseert enkel de kosten van het *trainen*. Zodra het model in productie gaat voor klanten, betaal je voortdurend voor inferentie, wat ruwweg $2ND$ kost. Als we een groter model trainen via Chinchilla, betalen we na implementatie continu een zware rekenkost (door de grote $N$). Door nu extra trainings-compute uit te geven aan een kleiner model (overtrainen), besparen we elke keer dat een klant het model gebruikt. Op termijn wegen die enorme besparingen in hosting veel zwaarder dan de eenmalige extra trainingskosten.",
    "rubric": [
     "Benoemt dat Chinchilla enkel de trainings-compute optimaliseert",
@@ -362,7 +362,7 @@
    "skill": "review",
    "level": 2,
    "prompt": "Een tekst telt 6.000 Engelse woorden. Hoeveel tokens neemt dit ruwweg in?",
-   "explain": "6.000 / 0,75 = 8.000.",
+   "explain": "Bij een verhouding van 0,75 woord per token levert een tekst van 6 000 woorden: $\\frac{6\\,000}{0{,}75} = 8\\,000$ tokens op.",
    "value": 8000,
    "tolerance": 0.02,
    "unit": "tokens"
@@ -373,7 +373,7 @@
    "skill": "review",
    "level": 1,
    "prompt": "Bij LoRA verklein je het aantal te trainen parameters door matrices te updaten via een tussenstap. Welke eigenschap reduceer je hierbij?",
-   "explain": "De rang (de binnenste dimensie van A en B).",
+   "explain": "In Low-Rank Adaptation (LoRA) ontbinden we $\\Delta W$ in het product van $B$ en $A$. De algebraïsche rang $r$ vormt de binnenste dimensie die het aantal trainbare parameters drastisch comprimeert.",
    "options": [
     "De rang (de binnenste dimensie)",
     "Het aantal aandachtshoofden",
@@ -388,7 +388,7 @@
    "skill": "review",
    "level": 2,
    "prompt": "Je bouwt een model met 128 query-heads en 16 KV-heads (GQA). Met welke factor krimpt je KV-cache?",
-   "explain": "128 / 16 = 8.",
+   "explain": "Bij Grouped-Query Attention (GQA) is de geheugenreductie van de KV-cache gelijk aan de head-verhouding: $\\frac{128\\text{ Q-heads}}{16\\text{ KV-heads}} = 8\\times$.",
    "value": 8,
    "abs": 0
   },
@@ -398,7 +398,7 @@
    "skill": "cross-entropy",
    "level": 2,
    "prompt": "Als een LLM met 100% zekerheid ($p=1$) het ware token voorspelt, wat is dan het verlies (de cross-entropy loss)?",
-   "explain": "$-\\ln(1) = 0$.",
+   "explain": "Wanneer het model met 100% zekerheid het juiste token voorspelt ($p=1$), is de cross-entropy loss minimaal: $L = -\\ln(1) = 0$.",
    "value": 0,
    "abs": 0
   },
@@ -408,7 +408,7 @@
    "skill": "cross-entropy",
    "level": 2,
    "prompt": "Het model raadt het ware token met een kans van slechts 1% ($p=0{,}01$). Wat is de corresponderende perplexity?",
-   "explain": "$PPL = 1 / p = 100$.",
+   "explain": "Bij een voorspelde kans van $p = 0{,}01$ (1%) is de Perplexity: $\\text{PPL} = \\frac{1}{p} = \\frac{1}{0{,}01} = 100$.",
    "value": 100,
    "abs": 0
   },
@@ -418,7 +418,7 @@
    "skill": "cross-entropy",
    "level": 1,
    "prompt": "Geef de definitie van Perplexity op basis van de loss.",
-   "explain": "De exponent van de loss.",
+   "explain": "Perplexity is gedefinieerd als de exponentiële functie van de cross-entropy loss: $\\text{PPL} = e^L$.",
    "text": "De perplexity (PPL) is wiskundig gedefinieerd als de exponent van de loss: PPL = {{e^L|exp(L)|e^loss}}."
   },
   {
@@ -427,7 +427,7 @@
    "skill": "flops",
    "level": 2,
    "prompt": "Bereken de trainings-FLOPs voor een 3B parameter model getraind op 60 miljard tokens.",
-   "explain": "$6 \\cdot 3\\cdot 10^9 \\cdot 60\\cdot 10^9 = 1{,}08 \\cdot 10^{21}$.",
+   "explain": "De totale trainings-FLOPs bedragen $C \\approx 6ND = 6 \\times (3 \\times 10^9) \\times (60 \\times 10^9) = 1{,}08 \\times 10^{21}$ FLOPs.",
    "value": 1.08e+21,
    "tolerance": 0.01,
    "unit": "FLOPs"
@@ -438,7 +438,7 @@
    "skill": "flops",
    "level": 2,
    "prompt": "Hoeveel miljard FLOPs aan inferentie-compute heb je nodig om met een 10B model exact 1 token te genereren?",
-   "explain": "$2 \\cdot 10\\cdot 10^9 \\cdot 1 = 20 \\cdot 10^9$.",
+   "explain": "De inferentiekost voor één token bedraagt $C_{\\text{inf}} \\approx 2N = 2 \\times 10 \\times 10^9 = 20 \\times 10^9$ FLOPs (20 miljard FLOPs).",
    "value": 20,
    "abs": 0,
    "unit": "miljard"
@@ -449,7 +449,7 @@
    "skill": "scaling",
    "level": 2,
    "prompt": "Hoeveel trainingsdata dicteert de Chinchilla-regel voor het trainen van Llama 2 70B (in miljarden tokens)?",
-   "explain": "$70 \\cdot 20 = 1400$.",
+   "explain": "Volgens de Chinchilla-scaling wet ($D \\approx 20N$) vereist een 70B parameter model: $20 \\times 70\\text{B} = 1\\,400\\text{ miljard tokens}$ (1,4 biljoen tokens).",
    "value": 1400,
    "abs": 0,
    "unit": "miljard"
@@ -460,7 +460,7 @@
    "skill": "scaling",
    "level": 1,
    "prompt": "Volgens Chinchilla, met welk getal vermenigvuldig je het aantal parameters ruwweg om het optimale aantal tokens te vinden?",
-   "explain": "$D \\approx 20N$.",
+   "explain": "De Chinchilla-factor tussen parameters $N$ en data $D$ bedraagt ruwweg 20 tokens per parameter: $D \\approx 20N$.",
    "value": 20,
    "abs": 0
   },
@@ -470,7 +470,7 @@
    "skill": "scaling",
    "level": 3,
    "prompt": "Stel dat je budget $C$ plots 100 keer groter wordt. Wat doe je volgens de Hoffmann et al. (Chinchilla) bevindingen?",
-   "explain": "Beide schalen met $\\sqrt{C}$, dus beide moeten 10 keer groter worden.",
+   "explain": "Omdat volgens Chinchilla zowel $N$ als $D$ schalen met $\\sqrt{C}$, leidt een 100-voudige toename van budget $C$ ertoe dat zowel parameters als data met $\\sqrt{100} = 10\\times$ moeten toenemen.",
    "options": [
     "Ik maak het model 10 keer groter en train het op 10 keer meer data",
     "Ik maak het model 100 keer groter en houd de dataset gelijk",
@@ -485,7 +485,7 @@
    "skill": "overtraining",
    "level": 2,
    "prompt": "Waarom is het zakelijk gezien onverstandig om een vaststaand trainingsbudget volledig 'Chinchilla-optimaal' te besteden als het model daarna heel intensief gebruikt wordt?",
-   "explain": "Chinchilla maximaliseert de parametergrootte binnen het trainingsbudget, wat later resulteert in dure inferentie.",
+   "explain": "Chinchilla houdt geen rekening met inferentiekosten. Een groter model vereist meer VRAM en duurdere GPU-infrastructuur per gebruikersquery in productie.",
    "options": [
     "Omdat het model dan onnodig groot wordt, wat de latere inferentiekosten opdrijft",
     "Omdat de training dan te lang duurt en de data niet divers genoeg is",
@@ -500,7 +500,7 @@
    "skill": "overtraining",
    "level": 3,
    "prompt": "Welk model vergt het minste rekenkracht per gebruiker (inferentie)? Model A: 8B parameters, getraind op 15T tokens. Model B: 70B parameters, getraind op 1,4T tokens.",
-   "explain": "Voor inferentie telt alleen het aantal parameters ($N$).",
+   "explain": "De rekenkracht per gegenereerd token tijdens inferentie bedraagt $2N$. Het model met het kleinste aantal parameters ($N$) vergt dus de minste rekenkracht per gebruiker.",
    "options": [
     "Model A",
     "Model B",
@@ -515,7 +515,7 @@
    "skill": "overtraining",
    "level": 2,
    "prompt": "Vul aan waarom we overtrainen in de praktijk.",
-   "explain": "Kleinere modellen besparen $2ND$ per gegenereerd token.",
+   "explain": "Voor zakelijke toepassingen verkiest men een compacter model dat zwaar overgetraind is, omdat dit de operationele inferentiekosten (OpEx) minimaliseert.",
    "text": "Bij een vast budget kies je voor bedrijfsapplicaties beter een {{kleiner|klein}} model dat zwaar {{overgetraind}} is, omdat dit de latere {{inferentiekosten|inferentiekost|inferentie}} drastisch verlaagt."
   },
   {
@@ -524,7 +524,7 @@
    "skill": "cross-entropy",
    "level": 1,
    "prompt": "Welke metriek representeert de 'effectieve vocabulairegrootte' van de voorspelling?",
-   "explain": "Dit is de intuïtieve betekenis van perplexity.",
+   "explain": "Perplexity (PPL) vertegenwoordigt intuïtief de effectieve vocabulairegrootte of onzekerheidsgraad waaruit het model lijkt te gokken.",
    "answers": [
     "perplexity",
     "ppl"
@@ -538,7 +538,7 @@
    "skill": "flops",
    "level": 1,
    "prompt": "Tijdens de forward pass, hoeveel FLOPs gebruikt elke parameter per verwerkt token grofweg?",
-   "explain": "Eén vermenigvuldiging en één optelling = 2 FLOPs.",
+   "explain": "Tijdens de forward pass vereist elke gewichtsparameter één vermenigvuldiging en één optelling per token, wat neerkomt op exact 2 FLOPs per parameter.",
    "value": 2,
    "abs": 0,
    "unit": "FLOPs"
@@ -549,7 +549,7 @@
    "skill": "cross-entropy",
    "level": 2,
    "prompt": "Wat impliceert een extreem hoge perplexity (PPL) tijdens het evalueren van je model?",
-   "explain": "PPL is de onzekerheid. Hoog = het model is in de war.",
+   "explain": "Een extreem hoge perplexity duidt op grote onzekerheid en slechte taalvoorspelling, wat betekent dat het model de onderliggende datadistributie nog onvoldoende heeft geleerd.",
    "options": [
     "Dat het model enorm onzeker is en zwaar in de war is over het volgende token",
     "Dat het model het token perfect heeft gememoriseerd",
@@ -564,7 +564,7 @@
    "skill": "overtraining",
    "level": 1,
    "prompt": "Hoe noemt men de strategische beslissing om een LLM te trainen op extreem veel data in verhouding tot het aantal parameters (bv. 100+ tokens/param)?",
-   "explain": "Dit is het principe achter Llama 3.",
+   "explain": "Het trainen van een model op aanzienlijk meer data dan het Chinchilla-optimum ($D \\gg 20N$) noemt men 'overtrainen' ter optimalisatie van de downstream inferentiekosten.",
    "answers": [
     "overtrainen",
     "overtraining"
@@ -577,7 +577,7 @@
    "skill": "flops",
    "level": 3,
    "prompt": "Hoe verhoudt de rekenkost van een token tijdens pretraining zich ruwweg tot de rekenkost van een token tijdens inferentie?",
-   "explain": "Pretraining (6 FLOPs) vs. Inferentie (2 FLOPs).",
+   "explain": "Het trainen van een token kost $6N$ FLOPs (forward + backward), terwijl inferentie slechts $2N$ FLOPs (enkel forward) kost. Pretraining is dus $3\\times$ zo zwaar per token als inferentie.",
    "options": [
     "Pretraining kost grofweg 3 keer zoveel rekenkracht per token",
     "Pretraining kost grofweg 2 keer zoveel rekenkracht per token",
@@ -591,21 +591,21 @@
   "type": "explain",
   "lang": "nl",
   "minWords": 80,
-  "prompt": "**Klantcase.** Een AI-startup pitcht je een plan: ze willen een 10 miljard (10B) parameter model trainen op 50 miljard (50B) tokens om state-of-the-art te zijn. Ze beweren dat dit de meest efficiënte inzet van hun kapitaal en compute-budget is.\n\n1. Toon met de Chinchilla-vuistregel aan of hun verhouding parameters/data optimaal is. Hoeveel tokens zouden ze idealiter moeten gebruiken voor 10B parameters?\n2. Bereken de benodigde trainings-FLOPs voor hun voorgestelde plan (10B params, 50B tokens).\n3. Waarom zou een bedrijf als Meta bewust de Chinchilla-regel negeren en een veel kleiner model op 15T tokens trainen (overtrainen)? Welk zakelijk voordeel levert dat op?",
-  "model": "**1. Chinchilla-vuistregel.** Chinchilla (Hoffmann et al.) toont aan dat een optimaal getraind model ruwweg 20 tokens per parameter moet zien ($D \\approx 20N$). Voor 10B parameters hebben ze dus $20 \\cdot 10B = 200B$ tokens nodig. Hun plan (50B tokens) is zeer suboptimaal en resulteert in een zwaar ondergetraind model.\n\n**2. Trainings-FLOPs.** De compute bedraagt $C \\approx 6ND$. Dus: $6 \\cdot 10 \\cdot 10^9 \\cdot 50 \\cdot 10^9 = 3 \\cdot 10^{21}$ FLOPs.\n\n**3. Strategie (Overtrainen).** Chinchilla optimaliseert enkel de trainingskost. Voor een bedrijf dat het model op schaal serveert, domineert de inferentiekost (afhankelijk van $N$). Door een kleiner model véél langer te trainen dan Chinchilla dicteert, krijg je een model dat even krachtig is als een groter model, maar veel sneller en goedkoper draait in productie.",
+  "prompt": "**Klantcase.** Een AI-startup pitcht een investeringsvoorstel: ze willen een eigen fundamenteel taalmodel met 10 miljard (10B) parameters vanaf nul pretrainen op 50 miljard (50B) tokens om state-of-the-art te zijn. Ze beweren tegenover potentiële investeerders dat dit de meest kostenefficiënte inzet van hun kapitaal en GPU-budget is.\n\nJij evalueert dit voorstel als adviseur en handelsingenieur:\n1. Toon met de Chinchilla-scaling wet aan of hun verhouding parameters/data optimaal is. Hoeveel tokens zouden ze idealiter moeten gebruiken voor 10B parameters, en wat is de diagnose van hun huidige plan?\n2. Bereken de totale hoeveelheid Floating Point Operations (FLOPs) die deze training vereist ($C \\approx 6ND$).\n3. Waarom zou een bedrijf als Meta de Chinchilla-regel bewust negeren en Llama 3 8B trainen op maar liefst 15 biljoen (15T) tokens (overtrainen)? Welk strategisch voordeel levert dit op voor commerciële serving?",
+  "model": "**1. Evaluatie via de Chinchilla-scaling wet.**\nVolgens de empirische scaling laws van Chinchilla (Hoffmann et al., 2022) moet voor een compute-optimale pretraining de datasetomvang ruwweg 20 keer het aantal parameters bedragen: $D \\approx 20N$.\n- Voor een model van $N = 10\\text{ miljard (10B)}$ parameters vereist het Chinchilla-optimum:\n  $$D_{\\text{opt}} = 20 \\times 10 \\times 10^9 = 200\\text{ miljard (200B) tokens}$$\n- **Diagnose:** Het voorgestelde plan van de startup (50B tokens) is zwaar suboptimaal. Het model krijgt slechts 5 tokens per parameter en zal ernstig **ondergetraind** (*undertrained*) zijn. De startup verspilt kostbaar kapitaal aan overtollige modelparameters die door gebrek aan trainingsdata nooit goed zullen convergeren.\n\n**2. Berekening van de trainings-FLOPs.**\nPretraining omvat zowel een forward pass ($2N$) als een backward pass ($4N$), wat leidt tot $6ND$ FLOPs:\n$$C_{\\text{train}} \\approx 6 \\times (10 \\times 10^9\\text{ parameters}) \\times (50 \\times 10^9\\text{ tokens})$$\n$$C_{\\text{train}} = 6 \\times 10^{10} \\times 5 \\times 10^{10} = 30 \\times 10^{20} = \\boxed{3 \\times 10^{21}\\text{ FLOPs}}$$\n(oftewel 3 zettaFLOPs).\n\n**3. Strategische motivatie voor overtrainen (het Llama 3-paradigma).**\nChinchilla optimaliseert uitsluitend het eenmalige pretrainings-budget ($C_{\\text{train}} = 6ND$). In een commerciële omgeving domineren op lange termijn echter de operationele inferentiekosten: $C_{\\text{inf}} \\approx 2ND_{\\text{inferentie}}$.\n- Elke query in productie kost rekenkracht evenredig met modelomvang $N$. Een 70B model kost per token bijna 9× meer rekenkracht dan een 8B model en vereist meerdere dure GPU's (VRAM-geheugendruk).\n- Door een compacter model ($N=8\\text{B}$) zwaar over te trainen op 15T tokens (94× voorbij Chinchilla), investeert Meta eenmalig extra in trainings-CapEx, maar verkrijgt een model met de intelligentie van een veel groter model dat vervolgens wereldwijd tegen een fractie van de hosting-OpEx per gebruiker kan draaien.",
   "rubric": [
-   "Noemt en past de 20 tokens per parameter regel correct toe",
-   "Concludeert correct dat 200B tokens nodig zijn (model is nu ondergetraind)",
-   "Berekent correct 3e21 FLOPs (of 3.000.000.000 miljard FLOPs)",
-   "Benoemt de verschuiving van trainingskost naar inferentiekost",
-   "Koppelt overtrainen aan het verlagen van de productiekosten door het kleinere model ($N$)"
+   "Past de Chinchilla-vuistregel correct toe (D ≈ 20N) en berekent dat 200B tokens nodig zijn",
+   "Stelt de juiste diagnose dat het model met 50B tokens ernstig ondergetraind (undertrained) is",
+   "Berekent correct de trainings-compute: 6ND = 3 × 10²¹ FLOPs",
+   "Maakt het strategische onderscheid tussen eenmalige trainings-CapEx en doorlopende inferentie-OpEx (2ND)",
+   "Verklaart hoe overtrainen leidt tot lagere operationele hostingkosten en betere schaalbaarheid per actieve gebruiker"
   ]
  },
  "cards": [
   {
    "id": "c-ppl",
-   "front": "Formule van perplexity (PPL) in functie van de loss $L$?",
-   "back": "$PPL = e^L$",
+   "front": "Wat is de wiskundige formule van Perplexity (PPL) in functie van de cross-entropy loss $L$?",
+   "back": "$\\text{PPL} = e^L$. Voor een uniforme kans $p$ op het juiste token geldt tevens $\\text{PPL} = \\frac{1}{p}$.",
    "skill": "cross-entropy",
    "answers": [
     "e^L",
@@ -614,14 +614,14 @@
   },
   {
    "id": "c-chinchilla",
-   "front": "Wat stelt de Chinchilla-vuistregel voor data ($D$) en parameters ($N$)?",
-   "back": "$D \\approx 20N$",
+   "front": "Wat dicteert de Chinchilla-scaling wet (Hoffmann et al., 2022) voor compute-optimaal pretrainen?",
+   "back": "$D \\approx 20N$. Voor een minimaal trainingsverlies bij een vast budget moet het aantal trainings-tokens ($D$) ongeveer 20 keer het aantal parameters ($N$) bedragen.",
    "skill": "scaling"
   },
   {
    "id": "c-train-flops",
-   "front": "Formule voor de benodigde FLOPs ($C$) bij het trainen van een taalmodel?",
-   "back": "$C \\approx 6ND$",
+   "front": "Wat is de formule voor de benodigde Floating Point Operations (FLOPs) bij het pretrainen van een LLM?",
+   "back": "$C_{\\text{train}} \\approx 6ND$ FLOPs ($2ND$ voor de forward pass + $4ND$ voor de backward pass over $N$ parameters en $D$ tokens).",
    "skill": "flops",
    "answers": [
     "6ND"
@@ -629,8 +629,8 @@
   },
   {
    "id": "c-inf-flops",
-   "front": "Formule voor de benodigde FLOPs ($C$) bij inferentie van één pass?",
-   "back": "$C \\approx 2ND$",
+   "front": "Wat is de formule voor de benodigde FLOPs bij inferentie van één pass over $D$ tokens?",
+   "back": "$C_{\\text{inf}} \\approx 2ND$ FLOPs. Elke parameter voert grofweg 2 floating point operaties uit per token (1 vermenigvuldiging en 1 optelling).",
    "skill": "flops",
    "answers": [
     "2ND"
@@ -638,14 +638,14 @@
   },
   {
    "id": "c-overtrain",
-   "front": "Waarom trainen we open-weight modellen vaak ver voorbij het Chinchilla-optimum (overtrainen)?",
-   "back": "Om de **inferentiekosten** in productie te verlagen (we krijgen dezelfde kwaliteit met een kleiner model).",
+   "front": "Waarom trainen bedrijven open-weight modellen (zoals Llama 3) bewust ver voorbij het Chinchilla-optimum (overtrainen)?",
+   "back": "Om de **inferentiekosten (OpEx)** in productie te minimaliseren. Een compacter model ($N$ kleiner) presteert even sterk, maar verbruikt veel minder VRAM en verlaagt de hostingkost per query met wel ~88%.",
    "skill": "overtraining"
   },
   {
    "id": "c-fwd-flops",
    "front": "Hoeveel FLOPs verbruikt één parameter per verwerkt token tijdens de forward pass?",
-   "back": "2 FLOPs (één vermenigvuldiging en één optelling)",
+   "back": "2 FLOPs per parameter per token (één vermenigvuldiging en één optelling in de matrixprojecties).",
    "skill": "flops",
    "answers": [
     "2"
@@ -654,14 +654,14 @@
   },
   {
    "id": "c-ppl-intuition",
-   "front": "Wat is de intuïtieve betekenis van Perplexity?",
-   "back": "De **effectieve vocabulairegrootte** waaruit het model moet gokken (de onzekerheid).",
+   "front": "Wat is de intuïtieve bedrijfseconomische betekenis van Perplexity (PPL)?",
+   "back": "De **effectieve vocabulairegrootte** (onzekerheidsfactor) waaruit het model willekeurig lijkt te moeten kiezen. Hoe lager de PPL, hoe betrouwbaarder en consistenter de modeloutput.",
    "skill": "cross-entropy"
   },
   {
    "id": "c-lora-r",
-   "front": "Wat representeert de parameter $r$ in LoRA?",
-   "back": "De **rang** (de binnenste dimensie van de matrices $A$ en $B$ die we trainen).",
+   "front": "Wat representeert de parameter $r$ in Low-Rank Adaptation (LoRA)?",
+   "back": "De **algebraïsche rang** (de binnenste flessenhalsdimensie van matrices $B \\in \\mathbb{R}^{d \\times r}$ en $A \\in \\mathbb{R}^{r \\times k}$) die het aantal trainbare parameters en VRAM-beslag bepaalt.",
    "skill": "review"
   }
  ],
@@ -673,6 +673,8 @@
  "meta": {
   "author": "antigravity",
   "created": "2026-09-27",
-  "adaptedFor": "Tempo verlaagd en expliciete focus gelegd op de Chinchilla-vuistregel en de KV-cache/LoRA na de lagere score op de niveautest (basis)."
+  "adaptedFor": "Tempo verlaagd en expliciete focus gelegd op de Chinchilla-vuistregel en de KV-cache/LoRA na de lagere score op de niveautest (basis).",
+  "revised": "2026-10-21",
+  "revisionNotes": "Afkortingen voluit geschreven, uitleg verdiept, handelsingenieur-perspectief versterkt"
  }
 }

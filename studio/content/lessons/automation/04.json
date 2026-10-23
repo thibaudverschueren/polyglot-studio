@@ -23,7 +23,7 @@
   },
   {
    "id": "code-when-not",
-   "text": "Je weet wanneer je de Code-node moet vermijden (bv. voor HTTP-requests) en ingebouwde nodes moet gebruiken."
+   "text": "Je weet wanneer je de Code-node moet vermijden (bv. voor HTTP-requests (HTTP = Hypertext Transfer Protocol)) en ingebouwde nodes moet gebruiken."
   }
  ],
  "sections": [
@@ -74,7 +74,7 @@
   {
    "id": "async-fetch",
    "title": "Asynchroon werken en de fetch-valkuil",
-   "md": "De Code-node in n8n ondersteunt asynchrone JavaScript-code. Je kunt *top-level await* gebruiken, wat betekent dat je externe processen, timers, of bepaalde data-operaties synchroon kunt laten afhandelen voordat de node zijn data doorgeeft.\n\nOmdat je asynchrone code kunt schrijven, is het verleidelijk om ingebouwde Node.js-functies zoals `fetch()` of pakketten zoals `axios` te gebruiken om direct vanuit de Code-node een API-aanroep te doen. In de B2B-architectuur die we in deze opleiding aanleren, is dat echter een **absolute no-go**.\n\n> [!warning] Gebruik NOOIT `fetch` of netwerkverzoeken in een Code-node\n> Alle communicatie met de buitenwereld moet verlopen via de ingebouwde **HTTP Request-node** of specifieke app-nodes.\n\nHier zijn de strategische en technische redenen waarom:\n1. **Foutafhandeling en Retries**: Een HTTP Request-node kan geconfigureerd worden om automatisch opnieuw te proberen (retries) bij een tijdelijke serverfout (zoals 500 of 502). Als je `fetch` gebruikt, moet je deze complexe backoff-logica zelf in JavaScript programmeren.\n2. **Rate Limits**: Professionele API's beperken het aantal verzoeken per seconde (429 Too Many Requests). De HTTP-node kan hier elegant mee omgaan in combinatie met n8n-instellingen, terwijl een Code-node script faliekant crasht.\n3. **Beveiliging van Credentials**: Wanneer je `fetch` gebruikt, moet je API-sleutels of tokens vaak hardcoden of ophalen uit variabelen. De HTTP Request-node koppelt veilig met n8n's ingebouwde credentials manager, waar sleutels geëncrypteerd in de database opgeslagen zitten.\n4. **Zichtbaarheid voor de klant**: Workflows moeten onderhoudbaar zijn. Iedereen ziet direct aan een HTTP-node dat er contact wordt gemaakt met een externe API. Verberg je die logica in een generieke Code-node, dan creëer je een ongewenste zwarte doos.",
+   "md": "De Code-node in n8n ondersteunt asynchrone JavaScript-code. Je kunt *top-level await* gebruiken, wat betekent dat je externe processen, timers, of bepaalde data-operaties synchroon kunt laten afhandelen voordat de node zijn data doorgeeft.\n\nOmdat je asynchrone code kunt schrijven, is het verleidelijk om ingebouwde Node.js-functies zoals `fetch()` of pakketten zoals `axios` te gebruiken om direct vanuit de Code-node een API-aanroep (API = application programming interface) te doen. In de B2B-architectuur die we in deze opleiding aanleren, is dat echter een **absolute no-go**.\n\n> [!warning] Gebruik NOOIT `fetch` of netwerkverzoeken in een Code-node\n> Alle communicatie met de buitenwereld moet verlopen via de ingebouwde **HTTP Request-node** of specifieke app-nodes.\n\nHier zijn de strategische en technische redenen waarom:\n1. **Foutafhandeling en Retries**: Een HTTP Request-node kan geconfigureerd worden om automatisch opnieuw te proberen (retries) bij een tijdelijke serverfout (zoals 500 of 502). Als je `fetch` gebruikt, moet je deze complexe backoff-logica zelf in JavaScript programmeren.\n2. **Rate Limits**: Professionele API's beperken het aantal verzoeken per seconde (429 Too Many Requests). De HTTP-node kan hier elegant mee omgaan in combinatie met n8n-instellingen, terwijl een Code-node script faliekant crasht.\n3. **Beveiliging van Credentials**: Wanneer je `fetch` gebruikt, moet je API-sleutels of tokens vaak hardcoden of ophalen uit variabelen. De HTTP Request-node koppelt veilig met n8n's ingebouwde credentials manager, waar sleutels geëncrypteerd in de database opgeslagen zitten.\n4. **Zichtbaarheid voor de klant**: Workflows moeten onderhoudbaar zijn. Iedereen ziet direct aan een HTTP-node dat er contact wordt gemaakt met een externe API. Verberg je die logica in een generieke Code-node, dan creëer je een ongewenste zwarte doos.",
    "checks": [
     {
      "id": "c3",
@@ -873,7 +873,7 @@
    "skill": "code-errors",
    "level": 2,
    "prompt": "Je gebruikt `console.log(data)` in de Code-node, maar je hebt geen toegang tot de terminal van de server. Wat is een snelle workaround?",
-   "explain": "Voeg de variabele toe aan het output-JSON-object, zodat het visueel inspecteerbaar wordt in de editor.",
+   "explain": "Voeg de variabele toe aan het output-JSON-object (JSON = JavaScript Object Notation), zodat het visueel inspecteerbaar wordt in de editor.",
    "options": [
     "De variabele tijdelijk als eigenschap aan de output toevoegen, bv. `debug_data`.",
     "De Execute Once knop aanzetten om logs in de browser te tonen.",

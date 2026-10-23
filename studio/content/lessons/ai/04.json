@@ -5,14 +5,14 @@
  "roadmap": "ai-04-optimization",
  "kind": "core",
  "title": "Optimalisatie: AdamW, LR-schema's en precisie",
- "subtitle": "Waarom LLM's divergeren, hoeveel VRAM trainen echt kost, en hoe je AdamW stabiel houdt.",
+ "subtitle": "Waarom LLM's divergeren, hoeveel VRAM trainen echt kost, en hoe je AdamW stabiel houdt",
  "level": "advanced",
  "minutes": 45,
- "summary": "Een LLM succesvol trainen vereist wiskundige acrobatiek: we gebruiken AdamW met ontkoppelde weight decay, warmup en gradient clipping om loss spikes te vermijden. Tot slot bereken we waarom training zoveel meer VRAM eist dan inferentie door de extra bytes van de optimizer.",
+ "summary": "Een Large Language Model (LLM) succesvol trainen vereist geavanceerde optimalisatie: we gebruiken Adam with decoupled Weight decay (AdamW), learning rate warmup en gradient clipping om catastrofale loss spikes te vermijden. Daarnaast berekenen we waarom mixed precision training met Brain Float 16 (BF16) en 32-bit floating point (FP32) optimizer states 16 bytes per parameter aan Video RAM (VRAM) eist — acht keer zoveel als inferentie in BF16 (2 bytes per parameter).",
  "objectives": [
   {
    "id": "herhaling",
-   "text": "Je berekent het aantal tokens correct, past de Chinchilla-regel toe en berekent de GQA-reductiefactor."
+   "text": "Je berekent het aantal tokens correct, past de Chinchilla-regel toe en berekent de GQA-reductiefactor (GQA = grouped-query attention)."
   },
   {
    "id": "adamw",
@@ -35,7 +35,7 @@
   {
    "id": "herhaling",
    "title": "Herhaling: Tokens, Chinchilla en GQA",
-   "md": "Omdat de vorige niveautest toonde dat sommige fundamenten nog wat wankel zijn, zetten we voor we aan optimalisatie beginnen drie kernconcepten op een rij:\n\n1. **Tokens tellen**: Een token is een *deel* van een woord. Vuistregel: 1 token $\\approx$ 0,75 Engels woord. Er zijn dus **meer tokens dan woorden**.\n   > [!pitfall] Rekenregel\n   > Deel door 0,75 (of vermenigvuldig met $4/3$) om van woorden naar tokens te gaan. 3 000 woorden zijn dus $3 000 / 0{,}75 = 4 000$ tokens, niet 2 250!\n\n2. **Chinchilla-vuistregel**: \"Compute-optimaal\" betekent **niet** \"weinig data\". Hoffmann et al. (2022) toonden aan dat het aantal tokens $D$ moet meegroeien met het aantal parameters $N$: $D \\approx 20N$. Voor een model van 7 miljard parameters (7B) heb je dus zo'n 140 miljard tokens nodig, anders doe je aan underfitting.\n\n3. **GQA (Grouped-Query Attention)**: GQA bundelt meerdere query-heads aan één KV-head om geheugen te sparen. De besparingsfactor is de wiskundige verhouding $H_Q / H_{KV}$. Als je 64 query-heads hebt en 8 KV-heads, krimpt de KV-cache met een factor $64/8 = 8\\times$ (het is dus geen vaste factor 2).",
+   "md": "Omdat de eerdere niveautest aantoonde dat wiskundige en operationele vuistregels nog wel eens door elkaar worden gehaald, zetten we voorafgaand aan de optimalisatie drie kernconcepten op een rij:\n\n1. **Tokens tellen (eenheidskosten):** Een token is een subwoordfragment. Voor Engelstalige teksten geldt de empirische verhouding dat 1 token $\\approx 0{,}75$ woord bedraagt (ofwel: 1 woord levert gemiddeld 1,33 tokens op).\n   > [!IMPORTANT] Rekenregel\n   > Om van woorden naar tokens te gaan, **deel** je door 0,75 (of vermenigvuldig je met $4/3$):\n   > $$\\text{Aantal tokens} = \\frac{3\\,000\\text{ woorden}}{0{,}75\\text{ woord/token}} = 4\\,000\\text{ tokens}$$\n   > Wie per ongeluk vermenigvuldigt met 0,75 komt uit op 2 250 tokens en onderschat zijn cloud-budget en geheugenbehoefte met bijna 44%!\n\n2. **Chinchilla-scaling wet (kapitaalallocatie):** \"Compute-optimaal trainen\" betekent **niet** \"zo min mogelijk data gebruiken\". Hoffmann et al. (2022) toonden aan dat de trainingsdata $D$ evenredig moet meegroeien met de modelparameters $N$:\n   $$D \\approx 20N$$\n   Voor een model met 7 miljard parameters (7B) heb je minimaal $20 \\times 7\\text{B} = 140\\text{ miljard tokens}$ aan hoogwaardige tekst nodig. Train je met minder tokens, dan verspil je kostbare GPU-uren (GPU = graphics processing unit, de grafische processor) aan een ondergetraind model.\n\n3. **Grouped-Query Attention (GQA):** GQA bundelt meerdere Query-heads aan één gedeelde Key-Value (KV) head om kostbaar Video RAM (VRAM) op de Graphics Processing Unit (GPU) te sparen. De besparingsfactor is de exacte verhouding tussen het aantal Query-heads en KV-heads ($H_Q / H_{KV}$). Bij 64 Query-heads en 8 KV-heads krimpt het geheugenbeslag van de Key-Value cache (KV-cache) met een factor $64 / 8 = 8\\times$.",
    "checks": [
     {
      "id": "c1",
@@ -70,7 +70,7 @@
   {
    "id": "adamw",
    "title": "AdamW: Momentum en Weight Decay",
-   "md": "In simpele Gradient Descent (SGD) passen we parameters aan op basis van de ruwe gradiënt van de loss. Dat is vaak zeer instabiel. De standaard optimizer in LLM's is daarom **AdamW** (Loshchilov & Hutter, 2017).\n\nAdamW combineert drie trucs:\n\n1. **Momentum ($m$)**: Het onthoudt de richting van vorige stappen. Als we telkens dezelfde kant op gaan, versnellen we (zoals een bal die van een helling rolt).\n2. **Variantie ($v$)**: Het meet hoe groot eerdere gradiënten waren. Zeldzame of kleine updates krijgen een wiskundige boost, frequente of grote updates worden afgeremd.\n3. **Ontkoppelde Weight Decay**: *Weight decay* dwingt ongebruikte gewichten om naar nul te kruipen ($\\theta \\leftarrow \\theta(1-\\lambda)$), wat overfitting tegengaat. In AdamW wordt deze krimp rechtstreeks op de gewichten toegepast, helemaal *losgekoppeld* van de complexe gradiëntberekening.\n\n> [!note] Geheugenkost van Adam\n> Adam bewaart voor *elke parameter* twee extra waarden: de voortschrijdende $m$ en $v$. Omdat deze zeer precies moeten zijn, bewaart men ze steevast in **FP32** (32 bits = 4 bytes per stuk). De optimizer eist dus $4 + 4 = 8$ bytes per parameter extra!",
+   "md": "In klassieke Stochastic Gradient Descent (SGD) passen we modelparameters aan met een vaste stapgrootte in de tegengestelde richting van de ruwe gradiënt: $\\theta \\leftarrow \\theta - \\eta \\nabla L$. In diepe Large Language Models (LLMs) met miljarden parameters leidt dit tot extreme instabiliteit: ravijnen in het verliesoppervlak veroorzaken oscillerende stappen of stilstand.\n\nDe universele industriestandaard voor het trainen van LLM's is daarom **Adam with decoupled Weight decay (AdamW)** (Loshchilov & Hutter, 2017).\n\n### De drie mechanismen van AdamW\nAdamW berekent voor elke individuele gewichtsparameter een adaptieve leersnelheid op basis van twee voortschrijdende statistieken:\n\n1. **Eerste moment / Momentum ($m_t$):** Een exponentieel gewogen gemiddelde van historische gradiënten:\n   $$m_t = \\beta_1 m_{t-1} + (1 - \\beta_1) g_t \\quad (\\text{typisch } \\beta_1 = 0{,}9)$$\n   Net als een zware bal die van een helling rolt, bouwt de optimizer snelheid op in richtingen waar de gradiënt consistent wijst, en dempt hij ruis en oscillaties.\n\n2. **Tweede moment / Ongecentreerde Variantie ($v_t$):** Een exponentieel gewogen gemiddelde van gekwadrateerde gradiënten:\n   $$v_t = \\beta_2 v_{t-1} + (1 - \\beta_2) g_t^2 \\quad (\\text{typisch } \\beta_2 = 0{,}95 \\text{ of } 0{,}98)$$\n   In de update delen we door $\\sqrt{v_t} + \\epsilon$. Dit schaalt de stapgrootte automatisch: parameters met zeldzame, kleine gradiënten krijgen een relatieve versnelling, terwijl parameters met frequente, gigantische gradiënten worden afgeremd.\n\n3. **Ontkoppelde Weight Decay:** Klassieke L2-regularisatie voegt een boete toe aan de gradiënt. In de oorspronkelijke Adam leidde dat tot een onbedoelde wisselwerking met $\\sqrt{v_t}$, waardoor gewichten met grote gradiënten nauwelijks geregulariseerd werden. AdamW koppelt deze krimp volledig los van de gradiënten en past de gewichtsafname rechtstreeks toe op de gewichten:\n   $$\\theta_{t+1} = \\theta_t (1 - \\eta \\lambda) - \\frac{\\eta}{\\sqrt{\\hat{v}_t} + \\epsilon} \\hat{m}_t$$\n\n> [!NOTE] De geheugenkost van AdamW in VRAM\n> AdamW moet voor *elke afzonderlijke parameter* in het model twee getallen continu in het geheugen bijhouden: $m$ en $v$. Om numerieke afrondingsfouten bij miljoenen optellingen te voorkomen, worden deze statistieken standaard opgeslagen in **32-bit floating point (FP32)** (4 bytes per getal).\n> \n> De optimizer-toestand alleen al kost: $4\\text{ bytes } (m) + 4\\text{ bytes } (v) = \\boxed{8\\text{ bytes per parameter}}$ aan Video RAM (VRAM).",
    "checks": [
     {
      "id": "c3",
@@ -92,7 +92,7 @@
   {
    "id": "lr-schema",
    "title": "Het LR-schema: Warmup en Cosine Decay",
-   "md": "Als je AdamW blind start met een hoge Learning Rate (LR), krijgt het model onmiddellijk een enorme loss-sprong of explodeert het. Daarom verandert de LR voortdurend volgens een vast **LR-schema**. Het standaardrecept:\n\n1. **Warmup**: In de eerste procenten van de training (bv. eerste 2 000 stappen) start de LR op 0 en stijgt lineair tot de piek. Waarom? In het begin beginnen je optimizer-stats ($m$ en $v$) pas net data te verzamelen en zijn ze zeer instabiel. Een grote stap met een 'blinde' optimizer zou het model onherstelbaar beschadigen.\n2. **Cosine Decay**: Na de warmup daalt de LR stapsgewijs langs een dalende cosinuscurve. Tegen het einde van de training bedraagt de LR nog maar $\\approx 10\\,\\%$ van de piek. Dit geeft het model de stabiliteit om aan het eind zachtjes in het diepste, fijnste lokale minimum te 'landen'.\n\nDit vereist planning: je moet **vooraf bepalen** hoeveel tokens of stappen je in totaal gaat trainen. Anders weet de wiskundige cosinuscurve niet op welk eindpunt ze moet landen.",
+   "md": "Wanneer je een LLM-training start met een constante, hoge Learning Rate (LR) $\\eta$, zal het model vrijwel direct divergeren. In het begin zijn de parameters willekeurig geïnitialiseerd en bevatten de statistieken $m$ en $v$ nog geen betrouwbare data. Een grote optimalisatiestap met een ongestabiliseerde optimizer blaast het model onherroepelijk op.\n\nDaarom volgt elke serieuze LLM-training een strikt gekalibreerd **Learning Rate Schema (LR-schema)**:\n\n![Verloop van de leersnelheid: lineaire warmup tot η_max, daarna een cosinusvormige daling naar η_min](assets/diagrams/lr-schedule.svg \"Het LR-schema: lineaire warmup, daarna cosine decay naar een minimum\")\n\n### 1. De Warmup-fase\nGedurende de eerste 1% tot 2% van de totale trainingsstappen (bijv. de eerste 2 000 stappen) start de leersnelheid bij 0 en stijgt deze lineair tot de maximale piekwaarde $\\eta_{\\max}$ (typisch $1 \\times 10^{-4}$ tot $3 \\times 10^{-4}$):\n$$\\eta_t = \\eta_{\\max} \\cdot \\frac{t}{T_{\\text{warmup}}}$$\n*Waarom?* Dit geeft AdamW de gelegenheid om stabiele schattingen op te bouwen voor momentum ($m$) en variantie ($v$) zonder de netwerkgewichten te beschadigen met overdimensionale updates.\n\n### 2. De Cosine Decay-fase\nZodra de piek is bereikt, daalt de leersnelheid geleidelijk volgens een cosinuscurve richting een minimale waarde $\\eta_{\\min}$ (meestal circa 10% van $\\eta_{\\max}$):\n$$\\eta_t = \\eta_{\\min} + \\frac{1}{2}(\\eta_{\\max} - \\eta_{\\min})\\left(1 + \\cos\\left(\\frac{\\pi (t - T_{\\text{warmup}})}{T_{\\max} - T_{\\text{warmup}}}\\right)\\right)$$\nAan het begin van de decay maakt het model grote stappen om brede bekkens in het verliesoppervlak te verkennen. Tegen het einde van de training zorgen de microscopisch kleine stappen ervoor dat de gewichten zachtjes 'landen' in het diepste, vlakste lokale minimum, wat essentieel is voor goede generalisatie op ongeziene teksten.\n\n> [!IMPORTANT] Vooraf het totale aantal stappen vastleggen\n> De cosinusformule vereist dat het eindpunt $T_{\\max}$ (het totale geplande aantal tokens of stappen) wiskundig exact bekend is vóórdat de run begint. Als je halverwege besluit om de training te verlengen, klopt het schema niet meer en kan het model niet optimaal convergeren.",
    "checks": [
     {
      "id": "c4",
@@ -125,7 +125,7 @@
   {
    "id": "clipping",
    "title": "Gradient Clipping tegen Loss Spikes",
-   "md": "Zelfs met warmup gaat het soms mis. Als het model tijdens de training plots een bizar document of zwaar vervuilde data tegenkomt (bv. een reeks willekeurige HTML-tags), kan de berekende gradiënt gigantisch worden.\n\nHet gevolg is een **loss spike**: de loss schiet loodrecht omhoog. Vaak drijft dit de getallen buiten het bereik van het datatype en resulteert de loss in `NaN` (Not a Number). Dit fenomeen heet **divergentie** en vernietigt de trainingsrun.\n\nDe beste verdedigingslinie in de code is **Gradient Clipping**. Na het berekenen van de gradiënten, berekenen we de wiskundige lengte (de norm) van de hele gradiëntvector. Als die lengte een drempelwaarde overschrijdt, schalen we de hele vector proportioneel terug.\n\n> [!tip] De vector\n> Omdat we *alle* componenten van de gradiënt met exact dezelfde factor terugschalen, blijft de **richting** van de update perfect behouden, maar wordt de **grootte** (de brute impact) begrensd.\n\n```python\nimport torch\nfrom torch.optim import AdamW\nfrom torch.optim.lr_scheduler import CosineAnnealingLR\n\n# 1. Model en AdamW optimizer initialiseren\nmodel = MyDecoderOnlyLLM().cuda().to(torch.bfloat16)\noptimizer = AdamW(model.parameters(), lr=3e-4, weight_decay=0.1, betas=(0.9, 0.95))\nscheduler = CosineAnnealingLR(optimizer, T_max=100_000, eta_min=3e-5)\n\n# 2. De canonieke PyTorch trainingsloop\nfor step, (input_ids, targets) in enumerate(dataloader):\n    input_ids, targets = input_ids.cuda(), targets.cuda()\n\n    # Forward pass met bfloat16 mixed precision\n    with torch.autocast(device_type=\"cuda\", dtype=torch.bfloat16):\n        logits = model(input_ids)\n        loss = torch.nn.functional.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))\n\n    # Backward pass: berekent dL/d(theta) via autograd\n    loss.backward()\n\n    # Gradient clipping: begrenst de L2-norm tot 1.0 (voorkomt divergentie en NaN)\n    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)\n\n    # Optimizer stap + learning rate update\n    optimizer.step()\n    scheduler.step()\n\n    # Belangrijk: wis gradiënten voor de volgende batch\n    optimizer.zero_grad(set_to_none=True)\n```",
+   "md": "Zelfs wanneer warmup en AdamW perfect zijn ingesteld, kan een training op elk moment ontsporen door onvoorziene anomalieën in de data of numerieke instabiliteit.\n\n### Waarom zijn loss spikes zo gevaarlijk?\nTijdens pretraining scant het model miljarden internetpagina's. Wanneer de dataloader stuit op een zwaar vervuild document (zoals eindeloze reeksen herhaalde karakters, corrupte binaire strings of misvormde HTML-tags), kan de wiskundige afgeleide $\\nabla L$ plotseling met orders van grootte exploderen.\n\nDit veroorzaakt een **loss spike**: het verlies schiet loodrecht omhoog van bijvoorbeeld 2,1 naar 8,5 of hoger.\n\n> [!CAUTION] De fatale risico's van een loss spike\n> 1. **Numerieke overflow en `NaN` (Not a Number):** Een extreme gradiënt blaast de gewichtsupdates op. In floating point precisie overschrijden de waarden het maximale getalbereik, wat leidt tot `Inf` (Infinity) en vervolgens `NaN` in de softmax. Zodra één gewicht in het netwerk `NaN` wordt, besmet dit via matrixvermenigvuldigingen in de volgende stap álle activaties en parameters. De hele trainingsrun is direct dood.\n> 2. **Kapitaalvernietiging in het datacenter:** Een trainingsrun op een cluster van 1 024 NVIDIA H100 GPU's kost circa $3 000 per uur. Een crash die noopt tot een rollback naar een checkpoint van 48 uur geleden betekent een directe kapitaalvernietiging van bijna **$150 000**.\n> 3. **Representatie-implosie:** Zelfs als er geen `NaN` optreedt, kan een gigantische stap de gewichten wegslingeren uit een stabiele vallei, waardoor een groot deel van wat het model al geleerd had in één klap verloren kan gaan.\n\n### De verdedigingslinie: Gradient Clipping\nOm dit gevaar te neutraliseren, implementeren we standaard **gradient clipping** (het begrenzen van de gradiëntnorm). Na de backward pass berekenen we de globale Euclidische norm ($L_2$-norm) over alle gewichtsgradiënten in het netwerk:\n$$\\lVert g \\rVert_2 = \\sqrt{\\sum_{i} g_i^2}$$\n\nAls deze norm een vooraf ingestelde drempel $c$ (typisch $c = 1{,}0$) overschrijdt, schalen we de complete gradiëntvector proportioneel terug:\n$$g \\leftarrow g \\cdot \\frac{c}{\\lVert g \\rVert_2} \\quad \\text{indien } \\lVert g \\rVert_2 > c$$\n\n> [!TIP] Behoud van richting\n> Doordat *alle* componenten van de gradiëntvector met exact dezelfde scalaire factor $c / \\lVert g \\rVert_2$ worden vermenigvuldigd, blijft de **wiskundige richting** van de optimalisatiestap 100% intact. Alleen de vernietigende kinetische energie (de lengte van de stap) wordt afgekapt.\n\n```python title=\"pytorch_training_loop.py\"\nimport torch\nfrom torch.optim import AdamW\nfrom torch.optim.lr_scheduler import CosineAnnealingLR\n\n# 1. Model en AdamW optimizer initialiseren\nmodel = MyDecoderOnlyLLM().cuda().to(torch.bfloat16)\noptimizer = AdamW(model.parameters(), lr=3e-4, weight_decay=0.1, betas=(0.9, 0.95))\nscheduler = CosineAnnealingLR(optimizer, T_max=100_000, eta_min=3e-5)\n\n# 2. De canonieke PyTorch trainingsloop\nfor step, (input_ids, targets) in enumerate(dataloader):\n    input_ids, targets = input_ids.cuda(), targets.cuda()\n\n    # Forward pass met bfloat16 mixed precision\n    with torch.autocast(device_type=\"cuda\", dtype=torch.bfloat16):\n        logits = model(input_ids)\n        loss = torch.nn.functional.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))\n\n    # Backward pass: berekent dL/d(theta) via autograd\n    loss.backward()\n\n    # Gradient clipping: begrenst de L2-norm tot 1.0 (voorkomt loss spikes en NaN)\n    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)\n\n    # Optimizer stap + learning rate update\n    optimizer.step()\n    scheduler.step()\n\n    # Wis gradiënten voor de volgende iteratie\n    optimizer.zero_grad(set_to_none=True)\n```",
    "checks": [
     {
      "id": "c6",
@@ -147,7 +147,7 @@
   {
    "id": "precision",
    "title": "Mixed Precision en VRAM-berekening",
-   "md": "Parameters opslaan in FP32 (32-bit, 4 bytes) eist gigantisch veel VRAM. Daarom trainen we vandaag in **Mixed Precision**, meestal met het datatype **bf16** (Bfloat16, 2 bytes) of zelfs **fp8** (1 byte) op de allernieuwste hardware.\n\nWaarom bf16 en niet het oudere fp16? **Bf16 behoudt exact evenveel exponent-bits (8) als FP32.** Daardoor kan het nog steeds piepkleine (gradiënten) en gigantische getallen aan zonder `NaN` te genereren. Je levert precisie-bits in, maar neurale netwerken vangen kleine afrondingsfouten goed op.\n\n**Hoe train je in mixed precision?**\n1. De forward pass en backward pass (gradiënten) gebeuren bliksemsnel in bf16 (2 + 2 = 4 bytes per parameter).\n2. Omdat de microscopisch kleine AdamW-updates anders verloren gaan in afrondingsfouten, behouden we een **FP32-master copy** van de gewichten (4 bytes).\n3. De Adam optimizer houdt de $m$ en $v$ stats bij, ook in FP32 ($4 + 4 = 8$ bytes).\n\n> [!rule] VRAM per parameter (Training met AdamW in bf16)\n> Model (bf16: 2) + Gradiënt (bf16: 2) + Master copy (fp32: 4) + Optimizer $m$ (fp32: 4) + Optimizer $v$ (fp32: 4) = **16 bytes per parameter**.\n> \n> Om een 8B-model te trainen, eist de parameter-overhead $8\\cdot 10^9 \\times 16 \\approx 128$ GB VRAM (en daar komt de KV-cache en activaties nog bij!).",
+   "md": "Het opslaan van alle parameters in standaard 32-bit floating point (FP32, 4 bytes per parameter) zou de geheugencapaciteit van GPU's direct overbelasten. Daarom maakt moderne deep learning gebruik van **mixed precision training**.\n\n### Datatypes vergeleken: FP32 vs FP16 vs BF16 vs FP8\nEen floating point getal bestaat uit een tekenbit, exponent-bits (bereik) en mantisse-bits (precisie):\n\n| Formaat | Totaal bits | Exponent (bereik) | Mantisse (precisie) | Max getalwaarde | Kwetsbaarheid |\n|---|---|---|---|---|---|\n| **FP32** | 32 bits (4 B) | 8 bits | 23 bits | $\\approx 3{,}4 \\times 10^{38}$ | Geen (volledige precisie) |\n| **FP16** (16-bit floating point) | 16 bits (2 B) | 5 bits | 10 bits | **65 504** | Zeer kwetsbaar voor *overflow* (`NaN`) bij LLM's |\n| **BF16** | 16 bits (2 B) | **8 bits** | 7 bits | $\\approx 3{,}4 \\times 10^{38}$ | **De industriestandaard**: zelfde bereik als FP32 |\n| **FP8** (8-bit floating point) | 8 bits (1 B) | 4 of 5 bits | 3 of 2 bits | 448 of 57 344 | Nieuwste standaard op NVIDIA H100 voor matrixvermenigvuldigingen |\n\n> [!IMPORTANT] Waarom Brain Float 16 (BF16) en niet FP16?\n> FP16 heeft slechts 5 exponent-bits, waardoor getallen groter dan 65 504 direct overlopen naar oneindig (`Inf`), wat verlies-explosies triggert. Google ontwikkelde **Brain Float 16 (BF16)**: dit offert wat mantisse-precisie op, maar behoudt de volle **8 exponent-bits van FP32**. Hierdoor heeft BF16 hetzelfde enorme dynamische bereik als FP32 en treden er vrijwel nooit numerieke overflows op.\n\n### De geheugenrekening: 16 bytes per parameter\nHoeveel Video RAM (VRAM) kost het trainen van een model werkelijk met AdamW in BF16 mixed precision?\n\n1. **Modelgewichten (BF16):** 2 bytes per parameter (gebruikt in de forward pass op de GPU).\n2. **Gradiënten (BF16):** 2 bytes per parameter (berekend tijdens de backward pass).\n3. **Master copy gewichten (FP32):** 4 bytes per parameter. Omdat de parameter-updates ($\\eta \\cdot \\Delta \\theta$) minuscuul zijn (bijv. $10^{-6}$), zouden ze in 16-bit precisie afronden naar exact nul (*underflow*). Daarom past de optimizer de update toe op een schone FP32-kopie, die daarna weer wordt geconverteerd naar BF16.\n4. **AdamW Momentum $m$ (FP32):** 4 bytes per parameter.\n5. **AdamW Variantie $v$ (FP32):** 4 bytes per parameter.\n\n$$\\text{Totale parameter-overhead} = 2 + 2 + 4 + 4 + 4 = \\boxed{16\\text{ bytes per parameter}}$$\n\n![Gestapelde balk met 16 bytes per parameter: gewicht 2, gradiënt 2, FP32-kopie 4, momentum m 4 en variantie v 4; ter vergelijking inferentie met 2 bytes](assets/diagrams/memory-16-bytes.svg \"De 16-byteregel: waar het trainingsgeheugen per parameter naartoe gaat\")\n\n> [!example] Bedrijfseconomische VRAM-berekening: 8B model\n> Voor een foundation model van 8 miljard parameters (zoals Llama 3 8B):\n> $$\\begin{aligned}\\text{VRAM-overhead} &= 8 \\times 10^9 \\text{ parameters} \\times 16 \\text{ bytes/param} \\\\ &= 128 \\times 10^9 \\text{ bytes} \\approx \\boxed{128\\text{ GB VRAM}}\\end{aligned}$$\n> *(Let op: dit is uitsluitend het statische gewichtsgeheugen; dynamische activaties en de KV-cache komen hier tijdens de training nog bovenop!)*\n> \n> Ter vergelijking: voor **inferentie** heb je enkel de modelgewichten nodig (in 16-bit: $8\\text{B} \\times 2\\text{ B} = 16\\text{ GB}$, of in 8-bit kwantisatie: $8\\text{ GB}$). **Pretraining met AdamW kost dus minimaal 8 tot 16 keer zoveel GPU-geheugen per parameter als inferentie!**",
    "checks": [
     {
      "id": "c7",
@@ -170,7 +170,7 @@
    "skill": "herhaling",
    "level": 2,
    "prompt": "Hoeveel tokens zijn 12 000 Engelse woorden (bij 0,75 woord per token)?",
-   "explain": "12 000 / 0,75 = 16 000.",
+   "explain": "Om van woorden naar tokens te gaan bij een vuistregel van 0,75 woord per token, delen we door 0,75: $\\frac{12\\,000\\text{ woorden}}{0{,}75\\text{ woord/token}} = 16\\,000\\text{ tokens}$.",
    "value": 16000,
    "tolerance": 0.01,
    "errors": [
@@ -187,7 +187,7 @@
    "skill": "herhaling",
    "level": 2,
    "prompt": "Hoeveel tokens zijn 6 000 Engelse woorden?",
-   "explain": "6 000 / 0,75 = 8 000.",
+   "explain": "Met de verhouding van 0,75 woord per token levert een document van 6 000 woorden: $\\frac{6\\,000}{0{,}75} = 8\\,000$ tokens op.",
    "value": 8000,
    "tolerance": 0.01
   },
@@ -197,7 +197,7 @@
    "skill": "herhaling",
    "level": 2,
    "prompt": "Wat is de essentie van de Chinchilla-vuistregel?",
-   "explain": "Data en parameters moeten hand in hand schalen ($D \\approx 20N$).",
+   "explain": "Volgens de Chinchilla-scaling wet (Hoffmann et al., 2022) moeten trainingsdata en parameters proportioneel meegroeien volgens $D \\approx 20N$ om een compute-optimaal resultaat te bereiken.",
    "options": [
     "Het aantal tokens aan trainingsdata moet evenredig meegroeien met de modelgrootte (20x)",
     "Je moet een model met zoveel mogelijk parameters trainen op weinig data",
@@ -219,7 +219,7 @@
    "skill": "herhaling",
    "level": 2,
    "prompt": "Een nieuw basismodel telt 12 miljard (12B) parameters. Hoeveel miljard tokens raadt Chinchilla dan aan voor de pretraining?",
-   "explain": "12 × 20 = 240 miljard.",
+   "explain": "Met de Chinchilla-factor van 20 tokens per parameter vereist een 12B model: $20 \\times 12\\text{B} = 240\\text{ miljard tokens}$ aan trainingsdata.",
    "value": 240,
    "abs": 0,
    "unit": "miljard"
@@ -230,7 +230,7 @@
    "skill": "herhaling",
    "level": 2,
    "prompt": "Bij GQA met 128 query-heads en 16 KV-heads, wat is de KV-cache besparingsfactor t.o.v. gewone Multi-Head Attention?",
-   "explain": "128 / 16 = 8.",
+   "explain": "Bij Grouped-Query Attention (GQA) is de reductiefactor van de KV-cache gelijk aan de verhouding tussen Query-heads en KV-heads: $\\frac{128}{16} = 8\\times$.",
    "value": 8,
    "abs": 0,
    "errors": [
@@ -247,7 +247,7 @@
    "skill": "herhaling",
    "level": 2,
    "prompt": "Wat representeert de rang $r$ in LoRA (Low-Rank Adaptation)?",
-   "explain": "$\\Delta W = BA$, de matrixdimensie is d×r en r×k.",
+   "explain": "In Low-Rank Adaptation (LoRA) ontbinden we $\\Delta W$ in matrices $B \\in \\mathbb{R}^{d \\times r}$ en $A \\in \\mathbb{R}^{r \\times k}$. De parameter $r$ is de binnenste flessenhalsdimensie (de rang).",
    "options": [
     "De gedeelde, binnenste dimensie van de matrices B en A",
     "Het aantal transformatorlagen dat je effectief fine-tunet",
@@ -269,7 +269,7 @@
    "skill": "adamw",
    "level": 2,
    "prompt": "Hoeveel extra bytes (in totaal) per parameter eist AdamW om louter de twee optimizer states ($m$ en $v$) in FP32 bij te houden?",
-   "explain": "$m$ (4 bytes) + $v$ (4 bytes) = 8 bytes.",
+   "explain": "De optimizer-states van AdamW omvatten het eerste moment $m$ (4 bytes in FP32) en het tweede moment $v$ (4 bytes in FP32), wat samen $4 + 4 = 8$ bytes extra per parameter kost.",
    "value": 8,
    "abs": 0,
    "unit": "bytes"
@@ -280,7 +280,7 @@
    "skill": "adamw",
    "level": 1,
    "prompt": "Wat is het voordeel van de weight decay implementatie in AdamW?",
-   "explain": "Ontkoppelde weight decay beperkt overfitting zuiverder.",
+   "explain": "In AdamW wordt weight decay rechtstreeks toegepast op de gewichten, losgekoppeld van de adaptieve gradiëntnormalisatie, wat voorkomt dat gewichten met grote gradiënten aan regularisatie ontsnappen.",
    "options": [
     "Het wordt direct toegepast om de gewichten naar nul te drijven, los van de complexe gradiënt",
     "Het vergroot de initiële gradiënt als de variantie daalt",
@@ -295,7 +295,7 @@
    "skill": "adamw",
    "level": 2,
    "prompt": "Welke functie heeft 'momentum' ($m$) in AdamW?",
-   "explain": "Net als een rollende bal krijgt het extra snelheid in consistente richtingen.",
+   "explain": "Momentum ($m$) fungeert als een vliegwiel: het telt een exponentieel gewogen fractie van voorgaande updates op, waardoor de optimizer snelheid opbouwt in consistente richtingen en oscillaties dempt.",
    "options": [
     "Het onthoudt eerdere staprichtingen om te versnellen als de gradiënt systematisch één kant op wijst",
     "Het normaliseert zeldzame steekproeven",
@@ -310,7 +310,7 @@
    "skill": "lr-schema",
    "level": 2,
    "prompt": "Welk gevaar loop je als je de warmup-fase overslaat bij het trainen met AdamW?",
-   "explain": "De nog lege m en v stats zorgen voor een ontploffing in de berekende update.",
+   "explain": "Zonder warmup zijn de statistieken $m$ en $v$ nog onvolledig geschat en bevatten ze extreme ruis. Een grote leersnelheid leidt dan tot gigantische ongecontroleerde stappen en onmiddellijke divergentie.",
    "options": [
     "Vroege divergentie (loss spike) door sterk instabiele optimizer-statistieken",
     "De learning rate daalt direct naar 10%, waardoor het model abrupt stagneert",
@@ -325,7 +325,7 @@
    "skill": "lr-schema",
    "level": 2,
    "prompt": "Waarom implementeert men typisch cosine decay op het einde van de training?",
-   "explain": "Steeds kleinere stappen landen zacht in de bodem van het minimum.",
+   "explain": "Cosine decay verlaagt de leersnelheid geleidelijk tot circa 10% van de piek, waardoor het model op het einde kleine, verfijnde stappen maakt die zachtjes landen in een stabiel minimum.",
    "options": [
     "Het laat het model rustig neerstrijken in de fijnste, diepste punten van het lokale minimum",
     "Het voorkomt divergentie en datacorruptie in de eerste tienduizend stappen",
@@ -340,7 +340,7 @@
    "skill": "lr-schema",
    "level": 2,
    "prompt": "Welke statistiek moet je vooraf in de code vastleggen om een cosine decay wiskundig te laten werken?",
-   "explain": "De dalingscurve moet exact weten wanneer ze 100% van de looptijd bereikt.",
+   "explain": "Omdat de wiskundige cosinuscurve berekend wordt als functie van de voortgang $\\frac{t}{T_{\\max}}$, moet het totale aantal geplande trainingsstappen $T_{\\max}$ vooraf exact bekend zijn in de configuratie.",
    "options": [
     "Het totale aantal trainingsstappen (of tokens)",
     "De exacte drempelwaarde voor gradient clipping",
@@ -355,7 +355,7 @@
    "skill": "clipping",
    "level": 2,
    "prompt": "Wat blijft er wiskundig perfect behouden wanneer een gradiënt wordt begrensd door gradient clipping?",
-   "explain": "Alle componenten worden met een identieke, scalaire factor geschaald.",
+   "explain": "Gradient clipping vermenigvuldigt alle componenten van de gradiëntvector met exact dezelfde scalaire factor $\\frac{c}{\\lVert g \\rVert_2}$. Hierdoor blijft de multidimensionale richting 100% behouden, terwijl de magnitude veilig begrensd wordt.",
    "options": [
     "De richting van de gradiëntvector in de meerdimensionale ruimte",
     "De wiskundige norm (absolute grootte) van de gradiëntvector",
@@ -370,7 +370,7 @@
    "skill": "clipping",
    "level": 1,
    "prompt": "Aan welk symptoom in je logs herken je het fenomeen 'divergentie' onmiddellijk?",
-   "explain": "Een gigantische sprong in de loss, die resulteert in Not a Number.",
+   "explain": "Een loss spike uit zich als een plotse verticale sprong in het trainingsverlies, vaak direct gevolgd door `NaN` (Not a Number) in de logs als gevolg van numerieke overflow.",
    "options": [
     "Een gigantische loss spike waarna de loss transformeert in 'NaN'",
     "De training stagneert en duurt plots tien keer zo lang zonder error",
@@ -385,7 +385,7 @@
    "skill": "precision",
    "level": 2,
    "prompt": "Waarom verkiest men vrijwel altijd bf16 boven fp16 voor de backward pass?",
-   "explain": "Een even grote exponent betekent een evenwaardig bereik.",
+   "explain": "Brain Float 16 (BF16) bezit exact dezelfde 8 exponent-bits als FP32, waardoor het hetzelfde gigantische dynamische bereik deelt en numerieke overflows uitsluit.",
    "options": [
     "Bf16 behoudt de volle 8 exponent-bits van fp32, wat resulteert in een groter waardebereik en minder overflows (NaN's)",
     "Bf16 beschikt over meer precisie-bits achter de komma, wat mathematisch accurater is",
@@ -400,7 +400,7 @@
    "skill": "precision",
    "level": 2,
    "prompt": "Hoeveel GB VRAM eist de pure parameter-overhead (gewichten, gradiënten en optimizers) om een model van 10 miljard (10B) parameters in bf16 mixed precision met AdamW te trainen?",
-   "explain": "10B parameters × 16 bytes = 160 GB.",
+   "explain": "Tijdens mixed precision training met AdamW kost elke parameter 16 bytes: $10 \\times 10^9\\text{ parameters} \\times 16\\text{ bytes} = 160\\text{ GB VRAM}$ aan pure parameter-overhead.",
    "value": 160,
    "abs": 0,
    "unit": "GB"
@@ -411,7 +411,7 @@
    "skill": "lr-schema",
    "level": 3,
    "prompt": "Leg in één zin uit aan een collega-engineer waarom een trainingsrun met een constante, statische learning rate direct faalt.",
-   "explain": "Koppel het aan de Adam optimizer stats.",
+   "explain": "AdamW vereist per parameter een FP32-kopie van de gewichten (4B) plus twee FP32-statistieken voor momentum $m$ (4B) en variantie $v$ (4B), wat samen met model en gradiënt op 16 bytes per parameter uitkomt.",
    "model": "Zonder de initieel trage warmup-fase krijgen de nog ongetrainde, lege AdamW-statistieken (m en v) een te hoge leerstap te verwerken, wat steevast resulteert in divergente loss spikes (`NaN`).",
    "rubric": [
     "Benoemt expliciet de ontbrekende warmup-fase",
@@ -427,7 +427,7 @@
    "skill": "herhaling",
    "level": 2,
    "prompt": "Je verzamelt een corpus van 9 000 Engelse woorden. Hoeveel tokens verwacht de tokenizer ruwweg te produceren (bij 0,75)?",
-   "explain": "9 000 / 0,75 = 12 000.",
+   "explain": "Bij 0,75 woord per token levert een corpus van 9 000 woorden: $\\frac{9\\,000}{0{,}75} = 12\\,000$ tokens op.",
    "value": 12000,
    "tolerance": 0.01
   },
@@ -437,7 +437,7 @@
    "skill": "herhaling",
    "level": 2,
    "prompt": "Hoeveel miljard trainings-tokens heb je volgens de scaling laws van Chinchilla nodig voor de pretraining van een 30B model?",
-   "explain": "30 × 20 = 600B.",
+   "explain": "Volgens de Chinchilla-scaling wet ($D \\approx 20N$) vereist een 30B model: $20 \\times 30\\text{B} = 600\\text{ miljard tokens}$ aan trainingsdata.",
    "value": 600,
    "abs": 0,
    "unit": "miljard"
@@ -448,7 +448,7 @@
    "skill": "herhaling",
    "level": 2,
    "prompt": "Bereken de KV-cache besparingsfactor bij een transformer-architectuur (GQA) met 64 query-heads en 4 KV-heads.",
-   "explain": "64 / 4 = 16.",
+   "explain": "De besparingsfactor van de KV-cache bij GQA is de verhouding tussen Query-heads en KV-heads: $\\frac{64}{4} = 16\\times$.",
    "value": 16,
    "abs": 0
   },
@@ -458,7 +458,7 @@
    "skill": "herhaling",
    "level": 2,
    "prompt": "Vul het woord in.",
-   "explain": "De werking van LoRA via de binnenste dimensie.",
+   "explain": "In Low-Rank Adaptation (LoRA) met $\\Delta W = BA$ is de parameter $r$ de binnenste dimensie (de algebraïsche rang) van de matrixvermenigvuldiging.",
    "text": "In LoRA (met $\\Delta W = BA$) is de parameter $r$ simpelweg de {{binnenste|inner|rang}} dimensie van deze matrixvermenigvuldiging."
   },
   {
@@ -467,7 +467,7 @@
    "skill": "adamw",
    "level": 2,
    "prompt": "Hoeveel bytes kost het opslaan van enkel de variantie-statistiek ($v$) per parameter in AdamW, wetende dat dit in FP32 gebeurt?",
-   "explain": "FP32 = 32 bits = 4 bytes.",
+   "explain": "De variantie $v$ wordt opgeslagen in 32-bit floating point (FP32), wat exact 32 bits oftewel 4 bytes per parameter inneemt.",
    "value": 4,
    "abs": 0,
    "unit": "bytes"
@@ -478,7 +478,7 @@
    "skill": "adamw",
    "level": 2,
    "prompt": "Vul in.",
-   "explain": "Weight decay staat los van de ruwe gradiënt in AdamW.",
+   "explain": "In AdamW is weight decay architecturaal volledig ontkoppeld van de adaptieve gradiëntupdate, wat leidt tot een zuiverdere gewichtsregularisatie.",
    "text": "Het grote voordeel van AdamW tegenover de originele Adam is dat de *weight decay* architecturaal volledig {{ontkoppeld|losgekoppeld}} is van de gradiëntupdate."
   },
   {
@@ -487,7 +487,7 @@
    "skill": "adamw",
    "level": 1,
    "prompt": "Welke component van AdamW (in de formules vaak aangeduid met $m$) fungeert als een herinnering aan eerdere stappen om vaart op te bouwen? (één woord)",
-   "explain": "Net als bij een rollende massa: momentum.",
+   "explain": "De component die een gewogen gemiddelde van historische gradiëntrichtingen bijhoudt, is het momentum ($m$).",
    "answers": [
     "momentum"
    ],
@@ -499,7 +499,7 @@
    "skill": "adamw",
    "level": 2,
    "prompt": "Als je $m$ én $v$ samentelt, op hoeveel bytes extra geheugen per parameter kom je dan uit voor de AdamW optimizer (in FP32)?",
-   "explain": "4 + 4 = 8 bytes.",
+   "explain": "De optimizer-states van AdamW omvatten $m$ (4 bytes) en $v$ (4 bytes), wat samen resulteert in $4 + 4 = 8$ bytes extra VRAM per parameter.",
    "value": 8,
    "abs": 0,
    "unit": "bytes"
@@ -510,7 +510,7 @@
    "skill": "lr-schema",
    "level": 1,
    "prompt": "Hoe noemt men de cruciale beginfase van de training waarin de learning rate vanaf nul lineair opklimt? (één woord, Engels)",
-   "explain": "Warmup fase.",
+   "explain": "De beginfase waarin de leersnelheid lineair oploopt vanaf 0 om de optimizer te laten stabiliseren, heet de warmup-fase.",
    "answers": [
     "warmup",
     "warm-up"
@@ -523,7 +523,7 @@
    "skill": "lr-schema",
    "level": 1,
    "prompt": "Met welke term wordt de langzame dalingsfase van het LR-schema doorgaans aangeduid? (twee woorden, Engels)",
-   "explain": "Cosinus curve -> Cosine decay.",
+   "explain": "De geleidelijke daling van de leersnelheid na de piek volgens een afvlakkende cosinusfunctie heet cosine decay.",
    "answers": [
     "cosine decay",
     "cosinus decay"
@@ -536,7 +536,7 @@
    "skill": "lr-schema",
    "level": 2,
    "prompt": "Vul in.",
-   "explain": "De daling vereist dat het eindpunt numeriek gekend is.",
+   "explain": "Om de cosinuscurve correct te parametriseren naar haar eindpunt, moet het totale aantal geplande tokens of stappen vooraf numeriek gedefinieerd zijn.",
    "text": "Om cosine decay wiskundig juist te kalibreren tot $10\\,\\%$, moet je vooraf absoluut het totale aantal {{stappen|tokens|trainingsstappen}} vastleggen, anders weet de curve haar eindpunt niet."
   },
   {
@@ -545,7 +545,7 @@
    "skill": "clipping",
    "level": 2,
    "prompt": "Wat is de exacte wiskundige ingreep bij gradient clipping?",
-   "explain": "We schalen alles proportioneel terug als de vectornorm de drempelwaarde doorbreekt.",
+   "explain": "Bij gradient clipping wordt de globale Euclidische norm berekend; overschrijdt deze de grenswaarde, dan wordt de hele vector proportioneel teruggeschaald.",
    "options": [
     "De gradiëntvector wordt proportioneel en wiskundig teruggeschaald indien zijn norm te lang is",
     "Enkel specifieke extreme gewichten in de vector worden individueel bijgeknipt",
@@ -560,7 +560,7 @@
    "skill": "clipping",
    "level": 2,
    "prompt": "Vul in.",
-   "explain": "Doordat de hele vector met dezelfde scalaire factor wordt vermenigvuldigd, wijst hij nog in dezelfde richting.",
+   "explain": "Omdat alle componenten van de gradiëntvector met één identieke scalaire factor worden geschaald, blijft de wiskundige richting in de parameterruimte exact behouden.",
    "text": "Doordat gradient clipping de grootte van de hele vector met één identieke factor limiteert, behouden we altijd naadloos de wiskundige {{richting}} van de update."
   },
   {
@@ -569,7 +569,7 @@
    "skill": "clipping",
    "level": 1,
    "prompt": "Hoe noemen we de exponentiële en fatale stijging van de loss die finaal in een `NaN`-error eindigt? (Twee woorden, Engels)",
-   "explain": "De piek in je grafiek heet de loss spike.",
+   "explain": "Een plotse exponentiële stijging in het verliesoppervlak die de trainingsrun kan vernietigen, noemt men een loss spike.",
    "answers": [
     "loss spike",
     "loss explosion"
@@ -582,7 +582,7 @@
    "skill": "precision",
    "level": 2,
    "prompt": "Vul aan.",
-   "explain": "De focus ligt bij bf16 op het grote bereik dankzij de 8 bit exponent.",
+   "explain": "Brain Float 16 (BF16) voorkomt numerieke underflow en overflow doordat het vasthoudt aan de 8 exponent-bits van standaard FP32.",
    "text": "Het data-formaat bf16 elimineert numerieke underflows doordat het geniaal genoeg vasthoudt aan de 8 {{exponent|exponent-bits|exponentbits}}-bits van het standaard fp32 formaat."
   },
   {
@@ -591,7 +591,7 @@
    "skill": "precision",
    "level": 1,
    "prompt": "Hoeveel bytes data-volume per parameter verbruikt de ultrakleine fp8-precisie?",
-   "explain": "fp8 bevat 8 bits, en is dus exact 1 byte groot.",
+   "explain": "Het FP8-formaat codeert getallen in 8 bits, wat exact overeenkomt met 1 byte aan data-volume per parameter.",
    "value": 1,
    "abs": 0,
    "unit": "bytes"
@@ -602,7 +602,7 @@
    "skill": "precision",
    "level": 2,
    "prompt": "Wat is het cumulatieve bytetotaal per parameter tijdens een volledige mixed precision training (bf16) geruggesteund door AdamW?",
-   "explain": "Model (2) + Gradiënt (2) + Master (4) + Momentum (4) + Variantie (4) = 16 bytes.",
+   "explain": "Het cumulatieve geheugentotaal bedraagt: Model in BF16 (2) + Gradiënt in BF16 (2) + Master copy in FP32 (4) + Momentum in FP32 (4) + Variantie in FP32 (4) = 16 bytes per parameter.",
    "value": 16,
    "abs": 0,
    "unit": "bytes"
@@ -613,7 +613,7 @@
    "skill": "precision",
    "level": 3,
    "prompt": "Bij de interne pretraining van een compact basismodel van 4 miljard (4B) parameters: hoeveel GB VRAM (overhead) verslindt bf16 mixed precision trainen op zich al?",
-   "explain": "4B × 16 bytes/parameter = 64 GB.",
+   "explain": "Voor een 4B model bedraagt de parameter-overhead tijdens pretraining met AdamW: $4 \\times 10^9 \\times 16\\text{ bytes} = 64\\text{ GB VRAM}$.",
    "value": 64,
    "abs": 0,
    "unit": "GB"
@@ -624,7 +624,7 @@
    "skill": "lr-schema",
    "level": 2,
    "prompt": "Zet de wiskundige fasen van het learning rate-schema in de logische en chronologische volgorde.",
-   "explain": "Van 0 stijgen, naar piek, geleidelijk dalen, rustig landen.",
+   "explain": "Het Learning Rate-schema doorloopt: lineaire stijging vanaf nul (warmup), bereiken van de piek $\\eta_{\\max}$, geleidelijke afname (cosine decay) en zachte landing op het minimum $\\eta_{\\min}$.",
    "tiles": [
     "Lineaire stijging vanaf 0 (Warmup)",
     "De absolute piek-LR bereiken",
@@ -638,57 +638,57 @@
   "type": "explain",
   "lang": "nl",
   "minWords": 60,
-  "prompt": "**Klantcase: Een B2B AI-Startup**\nJe werkt voor een bedrijf dat zelf een specifiek Nederlands juridisch model wil trainen met 8 miljard (8B) parameters van nul af aan (pretraining).\n\n1. Bereken met de Chinchilla-vuistregel hoeveel data (aantal tokens) je idealiter moet verzamelen, en toon de berekening.\n2. Bereken het *absolute minimum* aan VRAM (in GB) dat je in het datacenter nodig hebt om dit model te trainen met bf16 mixed precision en AdamW (puur de parameter-overhead).\n3. De lead engineer wil het LR-schema op een constante waarde $10^{-4}$ zetten, zonder warmup en zonder decay, \"om complexe code te besparen\". Wat antwoord je hem in zakelijke termen over de financiële/technische risico's bij de start én het einde van zo'n run?",
-  "model": "**1. Data (Chinchilla):** De vuistregel is $D \\approx 20N$. Voor een model van 8B parameters hebben we dus minstens $8 \\times 20 = 160$ miljard tokens aan hoogwaardige tekst nodig.\n\n**2. VRAM Berekening:** Voor training in bf16 met AdamW rekenen we op 16 bytes per parameter (2 voor model, 2 voor gradiënten, 4 master FP32, 4 momentum $m$, 4 variantie $v$). Voor 8B parameters bedraagt dit in totaal $8\\cdot 10^9 \\times 16 = 128$ GB VRAM (dit vereist in de praktijk minstens twee A100-GPU's van 80GB).\n\n**3. Risico's LR-schema:**\n- **Bij de start (Geen warmup):** Zonder de voorzichtige warmup zijn de AdamW statistieken ($m$ en $v$) instabiel. Een harde opstart leidt steevast tot divergente loss spikes (`NaN`). De trainingsrun crasht direct en de kostbare datacenter-compute is verspild geld.\n- **Bij het einde (Geen decay):** Zonder de vloeiende cosine decay stampt het model tot in de laatste minuten met te ruwe en grote stappen rond de diepste vallei heen; het landt er nooit precies in. Je haalt daardoor niet de vereiste intelligentie (ROI) uit je pretraining.",
+  "prompt": "**Klantcase: Een B2B AI-Startup.**\nJe werkt als strategisch adviseur voor een enterprise AI-startup die een gespecialiseerd juridisch taalmodel met 8 miljard (8B) parameters vanaf nul wil pretrainen op Nederlandse en Europese jurisprudentie.\n\n1. Bereken met de Chinchilla-vuistregel hoeveel trainingsdata (aantal tokens) je minimaal moet cureren, en toon je berekening.\n2. Bereken het absolute minimum aan Video RAM (VRAM in GB) dat je in het datacenter moet reserveren om dit model te trainen met BF16 mixed precision en de AdamW-optimizer (puur de statische parameter-overhead). Leg uit waar die bytes vandaan komen.\n3. De lead engineer stelt voor om het Learning Rate-schema te vereenvoudigen tot een constante waarde $10^{-4}$ gedurende de hele run, zonder warmup en zonder cosine decay, 'om complexe schedulers te vermijden'. Beargumenteer in zakelijke en technische termen waarom dit een onacceptabel financieel en operationeel risico vormt bij zowel de start als het einde van de trainingsrun.",
+  "model": "**1. Benodigde datavolume volgens de Chinchilla-wet.**\nVolgens de Chinchilla-scaling wet (Hoffmann et al., 2022) moet een compute-optimaal getraind model ruwweg 20 tokens per parameter zien ($D \\approx 20N$):\n$$D = 20 \\times (8 \\times 10^9\\text{ parameters}) = \\boxed{160\\text{ miljard (160B) tokens}}$$\nAls de startup minder data verzamelt, resulteert dit in een zwaar ondergetraind model en verspilling van trainingskapitaal.\n\n**2. VRAM Berekening voor BF16 Mixed Precision met AdamW.**\nTijdens mixed precision pretraining met AdamW vereist elke parameter wiskundig 16 bytes aan GPU-geheugen:\n- Modelgewichten in BF16: 2 bytes\n- Gradiënten in BF16: 2 bytes\n- Master copy van de gewichten in FP32: 4 bytes (noodzakelijk om afrondingsfouten bij kleine updates te voorkomen)\n- AdamW eerste moment / momentum ($m$) in FP32: 4 bytes\n- AdamW tweede moment / variantie ($v$) in FP32: 4 bytes\n- **Totaal per parameter:** $2 + 2 + 4 + 4 + 4 = 16\\text{ bytes}$ per parameter.\n\nVoor een 8B parameter model:\n$$\\text{Totale parameter-VRAM} = 8 \\times 10^9 \\times 16\\text{ bytes} = 128 \\times 10^9\\text{ bytes} = \\boxed{128\\text{ GB VRAM}}$$\n*(Praktische datacenter-implicatie: dit vereist minimaal twee NVIDIA A100/H100 GPU's van 80GB, puur voor de parameters en optimizer states, nog vóór activaties en batch-data worden meegerekend).*\n\n**3. Risicoanalyse van een constante Learning Rate.**\n- **Catastrofaal startrisico (geen warmup):** Bij aanvang zijn de gewichten willekeurig en zijn de AdamW-statistieken ($m$ en $v$) leeg. Een directe harde leersnelheid van $10^{-4}$ leidt tot gigantische ongekalibreerde updates, wat onmiddellijk resulteert in een divergente **loss spike** en numerieke overflow (`NaN`). De run crasht direct, waardoor tienduizenden dollars aan gereserveerde GPU-tijd in rook opgaan.\n- **Suboptimale convergentie aan het einde (geen cosine decay):** Zonder geleidelijke afkoeling naar $\\approx 10\\%$ blijft het model met grote stappen rond de dalen van het verliesoppervlak dansen in plaats van zachtjes te landen in een diep, vlak minimum. Het model behaalt hierdoor nooit zijn optimale perplexiteit en faalt op complexe juridische redeneertaken, wat de Return on Investment (ROI) van het project ondermijnt.",
   "rubric": [
-   "Chinchilla correct berekend (160 miljard tokens)",
-   "VRAM per parameter wiskundig verklaard (16 bytes)",
-   "Totale VRAM succesvol berekend (128 GB)",
-   "Startrisico: divergeren/loss spike benoemd als direct gevolg van het schrappen van de warmup",
-   "Eindrisico: model landt nooit exact in het stabiele minimum wegens ontbrekende decay"
+   "Chinchilla-regel correct toegepast (20 tokens/param → 160 miljard tokens)",
+   "Correcte ontbinding van de 16 bytes per parameter (model 2, grad 2, master 4, m 4, v 4)",
+   "Totale statische VRAM correct berekend (128 GB)",
+   "Startrisico onderbouwd (loss spike / NaN / divergentie door ontbreken van warmup en onstabiele optimizer-states)",
+   "Eindrisico onderbouwd (gebrek aan fijnafstemming / model landt niet in scherp/vlak minimum door ontbreken van cosine decay)"
   ]
  },
  "cards": [
   {
    "id": "c-tokens",
-   "front": "Hoe reken je ruwweg Engelse woorden om naar tokens?",
-   "back": "Delen door 0,75 (1 token $\\approx$ 0,75 woord).",
+   "front": "Wat is de vuistregel en rekenmethode om Engelse woorden om te rekenen naar Large Language Model (LLM)-tokens?",
+   "back": "Delen door 0,75 (1 token $\\approx$ 0,75 woord, ofwel vermenigvuldigen met 4/3). 3 000 woorden levert dus $3\\,000 / 0{,}75 = 4\\,000$ tokens op.",
    "skill": "herhaling"
   },
   {
    "id": "c-chinchilla",
-   "front": "Wat vereist de Chinchilla-formule (Hoffmann et al., 2022) voor compute-optimale pretraining?",
-   "back": "Data moet opwegen tegen parameters: $D \\approx 20N$.",
+   "front": "Wat vereist de Chinchilla-scaling wet (Hoffmann et al., 2022) voor compute-optimale pretraining?",
+   "back": "Trainingsdata moet gelijkmatig schalen met parameters: $D \\approx 20N$ tokens. Een 7B model vereist minstens 140 miljard tokens om underfitting en verspilde GPU-uren te voorkomen.",
    "skill": "herhaling"
   },
   {
    "id": "c-adamw",
-   "front": "Waarom heerst AdamW over conventionele SGD in LLM's?",
-   "back": "Het past momentum ($m$) en variantie ($v$) in FP32 toe, en ontkoppelt veilig de *weight decay*.",
+   "front": "Waarom prefereert de AI-industrie Adam with decoupled Weight decay (AdamW) boven klassieke SGD?",
+   "back": "AdamW combineert momentum ($m$) en adaptieve variantie ($v$) per parameter in FP32, en ontkoppelt *weight decay* direct van de gradiëntupdate voor een superieure generalisatie.",
    "skill": "adamw"
   },
   {
    "id": "c-lr-schema",
-   "front": "Welke twee wiskundige fasen domineren een klassiek LR-schema voor LLM's?",
-   "back": "1. Warmup (lineaire stijging)\n2. Cosine decay (daling tot $\\approx$ 10%)",
+   "front": "Welke twee wiskundige fasen bepalen een standaard Learning Rate (LR)-schema bij het trainen van LLM's?",
+   "back": "1. **Warmup:** lineaire stijging vanaf 0 om stabiele optimizer-statistieken op te bouwen.\n2. **Cosine decay:** geleidelijke daling langs een cosinuscurve tot $\\approx 10\\%$ van de piek om stabiel in een lokaal minimum te landen.",
    "skill": "lr-schema"
   },
   {
    "id": "c-clipping",
-   "front": "Welke garantie geeft Gradient Clipping tijdens een dreigende loss spike?",
-   "back": "Het schaalt gradiënten die te groot zijn (de norm) proportioneel terug, zodat de *richting* perfect bewaard blijft.",
+   "front": "Welke garantie biedt gradient clipping wanneer een gevaarlijke loss spike dreigt?",
+   "back": "Het schaalt de globale $L_2$-norm van de gradiëntvector proportioneel terug zodra deze een drempelwaarde overschrijdt. De **richting** van de update blijft 100% intact, maar de **stapgrootte** wordt begrensd.",
    "skill": "clipping"
   },
   {
    "id": "c-bf16",
-   "front": "Waarom prefereert de industrie bf16 en niet het oudere fp16?",
-   "back": "Bf16 incorporeert de volle 8 exponent-bits van FP32, waardoor het een groter dynamisch bereik creëert (dus minder `NaN`'s).",
+   "front": "Waarom prefereert de industrie Brain Float 16 (BF16) boven traditioneel 16-bit floating point (FP16)?",
+   "back": "BF16 behoudt exact de 8 exponent-bits van FP32, waardoor het hetzelfde gigantische dynamische bereik heeft. Hierdoor treden er vrijwel geen numerieke overflows (`Inf`/`NaN`) op tijdens backpropagation.",
    "skill": "precision"
   },
   {
    "id": "c-vram",
-   "front": "Hoeveel bytes kost het opslaan van één parameter *minimaal* tijdens mixed precision training met AdamW?",
-   "back": "16 bytes per parameter",
+   "front": "Hoeveel bytes aan Video RAM (VRAM) kost het opslaan van één parameter minimaal tijdens mixed precision training met AdamW?",
+   "back": "16 bytes per parameter (2B model in BF16 + 2B gradiënten + 4B FP32 master gewichten + 4B momentum $m$ + 4B variantie $v$).",
    "answers": [
     "16",
     "16 bytes"
@@ -705,6 +705,8 @@
  "meta": {
   "author": "antigravity",
   "created": "2026-09-27",
-  "adaptedFor": "Tempo en moeilijkheid verlaagd (na basisscore op de niveautest). Een expliciete en uitgebreide herhalingssectie (Tokens, Chinchilla, GQA) toegevoegd met geautomatiseerde feedback op de specifieke testfouten."
+  "adaptedFor": "Tempo en moeilijkheid verlaagd (na basisscore op de niveautest). Een expliciete en uitgebreide herhalingssectie (Tokens, Chinchilla, GQA) toegevoegd met geautomatiseerde feedback op de specifieke testfouten.",
+  "revised": "2026-10-21",
+  "revisionNotes": "Afkortingen voluit geschreven, uitleg verdiept, handelsingenieur-perspectief versterkt"
  }
 }

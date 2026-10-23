@@ -8,7 +8,7 @@
  "subtitle": "Van OpenRouter API-integratie (typesafe/jev-1.13) tot zero-cost lokale classifiers met ModernBERT, SLM's en constrained decoding",
  "level": "praktijk",
  "minutes": 50,
- "summary": "Hoe roep je Jev aan in de praktijk, en wat doe je als je data vertrouwelijk is of als je nul API-kosten wilt? In deze les leer je de OpenRouter API voor typesafe/jev-1.13 implementeren en ontdek je de krachtigste lokale alternatieven: ModernBERT voor 15ms inferentie op CPU en compacte SLM's met constrained decoding (Outlines/GBNF grammars).",
+ "summary": "Hoe roep je Jev aan in de praktijk, en wat doe je als je data vertrouwelijk is of als je nul API-kosten (API = application programming interface) wilt? In deze les leer je de OpenRouter API voor typesafe/jev-1.13 implementeren en ontdek je de krachtigste lokale alternatieven: ModernBERT voor 15ms inferentie op CPU (central processing unit) en compacte SLM's (small language model) met constrained decoding (Outlines/GBNF (GGML BNF) grammars).",
  "objectives": [
   {
    "id": "openrouter-api",
@@ -28,34 +28,34 @@
   },
   {
    "id": "cost-latency-tradeoff",
-   "text": "Een kwantitatieve trade-off matrix opstellen tussen Cloud Jev, lokale ModernBERT en Frontier LLM's."
+   "text": "Een kwantitatieve trade-off matrix opstellen tussen Cloud Jev, lokale ModernBERT en Frontier LLM's (large language model)."
   }
  ],
  "sections": [
   {
    "id": "sec-01",
    "title": "1. Jev Aanspreken via de OpenRouter API",
-   "md": "Om Jev in je eigen applicaties, Python-scripts of n8n-workflows te gebruiken, hoef je geen aparte SDK te installeren. TypeSafe stelt Jev rechtstreeks beschikbaar via de **OpenRouter** API onder model-identificatie `typesafe/jev-1.13` (of de dynamische alias `typesafe/jev-latest`).\n\nOmdat OpenRouter compatibel is met de OpenAI REST-standaard, stuur je een eenvoudige HTTP `POST`-request naar `https://openrouter.ai/api/v1/chat/completions` met de standaard authenticatie-headers:\n\n```bash\ncurl https://openrouter.ai/api/v1/chat/completions \\\n  -H \"Authorization: Bearer $OPENROUTER_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"model\": \"typesafe/jev-1.13\",\n    \"messages\": [\n      {\"role\": \"user\", \"content\": \"Klantmail: Mijn factuur klopt niet, er staat €49 te veel op.\"}\n    ],\n    \"decision\": {\n      \"type\": \"choice\",\n      \"question\": \"Naar welk team moet dit bericht gerouteerd worden?\",\n      \"options\": [\"Facturatie\", \"Technische Helpdesk\", \"Sales\", \"Overig\"]\n    }\n  }'\n```\n\nHet cruciale verschil met een generatieve LLM zit in het antwoord. Je krijgt **geen tekstuele markdown** terug die met regex gestript moet worden, maar direct een getypeerd payload-object met de gekalibreerde kansverdeling:\n\n```json\n{\n  \"decision\": {\n    \"type\": \"choice\",\n    \"winner\": \"Facturatie\",\n    \"probabilities\": {\n      \"Facturatie\": 0.942,\n      \"Technische Helpdesk\": 0.031,\n      \"Sales\": 0.012,\n      \"Overig\": 0.015\n    }\n  },\n  \"usage\": {\n    \"prompt_tokens\": 38,\n    \"completion_tokens\": 0,\n    \"total_cost\": 0.0000016\n  }\n}\n```\n\nMerk op: `completion_tokens` is exact **0**. Je betaalt uitsluitend voor de inkomende tokens ($0.042 per 1 miljoen tokens)."
+   "md": "Om Jev in je eigen applicaties, Python-scripts of n8n-workflows te gebruiken, hoef je geen aparte SDK (software development kit) te installeren. TypeSafe stelt Jev rechtstreeks beschikbaar via de **OpenRouter** API onder model-identificatie `typesafe/jev-1.13` (of de dynamische alias `typesafe/jev-latest`).\n\nOmdat OpenRouter compatibel is met de OpenAI REST-standaard (REST = Representational State Transfer), stuur je een eenvoudige HTTP (Hypertext Transfer Protocol) `POST`-request naar `https://openrouter.ai/api/v1/chat/completions` met de standaard authenticatie-headers:\n\n```bash\ncurl https://openrouter.ai/api/v1/chat/completions \\\n  -H \"Authorization: Bearer $OPENROUTER_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"model\": \"typesafe/jev-1.13\",\n    \"messages\": [\n      {\"role\": \"user\", \"content\": \"Klantmail: Mijn factuur klopt niet, er staat €49 te veel op.\"}\n    ],\n    \"decision\": {\n      \"type\": \"choice\",\n      \"question\": \"Naar welk team moet dit bericht gerouteerd worden?\",\n      \"options\": [\"Facturatie\", \"Technische Helpdesk\", \"Sales\", \"Overig\"]\n    }\n  }'\n```\n\nHet cruciale verschil met een generatieve LLM zit in het antwoord. Je krijgt **geen tekstuele markdown** terug die met regex gestript moet worden, maar direct een getypeerd payload-object met de gekalibreerde kansverdeling:\n\n```json\n{\n  \"decision\": {\n    \"type\": \"choice\",\n    \"winner\": \"Facturatie\",\n    \"probabilities\": {\n      \"Facturatie\": 0.942,\n      \"Technische Helpdesk\": 0.031,\n      \"Sales\": 0.012,\n      \"Overig\": 0.015\n    }\n  },\n  \"usage\": {\n    \"prompt_tokens\": 38,\n    \"completion_tokens\": 0,\n    \"total_cost\": 0.0000016\n  }\n}\n```\n\nMerk op: `completion_tokens` is exact **0**. Je betaalt uitsluitend voor de inkomende tokens ($0.042 per 1 miljoen tokens)."
   },
   {
    "id": "sec-02",
    "title": "2. Waarom Lokaal? De Vier Drijfveren",
-   "md": "Hoewel Jev via OpenRouter extreem goedkoop en snel is, zijn er scenario's waarin cloud-API's niet wenselijk of zelfs strikt verboden zijn. Er zijn **vier doorslaggevende redenen** om te kiezen voor een lokaal beslissingsmodel:\n\n1. **Data Privacy en Compliance (GDPR / HIPAA):** Financiële transacties, patiëntendossiers of interne bedrijfsgeheimen mogen in veel B2B-sectoren de lokale server of het datacenter contractueel niet verlaten. Met een lokaal model blijft 100% van de data op je eigen machine (zoals een lokale Mac mini, MacBook 2 of on-premise VPS).\n2. **Netwerklatentie (Egress / Ingress):** Een cloud API call heeft altijd te maken met een round-trip time (RTT): DNS lookup, TLS handshake en netwerkafstand naar het datacenter. Zelfs als Jev in 70 ms rekent, kost de netwerkoverdracht vaak 100 ms tot 250 ms. Een lokaal model op een Apple Silicon M-chip reageert in **10 tot 25 ms**.\n3. **Nul Marginale Kosten ($0.00):** Als je honderdduizenden records per nacht batch-verwerkt (bijvoorbeeld voor data-cleaning of archivering), telt elke micro-cent. Een lokaal model draait op hardware die je al bezit, met nul variabele API-kosten.\n4. **Offline Beschikbaarheid:** Lokale scripts, command-line tools en embedded systemen functioneren foutloos zonder internetverbinding of wanneer externe API-gateways storingen ondervinden."
+   "md": "Hoewel Jev via OpenRouter extreem goedkoop en snel is, zijn er scenario's waarin cloud-API's niet wenselijk of zelfs strikt verboden zijn. Er zijn **vier doorslaggevende redenen** om te kiezen voor een lokaal beslissingsmodel:\n\n1. **Data Privacy en Compliance (GDPR / HIPAA (Health Insurance Portability and Accountability Act, de Amerikaanse zorgprivacywet)):** Financiële transacties, patiëntendossiers of interne bedrijfsgeheimen mogen in veel B2B-sectoren de lokale server of het datacenter contractueel niet verlaten. Met een lokaal model blijft 100% van de data op je eigen machine (zoals een lokale Mac mini, MacBook 2 of on-premise VPS (virtual private server)).\n2. **Netwerklatentie (Egress / Ingress):** Een cloud API call heeft altijd te maken met een round-trip time (RTT): DNS (Domain Name System) lookup, TLS (Transport Layer Security) handshake en netwerkafstand naar het datacenter. Zelfs als Jev in 70 ms rekent, kost de netwerkoverdracht vaak 100 ms tot 250 ms. Een lokaal model op een Apple Silicon M-chip reageert in **10 tot 25 ms**.\n3. **Nul Marginale Kosten ($0.00):** Als je honderdduizenden records per nacht batch-verwerkt (bijvoorbeeld voor data-cleaning of archivering), telt elke micro-cent. Een lokaal model draait op hardware die je al bezit, met nul variabele API-kosten.\n4. **Offline Beschikbaarheid:** Lokale scripts, command-line tools en embedded systemen functioneren foutloos zonder internetverbinding of wanneer externe API-gateways storingen ondervinden."
   },
   {
    "id": "sec-03",
    "title": "3. Het Wapen van de Architect: ModernBERT en Encoder-Only Modellen",
-   "md": "Wanneer ingenieurs denken aan 'lokale AI', grijpen ze vaak automatisch naar een gekwantiseerd LLM (zoals Llama of Mistral). Dat is een fundamentele vergissing voor beslissingstaken!\n\nLLM's zijn **decoder-only** architecturen: ze gebruiken een causaal aandachtsmasker (causal attention mask) waardoor elk token alleen naar eerdere tokens kan kijken, en genereren daarna token per token. Voor classificatie en scoring is een **encoder-only** model ordes van grootte superieur:\n\n- **Bidirectionele Attention:** Een encoder ziet de volledige context in beide richtingen tegelijkertijd. Woord 5 kan direct interageren met woord 500.\n- **Één Enkele Forward Pass:** De invoer passeert eenmaal door de lagen; de classificatiekop (linear layer + softmax) berekent de logit-vector in één rekenstap.\n\nEind 2024 lanceerde Answer.AI in samenwerking met LightOn **ModernBERT**. ModernBERT moderniseert de klassieke BERT-architectuur met de nieuwste innovaties:\n- **Flash Attention & Rotary Position Embeddings (RoPE)**\n- Native contextvenster van **8.192 tokens** (in plaats van de verouderde 512 tokens van klassieke BERT)\n- Ongelofelijke snelheid: ModernBERT-base (149M parameters) verwerkt teksten in **15 tot 20 milliseconden** op een gewone laptop CPU of Mac M-chip!\n\nDoor een kleine classificatiekop te trainen of een zero-shot NLI-kop (Natural Language Inference) te gebruiken, functioneert ModernBERT als een volwaardige lokale Jev-vervanger met nul API-kosten."
+   "md": "Wanneer ingenieurs denken aan 'lokale AI', grijpen ze vaak automatisch naar een gekwantiseerd LLM (zoals Llama of Mistral). Dat is een fundamentele vergissing voor beslissingstaken!\n\nLLM's zijn **decoder-only** architecturen: ze gebruiken een causaal aandachtsmasker (causal attention mask) waardoor elk token alleen naar eerdere tokens kan kijken, en genereren daarna token per token. Voor classificatie en scoring is een **encoder-only** model ordes van grootte superieur:\n\n- **Bidirectionele Attention:** Een encoder ziet de volledige context in beide richtingen tegelijkertijd. Woord 5 kan direct interageren met woord 500.\n- **Één Enkele Forward Pass:** De invoer passeert eenmaal door de lagen; de classificatiekop (linear layer + softmax) berekent de logit-vector in één rekenstap.\n\nEind 2024 lanceerde Answer.AI in samenwerking met LightOn **ModernBERT**. ModernBERT moderniseert de klassieke BERT-architectuur (BERT = Bidirectional Encoder Representations from Transformers) met de nieuwste innovaties:\n- **Flash Attention & Rotary Position Embeddings (RoPE)**\n- Native contextvenster van **8.192 tokens** (in plaats van de verouderde 512 tokens van klassieke BERT)\n- Ongelofelijke snelheid: ModernBERT-base (149M parameters) verwerkt teksten in **15 tot 20 milliseconden** op een gewone laptop CPU of Mac M-chip!\n\nDoor een kleine classificatiekop te trainen of een zero-shot NLI-kop (Natural Language Inference) te gebruiken, functioneert ModernBERT als een volwaardige lokale Jev-vervanger met nul API-kosten."
   },
   {
    "id": "sec-04",
    "title": "4. Small Language Models (SLMs) en Constrained Decoding",
-   "md": "Wat als je toch een generatief taalmodel wilt inzetten voor beslissingen (bijvoorbeeld omdat je flexibele redeneerstappen of meertalige semantiek nodig hebt)? Dan kies je voor een **Small Language Model (SLM)** gecombineerd met **constrained decoding**.\n\nModerne SLM's zoals **Qwen2.5-0.5B**, **Qwen2.5-1.5B** of **Llama-3.2-1B** zijn zo compact dat ze bij 4-bit kwantisatie (Q4_K_M) slechts 400 MB tot 900 MB RAM innemen. Ze draaien met 80 tot 150 tokens per seconde op een standaard Mac.\n\nOm te voorkomen dat een SLM syntaxfouten maakt, gebruiken we **constrained decoding** via frameworks zoals **Outlines**, **Guidance** of **GBNF grammars** in llama.cpp:\n\n```\n┌──────────────────────────────────────────────┐\n│ neuraal netwerk berekent logits (ongefilterd)│\n└──────────────────────┬───────────────────────┘\n                       ▼\n┌──────────────────────────────────────────────┐\n│ Logit Masking: tokens buiten BNF-grammatica  │\n│ krijgen logit = -infinity                    │\n└──────────────────────┬───────────────────────┘\n                       ▼\n┌──────────────────────────────────────────────┐\n│ Softmax kiest 100% gegarandeerd geldig token │\n└──────────────────────────────────────────────┘\n```\n\nDoor logits van ongeldige tokens op $-\\infty$ te zetten, is het wiskundig **onmogelijk** dat het model iets anders genereert dan het opgegeven schema. Geen retries, geen regex-fouten!"
+   "md": "Wat als je toch een generatief taalmodel wilt inzetten voor beslissingen (bijvoorbeeld omdat je flexibele redeneerstappen of meertalige semantiek nodig hebt)? Dan kies je voor een **Small Language Model (SLM)** gecombineerd met **constrained decoding**.\n\nModerne SLM's zoals **Qwen2.5-0.5B**, **Qwen2.5-1.5B** of **Llama-3.2-1B** zijn zo compact dat ze bij 4-bit kwantisatie (Q4_K_M) slechts 400 MB tot 900 MB RAM (random-access memory, het werkgeheugen) innemen. Ze draaien met 80 tot 150 tokens per seconde op een standaard Mac.\n\nOm te voorkomen dat een SLM syntaxfouten maakt, gebruiken we **constrained decoding** via frameworks zoals **Outlines**, **Guidance** of **GBNF grammars** in llama.cpp:\n\n```\n┌──────────────────────────────────────────────┐\n│ neuraal netwerk berekent logits (ongefilterd)│\n└──────────────────────┬───────────────────────┘\n                       ▼\n┌──────────────────────────────────────────────┐\n│ Logit Masking: tokens buiten BNF-grammatica  │\n│ krijgen logit = -infinity                    │\n└──────────────────────┬───────────────────────┘\n                       ▼\n┌──────────────────────────────────────────────┐\n│ Softmax kiest 100% gegarandeerd geldig token │\n└──────────────────────────────────────────────┘\n```\n\nDoor logits van ongeldige tokens op $-\\infty$ te zetten, is het wiskundig **onmogelijk** dat het model iets anders genereert dan het opgegeven schema. Geen retries, geen regex-fouten!"
   },
   {
    "id": "sec-05",
    "title": "5. De Kwantitatieve Vergelijkingstabel",
-   "md": "Hieronder staat de strategische vergelijking die elke software-architect moet beheersen bij het selecteren van de beslissingslaag:\n\n| Eigenschap | TypeSafe Jev (Cloud) | Lokaal ModernBERT | Lokaal SLM (Qwen 0.5B + Outlines) | Frontier LLM (Claude 3.5 Sonnet) |\n| :--- | :--- | :--- | :--- | :--- |\n| **Architectuur** | Non-autoregressief RLCD | Encoder-only (FlashAttn) | Decoder-only met BNF-mask | Decoder-only autoregressief |\n| **Latentie (P50)** | 70 – 120 ms | **15 – 25 ms** | 45 – 90 ms | 1.800 – 3.500 ms |\n| **Kosten per 1M calls** | \\$0.042 (input only) | **\\$0.00 (gratis)** | **\\$0.00 (gratis)** | \\$12.50 – \\$25.00 |\n| **Geheugen / VRAM** | 0 MB (cloud) | ~300 MB | ~500 MB (Q4) | 0 MB (cloud) |\n| **Privacy (GDPR)** | Cloud dataverkeer | **100% On-Device** | **100% On-Device** | Cloud dataverkeer |\n| **Syntaxisgarantie** | 100% getypeerd | 100% getypeerd | 100% via logit masking | Kwetsbaar voor formatfouten |\n\n> **Gouden Regel:** Gebruik **ModernBERT of een lokaal SLM** wanneer privacy en nul kosten primair zijn; gebruik **Jev via OpenRouter** wanneer je maximale zero-shot accuraatheid wilt zonder servers te beheren; gebruik **Claude 3.5 Sonnet** uitsluitend wanneer diepe synthese of creatief proza noodzakelijk is."
+   "md": "Hieronder staat de strategische vergelijking die elke software-architect moet beheersen bij het selecteren van de beslissingslaag:\n\n| Eigenschap | TypeSafe Jev (Cloud) | Lokaal ModernBERT | Lokaal SLM (Qwen 0.5B + Outlines) | Frontier LLM (Claude 3.5 Sonnet) |\n| :--- | :--- | :--- | :--- | :--- |\n| **Architectuur** | Non-autoregressief RLCD (Reinforcement Learning for Calibrated Decisions) | Encoder-only (FlashAttn) | Decoder-only met BNF-mask (BNF = Backus–Naur Form) | Decoder-only autoregressief |\n| **Latentie (P50)** | 70 – 120 ms | **15 – 25 ms** | 45 – 90 ms | 1.800 – 3.500 ms |\n| **Kosten per 1M calls** | \\$0.042 (input only) | **\\$0.00 (gratis)** | **\\$0.00 (gratis)** | \\$12.50 – \\$25.00 |\n| **Geheugen / VRAM** (video random-access memory, het geheugen op de GPU) | 0 MB (cloud) | ~300 MB | ~500 MB (Q4) | 0 MB (cloud) |\n| **Privacy (GDPR)** | Cloud dataverkeer | **100% On-Device** | **100% On-Device** | Cloud dataverkeer |\n| **Syntaxisgarantie** | 100% getypeerd | 100% getypeerd | 100% via logit masking | Kwetsbaar voor formatfouten |\n\n> **Gouden Regel:** Gebruik **ModernBERT of een lokaal SLM** wanneer privacy en nul kosten primair zijn; gebruik **Jev via OpenRouter** wanneer je maximale zero-shot accuraatheid wilt zonder servers te beheren; gebruik **Claude 3.5 Sonnet** uitsluitend wanneer diepe synthese of creatief proza noodzakelijk is."
   }
  ],
  "practice": [
@@ -149,7 +149,7 @@
    "type": "mcq",
    "skill": "slm-constrained",
    "level": 2,
-   "prompt": "Hoe voorkomt 'constrained decoding' (zoals in Outlines of llama.cpp grammars) dat een lokaal SLM ongeldige JSON uitspuugt?",
+   "prompt": "Hoe voorkomt 'constrained decoding' (zoals in Outlines of llama.cpp grammars) dat een lokaal SLM ongeldige JSON (JavaScript Object Notation) uitspuugt?",
    "explain": "Bij elke stap worden de logits van alle tokens die de grammatica zouden schenden op -oneindig gezet, zodat ze onmogelijk gesampled kunnen worden.",
    "options": [
     "Logit masking zet de logits van tokens die de grammatica schenden op -oneindig.",
@@ -165,7 +165,7 @@
    "skill": "slm-constrained",
    "level": 2,
    "prompt": "Typ de naam van de populaire open-source Python library van .txt die structured generation garandeert via logit masking.",
-   "explain": "Outlines is de toonaangevende library voor structured generation via FSMs.",
+   "explain": "Outlines is de toonaangevende library voor structured generation via FSMs (finite state machine).",
    "answers": [
     "Outlines",
     "outlines"
@@ -333,7 +333,7 @@
    "type": "mcq",
    "skill": "why-local-privacy",
    "level": 2,
-   "prompt": "Wat is het belangrijkste voordeel van een lokaal model tijdens een storing van een grote cloud-provider (zoals AWS of Cloudflare)?",
+   "prompt": "Wat is het belangrijkste voordeel van een lokaal model tijdens een storing van een grote cloud-provider (zoals AWS (Amazon Web Services) of Cloudflare)?",
    "explain": "Omdat het model lokaal op je eigen machine draait, blijft je applicatie ononderbroken functioneren zonder afhankelijkheid van externe netwerken.",
    "options": [
     "Je applicatie blijft 100% operationeel omdat er geen externe netwerkafhankelijkheid is.",
@@ -362,7 +362,7 @@
    "type": "mcq",
    "skill": "modernbert-encoder",
    "level": 2,
-   "prompt": "Wat is het effect van bidirectionele attention in ModernBERT ten opzichte van causale attention in GPT?",
+   "prompt": "Wat is het effect van bidirectionele attention in ModernBERT ten opzichte van causale attention in GPT (Generative Pre-trained Transformer)?",
    "explain": "Bij bidirectionele attention kan elk token informatie uitwisselen met zowel eerdere als latere tokens in de zin, wat rijke representaties oplevert.",
    "options": [
     "Elk token kan gelijktijdig interageren met eerdere én latere tokens in de hele tekst.",
@@ -458,7 +458,7 @@
    "skill": "slm-constrained",
    "level": 2,
    "prompt": "Typ de afkorting voor de formele grammatica-standaard (Backus-Naur Form) die gebruikt wordt om geldige syntaxbomen te definiëren.",
-   "explain": "BNF (of EBNF / GBNF).",
+   "explain": "BNF (of EBNF (Extended Backus–Naur Form) / GBNF).",
    "answers": [
     "BNF",
     "bnf",
@@ -500,7 +500,7 @@
    "skill": "modernbert-encoder",
    "level": 2,
    "prompt": "Wat is het voordeel van ModernBERT ten opzichte van klassieke RoBERTa of DeBERTa modellen?",
-   "explain": "ModernBERT combineert Flash Attention, RoPE, GeGLU en een 8k contextvenster met moderne GPU-optimalisaties.",
+   "explain": "ModernBERT combineert Flash Attention, RoPE, GeGLU en een 8k contextvenster met moderne GPU-optimalisaties (GPU = graphics processing unit, de grafische processor).",
    "options": [
     "Het heeft een 8k contextvenster, Flash Attention en draait ordes van grootte sneller.",
     "Het kan rechtstreeks gesproken audio versturen naar WhatsApp.",

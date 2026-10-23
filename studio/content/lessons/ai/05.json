@@ -5,14 +5,14 @@
  "roadmap": "ai-05-distributed",
  "kind": "core",
  "title": "Gedistribueerd trainen: ZeRO, FSDP en clusters",
- "subtitle": "Trainingsgeheugen berekenen (16-byteregel), data- en model-parallellisme, en het begroten van GPU's",
+ "subtitle": "Trainingsgeheugen berekenen (de 16-byteregel), Data Parallelism (ZeRO/FSDP) vs Model Parallelism (TP/PP), en GPU-clusterbegroting",
  "level": "advanced",
  "minutes": 45,
- "summary": "Een groot taalmodel trainen past nooit op één GPU. Je leert hier het benodigde trainingsgeheugen berekenen, technieken als FSDP en Tensor Parallelism inzetten, en wiskundig begroten hoeveel GPU's je cluster exact nodig heeft.",
+ "summary": "Een Large Language Model (LLM) trainen past nooit op één enkele Graphics Processing Unit (GPU). Je leert hier het benodigde trainingsgeheugen berekenen via de 16-byteregel, technieken als Fully Sharded Data Parallel (FSDP), Tensor Parallelism (TP) en Pipeline Parallelism (PP) strategisch inzetten, en wiskundig begroten hoeveel GPU's en hoeveel cloudbudget je cluster vereist.",
  "objectives": [
   {
    "id": "recap",
-   "text": "Je past eerdere concepten over tokens, scaling laws en GQA correct toe en vermijdt rekenfouten."
+   "text": "Je past eerdere concepten over tokens, scaling laws en GQA (grouped-query attention) correct toe en vermijdt rekenfouten."
   },
   {
    "id": "budget",
@@ -20,7 +20,7 @@
   },
   {
    "id": "dp-fsdp",
-   "text": "Je legt het verschil uit tussen standaard Data Parallelism en ZeRO/FSDP om het geheugen over GPU's te verdelen."
+   "text": "Je legt het verschil uit tussen standaard Data Parallelism en ZeRO/FSDP (ZeRO = Zero Redundancy Optimizer) om het geheugen over GPU's te verdelen."
   },
   {
    "id": "model-parallel",
@@ -28,14 +28,14 @@
   },
   {
    "id": "cluster",
-   "text": "Je berekent het vereiste aantal GPU's voor een trainingsrun op basis van FLOPs, looptijd en hardware-MFU."
+   "text": "Je berekent het vereiste aantal GPU's voor een trainingsrun op basis van FLOPs (floating-point operations), looptijd en hardware-MFU (Model FLOPs Utilization)."
   }
  ],
  "sections": [
   {
    "id": "herhaling",
    "title": "Herhaling: de getallen die ertoe doen",
-   "md": "Als handelsingenieur moet je AI-kosten foutloos kunnen doorrekenen. Uit je diagnostische test bleek dat we enkele fundamenten moeten aanscherpen. Eén rekenfout in de basis betekent in de praktijk een totaal verkeerd budget voor je cluster.\n\nZorg dat deze vier vuistregels een reflex worden:\n1. **Tokens vs. woorden**: 1 token is ongeveer 0,75 woord (of 4 tekens) voor Engels. Om van woorden naar tokens te gaan, moet je **delen** door 0,75 (of vermenigvuldigen met 4/3). Een tekst van 3 000 woorden is $3\\,000 / 0{,}75 = 4\\,000$ tokens, niét 2 250.\n2. **Chinchilla (Scaling laws)**: De grens voor compute-optimaal trainen (Hoffmann et al., 2022) is $D \\approx 20N$. Dus altijd **20 tokens per parameter** rekenen, niet 'zo weinig mogelijk data'.\n3. **GQA (Grouped-Query Attention)**: De KV-cache wordt compacter dan bij standaard MHA. De krimpfactor is de verhouding $\\frac{\\text{Query-heads}}{\\text{KV-heads}}$. 64 Query en 8 KV betekent een reductie van $64/8 = 8$ keer.\n4. **LoRA**: De rang $r$ is de binnenste dimensie van de updates $B$ en $A$, niet het aantal transformerlagen dat je traint.",
+   "md": "Als handelsingenieur of technisch strateeg moet je AI-kosten, hardware-investeringen en capaciteitsplannen foutloos kunnen doorrekenen. Eén basisfout in de wiskundige dimensionaliteit betekent in de praktijk een verkeerd gedimensioneerd datacenter-contract en tonnen aan kapitaalverlies.\n\nZorg dat deze vier vuistregels een absolute automatisme worden:\n1. **Tokens vs. woorden (eenheidskosten):** 1 token is gemiddeld 0,75 Engels woord (ongeveer 4 karakters). Om van woorden naar tokens te gaan, moet je **delen door 0,75** (of vermenigvuldigen met $4/3$):\n   $$\\text{Aantal tokens} = \\frac{3\\,000\\text{ woorden}}{0{,}75\\text{ woord/token}} = 4\\,000\\text{ tokens}$$\n   *(Wie vermenigvuldigt, onderschat de resulterende data- en geheugenbehoefte met bijna de helft!)*\n2. **Chinchilla-scaling wet (kapitaaloptimalisatie):** Compute-optimaal trainen (Hoffmann et al., 2022) vereist dat data en parameters symmetrisch meegroeien: $D \\approx 20N$. Reken dus altijd met **20 tokens per parameter**, niet met zo min mogelijk data.\n3. **Grouped-Query Attention (GQA):** GQA deelt Key-Value (KV) heads over groepen Query-heads. De geheugenreductie van de Key-Value cache (KV-cache) is de exacte verhouding $\\frac{\\text{Query-heads}}{\\text{KV-heads}}$. 64 Query-heads en 8 KV-heads leveren een reductie op van $64 / 8 = 8\\times$.\n4. **Low-Rank Adaptation (LoRA):** De rang $r$ is de binnenste flessenhalsdimensie van de adaptatiematrices $\\Delta W = B \\cdot A$, **niet** het aantal transformerlagen dat je aanpast.",
    "checks": [
     {
      "id": "c1",
@@ -62,7 +62,7 @@
   {
    "id": "budget",
    "title": "Het trainingsbudget: de 16-byteregel",
-   "md": "Wanneer we een LLM in productie gebruiken (inferentie), verbruikt elke parameter in 16-bit precisie (FP16 of BF16) exact **2 bytes**. Een 7B model past dus in zo'n 14 GB. Maar **trainen** eist een enorm veelvoud aan RAM.\n\nWe gebruiken vrijwel altijd de **AdamW** optimizer in **mixed precision**. Dit systeem berekent de grote matrixbewerkingen snel in 16-bit, maar houdt kritieke statussen in 32-bit (FP32) om afrondingsfouten bij kleine updates te voorkomen. Voor één enkele parameter in je model houdt de GPU het volgende bij:\n\n- De huidige modelgewichten (FP16/BF16): **2 bytes**\n- De gradients uit de backward pass (FP16/BF16): **2 bytes**\n- Een ongewijzigde reservekopie in hoge precisie (Master weights, FP32): **4 bytes**\n- AdamW's momentum (running average gradients, FP32): **4 bytes**\n- AdamW's variantie (running squared gradients, FP32): **4 bytes**\n\nTel je dit op, dan kost elke parameter exact $2 + 2 + 4 + 4 + 4 = 16$ bytes.\n\n> [!pitfall] Activaties negeren\n> Bovenop deze 16 bytes/param eist de forward- en backward pass dat je de activaties (outputs van elke tussenlaag) bewaart. Hoe groter je batch, hoe meer tientallen gigabytes dit opslorpt. Dit verklaart waarom *gradient checkpointing* vaak noodzakelijk is (activaties weggooien en ze later herberekenen).\n\n> [!example] 70B model trainen\n> Voor Llama 3 70B (70 miljard parameters) heb je puur voor de weights en de optimizer $70 \\times 10^9 \\times 16 = 1\\,120$ GB (circa 1,12 TB) nodig. Eén hoogwaardige Nvidia H100 bezit 'slechts' 80 GB. Om dit te laten draaien, heb je al 14 GPU's nodig, zónder ook maar één activatie mee te tellen.",
+   "md": "Wanneer we een Large Language Model (LLM) in productie draaien (*inferentie*), vereist elke parameter in 16-bit precisie (16-bit floating point, FP16, of Brain Float 16, BF16 (bfloat16, brain floating point (16 bit))) exact **2 bytes**. Een 7B model past tijdens inferentie dus moeiteloos in circa 14 GB aan Video RAM (VRAM) op één enkele GPU.\n\nTijdens **pretraining** eist de hardware echter een gigantisch veelvoud aan geheugen!\n\n### De wiskunde van de 16-byteregel\nWe trainen vrijwel altijd met de **Adam with decoupled Weight decay (AdamW)** optimizer in **mixed precision**. Dit systeem voert de zware matrixberekeningen uit in 16-bit (BF16), maar bewaart de accumulerende toestand-statistieken verplicht in 32-bit floating point (FP32, 4 bytes) om te voorkomen dat kleine updates afronden naar nul (*underflow*).\n\nVoor elke individuele gewichtsparameter in het netwerk eist de GPU:\n- Modelgewichten in BF16/FP16 (voor de forward pass): **2 bytes**\n- Gradiënten in BF16/FP16 (berekend tijdens de backward pass): **2 bytes**\n- Master copy van de gewichten in FP32 (voor stabiele updates): **4 bytes**\n- AdamW momentum $m$ in FP32 (eerste moment / lopend gemiddelde): **4 bytes**\n- AdamW variantie $v$ in FP32 (tweede moment / ongecentreerde variantie): **4 bytes**\n\n$$\\text{Totale statische parameter-overhead} = 2 + 2 + 4 + 4 + 4 = \\boxed{16\\text{ bytes per parameter}}$$\n\n> [!CAUTION] Vergeet de activaties niet!\n> Bovenop deze 16 bytes per parameter moet de GPU tijdens de forward pass alle tussenliggende activaties (outputs van elke attention- en feed-forward laag) in het VRAM bewaren voor de backward pass. Dit activatiegeheugen schaalt als $\\mathcal{O}(B \\cdot T \\cdot d \\cdot L)$ (batchgrootte $\\times$ sequentielengte $\\times$ modeldimensie $\\times$ aantal lagen). \n> Om te voorkomen dat activaties het geheugen laten ontploffen, passen ingenieurs **gradient checkpointing** toe: activaties worden na de forward pass weggegooid en tijdens de backward pass razendsnel opnieuw berekend. Dit offert circa 33% extra FLOPs op, maar reduceert het activatiegeheugen met wel 70% tot 80%.\n\n> [!example] Bedrijfseconomische case: Llama 3 70B trainen\n> Voor een model met 70 miljard parameters (70B):\n> $$\\begin{aligned}\\text{VRAM} &= 70 \\times 10^9 \\text{ parameters} \\times 16 \\text{ bytes} \\\\ &= 1\\,120 \\times 10^9 \\text{ bytes} = \\boxed{1\\,120\\text{ GB} \\approx 1{,}12\\text{ TB VRAM}}\\end{aligned}$$\n> Eén geavanceerde NVIDIA H100 GPU bezit 80 GB VRAM. Puur om de statische parameters en optimizer-states te huisvesten, heb je al minimaal:\n> $$\\frac{1\\,120\\text{ GB}}{80\\text{ GB/GPU}} = \\boxed{14\\text{ GPU's}}$$\n> nodig — en dat vóórdat er ook maar één enkel token aan data door het netwerk stroomt!",
    "checks": [
     {
      "id": "c3",
@@ -80,7 +80,7 @@
   {
    "id": "dp-fsdp",
    "title": "Data Parallelism en ZeRO / FSDP",
-   "md": "Bij klassiek **Data Parallelism (DP)** verdeel je de data. Elke GPU kopieert het *volledige* model, krijgt een ander stukje van de batch, berekent zijn gradients, en de GPU's overleggen daarna om het gemiddelde te bepalen. Dit is onmogelijk als je model 1,12 TB is.\n\nMicrosoft revolutioneerde dit met de **ZeRO (Zero Redundancy Optimizer)** paper (2020), tegenwoordig de standaard in PyTorch als **FSDP (Fully Sharded Data Parallel)**. In plaats van alle parameters domweg te dupliceren, *versnippert* (shard) ZeRO ze over de $N$ GPU's in je cluster:\n\n- **ZeRO-1**: Shard enkel de Adam-statussen (momentum en variantie).\n- **ZeRO-2**: Shard Adam-statussen én de gradients.\n- **ZeRO-3 (FSDP)**: Shard werkelijk alles: parameters, gradients en statussen.\n\nBij FSDP over een netwerk van 32 GPU's, hoeft elke kaart per parameter nog maar $16/32 = 0{,}5$ bytes lokaal te bewaren. Tijdens het trainen vraagt GPU 1 razendsnel de missende parameters voor laag 4 aan zijn buren via een operatie genaamd **All-Gather**. Na het rekenen gooit hij ze direct weer weg. Je offert bandbreedte op voor een massieve geheugenbesparing.",
+   "md": "Wanneer een model niet meer op één GPU past, moeten we het trainingsproces distribueren over een netwerk van gekoppelde GPU's (*gedistribueerd trainen*).\n\n### Klassiek Data Parallelism (DP) en zijn grenzen\nDe eenvoudigste aanpak is **Data Parallelism (DP)**.\n*De analogie:* Denk aan een team van 8 accountants die een stapel van 80 000 facturen moeten controleren. In klassiek DP krijgt elke accountant een complete, identieke kopie van het 1 000 pagina's dikke handboek (het model). Elk controleert zijn eigen deel van de stapel facturen (micro-batch), en aan het einde van de dag synchroniseren ze hun bevindingen (gradiënten uitwisselen via *All-Reduce*).\n\n*Het failliet van DP:* Wanneer het handboek (ons 70B model) 1,12 TB dik is, past het handboek op geen enkel bureau (geen enkele 80 GB GPU). Klassiek DP loopt direct vast met een *Out-Of-Memory* (OOM) fout.\n\n### De revolutie: Zero Redundancy Optimizer (ZeRO) en FSDP\nMicrosoft DeepSpeed (Rajbhandari et al., 2020) loste dit op met de **Zero Redundancy Optimizer (ZeRO)**, tegenwoordig als native standaard geïmplementeerd in PyTorch onder de naam **Fully Sharded Data Parallel (FSDP)**.\n\nIn plaats van het model op elke GPU te dupliceren, elimineert ZeRO alle geheugenredundantie door de data te **versnipperen** (*sharden*) over alle $N_{\\text{GPU}}$ kaarten in de cluster:\n- **ZeRO-1 ($P_{os}$):** Shard uitsluitend de optimizer states (FP32-kopie, $m$ en $v$: samen 12 bytes). Per GPU blijft ongeveer $2 + 2 + 12/N_{\\text{GPU}}$ bytes per parameter over: het geheugen daalt tot circa een kwart (factor ≈ 4).\n- **ZeRO-2 ($P_{os+g}$):** Shard de optimizer states én de gradiënten (samen 14 bytes). Per GPU blijft ongeveer $2 + 14/N_{\\text{GPU}}$ bytes over (factor ≈ 8).\n- **ZeRO-3 / FSDP ($P_{os+g+p}$):** Shard werkelijk **alles**: modelgewichten (2B), gradiënten (2B) en optimizer states (12B) — de volledige 16 bytes!\n\n![Staafdiagram met bytes per parameter op één GPU bij klassiek data parallelism en bij ZeRO-1, ZeRO-2 en ZeRO-3 met 8 GPU's](assets/diagrams/zero-stages.svg \"Hoe ZeRO het geheugen per GPU verlaagt (voorbeeld met 8 GPU's)\")\n\n*Voorbeeld voor het 70B-model op 32 GPU's: 16 B / 32 = 0,5 B per parameter per GPU, ofwel 35 GB.*\n\n> [!NOTE] Hoe rekent FSDP als niemand het hele model heeft?\n> *De analogie:* De 32 accountants scheuren het 1,12 TB handboek in 32 gelijke katernen van elk 1 hoofdstuk. Wanneer accountant 1 bij factuur 50 aankomt en hoofdstuk 4 nodig heeft, roept ze over de intercom: *\"Wie heeft hoofdstuk 4?\"* Via een collectieve **All-Gather** communicatie zendt de eigenaar hoofdstuk 4 tijdelijk naar iedereen. Accountant 1 voert de berekening uit, en **gooit hoofdstuk 4 direct weer weg**. \n> Tijdens de backward pass gebeurt hetzelfde in omgekeerde volgorde via een **Reduce-Scatter** operatie. Je offert circa 50% extra netwerkcommunicatie op om het geheugen per GPU sterk te verlagen.",
    "checks": [
     {
      "id": "c4",
@@ -102,7 +102,7 @@
   {
    "id": "model-parallel",
    "title": "Tensor en Pipeline Parallelism (Model Parallelism)",
-   "md": "Soms levert FSDP te veel communicatievertraging op. Dan moet je het wiskundige model zélf doorknippen: Model Parallelism.\n\n**1. Pipeline Parallelism (PP)**\nJe knipt het model horizontaal, laag per laag, in stukken. GPU 1 neemt lagen 1 tot 10 voor zijn rekening. Zodra zijn output klaar is, vloeit de data naar GPU 2, die lagen 11 tot 20 bevat.\n> [!pitfall] De Bubble\n> Het grote nadeel van PP is de idle wachttijd: de *bubble*. Terwijl GPU 1 zweet op een berekening, staat GPU 2 werkloos stil te wachten op data. Dit los je op door de batch slim op te breken in tientallen *micro-batches*, zodat de pijplijn als een lopende band continu gevuld blijft.\n\n**2. Tensor Parallelism (TP)**\nTP knipt de theorie zélf door: de enorme attention- of feed-forward matrices. GPU 1 berekent de eerste 16 attention-heads, GPU 2 de overige 16. Daarna voegen ze hun wiskundige resultaten direct samen via een **All-Reduce**-operatie. Dit gebeurt *midden in het rekenen van een laag*. TP kan daardoor enkel functioneren over ultrahoge bandbreedte-bruggen zoals **NVLink** en is in de praktijk strikt beperkt tot maximaal 8 GPU's **binnen één fysieke servernode**.\n\nModerne training (GPT-4, Llama 3) draait op **3D Parallelism**: TP bínnen een server, PP tussen servers, en DP/FSDP als schil rond de databatches en de statussen.",
+   "md": "Wanneer modellen zo immens worden dat de communicatie-overhead van FSDP over trage netwerkkabels een flessenhals vormt, moeten we het model zelf structureel opsplitsen: **Model Parallelism**.\n\n### 1. Pipeline Parallelism (PP) — De Lopende Band\nBij **Pipeline Parallelism (PP)** knippen we het neurale netwerk horizontaal op, laag per laag:\n- GPU 1 verwerkt lagen 1 t/m 8.\n- GPU 2 verwerkt lagen 9 t/m 16.\n- GPU 3 verwerkt lagen 17 t/m 24.\n- GPU 4 verwerkt lagen 25 t/m 32.\n\n*De analogie:* Dit werkt exact als een **lopende band in een autofabriek**. Arbeider 1 assembleert het chassis, geeft het door aan arbeider 2 voor de motor, die het doorgeeft aan arbeider 3 voor de carrosserie.\n\n> [!pitfall] De Pipeline Bubble (Leegloop)\n> Als je één grote batch in de pijplijn stopt, staat arbeider 2, 3 en 4 werkloos te wachten tot arbeider 1 klaar is. Tijdens de backward pass gebeurt het omgekeerde: arbeider 1 wacht tot het leersignaal helemaal terug door de fabriek reist. Deze inefficiënte stilstand heet de **pipeline bubble**.\n> *De oplossing:* We hakken de batch in tientallen kleine **micro-batches** (zoals in het 1F1B-schema: *One Forward, One Backward*). De lopende band blijft hierdoor continu gevuld met opeenvolgende auto's, waardoor de bubble-inefficiëntie tot onder de 10% daalt.\n\n### 2. Tensor Parallelism (TP) — De Chirurgische Ingreep\nBij **Tensor Parallelism (TP)** (o.a. Megatron-LM) knippen we niet tussen lagen, maar **in het hart van de matrixvermenigvuldiging zélf**. Binnen één transformerlaag berekent GPU 1 de eerste helft van de attention-heads en GPU 2 de tweede helft. \n\n*De analogie:* Twee gespecialiseerde chirurgen opereren **tegelijkertijd op dezelfde millimeter van hetzelfde orgaan**. Omdat hun acties direct met elkaar verweven zijn, moeten ze na elke incisie onmiddellijk communiceren via een wiskundige **All-Reduce**-operatie — midden in de berekening van één enkele laag!\n\n> [!IMPORTANT] De hardware-restrictie van TP (NVLink)\n> Omdat een All-Reduce binnen elke sublaag moet plaatsvinden, is de vereiste communicatiebandbreedte gigantisch en de tolerantie voor vertraging (*latency*) nagenoeg nul. \n> Tensor Parallelism kan **nooit draaien over gewone netwerkkabels of ethernet**. Het vereist fysieke koperen **NVLink**-bruggen op het moederbord (met 900 GB/s bandbreedte). In de praktijk is TP daarom **strikt beperkt tot maximaal 8 GPU's binnen één fysieke servernode**.\n\n### De heilige graal: 3D Parallelism\nDe allergrootste foundation models (zoals Llama 3 405B, waar Meta er zelfs een vierde dimensie, *context parallelism*, aan toevoegt) combineren alle drie de technieken tot een driedimensionaal rooster (**3D Parallelism**):\n1. **Binnen één server (Intra-node):** Tensor Parallelism (TP = 8) via supersnelle NVLink.\n2. **Tussen servers in dezelfde rackrij:** Pipeline Parallelism (PP = 8 of 16) langs de opeenvolgende lagen.\n3. **Over het hele cluster (Inter-rack):** Data Parallelism / FSDP over alle resterende GPU's.",
    "checks": [
     {
      "id": "c5",
@@ -124,7 +124,7 @@
   {
    "id": "cluster",
    "title": "De supercomputer begroten",
-   "md": "Met de 6ND-formule en je hardwarekennis kan je nu als strateeg een hele trainingscluster begroten. Stel: je bedrijf wil een model van 30B parameters vanaf nul trainen.\n\n1. **Tokens (Chinchilla)**: $D \\approx 20N = 20 \\times 30\\cdot 10^9 = 600\\cdot 10^9$ tokens (600B).\n2. **Trainings-FLOPs**: $\\text{FLOPs} = 6 \\times N \\times D = 6 \\times (30\\cdot 10^9) \\times (600\\cdot 10^9) = 1{,}08 \\cdot 10^{23}$.\n3. **Praktische GPU-snelheid**: Nvidia belooft misschien 1 000 TFLOP/s voor een H100, maar in de praktijk is je **MFU (Model FLOPs Utilization)** door bubbles en warmte zo'n 30% tot 50%. Reken op **$3 \\cdot 10^{14}$ FLOP/s** aan bruikbare output.\n4. **Hardware begroten**: Stel dat je de run in precies één maand (30 dagen $= 2{,}592 \\cdot 10^6$ seconden) klaar wilt hebben.\n\n$$\\text{Benodigde GPU's} = \\frac{\\text{Totale FLOPs}}{\\text{Tijd in sec} \\times \\text{FLOP/s per GPU}}$$\n$$\\text{GPU's} = \\frac{1{,}08 \\cdot 10^{23}}{2{,}592 \\cdot 10^6 \\times 3 \\cdot 10^{14}} = \\frac{1{,}08 \\cdot 10^{23}}{7{,}776 \\cdot 10^{20}} \\approx 139$$\n\nJe huurt dan een kavel van 144 GPU's (machten van 2 passen beter bij netwerken). En het geheugen? Zelfs puur voor gewichten en Adam eist dit $30\\text{B} \\times 16 = 480$ GB. Maar dankzij FSDP en 144 GPU's draagt elke chip fysiek nauwelijks iets: $480 / 144 = 3{,}3$ GB. Vrijwel de volle 80 GB blijft beschikbaar voor het contextvenster en de activaties.",
+   "md": "Als financieel-technisch strateeg kun je nu de fysieke en budgettaire omvang van een complete supercomputer voor een trainingsrun begroten.\n\nStel: je onderneming wil een eigen gespecialiseerd foundation model van **30 miljard parameters (30B)** pretrainen from scratch. De Raad van Bestuur eist dat de training binnen exact **één maand (30 dagen)** voltooid is.\n\n### Stap 1: Datavolume bepalen (Chinchilla)\nVolgens de Chinchilla-scaling wet ($D \\approx 20N$):\n$$D = 20 \\times (30 \\times 10^9\\text{ parameters}) = \\boxed{600\\text{ miljard (600B) tokens}}$$\n\n### Stap 2: Totale FLOPs berekenen ($6ND$)\nPretraining omvat een forward pass ($2N$) en een backward pass ($4N$), dus $6ND$ FLOPs:\n$$C_{\\text{train}} \\approx 6 \\times (30 \\times 10^9) \\times (600 \\times 10^9) = 6 \\times 30 \\times 600 \\times 10^{18} = \\boxed{1{,}08 \\times 10^{23}\\text{ FLOPs}}$$\n*(108 zettaFLOPs)*.\n\n### Stap 3: Reële hardware-capaciteit per GPU (MFU)\nNVIDIA adverteert dat een H100 GPU theoretisch circa 1 000 TFLOP/s (in FP16/BF16) levert. In een reëel datacenter halen GPU's door netwerkcommunicatie, data-loading en pipeline bubbles echter een **Model FLOPs Utilization (MFU)** van circa 30% tot 40%.\nWe rekenen realistisch op:\n$$\\text{Reële output per H100} = 300\\text{ TFLOP/s} = 3 \\times 10^{14}\\text{ FLOP/s}$$\n\n### Stap 4: Aantal benodigde GPU's berekenen\nDe gestelde tijdslimiet van 30 dagen bedraagt:\n$$T_{\\text{sec}} = 30 \\text{ dagen} \\times 24 \\times 3600 = 2\\,592\\,000\\text{ seconden} \\approx 2{,}592 \\times 10^6\\text{ s}$$\n\nDe computationele capaciteit van één GPU over 30 dagen bedraagt:\n$$\\text{FLOPs per GPU in 30 d} = (2{,}592 \\times 10^6\\text{ s}) \\times (3 \\times 10^{14}\\text{ FLOP/s}) = 7{,}776 \\times 10^{20}\\text{ FLOPs}$$\n\nHet benodigde aantal GPU's bedraagt:\n$$\\text{Aantal GPU's} = \\frac{1{,}08 \\times 10^{23}}{7{,}776 \\times 10^{20}} \\approx 138{,}9$$\n\nWe ronden af naar boven en kiezen een symmetrisch cluster van **144 NVIDIA H100 GPU's** (18 nodes van elk 8 GPU's, wat perfect past bij binaire netwerktopologieën).\n\n> [!example] Geheugenanalyse met FSDP\n> Zonder FSDP zou het 30B model per GPU $30\\text{B} \\times 16 = 480\\text{ GB}$ VRAM eisen — onmogelijk op een 80 GB kaart!\n> Dankzij FSDP over ons cluster van 144 GPU's hoeft elke H100 aan statische parameters slechts:\n> $$\\frac{480\\text{ GB}}{144\\text{ GPU's}} \\approx 3{,}33\\text{ GB VRAM}$$\n> lokaal te bewaren. Ruim 76 GB per GPU blijft volledig vrij voor activaties, grote batches en lange contexten!\n\n> [!TIP] Financiële kostenraming (Budgettering)\n> 144 H100 GPU's huren in de cloud kost circa $3,00 per GPU-uur:\n> $$\\text{Totale compute-kost} = 144\\text{ GPU's} \\times 720\\text{ uur} \\times \\$3{,}00/\\text{GPU-uur} = \\boxed{\\$311\\,040}$$\n> Als manager weet je nu exact: met 144 H100's en een compute-budget van circa $310 000 is de pretraining van je 30B model in theorie binnen één maand haalbaar (zonder rekening te houden met hardwareuitval, herstarts en experimenten).",
    "checks": [
     {
      "id": "c6",
@@ -146,7 +146,7 @@
    "skill": "recap",
    "level": 1,
    "prompt": "Hoeveel tokens zijn 4 500 Engelse woorden (bij de vuistregel 1 token ≈ 0,75 woord)?",
-   "explain": "Je deelt het aantal woorden door 0,75. 4 500 / 0,75 = 6 000 tokens.",
+   "explain": "Om van woorden naar tokens te converteren bij een vuistregel van 0,75 woord per token, delen we het aantal woorden door 0,75: $\\frac{4\\,500\\text{ woorden}}{0{,}75\\text{ woord/token}} = 6\\,000\\text{ tokens}$.",
    "value": 6000,
    "abs": 0,
    "errors": [
@@ -163,7 +163,7 @@
    "skill": "recap",
    "level": 1,
    "prompt": "Wat is de rang $r$ exact in de techniek LoRA?",
-   "explain": "De parameter is de binnenste dimensie van de $B \\times A$ vermenigvuldiging.",
+   "explain": "In Low-Rank Adaptation (LoRA) met $\\Delta W = B \\cdot A$ is $r$ de binnenste flessenhalsdimensie van de matrices ($B \\in \\mathbb{R}^{d \\times r}$ en $A \\in \\mathbb{R}^{r \\times k}$), niet het aantal transformerlagen.",
    "options": [
     "De binnenste (kleinste) dimensie van de updates $B$ en $A$",
     "Het aantal transformerlagen dat fine-tuned wordt",
@@ -178,7 +178,7 @@
    "skill": "recap",
    "level": 1,
    "prompt": "Hoeveel tokens per parameter schrijft de Chinchilla-vuistregel voor om compute-optimaal te trainen?",
-   "explain": "De verhouding is $D \\approx 20N$.",
+   "explain": "Volgens de Chinchilla-scaling wet (Hoffmann et al., 2022) train je een model compute-optimaal wanneer het aantal tokens ruwweg 20 keer het aantal parameters bedraagt ($D \\approx 20N$).",
    "value": 20,
    "abs": 0,
    "errors": [
@@ -194,8 +194,8 @@
    "type": "numeric",
    "skill": "recap",
    "level": 2,
-   "prompt": "Je model heeft 32 query-heads en 8 KV-heads (GQA). Met welke factor is de KV-cache kleiner in vergelijking met standaard MHA?",
-   "explain": "De krimpfactor is $32 / 8 = 4$.",
+   "prompt": "Je model heeft 32 query-heads en 8 KV-heads (GQA). Met welke factor is de KV-cache kleiner in vergelijking met standaard MHA (multi-head attention)?",
+   "explain": "De reductiefactor van de KV-cache bij Grouped-Query Attention (GQA) is de verhouding tussen Query-heads en KV-heads: $\\frac{32\\text{ Q-heads}}{8\\text{ KV-heads}} = 4\\times$ minder geheugeninname.",
    "value": 4,
    "abs": 0,
    "errors": [
@@ -212,7 +212,7 @@
    "skill": "budget",
    "level": 2,
    "prompt": "Je traint een LLM van 10 miljard parameters (10B). Hoeveel gigabyte eist dit in RAM puur voor de weights en de AdamW-statussen (16-byteregel)?",
-   "explain": "$10\\cdot 10^9 \\times 16 = 160$ GB.",
+   "explain": "Volgens de 16-byteregel eist AdamW mixed precision training 16 bytes per parameter: $10 \\times 10^9\\text{ parameters} \\times 16\\text{ bytes} = 160\\text{ GB VRAM}$ aan pure parameter-overhead.",
    "value": 160,
    "abs": 0,
    "unit": "GB"
@@ -223,7 +223,7 @@
    "skill": "budget",
    "level": 1,
    "prompt": "Uit hoeveel FP32-bytes bestaat een master weight (enkel het modelgewicht zelf, zonder Adam-staten) per parameter tijdens mixed precision training?",
-   "explain": "Eén 32-bit float = 4 bytes.",
+   "explain": "Een floating-point getal in 32-bit precisie (FP32) bestaat uit 32 bits, wat exact $\\frac{32}{8} = 4\\text{ bytes}$ geheugen beslaat.",
    "value": 4,
    "abs": 0,
    "unit": "bytes"
@@ -234,7 +234,7 @@
    "skill": "dp-fsdp",
    "level": 2,
    "prompt": "Wat betekent de term 'Fully Sharded' in FSDP (ZeRO-3)?",
-   "explain": "Elke GPU bevat slechts een klein fragment van het model.",
+   "explain": "In Fully Sharded Data Parallel (FSDP / ZeRO-3) worden parameters, gradiënten én optimizer-statussen gelijkmatig versnipperd over alle GPU's in de cluster, zodat geen enkele kaart het volledige model hoeft op te slaan.",
    "options": [
     "Dat de parameters, gradients en optimizer-statussen in stukjes over de GPU's verdeeld worden",
     "Dat de GPU's volledig geïsoleerd van elkaar werken zonder communicatie",
@@ -249,7 +249,7 @@
    "skill": "model-parallel",
    "level": 2,
    "prompt": "Koppel de parallellisme-techniek aan zijn kenmerkende werking.",
-   "explain": "DP versnippert statussen, PP verdeelt in de diepte, TP in de breedte per matrix.",
+   "explain": "Data Parallelism versnippert de data en optimizer states over GPU's, Pipeline Parallelism verdeelt lagen sequentieel in de diepte (als een lopende band), en Tensor Parallelism splitst individuele gewichtsmatrices chirurgisch in de breedte.",
    "pairs": [
     [
      "Data Parallelism (FSDP)",
@@ -271,7 +271,7 @@
    "skill": "model-parallel",
    "level": 1,
    "prompt": "Hoe noem je de inefficiënte wachttijd of stilstand die ontstaat in Pipeline Parallelism wanneer GPU 2 op GPU 1 wacht? (één Engels woord)",
-   "explain": "Dit heet de 'bubble'.",
+   "explain": "De inefficiënte wachttijd waarin een GPU stilstaat omdat hij moet wachten op de activaties of gradiënten van een vorige sublaag in de pijplijn, noemt men de 'bubble'.",
    "answers": [
     "bubble",
     "bubbles"
@@ -284,7 +284,7 @@
    "skill": "cluster",
    "level": 2,
    "prompt": "Volgens de Chinchilla-regel, hoeveel miljard tokens zijn nodig om een 15B model compute-optimaal te trainen?",
-   "explain": "15 × 20 = 300 miljard tokens.",
+   "explain": "Volgens de Chinchilla-scaling wet ($D \\approx 20N$) vereist een 15B parameter model: $20 \\times 15\\text{B} = 300\\text{ miljard tokens}$ aan trainingsdata.",
    "value": 300,
    "abs": 0,
    "unit": "miljard"
@@ -295,7 +295,7 @@
    "skill": "cluster",
    "level": 2,
    "prompt": "Wat is het aantal benodigde FLOPs voor dat 15B model op 300B tokens, via de 6ND-formule?",
-   "explain": "6 * 15e9 * 300e9 = 2.7e22.",
+   "explain": "De formule voor pretrainings-compute luidt $C \\approx 6ND$: $6 \\times (15 \\times 10^9\\text{ parameters}) \\times (300 \\times 10^9\\text{ tokens}) = 2{,}7 \\times 10^{22}$ FLOPs.",
    "value": 2.7e+22,
    "abs": 0
   },
@@ -304,8 +304,8 @@
    "type": "numeric",
    "skill": "cluster",
    "level": 3,
-   "prompt": "Stel dat je exact 10 dagen de tijd krijgt ($864\\,000$ seconden) voor die run van $2{,}7 \\cdot 10^{22}$ FLOPs. Eén GPU levert in de praktijk $3 \\cdot 10^{14}$ FLOP/s. Hoeveel GPU's ben je nodig?",
-   "explain": "2.7e22 / (864 000 * 3e14) = 2.7e22 / 2.592e20 = 104,16. Minimum is dus 105.",
+   "prompt": "Stel dat je exact 10 dagen de tijd krijgt ($864\\,000$ seconden) voor die run van $2{,}7 \\cdot 10^{22}$ FLOPs. Eén GPU levert in de praktijk $3 \\cdot 10^{14}$ FLOP/s (floating-point operation). Hoeveel GPU's ben je nodig?",
+   "explain": "De benodigde rekenkracht is $2{,}7 \\times 10^{22}$ FLOPs. In 10 dagen levert één GPU: $864\\,000\\text{ s} \\times 3 \\times 10^{14}\\text{ FLOP/s} = 2{,}592 \\times 10^{20}$ FLOPs. Aantal GPU's: $\\frac{2{,}7 \\times 10^{22}}{2{,}592 \\times 10^{20}} \\approx 104{,}16$, dus minimaal 105 GPU's.",
    "value": 105,
    "abs": 1
   },
@@ -315,7 +315,7 @@
    "skill": "model-parallel",
    "level": 2,
    "prompt": "Waarom gebruikt men Tensor Parallelism vrijwel nooit om GPU's in verschillende servers met elkaar te verbinden over standaard ethernet?",
-   "explain": "TP eist een All-Reduce binnen de operatie; ethernet is daarvoor veel te traag.",
+   "explain": "Tensor Parallelism vereist twee All-Reduce communicatiesynchronisaties per transformerlaag; conventionele ethernet- of netwerkkabels hebben een te hoge latentie, waardoor TP uitsluitend werkt over supersnelle NVLink-verbindingen binnen één node.",
    "options": [
     "De gigantische hoeveelheid communicatie vereist speciale bruggen (zoals NVLink) met extreem lage latentie",
     "Tensor Parallelism vereist dat alle GPU's dezelfde IP-range delen via UDP",
@@ -330,7 +330,7 @@
    "skill": "dp-fsdp",
    "level": 3,
    "prompt": "Je verspreidt een gigantisch model van 80B parameters over 32 H100 GPU's via FSDP (ZeRO-3). Hoeveel GB geheugen vreet het model (inclusief adam en gradients) **per GPU** op (exclusief activaties)?",
-   "explain": "Totale grootte is 80 * 16 = 1280 GB. FSDP deelt dit door het netwerk: 1280 / 32 = 40 GB per GPU.",
+   "explain": "Met de 16-byteregel eist een 80B model: $80 \\times 16 = 1\\,280\\text{ GB}$. Onder FSDP verdeeld over 32 GPU's draagt elke chip fysiek: $\\frac{1\\,280\\text{ GB}}{32\\text{ GPU's}} = 40\\text{ GB VRAM}$.",
    "value": 40,
    "abs": 0,
    "unit": "GB"
@@ -341,7 +341,7 @@
    "skill": "budget",
    "level": 2,
    "prompt": "Wat is het verschil in geheugen tussen inferentie (enkel gewichten) en training (AdamW mixed precision) per parameter?",
-   "explain": "Inferentie kost 2 bytes (FP16), training 16 bytes.",
+   "explain": "Tijdens inferentie in 16-bit precisie heb je enkel de modelgewichten nodig (2 bytes/param). Tijdens pretraining vereist AdamW met mixed precision 16 bytes/param (inclusief gradiënten, FP32 master gewichten, momentum en variantie).",
    "options": [
     "Training kost 16 bytes, inferentie slechts 2 bytes",
     "Beiden kosten 16 bytes, maar training vereist ook netwerk",
@@ -356,7 +356,7 @@
    "skill": "budget",
    "level": 2,
    "prompt": "Leg aan een manager in één duidelijke zin uit waarom training in 16-bit alsnog 16 bytes per parameter (dus 8 keer zoveel) eist, en niet slechts 2 bytes.",
-   "explain": "Managerial samenvatting: je eist begrip van Adam en FP32.",
+   "explain": "AdamW vereist per parameter een FP32-kopie van de gewichten (4B) en twee FP32-statistieken voor momentum (4B) en variantie (4B), wat samen met model (2B) en gradiënten (2B) oploopt tot 16 bytes per parameter.",
    "model": "Naast het 2-byte gewicht moeten we ook de afgeleiden (2 bytes) bewaren, en de optimizer heeft drie 4-byte hulpsystemen in hogere precisie (Adam) nodig om kleine, stabiele leersprongen te garanderen (samen 16 bytes).",
    "rubric": [
     "Noemt de gradients/afgeleiden",
@@ -371,7 +371,7 @@
    "skill": "recap",
    "level": 2,
    "prompt": "Hoeveel tokens zijn 7 500 Engelse woorden (bij de vuistregel 1 token ≈ 0,75 woord)?",
-   "explain": "7 500 / 0,75 = 10 000 tokens.",
+   "explain": "Bij de vuistregel van 0,75 woord per token levert een tekst van 7 500 woorden: $\\frac{7\\,500}{0{,}75} = 10\\,000$ tokens op.",
    "value": 10000,
    "abs": 0
   },
@@ -381,7 +381,7 @@
    "skill": "recap",
    "level": 3,
    "prompt": "Hoeveel Engelse woorden passen er ongeveer in een contextvenster van 8 000 tokens?",
-   "explain": "Je doet het omgekeerde: 8 000 × 0,75 = 6 000 woorden.",
+   "explain": "Om van tokens naar Engelse woorden te gaan, vermenigvuldig je met de verhouding van 0,75 woord/token: $8\\,000 \\times 0{,}75 = 6\\,000$ woorden.",
    "value": 6000,
    "abs": 0
   },
@@ -391,7 +391,7 @@
    "skill": "recap",
    "level": 1,
    "prompt": "Vul de definitie aan.",
-   "explain": "Rang $r$ is de binnenste dimensie in LoRA.",
+   "explain": "In Low-Rank Adaptation (LoRA) ontbinden we gewichtsupdates als $\\Delta W = B \\cdot A$; de parameter $r$ is de binnenste flessenhalsdimensie van deze matrixvermenigvuldiging.",
    "text": "De rang $r$ in LoRA staat voor de {{binnenste|kleinste|gedeelde}} dimensie van de $B \\times A$ vermenigvuldiging."
   },
   {
@@ -400,7 +400,7 @@
    "skill": "recap",
    "level": 2,
    "prompt": "Een model bezit 128 query-heads en 16 KV-heads. Met welke factor krimpt de KV-cache ten opzichte van MHA?",
-   "explain": "128 / 16 = 8.",
+   "explain": "Bij Grouped-Query Attention (GQA) is de reductiefactor van de KV-cache gelijk aan de verhouding tussen Query-heads en KV-heads: $\\frac{128}{16} = 8\\times$.",
    "value": 8,
    "abs": 0
   },
@@ -410,7 +410,7 @@
    "skill": "budget",
    "level": 2,
    "prompt": "Je traint een groter model van 50B parameters. Hoeveel gigabyte (GB) RAM vereist dit in totaal (weights + gradients + adam, dus de 16-byteregel)?",
-   "explain": "50 * 16 = 800 GB.",
+   "explain": "Volgens de 16-byteregel voor pretraining met AdamW kost een 50B parameter model: $50 \\times 10^9 \\times 16\\text{ bytes} = 800\\text{ GB VRAM}$ aan pure parameter-overhead.",
    "value": 800,
    "abs": 0,
    "unit": "GB"
@@ -421,7 +421,7 @@
    "skill": "budget",
    "level": 3,
    "prompt": "Hoeveel gigabyte kost datzelfde 50B model als je de training staakt en het uitsluitend in FP16 gebruikt voor inferentie (geen activaties/context gerekend)?",
-   "explain": "Voor inferentie in FP16 is dat 2 bytes/param. 50 * 2 = 100 GB.",
+   "explain": "Voor inferentie in 16-bit precisie zijn enkel de modelgewichten nodig (2 bytes per parameter): $50 \\times 10^9 \\times 2\\text{ bytes} = 100\\text{ GB VRAM}$.",
    "value": 100,
    "abs": 0,
    "unit": "GB"
@@ -432,7 +432,7 @@
    "skill": "dp-fsdp",
    "level": 2,
    "prompt": "Vul aan over de lichtste vorm van ZeRO.",
-   "explain": "ZeRO-1 shardt enkel Adam-statussen.",
+   "explain": "In tegenstelling tot ZeRO-3 versnippert ZeRO-1 uitsluitend de AdamW-optimizer states (momentum en variantie, 8 bytes) over de cluster.",
    "text": "In tegenstelling tot ZeRO-3 versnippert ZeRO-1 uitsluitend de {{Adam-statussen|optimizer statussen|momentum en variantie|Adam statussen}} over de cluster."
   },
   {
@@ -441,7 +441,7 @@
    "skill": "dp-fsdp",
    "level": 2,
    "prompt": "Vul aan.",
-   "explain": "FSDP = Fully Sharded, shardt alles.",
+   "explain": "Fully Sharded Data Parallel (FSDP / ZeRO-3) versnippert alle drie de componenten: de modelparameters, de gradiënten én de optimizer-statussen.",
    "text": "FSDP of ZeRO-3 is het uiterste. Deze techniek versnippert namelijk zowel de statussen als de {{parameters|gewichten|modelgewichten}} en de {{gradients|afgeleiden}}."
   },
   {
@@ -450,7 +450,7 @@
    "skill": "model-parallel",
    "level": 2,
    "prompt": "Sorteer deze parallellisme-technieken van **snelste/kortste communicatielink** (NVLink binnen de server) naar **traagste/grootste schil** (Ethernet over de héle datacenter cluster).",
-   "explain": "3D parallelism wordt opgebouwd als TP (node), PP (tussen nodes), DP/FSDP (hele cluster).",
+   "explain": "In een 3D-parallel cluster is de communicatie het snelst bij Tensor Parallelism (binnen de server via NVLink), gemiddeld bij Pipeline Parallelism (tussen opeenvolgende servers), en het traagst/meest verweven bij Data Parallelism / FSDP.",
    "tiles": [
     "Tensor Parallelism",
     "Pipeline Parallelism",
@@ -464,7 +464,7 @@
    "skill": "model-parallel",
    "level": 2,
    "prompt": "Vul aan over TP.",
-   "explain": "TP knipt de matrix door.",
+   "explain": "In Tensor Parallelism (TP) splitsen we individuele aandachts- en feed-forward matrices chirurgisch op; de deelresultaten worden gesynchroniseerd via een All-Reduce operatie.",
    "text": "In Tensor Parallelism knip je de wiskundige {{matrix|matrices}} zelf door. GPU's moeten in het midden van elke laag hun output synchroniseren met een {{All-Reduce|allreduce}} operatie."
   },
   {
@@ -473,7 +473,7 @@
    "skill": "cluster",
    "level": 2,
    "prompt": "Je ontwerpt een training voor een 5B model op 100B tokens (wat overigens niet Chinchilla-optimaal is). Hoeveel FLOPs in totaal kost deze trainingsrun (via de 6ND-formule)?",
-   "explain": "6 * 5e9 * 100e9 = 3e21.",
+   "explain": "De trainings-FLOPs voor een 5B model op 100B tokens bedragen $C \\approx 6ND = 6 \\times (5 \\times 10^9) \\times (100 \\times 10^9) = 3 \\times 10^{21}$ FLOPs.",
    "value": 3e+21,
    "abs": 0
   },
@@ -483,7 +483,7 @@
    "skill": "cluster",
    "level": 3,
    "prompt": "Die run vereist $3 \\cdot 10^{21}$ FLOPs. Je krijgt exáct 10 dagen de tijd ($864\\,000$ seconden). Eén H100 levert nuttig $3 \\cdot 10^{14}$ FLOP/s. Hoeveel H100 GPU's heb je minimaal nodig om het te halen?",
-   "explain": "$3 \\cdot 10^{21} / (864 000 \\times 3 \\cdot 10^{14}) = 3 \\cdot 10^{21} / 2.592 \\cdot 10^{20} = 11,57$. Je hebt er dus 12 nodig.",
+   "explain": "De benodigde rekenkracht is $3 \\times 10^{21}$ FLOPs. In 10 dagen levert één GPU: $864\\,000\\text{ s} \\times 3 \\times 10^{14}\\text{ FLOP/s} = 2{,}592 \\times 10^{20}$ FLOPs. Aantal GPU's: $\\frac{3 \\times 10^{21}}{2{,}592 \\times 10^{20}} \\approx 11{,}57$, wat naar boven afrondt op 12 GPU's.",
    "value": 12,
    "abs": 0
   },
@@ -493,7 +493,7 @@
    "skill": "dp-fsdp",
    "level": 3,
    "prompt": "Je rolt een megamodel van 100B parameters uit via FSDP (ZeRO-3) over een farm van 64 H100 GPU's. Hoeveel GB van de H100 is nu per GPU gereserveerd voor puur de modelgewichten/optimizer?",
-   "explain": "100 * 16 = 1600 GB. Verdeeld over 64 GPU's: 1600 / 64 = 25 GB per kaart.",
+   "explain": "De totale statische geheugenbehoefte is $100\\text{B} \\times 16\\text{ bytes} = 1\\,600\\text{ GB}$. Onder FSDP verdeeld over 64 GPU's vereist dit: $\\frac{1\\,600\\text{ GB}}{64\\text{ GPU's}} = 25\\text{ GB VRAM}$ per kaart.",
    "value": 25,
    "abs": 0,
    "unit": "GB"
@@ -504,7 +504,7 @@
    "skill": "model-parallel",
    "level": 1,
    "prompt": "Vul aan.",
-   "explain": "Pipeline parallelism en bubbles.",
+   "explain": "Bij Pipeline Parallelism (PP) snijd je het netwerk horizontaal door per laag; de inefficiënte wachttijd waarin GPU's wachten op gegevens heet een bubble.",
    "text": "Bij Pipeline Parallelism (PP) snijd je het netwerk horizontaal door per {{laag|layer}}. De dode wachttijd noemt men een {{bubble|bubbel}}."
   },
   {
@@ -513,7 +513,7 @@
    "skill": "budget",
    "level": 3,
    "prompt": "In de berekening van de 16-byteregel voor mixed precision AdamW, hoeveel bytes in totaal neemt het puur 32-bit (FP32) gedeelte per parameter in beslag?",
-   "explain": "Master weight (4) + Momentum (4) + Variantie (4) = 12 bytes.",
+   "explain": "De drie FP32-toestanden in AdamW zijn de master copy van de gewichten (4B), momentum (4B) en variantie (4B), wat samen exact $4 + 4 + 4 = 12$ bytes per parameter kost.",
    "value": 12,
    "abs": 0,
    "unit": "bytes"
@@ -524,7 +524,7 @@
    "skill": "cluster",
    "level": 2,
    "prompt": "Wat meten ingenieurs met het concept MFU (Model FLOPs Utilization)?",
-   "explain": "MFU is de reële effectiviteit van de hardware tijdens de modeltraining.",
+   "explain": "Model FLOPs Utilization (MFU) meet de verhouding tussen de theoretische piekprestatie van de hardware en de daadwerkelijk gerealiseerde rekenkracht tijdens het trainen.",
    "options": [
     "De daadwerkelijk behaalde rekenkracht vergeleken met het theoretische hardware-maximum",
     "De hoeveelheid bytes die per seconde over NVLink gaat",
@@ -539,7 +539,7 @@
    "skill": "budget",
    "level": 1,
    "prompt": "Uit hoeveel FP16-bytes bestaat de gradient per parameter in de backward pass?",
-   "explain": "FP16 (of BF16) neemt exact 2 bytes in beslag.",
+   "explain": "In 16-bit precisie (FP16 of BF16) neemt de berekende gradiënt per parameter exact 16 bits oftewel 2 bytes in beslag.",
    "value": 2,
    "abs": 0,
    "unit": "bytes"
@@ -550,7 +550,7 @@
    "skill": "dp-fsdp",
    "level": 3,
    "prompt": "Tijdens FSDP gooit GPU 1 parameters weg van lagen waar hij niet zelf voor verantwoordelijk is. Waarom kost dit niet te veel rekenkracht?",
-   "explain": "De GPU berekent ze niet, hij haalt ze gewoon via All-Gather op van de buurman.",
+   "explain": "Tijdens FSDP haalt een GPU parameters van niet-lokale lagen 'just-in-time' op bij andere GPU's via een All-Gather communicatiestap en wist ze direct na de berekening.",
    "options": [
     "Hij berekent de missende waarden niet, maar kopieert ze direct van de andere GPU's via All-Gather",
     "Hij gebruikt LoRA om ze bliksemsnel the benaderen",
@@ -564,39 +564,39 @@
   "type": "explain",
   "lang": "nl",
   "minWords": 100,
-  "prompt": "**Klantcase.** Een enterprise-klant wil een eigen model van 20B parameters from scratch trainen. Het budget is strak, maar de training moet in exact 10 dagen (864 000 seconden) klaar zijn. Ze huren H100's (reken op $3 \\cdot 10^{14}$ FLOP/s). Ze hebben zojuist één fysieke server met 8 H100's (elk 80 GB) klaargezet en menen dat dit de klus in 10 dagen wel kan klaren.\n\n1. Bereken de benodigde FLOPs via Chinchilla en 6ND (toon berekening).\n2. Bereken het benodigde aantal GPU's voor de tijdslimiet. Haalt de klant het met zijn 8 GPU's?\n3. Toon wiskundig aan of het model zélf op die ene server met 8 GPU's past qua RAM (vermeld de AdamW-regel).\n4. Adviseer welk soort parallellisme (TP, PP of FSDP) je toepast voor de grote cluster (binnen en tussen de servers).",
-  "model": "**1. FLOPs**: Chinchilla dicteert $20$ tokens per parameter, dus $20 \\times 20\\cdot 10^9 = 400\\cdot 10^9$ (400B) tokens. De FLOPs zijn $6 \\times (20\\cdot 10^9) \\times (400\\cdot 10^9) = 4{,}8 \\cdot 10^{22}$.\n\n**2. Aantal GPU's**: Eén GPU verwerkt in 10 dagen $864\\,000 \\times 3 \\cdot 10^{14} = 2{,}592 \\cdot 10^{20}$ FLOPs. Aantal benodigde GPU's = $4{,}8 \\cdot 10^{22} / 2{,}592 \\cdot 10^{20} \\approx 185{,}2$. Ze hebben dus minimaal 186 GPU's nodig, en redden het absoluut niet met 8 stuks.\n\n**3. Geheugen**: Met de 16-byteregel eist AdamW $20\\cdot 10^9 \\times 16 = 320$ GB. Eén server met 8 GPU's van 80 GB heeft samen 640 GB. Dankzij FSDP past het model theoretisch ruim op de 8 GPU's ($320$ GB $< 640$ GB), al helpt dat niet voor de strakke tijdslimiet.\n\n**4. Parallellisme**: Binnen één fysieke server (met de snelle NVLink) gebruik je **Tensor Parallelism (TP)**. Tussen de vele tientallen benodigde servers verbind je de rest via **FSDP / Data Parallelism** en eventueel **Pipeline Parallelism (PP)**.",
+  "prompt": "**Klantcase.** Een enterprise-klant wil een eigen domeinspecifiek taalmodel met 20 miljard (20B) parameters vanaf nul pretrainen (pretraining from scratch). Het budget is strak, maar de training moet in exact 10 dagen (864 000 seconden) voltooid zijn. Ze huren NVIDIA H100 GPU's (reken op een reële verwerkingssnelheid van $3 \\cdot 10^{14}$ FLOP/s per GPU). Het management heeft zojuist één fysieke server met 8 H100's (elk 80 GB VRAM) gereserveerd en denkt dat dit voldoende is om de klus binnen 10 dagen te klaren.\n\nJij evalueert dit plan als technisch en financieel adviseur:\n1. Bereken de benodigde trainingsdata (in tokens) volgens de Chinchilla-scaling wet en het totale aantal benodigde Floating Point Operations (FLOPs) via de 6ND-formule (toon je berekening).\n2. Bereken het exacte aantal GPU's dat mathematisch vereist is om deze compute binnen de strakke tijdslimiet van 10 dagen te verwerken. Haalt de klant het met zijn 8 GPU's?\n3. Toon wiskundig aan of het model zélf op die ene server met 8 GPU's zou passen qua Video RAM (VRAM) met de 16-byteregel voor AdamW en Fully Sharded Data Parallel (FSDP).\n4. Formuleer een strategisch advies over welk type parallellisme (Tensor Parallelism, Pipeline Parallelism of FSDP) je toepast binnen de fysieke servernodes en over de gehele cluster.",
+  "model": "**1. Datavolume en Trainings-FLOPs (Chinchilla & 6ND).**\n- Volgens de Chinchilla-scaling wet ($D \\approx 20N$) vereist een 20B parameter model:\n  $$D = 20 \\times (20 \\times 10^9\\text{ parameters}) = \\boxed{400\\text{ miljard (400B) tokens}}$$\n- De totale benodigde pretrainings-compute bedraagt volgens de $6ND$-formule ($2ND$ forward + $4ND$ backward):\n  $$C_{\\text{train}} \\approx 6 \\times (20 \\times 10^9\\text{ parameters}) \\times (400 \\times 10^9\\text{ tokens})$$\n  $$C_{\\text{train}} = 6 \\times 20 \\times 400 \\times 10^{18} = \\boxed{4{,}8 \\times 10^{22}\\text{ FLOPs}}$$\n  *(48 zettaFLOPs)*.\n\n**2. Begroting van het aantal benodigde GPU's.**\n- Beschikbare tijd: $T = 10\\text{ dagen} = 864\\,000\\text{ seconden}$.\n- Rekenoutput van één H100 GPU in 10 dagen bij een realistische MFU ($3 \\times 10^{14}$ FLOP/s):\n  $$\\text{Capaciteit per GPU} = 864\\,000\\text{ s} \\times (3 \\times 10^{14}\\text{ FLOP/s}) = 2{,}592 \\times 10^{20}\\text{ FLOPs}$$\n- Aantal benodigde GPU's:\n  $$\\text{Benodigde GPU's} = \\frac{4{,}8 \\times 10^{22}}{2{,}592 \\times 10^{20}} \\approx \\boxed{185{,}19\\text{ GPU's}}$$\n- **Conclusie:** De klant haalt de deadline absoluut niet met 8 GPU's. Er zijn minimaal **186 GPU's** nodig (in de praktijk afgerond naar 192 GPU's oftewel 24 nodes van 8 GPU's).\n\n**3. Geheugenanalyse via de 16-byteregel (VRAM).**\n- Volgens de 16-byteregel vereist training met AdamW in mixed precision 16 bytes per parameter (2B model + 2B gradiënten + 4B master weights + 4B momentum + 4B variantie):\n  $$\\text{Totale statische VRAM} = 20 \\times 10^9\\text{ parameters} \\times 16\\text{ bytes} = \\boxed{320\\text{ GB}}$$\n- Eén fysieke server met 8 H100 GPU's van elk 80 GB bezit samen $8 \\times 80 = \\boxed{640\\text{ GB VRAM}}$.\n- Dankzij FSDP wordt het geheugen versnipperd ($320 / 8 = 40\\text{ GB}$ per GPU). Het model past dus theoretisch *ruim* op de server ($320\\text{ GB} < 640\\text{ GB}$), maar de training zou op 8 GPU's ruim 231 dagen (ruim 7,5 maand) duren in plaats van 10 dagen!\n\n**4. Strategisch advies voor de cluster-architectuur (3D Parallelism).**\n- **Binnen elke fysieke servernode (Intra-node):** Pas **Tensor Parallelism (TP = 8)** toe. Binnen de node communiceren de 8 H100 GPU's via de ultra-snelle NVLink-koperverbindingen (900 GB/s), wat de vereiste All-Reduce synchronisaties binnen elke sublaag mogelijk maakt.\n- **Tussen de fysieke servers (Inter-node):** Verbind de 24 servers via **Fully Sharded Data Parallel (FSDP / Data Parallelism)** en eventueel **Pipeline Parallelism (PP)** over high-speed InfiniBand netwerken om databatches efficiënt te verdelen zonder geheugenredundantie.",
   "rubric": [
-   "Berekent 400B tokens en exact $4{,}8 \\cdot 10^{22}$ FLOPs",
-   "Concludeert (met berekening) dat er $\\approx 186$ GPU's nodig zijn",
-   "Legt uit dat het budgettair (320 GB) via FSDP wel op 8 GPU's (640 GB) past",
-   "Adviseert Tensor Parallelism uitsluitend binnen een fysieke server/node",
-   "Adviseert FSDP en/of PP tussen de servers onderling"
+   "Berekent 400B tokens via Chinchilla (D ≈ 20N) en exact 4,8 × 10²² FLOPs via 6ND",
+   "Berekent correct dat er circa 186 GPU's nodig zijn en concludeert dat 8 GPU's ruim onvoldoende zijn voor de tijdslimiet",
+   "Berekent via de 16-byteregel dat 320 GB VRAM nodig is en toont aan dat dit via FSDP op 8 GPU's (640 GB) past",
+   "Adviseert Tensor Parallelism (TP) strikt binnen de fysieke servernode via NVLink",
+   "Adviseert FSDP en/of Pipeline Parallelism (PP) voor de communicatie tussen de servers"
   ]
  },
  "cards": [
   {
    "id": "c-tokens",
-   "front": "Vuistregel: Hoe reken je Engelse woorden om naar tokens?",
-   "back": "Aantal woorden / 0,75 = aantal tokens",
+   "front": "Wat is de wiskundige rekenregel om Engelse woorden om te rekenen naar Large Language Model (LLM)-tokens?",
+   "back": "Aantal woorden / 0,75 = aantal tokens (ofwel vermenigvuldigen met 4/3). 3 000 woorden levert dus $3\\,000 / 0{,}75 = 4\\,000$ tokens op.",
    "skill": "recap"
   },
   {
    "id": "c-chinchilla",
-   "front": "De Chinchilla-vuistregel stelt dat $D \\approx$ ...?",
-   "back": "$20N$ (oftewel 20 tokens per parameter trainen)",
+   "front": "Wat dicteert de Chinchilla-scaling wet (Hoffmann et al., 2022) voor compute-optimaal trainen?",
+   "back": "$D \\approx 20N$. Voor een minimaal trainingsverlies moet de trainingsdataset ruwweg 20 tokens per parameter bevatten om underfitting te voorkomen.",
    "skill": "recap"
   },
   {
    "id": "c-gqa",
-   "front": "Hoe bereken je de factor waarmee de KV-cache krimpt in GQA?",
-   "back": "Door het aantal Query-heads te delen door het aantal KV-heads",
+   "front": "Hoe bereken je de factor waarmee de Key-Value cache (KV-cache) krimpt in Grouped-Query Attention (GQA)?",
+   "back": "Door het aantal Query-heads te delen door het aantal KV-heads: $\\frac{H_Q}{H_{KV}}$. Bij 64 Query-heads en 8 KV-heads krimpt de cache met een factor $64/8 = 8\\times$.",
    "skill": "recap"
   },
   {
    "id": "c-adamw",
-   "front": "Hoeveel bytes kost 1 parameter tijdens training in FP16 AdamW mixed-precision?",
-   "back": "16 bytes",
+   "front": "Hoeveel bytes aan Video RAM (VRAM) kost 1 modelparameter tijdens training in mixed precision met AdamW?",
+   "back": "16 bytes per parameter (2B model in BF16/FP16 + 2B gradiënten + 4B FP32 master gewichten + 4B FP32 momentum $m$ + 4B FP32 variantie $v$).",
    "skill": "budget",
    "answers": [
     "16",
@@ -606,32 +606,32 @@
   },
   {
    "id": "c-adamw-fp32",
-   "front": "Welke drie toestand-variabelen behoudt AdamW in FP32 (samen 12 bytes/param) tijdens mixed precision?",
-   "back": "Master weights, momentum, en variantie",
+   "front": "Welke drie toestand-variabelen behoudt AdamW verplicht in FP32 (samen 12 bytes/param) tijdens mixed precision training?",
+   "back": "De master weights (4B, om afrondingsfouten bij kleine updates te voorkomen), het momentum $m$ (4B) en de ongecentreerde variantie $v$ (4B).",
    "skill": "budget"
   },
   {
    "id": "c-zero3",
-   "front": "Wat is het voornaamste effect van ZeRO-3 of FSDP op je hardware?",
-   "back": "Het versnippert parameters, gradients en optimizer-statussen over GPU's om drastisch RAM te sparen.",
+   "front": "Wat is het voornaamste effect van ZeRO-3 of Fully Sharded Data Parallel (FSDP) op cluster-hardware?",
+   "back": "Het versnippert (*shardt*) modelgewichten, gradiënten én optimizer-statussen over alle GPU's in het netwerk. Kaarten halen ontbrekende lagen 'just-in-time' op via All-Gather en wissen ze direct na berekening.",
    "skill": "dp-fsdp"
   },
   {
    "id": "c-flops",
-   "front": "Geef de klassieke formule voor de totale FLOPs van een trainingsrun.",
-   "back": "$\\text{FLOPs} = 6 \\cdot N \\cdot D$",
+   "front": "Geef de canonieke formule voor de totale Floating Point Operations (FLOPs) van een LLM-trainingsrun.",
+   "back": "$\\text{FLOPs} \\approx 6ND$ ($2ND$ voor de forward pass + $4ND$ voor de backward pass over $N$ parameters en $D$ tokens).",
    "skill": "cluster"
   },
   {
    "id": "c-tp",
-   "front": "Waarom pas je Tensor Parallelism (TP) vrijwel uitsluitend toe binnen één fysieke server?",
-   "back": "De wiskundige *All-Reduce* per laag eist zulke enorme communicatiesnelheden dat je fysieke verbindingen zoals NVLink nodig hebt.",
+   "front": "Waarom pas je Tensor Parallelism (TP) vrijwel uitsluitend toe binnen één fysieke servernode?",
+   "back": "De wiskundige *All-Reduce* per laag eist ultralage latency en gigantische bandbreedte die enkel haalbaar zijn via fysieke NVLink-koperverbindingen op het moederbord (maximaal 8 GPU's).",
    "skill": "model-parallel"
   },
   {
    "id": "c-pp",
-   "front": "Wat bedoelen technici met de 'bubble' in Pipeline Parallelism (PP)?",
-   "back": "De idle stilstand/wachttijd wanneer een GPU niets berekent en wacht op data van een vorige laag/GPU.",
+   "front": "Wat verstaat men onder de 'bubble' in Pipeline Parallelism (PP) en hoe wordt deze geminimaliseerd?",
+   "back": "De inefficiënte wachttijd (*idle time*) waarin GPU's stilstaan en wachten op data van voorgaande of latere lagen. Dit wordt gereduceerd door batches op te splitsen in continue stromen van *micro-batches*.",
    "skill": "model-parallel"
   }
  ],
@@ -643,6 +643,8 @@
  "meta": {
   "author": "antigravity",
   "created": "2026-09-28",
-  "adaptedFor": "Aangepast aan niveau basis (recapitulerende startsectie en lagere instapdrempel), met gerichte oefeningen en letterlijke feedback op zijn eerdere rekenfouten rond tokens, GQA, Chinchilla en LoRA."
+  "adaptedFor": "Aangepast aan niveau basis (recapitulerende startsectie en lagere instapdrempel), met gerichte oefeningen en letterlijke feedback op zijn eerdere rekenfouten rond tokens, GQA, Chinchilla en LoRA.",
+  "revised": "2026-10-21",
+  "revisionNotes": "Afkortingen voluit geschreven, uitleg verdiept, handelsingenieur-perspectief versterkt"
  }
 }

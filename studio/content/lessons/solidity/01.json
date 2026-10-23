@@ -7,11 +7,11 @@
  "subtitle": "Accounts, transacties vs calls, gas, en SimpleStorage schrijven, deployen en testen",
  "level": "beginner",
  "minutes": 45,
- "summary": "Smart contracts zijn programma's die op duizenden computers tegelijk draaien en nooit meer veranderen. Wie begrijpt wat de EVM doet, wat een transactie kost en waarom opslag duur is, schrijft vanaf de eerste regel veiliger en goedkoper.",
+ "summary": "Smart contracts zijn programma's die op duizenden computers tegelijk draaien en nooit meer veranderen. Wie begrijpt wat de EVM (Ethereum Virtual Machine) doet, wat een transactie kost en waarom opslag duur is, schrijft vanaf de eerste regel veiliger en goedkoper.",
  "objectives": [
   {
    "id": "state-machine",
-   "text": "Je legt uit hoe Ethereum een gedeelde state machine is met EOA's en contract-accounts."
+   "text": "Je legt uit hoe Ethereum een gedeelde state machine is met EOA's (externally owned account) en contract-accounts."
   },
   {
    "id": "tx-vs-call",
@@ -131,7 +131,7 @@
     "type": "numeric",
     "skill": "gas",
     "level": 2,
-    "prompt": "Een transactie verbruikt 100 000 gas bij een totale gasprijs van 30 gwei. Hoeveel ETH betaal je?",
+    "prompt": "Een transactie verbruikt 100 000 gas bij een totale gasprijs van 30 gwei. Hoeveel ETH (ether, de munt van Ethereum) betaal je?",
     "explain": "100 000 × 30 gwei = 3 000 000 gwei = 0,003 ETH.",
     "value": 0.003,
     "tolerance": 0.01,
@@ -144,7 +144,7 @@
     "skill": "errors",
     "level": 2,
     "prompt": "Waarom zijn custom errors (`error NotOwner();`) goedkoper dan `require(cond, \"lange tekst\")`?",
-    "explain": "Selector + args i.p.v. een ABI-gecodeerde string.",
+    "explain": "Selector + args i.p.v. een ABI-gecodeerde (ABI = application binary interface) string.",
     "options": [
      "Een 4-byte selector i.p.v. een volledige string in bytecode en revert-data",
      "Ze reverten niet, dus er is geen rollback nodig",
@@ -186,7 +186,7 @@
     "type": "mcq",
     "skill": "erc4626",
     "level": 3,
-    "prompt": "Welke maatregel beperkt de **inflation attack** op een lege ERC-4626-vault?",
+    "prompt": "Welke maatregel beperkt de **inflation attack** op een lege ERC-4626-vault (ERC-4626 = Ethereum Request for Comments 4626, de standaard voor tokenized vaults)?",
     "explain": "Virtuele shares/offset (OpenZeppelin) of een seed-deposit.",
     "options": [
      "Virtual shares/offset of een initiële deposit",
@@ -202,7 +202,7 @@
     "type": "mcq",
     "skill": "eip712",
     "level": 3,
-    "prompt": "Waarom bevat de EIP-712 domain separator de `chainId`?",
+    "prompt": "Waarom bevat de EIP-712 (Ethereum Improvement Proposal 712) domain separator de `chainId`?",
     "explain": "Zonder chainId kan een handtekening op een fork/andere chain hergebruikt worden.",
     "options": [
      "Om replay van een handtekening op een andere chain te voorkomen",
@@ -219,7 +219,7 @@
   {
    "id": "evm",
    "title": "Ethereum als wereldcomputer",
-   "md": "Ethereum is geen gewone database maar een **gedeelde, deterministische state machine**: duizenden computers (nodes) voeren exact dezelfde instructies uit en komen zo tot dezelfde toestand (*state*). Die state bestaat uit **accounts**:\n\n| Account | Beheerd door | Heeft | Voorbeeld |\n|---|---|---|---|\n| **EOA** (externally owned) | een private key (jouw wallet) | saldo, nonce | je MetaMask-adres |\n| **Contract** | zijn eigen code | saldo, code, storage | een token, een kluis, een DEX |\n\nAlleen een EOA kan een **transactie** starten (met een digitale handtekening). Een contract reageert enkel wanneer het wordt aangeroepen — rechtstreeks door een EOA of door een ander contract.\n\nDe **Ethereum Virtual Machine (EVM)** is de rekenmachine die contractcode uitvoert: een stack-machine met 256-bit woorden, tijdelijk geheugen (*memory*) en permanente opslag (*storage*). Contracten schrijf je in **Solidity**; de compiler (*solc*) zet dat om naar EVM-bytecode.\n\n> [!rule] Code is onveranderlijk\n> Na deployment kan de bytecode van een contract **niet meer gewijzigd** worden. Een bug patch je niet — je deployt een nieuw contract en migreert (of je bouwt vooraf een upgrade-mechanisme in, les 18). Daarom zijn testen en security in Solidity geen luxe maar voorwaarde.",
+   "md": "Ethereum is geen gewone database maar een **gedeelde, deterministische state machine**: duizenden computers (nodes) voeren exact dezelfde instructies uit en komen zo tot dezelfde toestand (*state*). Die state bestaat uit **accounts**:\n\n| Account | Beheerd door | Heeft | Voorbeeld |\n|---|---|---|---|\n| **EOA** (externally owned) | een private key (jouw wallet) | saldo, nonce | je MetaMask-adres |\n| **Contract** | zijn eigen code | saldo, code, storage | een token, een kluis, een DEX (decentralized exchange) |\n\nAlleen een EOA kan een **transactie** starten (met een digitale handtekening). Een contract reageert enkel wanneer het wordt aangeroepen — rechtstreeks door een EOA of door een ander contract.\n\nDe **Ethereum Virtual Machine (EVM)** is de rekenmachine die contractcode uitvoert: een stack-machine met 256-bit woorden, tijdelijk geheugen (*memory*) en permanente opslag (*storage*). Contracten schrijf je in **Solidity**; de compiler (*solc*) zet dat om naar EVM-bytecode.\n\n> [!rule] Code is onveranderlijk\n> Na deployment kan de bytecode van een contract **niet meer gewijzigd** worden. Een bug patch je niet — je deployt een nieuw contract en migreert (of je bouwt vooraf een upgrade-mechanisme in, les 18). Daarom zijn testen en security in Solidity geen luxe maar voorwaarde.",
    "checks": [
     {
      "id": "c1",
@@ -281,7 +281,7 @@
   {
    "id": "contract",
    "title": "Anatomie van een contract",
-   "md": "Een eerste contract, regel per regel:\n\n```solidity SimpleStorage.sol\n// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SimpleStorage {\n    uint256 public favorite;      // storage slot 0\n    address public lastChanger;   // storage slot 1\n\n    function set(uint256 x) external {\n        favorite = x;             // SSTORE: kost gas\n        lastChanger = msg.sender; // wie riep deze transactie aan?\n    }\n\n    function get() external view returns (uint256) {\n        return favorite;          // SLOAD: gratis via eth_call\n    }\n}\n```\n\n- **SPDX-licentie**: verplicht commentaar voor verificatie op Etherscan.\n- **`pragma solidity ^0.8.20;`**: compileer met 0.8.20 of een nieuwere 0.8-versie.\n- **State-variabelen** (`favorite`, `lastChanger`) leven in **storage**, elk in een eigen slot van 32 bytes.\n- **`external`**: enkel van buitenaf aanroepbaar (ook `public`: van buiten én binnen het contract).\n- **`msg.sender`**: het adres van wie de huidige functie aanroept — de basis van elke toegangscontrole.\n- **`view … returns (uint256)`**: leest state, geeft een getal terug.\n\nProbeer het zelf: klik **Compileer & deploy**, roep `set` aan als *alice*, en bekijk het tabblad **Opslag** — je ziet slot 0 en slot 1 veranderen.\n\n:::sim solidity {\"file\": \"SimpleStorage.sol\", \"contract\": \"SimpleStorage\", \"key\": \"demo-sol1\", \"code\": \"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.20;\\n\\ncontract SimpleStorage {\\n    uint256 public favorite;      // storage slot 0\\n    address public lastChanger;   // storage slot 1\\n\\n    function set(uint256 x) external {\\n        favorite = x;             // SSTORE: kost gas\\n        lastChanger = msg.sender; // wie riep deze transactie aan?\\n    }\\n\\n    function get() external view returns (uint256) {\\n        return favorite;          // SLOAD: gratis via eth_call\\n    }\\n}\"}\n:::",
+   "md": "Een eerste contract, regel per regel:\n\n```solidity SimpleStorage.sol\n// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract SimpleStorage {\n    uint256 public favorite;      // storage slot 0\n    address public lastChanger;   // storage slot 1\n\n    function set(uint256 x) external {\n        favorite = x;             // SSTORE: kost gas\n        lastChanger = msg.sender; // wie riep deze transactie aan?\n    }\n\n    function get() external view returns (uint256) {\n        return favorite;          // SLOAD: gratis via eth_call\n    }\n}\n```\n\n- **SPDX-licentie** (SPDX = Software Package Data Exchange): verplicht commentaar voor verificatie op Etherscan.\n- **`pragma solidity ^0.8.20;`**: compileer met 0.8.20 of een nieuwere 0.8-versie.\n- **State-variabelen** (`favorite`, `lastChanger`) leven in **storage**, elk in een eigen slot van 32 bytes.\n- **`external`**: enkel van buitenaf aanroepbaar (ook `public`: van buiten én binnen het contract).\n- **`msg.sender`**: het adres van wie de huidige functie aanroept — de basis van elke toegangscontrole.\n- **`view … returns (uint256)`**: leest state, geeft een getal terug.\n\nProbeer het zelf: klik **Compileer & deploy**, roep `set` aan als *alice*, en bekijk het tabblad **Opslag** — je ziet slot 0 en slot 1 veranderen.\n\n:::sim solidity {\"file\": \"SimpleStorage.sol\", \"contract\": \"SimpleStorage\", \"key\": \"demo-sol1\", \"code\": \"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.20;\\n\\ncontract SimpleStorage {\\n    uint256 public favorite;      // storage slot 0\\n    address public lastChanger;   // storage slot 1\\n\\n    function set(uint256 x) external {\\n        favorite = x;             // SSTORE: kost gas\\n        lastChanger = msg.sender; // wie riep deze transactie aan?\\n    }\\n\\n    function get() external view returns (uint256) {\\n        return favorite;          // SLOAD: gratis via eth_call\\n    }\\n}\"}\n:::",
    "checks": [
     {
      "id": "c4",
@@ -635,7 +635,7 @@
    "type": "type",
    "skill": "tx-vs-call",
    "level": 2,
-   "prompt": "Welke JSON-RPC-methode gebruikt een frontend om een view-functie gratis uit te voeren?",
+   "prompt": "Welke JSON-RPC-methode (JSON-RPC = remote procedure call via JSON) gebruikt een frontend om een view-functie gratis uit te voeren?",
    "explain": "`eth_call` — lokaal uitgevoerd, niets opgeslagen.",
    "answers": [
     "eth_call"

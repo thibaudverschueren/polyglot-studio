@@ -202,7 +202,7 @@
     "skill": "accord-pp",
     "level": 3,
     "prompt": "Vul het voltooid deelwoord van **succéder** in.",
-    "explain": "*succéder à* → *se* is COI → onveranderlijk.",
+    "explain": "*succéder à* → *se* is COI (complément d'objet indirect, het voorwerp met à of de) → onveranderlijk.",
     "text": "Les rois qui se sont {{succédé}} ont tous échoué.",
     "lang": "fr",
     "band": "C2"

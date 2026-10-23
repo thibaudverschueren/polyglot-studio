@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 236" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-memory-16-bytes" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-memory-16-bytes" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<text class="d-t" x="30" y="22" text-anchor="start">Training met AdamW in BF16: bytes per parameter</text>
+<rect class="d-box d-info" x="30.0" y="40" width="55.0" height="44" rx="6"/>
+<text class="d-t" x="57.5" y="60" text-anchor="middle">2 B</text>
+<text class="d-l" x="57.5" y="76" text-anchor="middle">BF16</text>
+<text class="d-l" x="57.5" y="102" text-anchor="middle">gewicht</text>
+<rect class="d-box d-warn" x="85.0" y="40" width="55.0" height="44" rx="6"/>
+<text class="d-t" x="112.5" y="60" text-anchor="middle">2 B</text>
+<text class="d-l" x="112.5" y="76" text-anchor="middle">BF16</text>
+<text class="d-l" x="112.5" y="102" text-anchor="middle">gradiënt</text>
+<rect class="d-box d-good" x="140.0" y="40" width="110.0" height="44" rx="6"/>
+<text class="d-t" x="195.0" y="60" text-anchor="middle">4 B</text>
+<text class="d-l" x="195.0" y="76" text-anchor="middle">FP32</text>
+<text class="d-l" x="195.0" y="102" text-anchor="middle">FP32-kopie</text>
+<rect class="d-box d-acc" x="250.0" y="40" width="110.0" height="44" rx="6"/>
+<text class="d-t" x="305.0" y="60" text-anchor="middle">4 B</text>
+<text class="d-l" x="305.0" y="76" text-anchor="middle">FP32</text>
+<text class="d-l" x="305.0" y="102" text-anchor="middle">m</text>
+<rect class="d-box d-bad" x="360.0" y="40" width="110.0" height="44" rx="6"/>
+<text class="d-t" x="415.0" y="60" text-anchor="middle">4 B</text>
+<text class="d-l" x="415.0" y="76" text-anchor="middle">FP32</text>
+<text class="d-l" x="415.0" y="102" text-anchor="middle">v</text>
+<path class="d-line" d="M143.0 112 v6 H467.0 v-6"/>
+<text class="d-l" x="305.0" y="132" text-anchor="middle">optimizer-toestand: 12 B (FP32-kopie + m + v)</text>
+<path class="d-line" d="M33 112 v6 H137.0 v-6"/>
+<text class="d-l" x="85.0" y="132" text-anchor="middle">4 B</text>
+<text class="d-s" x="30" y="160" text-anchor="start">Inferentie van hetzelfde model (alleen gewichten in BF16):</text>
+<rect class="d-box d-info" x="30" y="168" width="55.0" height="30" rx="6"/>
+<text class="d-t" x="57.5" y="188" text-anchor="middle">2 B</text>
+<text class="d-s" x="97.0" y="188" text-anchor="start">→ training vraagt 16 / 2 = 8× zoveel geheugen per parameter</text>
+</svg>

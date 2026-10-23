@@ -492,7 +492,7 @@
    "type": "type",
    "skill": "si-temps",
    "level": 3,
-   "prompt": "Herschrijf de foute zin door uitsluitend de tijdsfout in de hypothese te verbeteren: « Si la BCE baisserait ses taux, l'investissement reprendrait. »",
+   "prompt": "Herschrijf de foute zin door uitsluitend de tijdsfout in de hypothese te verbeteren: « Si la BCE (Banque centrale européenne, de Europese Centrale Bank) baisserait ses taux, l'investissement reprendrait. »",
    "explain": "Geen conditionnel na 'si'. Je gebruikt de imparfait: *Si la BCE baissait ses taux...*",
    "answers": [
     "Si la BCE baissait ses taux, l'investissement reprendrait.",
