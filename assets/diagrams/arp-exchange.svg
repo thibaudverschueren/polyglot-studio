@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 330" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-arp-exchange" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-arp-exchange" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<rect class="d-box" x="10" y="8" width="120" height="50" rx="10"/>
+<text class="d-t" x="70.0" y="30.5" text-anchor="middle">Host A</text>
+<text class="d-l" x="70.0" y="45.5" text-anchor="middle">192.168.1.50</text>
+<rect class="d-box" x="200" y="8" width="120" height="50" rx="10"/>
+<text class="d-t" x="260.0" y="30.5" text-anchor="middle">Andere hosts</text>
+<text class="d-l" x="260.0" y="45.5" text-anchor="middle">op het LAN</text>
+<rect class="d-box d-info" x="390" y="8" width="120" height="50" rx="10"/>
+<text class="d-t" x="450.0" y="30.5" text-anchor="middle">Router</text>
+<text class="d-l" x="450.0" y="45.5" text-anchor="middle">192.168.1.1</text>
+<line class="d-grid d-dash" x1="70" y1="60" x2="70" y2="262"/>
+<line class="d-grid d-dash" x1="260" y1="60" x2="260" y2="262"/>
+<line class="d-grid d-dash" x1="450" y1="60" x2="450" y2="262"/>
+<path class="d-line" d="M72 104 L446 104" marker-end="url(#m-arp-exchange)"/>
+<text class="d-l" x="260" y="92" text-anchor="middle">ARP Request (broadcast): wie heeft 192.168.1.1?</text>
+<text class="d-m" x="260" y="124" text-anchor="middle">doel-MAC FF:FF:FF:FF:FF:FF</text>
+<text class="d-l" x="260" y="142" text-anchor="middle">andere hosts ontvangen het en negeren het</text>
+<path class="d-line" d="M448 190 L74 190" marker-end="url(#m-arp-exchange)"/>
+<text class="d-l" x="260" y="178" text-anchor="middle">ARP Reply (unicast): 192.168.1.1 is op MAC R1:R1</text>
+<text class="d-m" x="260" y="210" text-anchor="middle">doel-MAC AA:AA</text>
+<rect class="d-box d-info" x="10" y="232" width="250" height="50" rx="8"/>
+<text class="d-s" x="135.0" y="252.5" text-anchor="middle">ARP-cache van Host A</text>
+<text class="d-m" x="135.0" y="268.5" text-anchor="middle">192.168.1.1 → R1:R1</text>
+<text class="d-l" x="260" y="310" text-anchor="middle">ARP blijft binnen het subnet: een router geeft broadcasts nooit door.</text>
+</svg>

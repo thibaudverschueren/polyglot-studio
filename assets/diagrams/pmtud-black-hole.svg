@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 362" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-pmtud-black-hole" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-pmtud-black-hole" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<rect class="d-box" x="10" y="8" width="120" height="50" rx="10"/>
+<text class="d-t" x="70.0" y="30.5" text-anchor="middle">Client</text>
+<text class="d-l" x="70.0" y="45.5" text-anchor="middle">MTU 1500</text>
+<rect class="d-box d-info" x="195" y="8" width="130" height="50" rx="10"/>
+<text class="d-t" x="260.0" y="30.5" text-anchor="middle">Router</text>
+<text class="d-l" x="260.0" y="45.5" text-anchor="middle">tunnel MTU 1420</text>
+<rect class="d-box" x="390" y="8" width="120" height="50" rx="10"/>
+<text class="d-t" x="450.0" y="30.5" text-anchor="middle">Server</text>
+<text class="d-l" x="450.0" y="45.5" text-anchor="middle">MTU 1500</text>
+<line class="d-grid d-dash" x1="70" y1="60" x2="70" y2="300"/>
+<line class="d-grid d-dash" x1="260" y1="60" x2="260" y2="300"/>
+<line class="d-grid d-dash" x1="450" y1="60" x2="450" y2="300"/>
+<path class="d-line" d="M72 98 L446 98" marker-end="url(#m-pmtud-black-hole)"/>
+<text class="d-l d-good-t" x="260" y="86" text-anchor="middle">TCP-handshake (klein): slaagt</text>
+<path class="d-line" d="M72 150 L256 150" marker-end="url(#m-pmtud-black-hole)"/>
+<text class="d-l" x="165" y="138" text-anchor="middle">data 1500 B, DF = 1</text>
+<path class="d-x" d="M257 143 L271 157 M271 143 L257 157"/>
+<text class="d-l d-bad-t" x="278" y="142" text-anchor="start">te groot: gedropt</text>
+<path class="d-line d-dash" d="M256 222 L188 222" marker-end="url(#m-pmtud-black-hole)"/>
+<text class="d-l" x="194" y="206" text-anchor="start">ICMP type 3 code 4 (next MTU 1420)</text>
+<rect class="d-box d-bad" x="96" y="206" width="88" height="32" rx="6"/>
+<text class="d-l" x="140.0" y="225.0" text-anchor="middle">DROP ICMP</text>
+<path class="d-x" d="M185 217 L195 227 M195 217 L185 227"/>
+<text class="d-l d-bad-t" x="70" y="260" text-anchor="start">firewall op de terugweg</text>
+<rect class="d-box d-warn" x="10" y="272" width="370" height="46" rx="8"/>
+<text class="d-s" x="195.0" y="291.0" text-anchor="middle">Client weet van niets</text>
+<text class="d-l" x="195.0" y="306.0" text-anchor="middle">hertransmissies, daarna timeout: PMTUD black hole</text>
+<text class="d-l" x="260" y="346" text-anchor="middle">Oplossing: TCP MSS clamping op de router (MSS in de SYN verlagen)</text>
+</svg>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 394" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-ospf-states" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-ospf-states" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<rect class="d-box" x="12" y="8" width="112" height="34" rx="8"/>
+<text class="d-t" x="68.0" y="30.0" text-anchor="middle">Down</text>
+<text class="d-s" x="138" y="30" text-anchor="start">nog geen Hello van de buur ontvangen</text>
+<path class="d-line" d="M68 42 L68 60" marker-end="url(#m-ospf-states)"/>
+<rect class="d-box" x="12" y="60" width="112" height="34" rx="8"/>
+<text class="d-t" x="68.0" y="82.0" text-anchor="middle">Init</text>
+<text class="d-s" x="138" y="82" text-anchor="start">Hello ontvangen, maar mijn Router ID staat er niet in</text>
+<path class="d-line" d="M68 94 L68 112" marker-end="url(#m-ospf-states)"/>
+<rect class="d-box d-info" x="12" y="112" width="112" height="34" rx="8"/>
+<text class="d-t" x="68.0" y="134.0" text-anchor="middle">2-Way</text>
+<text class="d-s" x="138" y="134" text-anchor="start">wederzijds gezien; DR/BDR-verkiezing; DROthers stoppen hier</text>
+<path class="d-line" d="M68 146 L68 164" marker-end="url(#m-ospf-states)"/>
+<rect class="d-box" x="12" y="164" width="112" height="34" rx="8"/>
+<text class="d-t" x="68.0" y="186.0" text-anchor="middle">ExStart</text>
+<text class="d-s" x="138" y="186" text-anchor="start">master/slave en startvolgnummer afspreken (lege DBD's)</text>
+<path class="d-line" d="M68 198 L68 216" marker-end="url(#m-ospf-states)"/>
+<rect class="d-box" x="12" y="216" width="112" height="34" rx="8"/>
+<text class="d-t" x="68.0" y="238.0" text-anchor="middle">Exchange</text>
+<text class="d-s" x="138" y="238" text-anchor="start">DBD-pakketten: samenvatting van alle LSA's</text>
+<path class="d-line" d="M68 250 L68 268" marker-end="url(#m-ospf-states)"/>
+<rect class="d-box" x="12" y="268" width="112" height="34" rx="8"/>
+<text class="d-t" x="68.0" y="290.0" text-anchor="middle">Loading</text>
+<text class="d-s" x="138" y="290" text-anchor="start">ontbrekende LSA's opvragen (LSR) en ontvangen (LSU)</text>
+<path class="d-line" d="M68 302 L68 320" marker-end="url(#m-ospf-states)"/>
+<rect class="d-box d-good" x="12" y="320" width="112" height="34" rx="8"/>
+<text class="d-t" x="68.0" y="342.0" text-anchor="middle">Full</text>
+<text class="d-s" x="138" y="342" text-anchor="start">databases synchroon: adjacency compleet</text>
+<text class="d-l d-bad-t" x="260" y="386" text-anchor="middle">Bij een MTU-mismatch blijft de adjacency hangen in ExStart of Exchange.</text>
+</svg>

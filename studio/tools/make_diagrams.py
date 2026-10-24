@@ -273,7 +273,194 @@ def zero_stages():
     return d
 
 
+
+# ====================================================================== Routing
+@diagram
+def encapsulation():
+    d = Diagram("encapsulation", 322)
+    d.rect(8, 8, 504, 296, "", 14)
+    d.text(22, 30, "Ethernet-frame · L2", "t", "start")
+    x = 22
+    for name, size, w in (("Preamble + SFD", "8 B", 120), ("Doel-MAC", "6 B", 92), ("Bron-MAC", "6 B", 92), ("EtherType", "2 B", 92)):
+        d.box(x, 40, w, 42, [(name, "s"), (size, "l")], r=6)
+        x += w + 6
+    d.rect(24, 92, 472, 166, "info", 12)
+    d.text(38, 112, "IP-pakket · L3", "t", "start")
+    d.box(38, 120, 444, 50, [("IPv4-header · 20 B", "t"), ("bron-IP · bestemmings-IP · TTL · DF/MF · protocol", "s")], r=6)
+    d.rect(38, 178, 444, 74, "acc", 10)
+    d.text(52, 196, "TCP-segment · L4", "t", "start")
+    d.box(52, 202, 160, 46, [("TCP-header · 20 B", "s"), ("poorten · seq/ack", "l")], r=6)
+    d.box(220, 202, 248, 46, [("Applicatiedata", "s"), ("maximaal MSS = 1460 B", "l")], r=6)
+    d.box(372, 268, 128, 28, [("FCS · 4 B", "s")], r=6)
+    d.text(22, 288, "MTU 1500 B = maximale grootte van het IP-pakket", "l", "start")
+    return d
+
+
+@diagram
+def hop_by_hop():
+    d = Diagram("hop-by-hop", 352)
+    nodes = [("Host A", "192.168.1.50", 6, ""), ("Router 1", "", 140, "info"), ("Router 2", "", 280, "info"), ("Server B", "10.0.0.100", 414, "")]
+    for name, sub, x, kind in nodes:
+        d.box(x, 10, 100, 54, [(name, "t"), (sub or " ", "l")], kind)
+    for x1, x2 in ((108, 138), (248, 278), (388, 412)):
+        d.arrow([(x1, 37), (x2, 37)])
+    cards = [
+        ("Frame 1", "Host A → Router 1", "AA:AA → R1a", 6, "64"),
+        ("Frame 2", "Router 1 → Router 2", "R1b → R2a", 180, "63"),
+        ("Frame 3", "Router 2 → Server B", "R2b → BB:BB", 354, "62"),
+    ]
+    for title, sub, macs, x, ttl in cards:
+        d.rect(x, 84, 160, 206, "", 10)
+        d.text(x + 80, 106, title, "t")
+        d.text(x + 80, 124, sub, "s")
+        d.box(x + 10, 136, 140, 50, [("MAC-adressen", "l"), (macs, "m")], "warn", r=8)
+        d.box(x + 10, 196, 140, 66, [("IP-adressen", "l"), ("192.168.1.50", "m"), ("→ 10.0.0.100", "m")], "good", r=8)
+        d.text(x + 80, 280, f"TTL {ttl}", "s")
+    d.raw('<rect class="d-box d-warn" x="8" y="306" width="14" height="14" rx="3"/>')
+    d.text(30, 318, "MAC verandert bij elke router-hop", "l", "start")
+    d.raw('<rect class="d-box d-good" x="8" y="328" width="14" height="14" rx="3"/>')
+    d.text(30, 340, "IP blijft gelijk van bron tot bestemming (zonder NAT)", "l", "start")
+    return d
+
+
+@diagram
+def arp_exchange():
+    d = Diagram("arp-exchange", 330)
+    d.box(10, 8, 120, 50, [("Host A", "t"), ("192.168.1.50", "l")])
+    d.box(200, 8, 120, 50, [("Andere hosts", "t"), ("op het LAN", "l")])
+    d.box(390, 8, 120, 50, [("Router", "t"), ("192.168.1.1", "l")], "info")
+    for x in (70, 260, 450):
+        d.line(x, 60, x, 262, dashed=True, cls="d-grid")
+    d.arrow([(72, 104), (446, 104)])
+    d.text(260, 92, "ARP Request (broadcast): wie heeft 192.168.1.1?", "l", "middle")
+    d.text(260, 124, "doel-MAC FF:FF:FF:FF:FF:FF", "m", "middle")
+    d.text(260, 142, "andere hosts ontvangen het en negeren het", "l", "middle")
+    d.arrow([(448, 190), (74, 190)])
+    d.text(260, 178, "ARP Reply (unicast): 192.168.1.1 is op MAC R1:R1", "l", "middle")
+    d.text(260, 210, "doel-MAC AA:AA", "m", "middle")
+    d.box(10, 232, 250, 50, [("ARP-cache van Host A", "s"), ("192.168.1.1 → R1:R1", "m")], "info", r=8)
+    d.text(260, 310, "ARP blijft binnen het subnet: een router geeft broadcasts nooit door.", "l", "middle")
+    return d
+
+
+@diagram
+def pmtud_black_hole():
+    d = Diagram("pmtud-black-hole", 362)
+    d.box(10, 8, 120, 50, [("Client", "t"), ("MTU 1500", "l")])
+    d.box(195, 8, 130, 50, [("Router", "t"), ("tunnel MTU 1420", "l")], "info")
+    d.box(390, 8, 120, 50, [("Server", "t"), ("MTU 1500", "l")])
+    for x in (70, 260, 450):
+        d.line(x, 60, x, 300, dashed=True, cls="d-grid")
+    d.arrow([(72, 98), (446, 98)])
+    d.text(260, 86, "TCP-handshake (klein): slaagt", "l", "middle", extra="d-good-t")
+    d.arrow([(72, 150), (256, 150)])
+    d.text(165, 138, "data 1500 B, DF = 1", "l", "middle")
+    d.cross(264, 150)
+    d.text(278, 142, "te groot: gedropt", "l", "start", extra="d-bad-t")
+    d.arrow([(256, 222), (188, 222)], dashed=True)
+    d.text(194, 206, "ICMP type 3 code 4 (next MTU 1420)", "l", "start")
+    d.box(96, 206, 88, 32, [("DROP ICMP", "l")], "bad", r=6)
+    d.cross(190, 222, 5)
+    d.text(70, 260, "firewall op de terugweg", "l", "start", extra="d-bad-t")
+    d.box(10, 272, 370, 46, [("Client weet van niets", "s"), ("hertransmissies, daarna timeout: PMTUD black hole", "l")], "warn", r=8)
+    d.text(260, 346, "Oplossing: TCP MSS clamping op de router (MSS in de SYN verlagen)", "l", "middle")
+    return d
+
+
+@diagram
+def rib_fib():
+    d = Diagram("rib-fib", 312)
+    d.rect(8, 8, 504, 150, "info", 14)
+    d.text(22, 30, "Control plane: het brein (CPU, software)", "t", "start")
+    for x, name in ((22, "BGP"), (186, "OSPF"), (350, "Statisch")):
+        d.box(x, 42, 148, 32, [(name, "t")], r=6)
+        d.arrow([(x + 74, 74), (x + 74, 96)])
+    d.box(22, 98, 476, 44, [("RIB: alle geleerde routes", "t"), ("kiest per prefix de laagste AD, daarna de laagste metriek", "s")], r=8)
+    d.arrow([(260, 142), (260, 188)])
+    d.text(272, 172, "beste route per prefix", "l", "start")
+    d.rect(8, 168, 504, 136, "good", 14) if False else None
+    d.rect(8, 192, 504, 112, "good", 14)
+    d.text(22, 214, "Data plane: de spieren (ASIC / TCAM)", "t", "start")
+    d.box(150, 226, 220, 62, [("FIB: alleen de beste routes", "s"), ("opgezocht in hardware", "l")], r=8)
+    d.arrow([(20, 257), (148, 257)], label="pakket in", label_at=(84, 247), anchor="middle")
+    d.arrow([(372, 257), (500, 257)], label="pakket uit", label_at=(436, 247), anchor="middle")
+    return d
+
+
+@diagram
+def ospf_states():
+    d = Diagram("ospf-states", 394)
+    states = [
+        ("Down", "nog geen Hello van de buur ontvangen", ""),
+        ("Init", "Hello ontvangen, maar mijn Router ID staat er niet in", ""),
+        ("2-Way", "wederzijds gezien; DR/BDR-verkiezing; DROthers stoppen hier", "info"),
+        ("ExStart", "master/slave en startvolgnummer afspreken (lege DBD's)", ""),
+        ("Exchange", "DBD-pakketten: samenvatting van alle LSA's", ""),
+        ("Loading", "ontbrekende LSA's opvragen (LSR) en ontvangen (LSU)", ""),
+        ("Full", "databases synchroon: adjacency compleet", "good"),
+    ]
+    for i, (name, desc, kind) in enumerate(states):
+        y = 8 + i * 52
+        d.box(12, y, 112, 34, [(name, "t")], kind, r=8)
+        d.text(138, y + 22, desc, "s", "start")
+        if i < len(states) - 1:
+            d.arrow([(68, y + 34), (68, y + 52)])
+    d.text(260, 386, "Bij een MTU-mismatch blijft de adjacency hangen in ExStart of Exchange.", "l", "middle", extra="d-bad-t")
+    return d
+
+
+@diagram
+def bgp_as_path():
+    d = Diagram("bgp-as-path", 372)
+    rows = [("AS 15169", "Google (oorsprong 8.8.8.0/24)", "bron: het pad is nog leeg"), ("AS 3356", "Lumen Transit", "ontvangt: 15169"),
+            ("AS 2611", "Belnet Onderwijs", "ontvangt: 3356 15169"), ("AS 64500", "jouw campusrouter", "ontvangt: 2611 3356 15169")]
+    for i, (name, sub, path) in enumerate(rows):
+        y = 8 + i * 74
+        d.box(12, y, 230, 46, [(name, "t"), (sub, "l")], "info" if i in (0, 3) else "", r=8)
+        d.text(264, y + 20, "AS_PATH", "l", "start")
+        d.text(264, y + 38, path, "m", "start")
+        if i < len(rows) - 1:
+            d.arrow([(127, y + 46), (127, y + 74)])
+            d.text(140, y + 64, "voegt zijn eigen AS-nummer vooraan toe", "l", "start")
+    d.text(260, 322, "Ziet een AS zijn eigen nummer al in het pad, dan negeert hij de route:", "l", "middle")
+    d.text(260, 340, "zo ontstaan er geen lussen (path vector).", "l", "middle")
+    return d
+
+
+@diagram
+def nat_pat():
+    d = Diagram("nat-pat", 380)
+    d.box(20, 8, 230, 46, [("PC 1", "t"), ("192.168.1.25 : 54321", "m")])
+    d.box(270, 8, 230, 46, [("PC 2", "t"), ("192.168.1.30 : 54321", "m")])
+    d.arrow([(135, 54), (135, 104)])
+    d.arrow([(385, 54), (385, 104)])
+    d.rect(20, 104, 480, 132, "acc", 12)
+    d.text(260, 128, "Router · PAT · publiek IP 203.0.113.7", "t", "middle")
+    d.text(40, 156, "intern", "l", "start")
+    d.text(270, 156, "extern", "l", "start")
+    d.text(40, 180, "192.168.1.25:54321", "m", "start")
+    d.text(200, 180, "→", "t", "middle")
+    d.text(270, 180, "203.0.113.7:40001", "m", "start")
+    d.text(40, 206, "192.168.1.30:54321", "m", "start")
+    d.text(200, 206, "→", "t", "middle")
+    d.text(270, 206, "203.0.113.7:40002", "m", "start")
+    d.arrow([(260, 236), (260, 282)])
+    d.text(274, 266, "bron: 203.0.113.7 met poort 40001 of 40002", "l", "start")
+    d.box(140, 284, 240, 46, [("Internetserver", "t"), ("142.250.179.206 : 443", "m")])
+    d.text(260, 352, "Antwoorden komen terug op poort 40001 of 40002; de router vertaalt ze", "l", "middle")
+    d.text(260, 370, "via de conntrack-tabel terug naar de juiste PC.", "l", "middle")
+    return d
+
+
 DOCS = {
+    "encapsulation": "ingepakte lagen: Ethernet-frame ⊃ IPv4-pakket ⊃ TCP-segment ⊃ applicatiedata, met headergroottes en MTU/MSS",
+    "hop-by-hop": "pakket van Host A via twee routers naar Server B: MAC-adressen veranderen per hop, IP-adressen blijven gelijk",
+    "arp-exchange": "ARP Request (broadcast) en ARP Reply (unicast) tussen een host en zijn default gateway",
+    "pmtud-black-hole": "PMTUD black hole: groot pakket met DF=1 wordt gedropt en de ICMP-melding wordt door een firewall geblokkeerd",
+    "rib-fib": "control plane (RIB, protocollen) tegenover data plane (FIB in ASIC/TCAM)",
+    "ospf-states": "de zeven OSPF-adjacencytoestanden van Down tot Full",
+    "bgp-as-path": "AS_PATH groeit per AS (voorbeeld Google, Lumen, Belnet, campus): path vector en lusvermijding",
+    "nat-pat": "PAT: twee interne PC's met dezelfde bronpoort delen één publiek IP via verschillende externe poorten",
     "transformer-decoder-architecture": "decoder-only transformer van tekst tot volgend token: tokenizer, embeddings, N lagen, LM-head, softmax",
     "transformer-block": "één transformerlaag: RMSNorm, self-attention, feed-forward en twee residual connections",
     "gqa-heads": "MHA, GQA en MQA: 8 query-heads en hoeveel KV-heads ze delen (KV-cache 100% / 25% / 12,5%)",

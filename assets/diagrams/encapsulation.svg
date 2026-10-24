@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 322" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-encapsulation" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-encapsulation" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<rect class="d-box" x="8" y="8" width="504" height="296" rx="14"/>
+<text class="d-t" x="22" y="30" text-anchor="start">Ethernet-frame · L2</text>
+<rect class="d-box" x="22" y="40" width="120" height="42" rx="6"/>
+<text class="d-s" x="82.0" y="57.0" text-anchor="middle">Preamble + SFD</text>
+<text class="d-l" x="82.0" y="72.0" text-anchor="middle">8 B</text>
+<rect class="d-box" x="148" y="40" width="92" height="42" rx="6"/>
+<text class="d-s" x="194.0" y="57.0" text-anchor="middle">Doel-MAC</text>
+<text class="d-l" x="194.0" y="72.0" text-anchor="middle">6 B</text>
+<rect class="d-box" x="246" y="40" width="92" height="42" rx="6"/>
+<text class="d-s" x="292.0" y="57.0" text-anchor="middle">Bron-MAC</text>
+<text class="d-l" x="292.0" y="72.0" text-anchor="middle">6 B</text>
+<rect class="d-box" x="344" y="40" width="92" height="42" rx="6"/>
+<text class="d-s" x="390.0" y="57.0" text-anchor="middle">EtherType</text>
+<text class="d-l" x="390.0" y="72.0" text-anchor="middle">2 B</text>
+<rect class="d-box d-info" x="24" y="92" width="472" height="166" rx="12"/>
+<text class="d-t" x="38" y="112" text-anchor="start">IP-pakket · L3</text>
+<rect class="d-box" x="38" y="120" width="444" height="50" rx="6"/>
+<text class="d-t" x="260.0" y="142.0" text-anchor="middle">IPv4-header · 20 B</text>
+<text class="d-s" x="260.0" y="158.0" text-anchor="middle">bron-IP · bestemmings-IP · TTL · DF/MF · protocol</text>
+<rect class="d-box d-acc" x="38" y="178" width="444" height="74" rx="10"/>
+<text class="d-t" x="52" y="196" text-anchor="start">TCP-segment · L4</text>
+<rect class="d-box" x="52" y="202" width="160" height="46" rx="6"/>
+<text class="d-s" x="132.0" y="221.0" text-anchor="middle">TCP-header · 20 B</text>
+<text class="d-l" x="132.0" y="236.0" text-anchor="middle">poorten · seq/ack</text>
+<rect class="d-box" x="220" y="202" width="248" height="46" rx="6"/>
+<text class="d-s" x="344.0" y="221.0" text-anchor="middle">Applicatiedata</text>
+<text class="d-l" x="344.0" y="236.0" text-anchor="middle">maximaal MSS = 1460 B</text>
+<rect class="d-box" x="372" y="268" width="128" height="28" rx="6"/>
+<text class="d-s" x="436.0" y="285.5" text-anchor="middle">FCS · 4 B</text>
+<text class="d-l" x="22" y="288" text-anchor="start">MTU 1500 B = maximale grootte van het IP-pakket</text>
+</svg>

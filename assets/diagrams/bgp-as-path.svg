@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 372" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-bgp-as-path" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-bgp-as-path" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<rect class="d-box d-info" x="12" y="8" width="230" height="46" rx="8"/>
+<text class="d-t" x="127.0" y="28.5" text-anchor="middle">AS 15169</text>
+<text class="d-l" x="127.0" y="43.5" text-anchor="middle">Google (oorsprong 8.8.8.0/24)</text>
+<text class="d-l" x="264" y="28" text-anchor="start">AS_PATH</text>
+<text class="d-m" x="264" y="46" text-anchor="start">bron: het pad is nog leeg</text>
+<path class="d-line" d="M127 54 L127 82" marker-end="url(#m-bgp-as-path)"/>
+<text class="d-l" x="140" y="72" text-anchor="start">voegt zijn eigen AS-nummer vooraan toe</text>
+<rect class="d-box" x="12" y="82" width="230" height="46" rx="8"/>
+<text class="d-t" x="127.0" y="102.5" text-anchor="middle">AS 3356</text>
+<text class="d-l" x="127.0" y="117.5" text-anchor="middle">Lumen Transit</text>
+<text class="d-l" x="264" y="102" text-anchor="start">AS_PATH</text>
+<text class="d-m" x="264" y="120" text-anchor="start">ontvangt: 15169</text>
+<path class="d-line" d="M127 128 L127 156" marker-end="url(#m-bgp-as-path)"/>
+<text class="d-l" x="140" y="146" text-anchor="start">voegt zijn eigen AS-nummer vooraan toe</text>
+<rect class="d-box" x="12" y="156" width="230" height="46" rx="8"/>
+<text class="d-t" x="127.0" y="176.5" text-anchor="middle">AS 2611</text>
+<text class="d-l" x="127.0" y="191.5" text-anchor="middle">Belnet Onderwijs</text>
+<text class="d-l" x="264" y="176" text-anchor="start">AS_PATH</text>
+<text class="d-m" x="264" y="194" text-anchor="start">ontvangt: 3356 15169</text>
+<path class="d-line" d="M127 202 L127 230" marker-end="url(#m-bgp-as-path)"/>
+<text class="d-l" x="140" y="220" text-anchor="start">voegt zijn eigen AS-nummer vooraan toe</text>
+<rect class="d-box d-info" x="12" y="230" width="230" height="46" rx="8"/>
+<text class="d-t" x="127.0" y="250.5" text-anchor="middle">AS 64500</text>
+<text class="d-l" x="127.0" y="265.5" text-anchor="middle">jouw campusrouter</text>
+<text class="d-l" x="264" y="250" text-anchor="start">AS_PATH</text>
+<text class="d-m" x="264" y="268" text-anchor="start">ontvangt: 2611 3356 15169</text>
+<text class="d-l" x="260" y="322" text-anchor="middle">Ziet een AS zijn eigen nummer al in het pad, dan negeert hij de route:</text>
+<text class="d-l" x="260" y="340" text-anchor="middle">zo ontstaan er geen lussen (path vector).</text>
+</svg>

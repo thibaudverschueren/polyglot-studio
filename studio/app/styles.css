@@ -881,6 +881,9 @@ textarea.answer-input { min-height: 120px; resize: vertical; font-size: 17px; li
 .figure.diagram .d-fill-bad { fill: var(--bad); }
 .figure.diagram .d-fill-info { fill: var(--info); }
 .figure.diagram .d-on { fill: var(--on-accent); }
+.figure.diagram .d-x { stroke: var(--bad); stroke-width: 2.8; fill: none; stroke-linecap: round; }
+.figure.diagram text.d-bad-t { fill: var(--bad); }
+.figure.diagram text.d-good-t { fill: var(--good); }
 
 
 /* ---------- Simulators ---------- */

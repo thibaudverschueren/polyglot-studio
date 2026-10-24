@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 380" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-nat-pat" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-nat-pat" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<rect class="d-box" x="20" y="8" width="230" height="46" rx="10"/>
+<text class="d-t" x="135.0" y="28.0" text-anchor="middle">PC 1</text>
+<text class="d-m" x="135.0" y="44.0" text-anchor="middle">192.168.1.25 : 54321</text>
+<rect class="d-box" x="270" y="8" width="230" height="46" rx="10"/>
+<text class="d-t" x="385.0" y="28.0" text-anchor="middle">PC 2</text>
+<text class="d-m" x="385.0" y="44.0" text-anchor="middle">192.168.1.30 : 54321</text>
+<path class="d-line" d="M135 54 L135 104" marker-end="url(#m-nat-pat)"/>
+<path class="d-line" d="M385 54 L385 104" marker-end="url(#m-nat-pat)"/>
+<rect class="d-box d-acc" x="20" y="104" width="480" height="132" rx="12"/>
+<text class="d-t" x="260" y="128" text-anchor="middle">Router · PAT · publiek IP 203.0.113.7</text>
+<text class="d-l" x="40" y="156" text-anchor="start">intern</text>
+<text class="d-l" x="270" y="156" text-anchor="start">extern</text>
+<text class="d-m" x="40" y="180" text-anchor="start">192.168.1.25:54321</text>
+<text class="d-t" x="200" y="180" text-anchor="middle">→</text>
+<text class="d-m" x="270" y="180" text-anchor="start">203.0.113.7:40001</text>
+<text class="d-m" x="40" y="206" text-anchor="start">192.168.1.30:54321</text>
+<text class="d-t" x="200" y="206" text-anchor="middle">→</text>
+<text class="d-m" x="270" y="206" text-anchor="start">203.0.113.7:40002</text>
+<path class="d-line" d="M260 236 L260 282" marker-end="url(#m-nat-pat)"/>
+<text class="d-l" x="274" y="266" text-anchor="start">bron: 203.0.113.7 met poort 40001 of 40002</text>
+<rect class="d-box" x="140" y="284" width="240" height="46" rx="10"/>
+<text class="d-t" x="260.0" y="304.0" text-anchor="middle">Internetserver</text>
+<text class="d-m" x="260.0" y="320.0" text-anchor="middle">142.250.179.206 : 443</text>
+<text class="d-l" x="260" y="352" text-anchor="middle">Antwoorden komen terug op poort 40001 of 40002; de router vertaalt ze</text>
+<text class="d-l" x="260" y="370" text-anchor="middle">via de conntrack-tabel terug naar de juiste PC.</text>
+</svg>

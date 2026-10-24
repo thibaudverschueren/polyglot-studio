@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 312" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-rib-fib" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-rib-fib" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<rect class="d-box d-info" x="8" y="8" width="504" height="150" rx="14"/>
+<text class="d-t" x="22" y="30" text-anchor="start">Control plane: het brein (CPU, software)</text>
+<rect class="d-box" x="22" y="42" width="148" height="32" rx="6"/>
+<text class="d-t" x="96.0" y="63.0" text-anchor="middle">BGP</text>
+<path class="d-line" d="M96 74 L96 96" marker-end="url(#m-rib-fib)"/>
+<rect class="d-box" x="186" y="42" width="148" height="32" rx="6"/>
+<text class="d-t" x="260.0" y="63.0" text-anchor="middle">OSPF</text>
+<path class="d-line" d="M260 74 L260 96" marker-end="url(#m-rib-fib)"/>
+<rect class="d-box" x="350" y="42" width="148" height="32" rx="6"/>
+<text class="d-t" x="424.0" y="63.0" text-anchor="middle">Statisch</text>
+<path class="d-line" d="M424 74 L424 96" marker-end="url(#m-rib-fib)"/>
+<rect class="d-box" x="22" y="98" width="476" height="44" rx="8"/>
+<text class="d-t" x="260.0" y="117.0" text-anchor="middle">RIB: alle geleerde routes</text>
+<text class="d-s" x="260.0" y="133.0" text-anchor="middle">kiest per prefix de laagste AD, daarna de laagste metriek</text>
+<path class="d-line" d="M260 142 L260 188" marker-end="url(#m-rib-fib)"/>
+<text class="d-l" x="272" y="172" text-anchor="start">beste route per prefix</text>
+<rect class="d-box d-good" x="8" y="192" width="504" height="112" rx="14"/>
+<text class="d-t" x="22" y="214" text-anchor="start">Data plane: de spieren (ASIC / TCAM)</text>
+<rect class="d-box" x="150" y="226" width="220" height="62" rx="8"/>
+<text class="d-s" x="260.0" y="253.0" text-anchor="middle">FIB: alleen de beste routes</text>
+<text class="d-l" x="260.0" y="268.0" text-anchor="middle">opgezocht in hardware</text>
+<path class="d-line" d="M20 257 L148 257" marker-end="url(#m-rib-fib)"/>
+<text class="d-l" x="84" y="247" text-anchor="middle">pakket in</text>
+<path class="d-line" d="M372 257 L500 257" marker-end="url(#m-rib-fib)"/>
+<text class="d-l" x="436" y="247" text-anchor="middle">pakket uit</text>
+</svg>

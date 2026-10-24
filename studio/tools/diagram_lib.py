@@ -93,6 +93,10 @@ class Diagram:
         if label:
             self.text(cx, cy + 4.5, label, "t")
 
+    def cross(self, x, y, s=7):
+        """A red X (blocked / dropped)."""
+        self.parts.append(f'<path class="d-x" d="M{x - s} {y - s} L{x + s} {y + s} M{x + s} {y - s} L{x - s} {y + s}"/>')
+
     def brace(self, x1, x2, y, label, up=False):
         """Horizontal bracket under (or over) a span with a centred label."""
         s = -1 if up else 1
