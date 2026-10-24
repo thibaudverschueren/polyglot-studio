@@ -38,7 +38,11 @@ def author_prompt():
 
 
 # ------------------------------------------------------------------ agy
-def run_agy(prompt, cfg, model=None, timeout=None, log=print):
+PROBLEMS = []  # what the morning report must show (e.g. a model that Antigravity no longer offers)
+FALLBACK_MODEL = "gemini-3.8-flash-high"
+
+
+def run_agy(prompt, cfg, model=None, timeout=None, log=print, _retry=True):
     agy = cfg.get("AGY_BIN") or os.path.expanduser("~/.local/bin/agy")
     timeout = int(timeout or cfg.get("AGY_TIMEOUT", 900))
     work = tempfile.mkdtemp(prefix="polyglot-agy-")
@@ -61,6 +65,17 @@ def run_agy(prompt, cfg, model=None, timeout=None, log=print):
         return None
     usage = env.get("usage") or {}
     log(f"    agy {env.get('status')} in {secs}s · {usage.get('input_tokens', '?')} in / {usage.get('output_tokens', '?')} out tokens")
+    err = str(env.get("error") or "")
+    if env.get("status") == "ERROR" and err:
+        log(f"    agy ERROR: {err.splitlines()[0][:240]}")
+        if model and _retry and ("invalid model selection" in err or "not recognized as a known model" in err):
+            fb = cfg.get("AGY_MODEL_FALLBACK") or cfg.get("AGY_MODEL_COACH") or FALLBACK_MODEL
+            if fb != model:  # a model that Antigravity dropped must not silently stop every lesson and article
+                msg = f"agy-model '{model}' bestaat niet meer; gebruik '{fb}' (pas AGY_MODEL_* aan in ~/scripts/polyglot.env)"
+                if msg not in PROBLEMS:
+                    PROBLEMS.append(msg)
+                log(f"    ⚠ {msg}")
+                return run_agy(prompt, cfg, model=fb, timeout=timeout, log=log, _retry=False)
     if env.get("structured_output"):
         return env["structured_output"]
     return env.get("response") or ""
@@ -259,7 +274,7 @@ def author_lesson(track, lesson_id, topic, model, idx, syllabus, cfg, today, mod
     if current is not None:
         ctx += f"\n\n## Huidige versie van les {lesson_id} (bijsturen)\n```json\n{json.dumps(current, ensure_ascii=False)}\n```"
     prompt = head + "\n\n---\n\n" + ctx
-    model_name = cfg.get("AGY_MODEL_AUTHOR", "gemini-3.1-pro-high")
+    model_name = cfg.get("AGY_MODEL_AUTHOR", FALLBACK_MODEL)
     last = None
     attempts = int(cfg.get("AGY_ATTEMPTS", 3))
     for attempt in range(1, attempts + 1):

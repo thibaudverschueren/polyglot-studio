@@ -507,6 +507,10 @@ def main(argv):
                     report["errors"].append("offsite backup: timeout")
             phase("back-up", backup)
 
+        if ag.PROBLEMS:  # e.g. Antigravity dropped a model: the run continued on the fallback, but you must know
+            report["errors"].extend(ag.PROBLEMS)
+            if not dry:
+                notify("Polyglot: Antigravity-model ongeldig", ag.PROBLEMS[0][:180])
         if report["fatal"]:
             log(f"⚠ Klaar, maar {len(report['fatal'])} stap(pen) mislukten: {report['fatal']}")
             if not dry:

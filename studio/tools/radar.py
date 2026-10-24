@@ -531,7 +531,7 @@ def verify(A, srcs, base, cfg, schema, item_schema, log=print, rounds=6):
     """Fact-check loop: review → repair → review … An article is returned only when no *blocking* finding (a factual error,
     a fabricated or out-of-context number/quote, an unsourced specific claim) remains; nuances are repaired but never block.
     If the check cannot run, or errors remain after the last round, nothing is returned: better no article than a wrong one."""
-    author = cfg.get("AGY_MODEL_AUTHOR", "gemini-3.1-pro-high")
+    author = cfg.get("AGY_MODEL_AUTHOR", ag.FALLBACK_MODEL)
     cur, last, best, stall = A, [], None, 0
     verify.last_draft = A  # the best version so far: a failed run keeps it (hidden) so the next attempt continues from there
     for rnd in range(1, rounds + 1):
@@ -576,7 +576,7 @@ def verify(A, srcs, base, cfg, schema, item_schema, log=print, rounds=6):
 def write(task, srcs, prefs, arts, cfg, today, log=print):
     schema = json.load(open(os.path.join(STUDIO, "schema", "lesson.schema.json"), encoding="utf-8"))
     item_schema = schema["$defs"]["item"]
-    author = cfg.get("AGY_MODEL_AUTHOR", "gemini-3.1-pro-high")
+    author = cfg.get("AGY_MODEL_AUTHOR", ag.FALLBACK_MODEL)
     base = _prompt(task, srcs, prefs, arts)
     prompt, last, good = base, None, None
     attempts = int(cfg.get("AGY_ATTEMPTS", 3))
