@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 300" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-ttd-timeline" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-ttd-timeline" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<text class="d-t" x="20" y="22" text-anchor="start">Generatief model (autoregressief)</text>
+<rect class="d-box d-info" x="20" y="32" width="62.9" height="30" rx="4"/>
+<rect class="d-box d-warn" x="82.8" y="32" width="377.1" height="30" rx="4"/>
+<text class="d-l" x="51.425" y="52" text-anchor="middle">TTFT</text>
+<text class="d-s" x="271.4" y="52" text-anchor="middle">150 tokens × 20 ms = 3 000 ms</text>
+<text class="d-s d-bad-t" x="20" y="84" text-anchor="start">TTD = TTFT + N<tspan dy="0.32em" font-size="0.78em">out</tspan><tspan dy="-0.32em">&#8203;</tspan> × TPOT = 500 + 150 × 20 = 3 500 ms</text>
+<text class="d-t" x="20" y="130" text-anchor="start">Beslissingsmodel (non-autoregressief)</text>
+<rect class="d-box d-good" x="20" y="140" width="5" height="30" rx="2"/>
+<text class="d-s d-good-t" x="34" y="156" text-anchor="start">één forward pass, geen output-tokens</text>
+<text class="d-l d-good-t" x="34" y="174" text-anchor="start">lokaal 15-25 ms · via cloud-API 50-150 ms</text>
+<line class="d-grid" x1="20" y1="220" x2="459.95000000000005" y2="220"/>
+<line class="d-grid" x1="20.0" y1="216" x2="20.0" y2="224"/>
+<text class="d-l" x="20.0" y="240" text-anchor="middle">0 ms</text>
+<line class="d-grid" x1="145.7" y1="216" x2="145.7" y2="224"/>
+<text class="d-l" x="145.7" y="240" text-anchor="middle">1 000 ms</text>
+<line class="d-grid" x1="271.4" y1="216" x2="271.4" y2="224"/>
+<text class="d-l" x="271.4" y="240" text-anchor="middle">2 000 ms</text>
+<line class="d-grid" x1="397.1" y1="216" x2="397.1" y2="224"/>
+<text class="d-l" x="397.1" y="240" text-anchor="middle">3 000 ms</text>
+<line class="d-line d-dash" x1="397.1" y1="26" x2="397.1" y2="218"/>
+<text class="d-l" x="391.1" y="102" text-anchor="end">webhook-timeout</text>
+<text class="d-l" x="391.1" y="116" text-anchor="end">3 000 ms</text>
+<text class="d-l" x="260" y="280" text-anchor="middle">Na de timeout krijgt de aanroeper een 504 Gateway Timeout.</text>
+</svg>

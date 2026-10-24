@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 352" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-accord-pp" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-accord-pp" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<rect class="d-box d-info" x="240" y="8" width="260" height="52" rx="10"/>
+<text class="d-s" x="370.0" y="30.0" text-anchor="middle">Essentieel pronominaal?</text>
+<text class="d-l" x="370.0" y="45.0" text-anchor="middle">se souvenir, s'évanouir, se moquer</text>
+<rect class="d-box d-good" x="10" y="8" width="200" height="52" rx="10"/>
+<text class="d-s" x="110.0" y="29.5" text-anchor="middle">Accord met het onderwerp</text>
+<text class="d-m" x="110.0" y="45.5" text-anchor="middle">elle s'est évanouie</text>
+<path class="d-line" d="M238 34 L212 34" marker-end="url(#m-accord-pp)"/>
+<text class="d-l" x="225" y="26" text-anchor="middle">ja</text>
+<path class="d-line" d="M370 60 L370 112" marker-end="url(#m-accord-pp)"/>
+<text class="d-l" x="382" y="92" text-anchor="start">nee</text>
+<rect class="d-box d-info" x="240" y="114" width="260" height="64" rx="10"/>
+<text class="d-s" x="370.0" y="134.5" text-anchor="middle">Staat het COD vóór het participe?</text>
+<text class="d-l" x="370.0" y="149.5" text-anchor="middle">vraag: wie of wat?  se is COD bij</text>
+<text class="d-l" x="370.0" y="164.5" text-anchor="middle">se laver, maar COI bij se parler</text>
+<rect class="d-box d-good" x="10" y="114" width="200" height="64" rx="10"/>
+<text class="d-s" x="110.0" y="141.5" text-anchor="middle">Accord met dat COD</text>
+<text class="d-m" x="110.0" y="157.5" text-anchor="middle">elles se sont lavées</text>
+<path class="d-line" d="M238 146 L212 146" marker-end="url(#m-accord-pp)"/>
+<text class="d-l" x="225" y="138" text-anchor="middle">ja</text>
+<path class="d-line" d="M370 178 L370 230" marker-end="url(#m-accord-pp)"/>
+<text class="d-l" x="382" y="210" text-anchor="start">nee</text>
+<rect class="d-box d-warn" x="240" y="232" width="260" height="66" rx="10"/>
+<text class="d-s" x="370.0" y="252.5" text-anchor="middle">Invariable</text>
+<text class="d-m" x="370.0" y="268.5" text-anchor="middle">elle s'est lavé les mains</text>
+<text class="d-m" x="370.0" y="284.5" text-anchor="middle">elles se sont parlé</text>
+<text class="d-l" x="260" y="326" text-anchor="middle">Uitzondering uit de les: se rendre compte is invariable,</text>
+<text class="d-l" x="260" y="344" text-anchor="middle">want compte staat als COD ná het participe.</text>
+</svg>

@@ -514,7 +514,157 @@ def double_nat():
     return d
 
 
+
+# ====================================================================== Solidity, n8n, Jev, languages
+@diagram
+def data_locations():
+    d = Diagram("data-locations", 366)
+    rows = [
+        ("storage", "permanent", "warn", "De harde schijf van de blockchain", "blijft bestaan na de transactie · lezen en schrijven", "duur: ± 22 100 gas voor een eerste schrijfactie"),
+        ("memory", "tijdelijk", "info", "Werkgeheugen van één aanroep", "start leeg, gewist na de transactie · lezen en schrijven", "relatief goedkoop"),
+        ("calldata", "invoer", "good", "De invoer van een externe functie", "alleen tijdens de aanroep · alleen lezen", "goedkoopst: er wordt niets gekopieerd"),
+    ]
+    for i, (name, tag, kind, l1, l2, l3) in enumerate(rows):
+        y = 8 + i * 92
+        d.box(10, y, 118, 80, [(name, "t"), (tag, "l")], kind, r=10)
+        d.text(142, y + 24, l1, "s", "start")
+        d.text(142, y + 46, l2, "l", "start")
+        d.text(142, y + 66, l3, "l", "start")
+    d.box(10, 288, 500, 66, [("stack", "t"), ("value types (uint256, bool, address): één EVM-woord van 32 bytes", "s")], "", r=10)
+    return d
+
+
+@diagram
+def mapping_slot():
+    d = Diagram("mapping-slot", 292)
+    for x, code, hasj, val, lab in ((10, "balances[alice] = 100;", "keccak256(alice · 0)", "100", "slot A"), (280, "balances[bob] = 50;", "keccak256(bob · 0)", "50", "slot B")):
+        d.box(x, 8, 230, 34, [(code, "m")], r=8)
+        d.arrow([(x + 115, 42), (x + 115, 84)])
+        d.text(x + 126, 68, hasj, "l", "start")
+        d.box(x, 86, 230, 52, [(lab, "t"), (val, "m")], "warn", r=8)
+    d.raw('<rect class="d-box d-plain" x="10" y="166" width="500" height="44" rx="10"/>')
+    d.text(260, 194, "slot 0 (declaratie van balances) blijft leeg", "s", "middle")
+    d.text(260, 238, "De EVM houdt nergens bij welke slots gevuld zijn:", "l", "middle")
+    d.text(260, 256, "een mapping heeft geen lengte en je kunt er niet over itereren.", "l", "middle")
+    return d
+
+
+@diagram
+def ttd_timeline():
+    d = Diagram("ttd-timeline", 300)
+    x0, k = 20, 0.1257          # 3 500 ms over 440 px
+    def px(ms):
+        return ms * k
+    d.text(x0, 22, "Generatief model (autoregressief)", "t", "start")
+    d.raw(f'<rect class="d-box d-info" x="{x0}" y="32" width="{px(500):.1f}" height="30" rx="4"/>')
+    d.raw(f'<rect class="d-box d-warn" x="{x0 + px(500):.1f}" y="32" width="{px(3000):.1f}" height="30" rx="4"/>')
+    d.text(x0 + px(500) / 2, 52, "TTFT", "l")
+    d.text(x0 + px(500) + px(3000) / 2, 52, "150 tokens × 20 ms = 3 000 ms", "s")
+    d.text(x0, 84, "TTD = TTFT + N_{out} × TPOT = 500 + 150 × 20 = 3 500 ms", "s", "start", extra="d-bad-t")
+    d.text(x0, 130, "Beslissingsmodel (non-autoregressief)", "t", "start")
+    d.raw(f'<rect class="d-box d-good" x="{x0}" y="140" width="5" height="30" rx="2"/>')
+    d.text(x0 + 14, 156, "één forward pass, geen output-tokens", "s", "start", extra="d-good-t")
+    d.text(x0 + 14, 174, "lokaal 15-25 ms · via cloud-API 50-150 ms", "l", "start", extra="d-good-t")
+    d.line(x0, 220, x0 + px(3500), 220, cls="d-grid")
+    for ms in (0, 1000, 2000, 3000):
+        d.line(x0 + px(ms), 216, x0 + px(ms), 224, cls="d-grid")
+        d.text(x0 + px(ms), 240, f"{ms:,}".replace(",", " ") + " ms", "l")
+    tx = x0 + px(3000)
+    d.line(tx, 26, tx, 218, dashed=True, cls="d-line")
+    d.text(tx - 6, 102, "webhook-timeout", "l", "end")
+    d.text(tx - 6, 116, "3 000 ms", "l", "end")
+    d.text(260, 280, "Na de timeout krijgt de aanroeper een 504 Gateway Timeout.", "l", "middle")
+    return d
+
+
+@diagram
+def n8n_items():
+    d = Diagram("n8n-items", 332)
+    d.text(260, 18, "3 items komen binnen", "t")
+    cards_in = [("Anna", "120"), ("Bram", "80"), ("Chloé", "200")]
+    for i, (n, b) in enumerate(cards_in):
+        x = 10 + i * 172
+        d.box(x, 28, 156, 78, [(f"item {i}", "l"), (f"naam: {n}", "m"), (f"bedrag: {b}", "m")], r=8)
+        d.arrow([(x + 78, 106), (x + 78, 150)])
+    d.box(60, 152, 400, 52, [("Edit Fields-node", "t"), ("draait drie keer: één keer per item", "s")], "acc", r=10)
+    d.text(260, 232, "3 items verlaten de node", "t")
+    for i, (n, b) in enumerate(cards_in):
+        x = 10 + i * 172
+        btw = f"{int(b) * 0.21:.2f}".replace(".", ",")
+        d.arrow([(x + 78, 204), (x + 78, 244)])
+        d.box(x, 246, 156, 78, [(f"naam: {n}", "m"), (f"bedrag: {b}", "m"), (f"btw: {btw}", "m")], "good", r=8)
+    return d
+
+
+@diagram
+def batch_loop():
+    d = Diagram("batch-loop", 342)
+    d.box(30, 8, 230, 46, [("Trigger", "t"), ("50 000 items", "l")])
+    d.arrow([(145, 54), (145, 86)])
+    d.box(30, 88, 230, 56, [("Loop Over Items", "t"), ("batchgrootte 50", "l")], "info", r=10)
+    d.arrow([(145, 144), (145, 190)])
+    d.text(157, 172, "loop", "l", "start")
+    d.box(30, 192, 230, 52, [("HTTP Request", "t"), ("50 items per ronde", "l")], "acc", r=10)
+    d.arrow([(145, 244), (145, 272)])
+    d.box(30, 274, 230, 40, [("Wait", "t")], "", r=10)
+    d.arrow([(262, 294), (300, 294), (300, 124), (262, 124)])
+    d.text(312, 214, "volgende", "l", "start")
+    d.text(312, 230, "batch", "l", "start")
+    d.arrow([(262, 104), (330, 104)])
+    d.text(296, 96, "done", "l", "middle")
+    d.box(332, 80, 170, 48, [("Verder met de rest", "s"), ("alle batches klaar", "l")], "good", r=10)
+    return d
+
+
+@diagram
+def stress_rules():
+    d = Diagram("stress-rules", 300)
+    d.box(240, 8, 260, 44, [("Heeft het woord een tilde (´)?", "s")], "info", r=10)
+    d.box(10, 6, 200, 48, [("Klemtoon op de tilde", "s"), ("can-CIÓN · ÁR-bol", "m")], "good", r=10)
+    d.arrow([(238, 30), (212, 30)])
+    d.text(225, 22, "ja", "l")
+    d.arrow([(370, 52), (370, 100)])
+    d.text(382, 82, "nee", "l", "start")
+    d.box(240, 102, 260, 56, [("Eindigt het woord op een", "s"), ("klinker, -n of -s?", "s")], "info", r=10)
+    d.box(10, 102, 200, 56, [("Voorlaatste lettergreep", "s"), ("HA-blan · CA-sa", "m")], "good", r=10)
+    d.arrow([(238, 130), (212, 130)])
+    d.text(225, 122, "ja", "l")
+    d.arrow([(370, 158), (370, 206)])
+    d.text(382, 188, "nee", "l", "start")
+    d.box(240, 208, 260, 56, [("Laatste lettergreep", "s"), ("ha-BLAR · ciu-DAD", "m")], "warn", r=10)
+    d.text(260, 288, "Een tilde gaat altijd voor: zij overrulet de twee andere regels.", "l", "middle")
+    return d
+
+
+@diagram
+def accord_pp():
+    d = Diagram("accord-pp", 352)
+    d.box(240, 8, 260, 52, [("Essentieel pronominaal?", "s"), ("se souvenir, s'évanouir, se moquer", "l")], "info", r=10)
+    d.box(10, 8, 200, 52, [("Accord met het onderwerp", "s"), ("elle s'est évanouie", "m")], "good", r=10)
+    d.arrow([(238, 34), (212, 34)])
+    d.text(225, 26, "ja", "l")
+    d.arrow([(370, 60), (370, 112)])
+    d.text(382, 92, "nee", "l", "start")
+    d.box(240, 114, 260, 64, [("Staat het COD vóór het participe?", "s"), ("vraag: wie of wat?  se is COD bij", "l"), ("se laver, maar COI bij se parler", "l")], "info", r=10)
+    d.box(10, 114, 200, 64, [("Accord met dat COD", "s"), ("elles se sont lavées", "m")], "good", r=10)
+    d.arrow([(238, 146), (212, 146)])
+    d.text(225, 138, "ja", "l")
+    d.arrow([(370, 178), (370, 230)])
+    d.text(382, 210, "nee", "l", "start")
+    d.box(240, 232, 260, 66, [("Invariable", "s"), ("elle s'est lavé les mains", "m"), ("elles se sont parlé", "m")], "warn", r=10)
+    d.text(260, 326, "Uitzondering uit de les: se rendre compte is invariable,", "l", "middle")
+    d.text(260, 344, "want compte staat als COD ná het participe.", "l", "middle")
+    return d
+
+
 DOCS = {
+    "data-locations": "de datalocaties van de EVM: storage, memory, calldata en de stack, met levensduur en kost",
+    "mapping-slot": "een mapping bewaart waarde 100 niet in het declaratieslot maar op keccak256(sleutel · slot)",
+    "ttd-timeline": "Time to Decision: autoregressief model (TTFT + tokens × TPOT = 3 500 ms) tegenover één forward pass van een beslissingsmodel",
+    "n8n-items": "n8n-itemmodel: 3 items gaan een node in, de node draait per item en geeft 3 items terug",
+    "batch-loop": "Loop Over Items: 50 000 items in batches van 50, met Wait voor rate limits en een done-tak",
+    "stress-rules": "Spaans: beslisboom voor de klemtoon (tilde, klinker/-n/-s, andere medeklinker)",
+    "accord-pp": "Frans: beslisboom voor de accord van het participe passé bij pronominale werkwoorden",
     "mss-clamping": "TCP MSS clamping: de router herschrijft de MSS in de SYN zodat pakketten door een tunnel met MTU 1420 passen",
     "bgp-fsm": "BGP-sessietoestanden: Idle, Connect, Active, OpenSent, OpenConfirm en Established",
     "double-nat": "double NAT: console achter eigen router achter ISP-modem, met twee vertalingen",
