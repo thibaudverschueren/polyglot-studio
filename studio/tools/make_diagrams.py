@@ -452,7 +452,72 @@ def nat_pat():
     return d
 
 
+
+@diagram
+def mss_clamping():
+    d = Diagram("mss-clamping", 282)
+    d.box(10, 8, 120, 50, [("Client", "t"), ("MTU 1500", "l")])
+    d.box(185, 8, 150, 50, [("Router", "t"), ("tunnel MTU 1420", "l")], "info")
+    d.box(390, 8, 120, 50, [("Server", "t"), ("MTU 1500", "l")])
+    for x in (70, 260, 450):
+        d.line(x, 60, x, 232, dashed=True, cls="d-grid")
+    d.arrow([(72, 96), (256, 96)])
+    d.text(164, 84, "SYN · MSS = 1460", "l", "middle")
+    d.arrow([(264, 96), (446, 96)])
+    d.text(356, 84, "SYN · MSS = 1380", "l", "middle", extra="d-good-t")
+    d.text(260, 118, "de router herschrijft de MSS (1420 − 40)", "l", "middle", extra="d-good-t")
+    d.arrow([(446, 168), (74, 168)])
+    d.text(260, 156, "data: 1380 B payload + 40 B headers = 1420 B", "l", "middle")
+    d.text(260, 190, "past door de tunnel: geen fragmentatie, geen ICMP nodig", "l", "middle", extra="d-good-t")
+    d.box(10, 216, 500, 54, [("Zo hoeft PMTUD niet meer te werken", "s"), ("de server houdt zich aan de MSS uit de SYN van de client", "l")], "good", r=8)
+    return d
+
+
+@diagram
+def bgp_fsm():
+    d = Diagram("bgp-fsm", 418)
+    main = [("Idle", ""), ("Connect", ""), ("OpenSent", ""), ("OpenConfirm", ""), ("Established", "good")]
+    ys = [12, 90, 168, 246, 324]
+    for (name, kind), y in zip(main, ys):
+        d.box(14, y, 150, 38, [(name, "t")], kind, r=8)
+    labels = ["Start / ConnectRetry", "TCP Ok", "OPEN Ok", "KEEPALIVE Ok"]
+    for i, lab in enumerate(labels):
+        d.arrow([(89, ys[i] + 38), (89, ys[i + 1])])
+        d.text(102, ys[i] + 62, lab, "l", "start")
+    d.box(330, 90, 160, 38, [("Active", "t")], "warn", r=8)
+    d.arrow([(166, 109), (328, 109)])
+    d.text(247, 100, "TCP faalt", "l", "middle")
+    d.arrow([(410, 128), (410, 187), (166, 187)])
+    d.text(300, 178, "TCP lukt alsnog", "l", "middle")
+    d.arrow([(410, 90), (410, 31), (166, 31)])
+    d.text(300, 22, "fout / timeout", "l", "middle")
+    d.text(260, 392, "Een sessie die in Active blijft hangen (of heen en weer springt tussen", "l", "middle")
+    d.text(260, 408, "Connect en Active) bouwt zijn TCP-verbinding op poort 179 niet op.", "l", "middle")
+    return d
+
+
+@diagram
+def double_nat():
+    d = Diagram("double-nat", 366)
+    rows = [("Spelconsole", "192.168.0.50", ""), ("Eigen router", "WAN-kant: 192.168.1.100", "info"),
+            ("ISP-modem-router", "WAN-kant: 203.0.113.88", "info"), ("Internet", "publiek IP-adres", "")]
+    for i, (name, sub, kind) in enumerate(rows):
+        y = 8 + i * 74
+        d.box(14, y, 250, 46, [(name, "t"), (sub, "m")], kind, r=8)
+        if i < 3:
+            d.arrow([(139, y + 46), (139, y + 74)])
+            d.text(152, y + 64, f"NAT {i + 1}: bron-IP wordt herschreven" if i < 2 else "naar het internet", "l", "start")
+    d.text(290, 28, "intern netwerk", "l", "start")
+    d.text(290, 102, "eerste vertaling", "l", "start")
+    d.text(290, 176, "tweede vertaling", "l", "start")
+    d.box(14, 308, 492, 46, [("Poortforwarding op de eigen router helpt niet van buitenaf", "s"), ("de ISP-modem kent de console niet en gooit het verkeer weg", "l")], "bad", r=8)
+    return d
+
+
 DOCS = {
+    "mss-clamping": "TCP MSS clamping: de router herschrijft de MSS in de SYN zodat pakketten door een tunnel met MTU 1420 passen",
+    "bgp-fsm": "BGP-sessietoestanden: Idle, Connect, Active, OpenSent, OpenConfirm en Established",
+    "double-nat": "double NAT: console achter eigen router achter ISP-modem, met twee vertalingen",
     "encapsulation": "ingepakte lagen: Ethernet-frame ⊃ IPv4-pakket ⊃ TCP-segment ⊃ applicatiedata, met headergroottes en MTU/MSS",
     "hop-by-hop": "pakket van Host A via twee routers naar Server B: MAC-adressen veranderen per hop, IP-adressen blijven gelijk",
     "arp-exchange": "ARP Request (broadcast) en ARP Reply (unicast) tussen een host en zijn default gateway",

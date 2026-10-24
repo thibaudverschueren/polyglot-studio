@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 366" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-double-nat" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-double-nat" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<rect class="d-box" x="14" y="8" width="250" height="46" rx="8"/>
+<text class="d-t" x="139.0" y="28.0" text-anchor="middle">Spelconsole</text>
+<text class="d-m" x="139.0" y="44.0" text-anchor="middle">192.168.0.50</text>
+<path class="d-line" d="M139 54 L139 82" marker-end="url(#m-double-nat)"/>
+<text class="d-l" x="152" y="72" text-anchor="start">NAT 1: bron-IP wordt herschreven</text>
+<rect class="d-box d-info" x="14" y="82" width="250" height="46" rx="8"/>
+<text class="d-t" x="139.0" y="102.0" text-anchor="middle">Eigen router</text>
+<text class="d-m" x="139.0" y="118.0" text-anchor="middle">WAN-kant: 192.168.1.100</text>
+<path class="d-line" d="M139 128 L139 156" marker-end="url(#m-double-nat)"/>
+<text class="d-l" x="152" y="146" text-anchor="start">NAT 2: bron-IP wordt herschreven</text>
+<rect class="d-box d-info" x="14" y="156" width="250" height="46" rx="8"/>
+<text class="d-t" x="139.0" y="176.0" text-anchor="middle">ISP-modem-router</text>
+<text class="d-m" x="139.0" y="192.0" text-anchor="middle">WAN-kant: 203.0.113.88</text>
+<path class="d-line" d="M139 202 L139 230" marker-end="url(#m-double-nat)"/>
+<text class="d-l" x="152" y="220" text-anchor="start">naar het internet</text>
+<rect class="d-box" x="14" y="230" width="250" height="46" rx="8"/>
+<text class="d-t" x="139.0" y="250.0" text-anchor="middle">Internet</text>
+<text class="d-m" x="139.0" y="266.0" text-anchor="middle">publiek IP-adres</text>
+<text class="d-l" x="290" y="28" text-anchor="start">intern netwerk</text>
+<text class="d-l" x="290" y="102" text-anchor="start">eerste vertaling</text>
+<text class="d-l" x="290" y="176" text-anchor="start">tweede vertaling</text>
+<rect class="d-box d-bad" x="14" y="308" width="492" height="46" rx="8"/>
+<text class="d-s" x="260.0" y="327.0" text-anchor="middle">Poortforwarding op de eigen router helpt niet van buitenaf</text>
+<text class="d-l" x="260.0" y="342.0" text-anchor="middle">de ISP-modem kent de console niet en gooit het verkeer weg</text>
+</svg>

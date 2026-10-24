@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 418" preserveAspectRatio="xMidYMid meet"><defs><marker id="m-bgp-fsm" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker><marker id="ms-bgp-fsm" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-ah" d="M0 1.5 L9 5 L0 8.5z"/></marker></defs>
+<rect class="d-box" x="14" y="12" width="150" height="38" rx="8"/>
+<text class="d-t" x="89.0" y="36.0" text-anchor="middle">Idle</text>
+<rect class="d-box" x="14" y="90" width="150" height="38" rx="8"/>
+<text class="d-t" x="89.0" y="114.0" text-anchor="middle">Connect</text>
+<rect class="d-box" x="14" y="168" width="150" height="38" rx="8"/>
+<text class="d-t" x="89.0" y="192.0" text-anchor="middle">OpenSent</text>
+<rect class="d-box" x="14" y="246" width="150" height="38" rx="8"/>
+<text class="d-t" x="89.0" y="270.0" text-anchor="middle">OpenConfirm</text>
+<rect class="d-box d-good" x="14" y="324" width="150" height="38" rx="8"/>
+<text class="d-t" x="89.0" y="348.0" text-anchor="middle">Established</text>
+<path class="d-line" d="M89 50 L89 90" marker-end="url(#m-bgp-fsm)"/>
+<text class="d-l" x="102" y="74" text-anchor="start">Start / ConnectRetry</text>
+<path class="d-line" d="M89 128 L89 168" marker-end="url(#m-bgp-fsm)"/>
+<text class="d-l" x="102" y="152" text-anchor="start">TCP Ok</text>
+<path class="d-line" d="M89 206 L89 246" marker-end="url(#m-bgp-fsm)"/>
+<text class="d-l" x="102" y="230" text-anchor="start">OPEN Ok</text>
+<path class="d-line" d="M89 284 L89 324" marker-end="url(#m-bgp-fsm)"/>
+<text class="d-l" x="102" y="308" text-anchor="start">KEEPALIVE Ok</text>
+<rect class="d-box d-warn" x="330" y="90" width="160" height="38" rx="8"/>
+<text class="d-t" x="410.0" y="114.0" text-anchor="middle">Active</text>
+<path class="d-line" d="M166 109 L328 109" marker-end="url(#m-bgp-fsm)"/>
+<text class="d-l" x="247" y="100" text-anchor="middle">TCP faalt</text>
+<path class="d-line" d="M410 128 L410 187 L166 187" marker-end="url(#m-bgp-fsm)"/>
+<text class="d-l" x="300" y="178" text-anchor="middle">TCP lukt alsnog</text>
+<path class="d-line" d="M410 90 L410 31 L166 31" marker-end="url(#m-bgp-fsm)"/>
+<text class="d-l" x="300" y="22" text-anchor="middle">fout / timeout</text>
+<text class="d-l" x="260" y="392" text-anchor="middle">Een sessie die in Active blijft hangen (of heen en weer springt tussen</text>
+<text class="d-l" x="260" y="408" text-anchor="middle">Connect en Active) bouwt zijn TCP-verbinding op poort 179 niet op.</text>
+</svg>
