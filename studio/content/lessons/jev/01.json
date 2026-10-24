@@ -8,7 +8,7 @@
  "subtitle": "Waarom generatieve LLM's te traag en duur zijn voor softwarebeslissingen, en hoe TypeSafe Jev besluiten getypeerd en gekalibreerd berekent",
  "level": "fundament",
  "minutes": 45,
- "summary": "Software heeft geen proza nodig wanneer het een beslissing moet nemen. Traditionele LLM's (large language model) die token voor token genereren zijn traag, duur en onvoorspelbaar voor if/else-logica. Diogo Almeida (co-inventor van RLHF (reinforcement learning from human feedback) bij OpenAI) bouwde met TypeSafe Jev een fundamenteel nieuw System 1 AI-model: non-autoregressief, ultrasnel (70ms) en getraind op gekalibreerde beslissingen in plaats van menselijke vleierij.",
+ "summary": "Software heeft geen proza nodig wanneer het een beslissing moet nemen. Traditionele LLM's (large language model) die token voor token genereren zijn traag, duur en onvoorspelbaar voor if/else-logica. Diogo Almeida (voormalig OpenAI-onderzoeker en co-auteur van InstructGPT, waarin RLHF (reinforcement learning from human feedback) op grote schaal werd toegepast) bouwde met TypeSafe Jev een fundamenteel nieuw System 1 AI-model: non-autoregressief, ultrasnel (70ms) en getraind op gekalibreerde beslissingen in plaats van menselijke vleierij.",
  "objectives": [
   {
    "id": "sys1-vs-sys2",
@@ -169,7 +169,7 @@
   {
    "id": "sec-02",
    "title": "2. De Oorsprong van Jev: Diogo Almeida en TypeSafe AI",
-   "md": "Deze structurele frustratie vormde het vertrekpunt voor **TypeSafe AI**.\n\nDe leidende figuur achter TypeSafe en de creatie van **Jev** (in gesproken Nederlands vaak fonetisch gerefereerd als *Jef*) is **Diogo Almeida**. Almeida is geen buitenstaander: als toponderzoeker bij OpenAI speelde hij een directe sleutelrol in de moderne AI-revolutie als mede-uitvinder van **RLHF (Reinforcement Learning from Human Feedback)** en co-auteur van de fundamentele **InstructGPT** papers.\n\nTijdens zijn werk bij OpenAI zag Almeida hoe duizenden software-ingenieurs wereldwijd vochten met dezelfde contradictie:\n\n> *\"Ontwikkelaars gebruiken gigantische generatieve LLM's van honderden miljarden parameters als veredelde if/else-statements. Ze schrijven dertig regels complexe system prompts om het model te smeken om uitsluitend een JSON-boolean uit te spugen, en bouwen vervolgens foutgevoelige regex-reparatielussen om de antwoorden betrouwbaar te parsen.\"*\n\nIn september 2026 lanceerde TypeSafe AI (opgericht door Almeida samen met Erik Gafni en Sasha Sheng) na twee jaar intensief onderzoek een radicaal nieuw model: **Jev**.\n\nJev breekt radicaal met de autoregressieve traditie:\n- Het is **géén generatief taalmodel**: Jev kan en zal nooit een gedicht, e-mail of opiniestuk schrijven.\n- Het genereert geen tekst-tokens na elkaar: het is een **zuiver beslissingsmodel (decision engine)** dat in één enkele wiskundige pas getypeerde waarden met gekalibreerde probabiliteiten berekent.\n- Het is ontworpen om programmatisch te worden aangeroepen vanuit backend code, microservices en n8n workflows."
+   "md": "Deze structurele frustratie vormde het vertrekpunt voor **TypeSafe AI**.\n\nDe leidende figuur achter TypeSafe en de creatie van **Jev** (in gesproken Nederlands vaak fonetisch gerefereerd als *Jef*) is **Diogo Almeida**. Almeida is geen buitenstaander: als onderzoeker bij OpenAI werkte hij mee aan **InstructGPT**, het onderzoek waarin **RLHF (Reinforcement Learning from Human Feedback)** op grote schaal werd toegepast om taalmodellen behulpzamer te maken, en hij is co-auteur van het bijbehorende paper.\n\nTijdens zijn werk bij OpenAI zag Almeida hoe duizenden software-ingenieurs wereldwijd vochten met dezelfde contradictie:\n\n> *\"Ontwikkelaars gebruiken gigantische generatieve LLM's van honderden miljarden parameters als veredelde if/else-statements. Ze schrijven dertig regels complexe system prompts om het model te smeken om uitsluitend een JSON-boolean uit te spugen, en bouwen vervolgens foutgevoelige regex-reparatielussen om de antwoorden betrouwbaar te parsen.\"*\n\nIn september 2026 lanceerde TypeSafe AI (opgericht door Almeida samen met Erik Gafni en Sasha Sheng) na twee jaar intensief onderzoek een radicaal nieuw model: **Jev**.\n\nJev breekt radicaal met de autoregressieve traditie:\n- Het is **géén generatief taalmodel**: Jev kan en zal nooit een gedicht, e-mail of opiniestuk schrijven.\n- Het genereert geen tekst-tokens na elkaar: het is een **zuiver beslissingsmodel (decision engine)** dat in één enkele wiskundige pas getypeerde waarden met gekalibreerde probabiliteiten berekent.\n- Het is ontworpen om programmatisch te worden aangeroepen vanuit backend code, microservices en n8n workflows."
   },
   {
    "id": "sec-03",
@@ -226,7 +226,7 @@
    "prompt": "Welke cruciale bijdrage leverde Diogo Almeida aan de AI-wereld vóór hij TypeSafe oprichtte?",
    "explain": "Diogo Almeida was onderzoeker bij OpenAI en co-auteur van de fundamentele papers over InstructGPT en RLHF.",
    "options": [
-    "Hij was co-inventor van RLHF en co-auteur van de InstructGPT papers bij OpenAI.",
+    "Hij was onderzoeker bij OpenAI en co-auteur van het InstructGPT-paper (RLHF op grote schaal toegepast).",
     "Hij ontwierp de eerste CUDA chip bij Nvidia in 2006.",
     "Hij lanceerde het n8n open-source project in Berlijn.",
     "Hij schreef de originele compiler voor Solidity op Ethereum."
@@ -343,7 +343,7 @@
    "type": "type",
    "skill": "diogo-typesafe",
    "level": 2,
-   "prompt": "Typ de achternaam van de voormalig OpenAI onderzoeker en co-inventor van RLHF die TypeSafe AI oprichtte.",
+   "prompt": "Typ de achternaam van de voormalig OpenAI-onderzoeker en co-auteur van InstructGPT die TypeSafe AI oprichtte.",
    "explain": "Diogo Almeida is de oprichter van TypeSafe AI.",
    "answers": [
     "Almeida",
@@ -632,7 +632,7 @@
    "id": "c-almeida",
    "skill": "diogo-typesafe",
    "front": "Wie is Diogo Almeida?",
-   "back": "Oprichter van TypeSafe AI (maker van Jev) en voormalig OpenAI onderzoeker die mede-uitvinder was van RLHF en co-auteur van de InstructGPT papers."
+   "back": "Oprichter van TypeSafe AI (maker van Jev) en voormalig OpenAI-onderzoeker en co-auteur van het InstructGPT-paper (RLHF op grote schaal toegepast)."
   },
   {
    "id": "c-primitives",
