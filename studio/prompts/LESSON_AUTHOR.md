@@ -63,13 +63,16 @@ Daarom:
 ## 4. Markdown-subset (voor alle tekstvelden)
 
 - Koppen `##`/`###`, lijsten, **vet**, *cursief*, `code`, tabellen (GFM), links, `---`.
-- Callouts: `> [!rule] Titel`, `> [!tip]`, `> [!warning]`, `> [!pitfall]`, `> [!example]`, `> [!mnemonic]`, `> [!note]` — volgende regels beginnen met `> `.
+- Callouts: `> [!rule] Titel`, `> [!important]`, `> [!tip]`, `> [!warning]`, `> [!caution]`, `> [!pitfall]`, `> [!example]`, `> [!mnemonic]`, `> [!note]` — volgende regels beginnen met `> ` (ook binnen een lijstitem, ingesprongen). Een ander type wordt afgekeurd.
 - Codeblokken met taal: ```` ```solidity Bank.sol ````, ```` ```json ````, ```` ```js ````, ```` ```python ````.
 - Wiskunde: `$…$` inline en `$$…$$` als blok (KaTeX). **Een los dollarteken buiten wiskunde schrijf je als `\$`.** In het vak `automation` zet je n8n-expressies (`$json`, `$input`, `$('Node')`) **altijd tussen backticks**, anders worden ze als wiskunde gelezen.
 - Uitspreekbare chips: `[[fr:texte]]` voor Frans, `[[es:texto]]` voor Spaans; Griekse woorden worden automatisch aantikbaar.
 - Interactieve simulators (optioneel, alleen deze bestaan): `:::sim NAAM {json-opties}` + een regel `:::`.
   - `greek-alphabet` `{}` · `bpe` `{"corpus": "…", "text": "…", "merges": 12}` · `rope` `{"d": 64}` · `attention` `{"tokens": […], "Q": [[…]], "K": [[…]]}` · `kvcache` `{}` · `lora` `{}` · `chinchilla` `{}` · `n8n-items` `{"items": [ {…} ], "expr": "{{ $json.x }}"}` · `backoff` `{}` · `solidity` `{"file": "X.sol", "contract": "X", "code": "…"}`
 - Geen ruwe HTML (behalve `<br>`, `<sup>`, `<sub>`, `<u>`, `<kbd>`).
+- **Afkortingen** (de lezer is een eerstejaars master handelsingenieur: sterk in economie, statistiek en management, maar kent het vakjargon van netwerken, ML of blockchain niet): schrijf een afkorting **bij het eerste gebruik in de lopende tekst van de les** (samenvatting, doelen, theorie, items) voluit tussen haakjes, bv. `LPM (Longest Prefix Match)` of `KV-cache (KV = key-value)`. Algemeen bekende afkortingen (KPI, CEO, ROI, GB, …) mag je laten staan. Afkortingen uit `studio/content/abbreviations.json` vult de tooling zelf aan; onbekende schrijf je zeker zelf voluit.
+- **Afbeeldingen**: `![beschrijvende alt-tekst](assets/diagrams/NAAM.svg "bijschrift")` op een eigen regel. Je kunt zelf geen bestanden maken: verwijs **alleen** naar een bestaand diagram uit deze lijst, en alleen als het echt bij de sectie past. Een verwijzing naar een ander bestand maakt de les ongeldig.
+{{DIAGRAMS}}
 
 ## 5. Vakspecifieke regels
 
@@ -107,7 +110,7 @@ Stappen: `deploy` (+ `args`, `as`, `value`, `alias`, `reverts`), `call` (+ `on`,
 **AI (`ai`)** — wiskunde in KaTeX gecombineerd met **concrete Python-implementaties** (PyTorch, Hugging Face `transformers`, `datasets`, `peft`, `bitsandbytes`, `pydantic`). Leg elk mechanisme zowel theoretisch als in werkende Python-code uit. Behandel systematisch:
 - **Trainen van AI in Python**: DataLoader batching, tensor shapes `(B, T, d)`, forward pass, causal loss over shift logits, autograd `loss.backward()`, gradient accumulation, AdamW optimizer step, SFT (Supervised Fine-Tuning) en LoRA/QLoRA adapter training.
 - **Gebruiken van AI in Python**: Hugging Face pipelines, `AutoModelForCausalLM`, `generate()` parameters (temperature, top_p, top_k), KV-cache tensor beheer, embeddings & vector similarity search (`sentence-transformers`), en structured outputs met Pydantic (`instructor`).
-- **Architecturale visuals**: Voeg bij structurele concepten visuele diagrammen toe via Markdown-afbeeldingen (`![Alt](assets/diagrams/... "Caption")` of heldere schema's).
+- **Visuals**: gebruik bij structurele concepten een passend bestaand diagram uit de lijst in sectie 4 (verzin geen bestandsnamen).
 - **Didactische items**: Gebruik `numeric`-items voor geheugen- en rekencapaciteit, `cloze` voor code invuloefeningen in Python, `order` voor de stappen in de trainingsloop of inferentiecyclus, en `type`/`match` voor PyTorch functies en tensor shapes. Vertaal altijd naar kosten, capaciteit en strategie (handelsingenieur). Gebruik de interactieve simulators waar ze bestaan.
 
 **Automation (`automation`)** — n8n 1.x-terminologie (Edit Fields/Set, Split Out, Aggregate, Merge, Code, HTTP Request, Webhook, Respond to Webhook, Error Trigger, AI Agent …). Twee uitvoerbare itemtypes:

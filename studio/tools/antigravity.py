@@ -18,6 +18,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 STUDIO = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
+import abbr  # noqa: E402
 import md  # noqa: E402
 import tracks as trk  # noqa: E402
 import build  # noqa: E402
@@ -32,9 +33,18 @@ def read(p):
     return open(p, encoding="utf-8").read()
 
 
+def diagram_catalog():
+    """The diagrams a lesson may reference (agy cannot create files), one line each."""
+    try:
+        import make_diagrams as MD
+        return "\n".join(f"  - `assets/diagrams/{n}.svg` — {doc}" for n, doc in MD.catalog()) or "  (geen)"
+    except Exception:
+        return "  (geen)"
+
+
 def author_prompt():
-    """LESSON_AUTHOR.md with the track table filled in from tracks.json (so a new track is known at once)."""
-    return read(os.path.join(PROMPTS, "LESSON_AUTHOR.md")).replace("{{TRACK_TABLE}}", trk.table_md())
+    """LESSON_AUTHOR.md with the track table and the diagram list filled in (so a new track or diagram is known at once)."""
+    return read(os.path.join(PROMPTS, "LESSON_AUTHOR.md")).replace("{{TRACK_TABLE}}", trk.table_md()).replace("{{DIAGRAMS}}", diagram_catalog())
 
 
 # ------------------------------------------------------------------ agy
@@ -290,6 +300,9 @@ def author_lesson(track, lesson_id, topic, model, idx, syllabus, cfg, today, mod
             log(f"    = ongewijzigd: {L.get('reason', '')[:200]}")
             return {"unchanged": True, "reason": L.get("reason", "")}
         L = _coerce(_normalize_lesson(L, track, lesson_id, (topic or {}).get("id") or (current or {}).get("roadmap"), today, "consolidation" if mode == "consolidate" else None))
+        L, n_abbr = abbr.fix_lesson(L)  # abbreviations from the dictionary are spelled out at first use, deterministically
+        if n_abbr:
+            log(f"    + {n_abbr} afkorting(en) voluit geschreven bij eerste gebruik")
         errs, warns = check_lesson(L)
         if last is not None and not errs:
             shrunk = _shrunk(last, L)

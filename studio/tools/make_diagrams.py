@@ -273,6 +273,22 @@ def zero_stages():
     return d
 
 
+DOCS = {
+    "transformer-decoder-architecture": "decoder-only transformer van tekst tot volgend token: tokenizer, embeddings, N lagen, LM-head, softmax",
+    "transformer-block": "één transformerlaag: RMSNorm, self-attention, feed-forward en twee residual connections",
+    "gqa-heads": "MHA, GQA en MQA: 8 query-heads en hoeveel KV-heads ze delen (KV-cache 100% / 25% / 12,5%)",
+    "pytorch-training-loop": "de zes stappen van een PyTorch-trainingslus plus het geheugen per parameter (16 bytes)",
+    "lr-schedule": "leersnelheid tijdens training: lineaire warmup en cosine decay",
+    "memory-16-bytes": "16 bytes per parameter bij AdamW in BF16 (gewicht, gradiënt, FP32-kopie, m, v) tegenover 2 B bij inferentie",
+    "zero-stages": "geheugen per GPU bij klassiek data parallelism en ZeRO-1/2/3 (voorbeeld met 8 GPU's)",
+}
+
+
+def catalog():
+    """(name, one-line description) of every diagram, for the author prompt."""
+    return [(n, DOCS.get(n, n)) for n in DIAGRAMS]
+
+
 def main(names):
     todo = names or list(DIAGRAMS)
     for name in todo:

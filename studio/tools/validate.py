@@ -16,6 +16,7 @@ import unicodedata
 HERE = os.path.dirname(os.path.abspath(__file__))
 STUDIO = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
+import abbr  # noqa: E402
 import md  # noqa: E402
 import tracks as trk  # noqa: E402  (single source of truth: content/tracks.json)
 
@@ -381,6 +382,16 @@ def validate_lesson(L, schema, fname=""):
         for m in re.finditer(r"^\s*>\s*\[!(\w+)\]", s["md"], re.M):
             if m.group(1).lower() not in md.CALLOUTS:
                 errs.append(f"section '{s['id']}': unknown callout [!{m.group(1)}] (use {', '.join(sorted(md.CALLOUTS))})")
+    for s in L["sections"]:  # pictures: only local assets/ files, with a description (the build inlines SVGs)
+        for m in re.finditer(r"!\[([^\]]*)\]\(([^)\s]+)", s["md"]):
+            alt, src = m.group(1).strip(), m.group(2)
+            if not re.fullmatch(r"assets/[\w./-]+\.(?:svg|png|jpe?g|webp|gif)", src) or ".." in src:
+                errs.append(f"section '{s['id']}': image must be a local file under assets/: {src}")
+            elif not os.path.isfile(os.path.join(md.ROOT, src)):
+                errs.append(f"section '{s['id']}': image not found: {src} (use a diagram from assets/diagrams/)")
+            if len(alt) < 15:
+                warns.append(f"section '{s['id']}': describe the picture in the alt text ({src})")
+    warns += abbr.lint(L)  # spell out abbreviations at first use (the daily run fixes dictionary terms itself)
     words = sum(len(re.findall(r"\w+", s["md"])) for s in L["sections"])
     if words < 700:
         warns.append(f"theory is short ({words} words) — aim for 900–2500")
