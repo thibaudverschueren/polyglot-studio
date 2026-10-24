@@ -18,7 +18,7 @@
 <text class="d-t" x="200" y="206" text-anchor="middle">→</text>
 <text class="d-m" x="270" y="206" text-anchor="start">203.0.113.7:40002</text>
 <path class="d-line" d="M260 236 L260 282" marker-end="url(#m-nat-pat)"/>
-<text class="d-l" x="274" y="266" text-anchor="start">bron: 203.0.113.7 met poort 40001 of 40002</text>
+<text class="d-l" x="274" y="266" text-anchor="start">bron: 203.0.113.7:40001 of :40002</text>
 <rect class="d-box" x="140" y="284" width="240" height="46" rx="10"/>
 <text class="d-t" x="260.0" y="304.0" text-anchor="middle">Internetserver</text>
 <text class="d-m" x="260.0" y="320.0" text-anchor="middle">142.250.179.206 : 443</text>

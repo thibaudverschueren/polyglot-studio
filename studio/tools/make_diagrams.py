@@ -445,7 +445,7 @@ def nat_pat():
     d.text(200, 206, "→", "t", "middle")
     d.text(270, 206, "203.0.113.7:40002", "m", "start")
     d.arrow([(260, 236), (260, 282)])
-    d.text(274, 266, "bron: 203.0.113.7 met poort 40001 of 40002", "l", "start")
+    d.text(274, 266, "bron: 203.0.113.7:40001 of :40002", "l", "start")
     d.box(140, 284, 240, 46, [("Internetserver", "t"), ("142.250.179.206 : 443", "m")])
     d.text(260, 352, "Antwoorden komen terug op poort 40001 of 40002; de router vertaalt ze", "l", "middle")
     d.text(260, 370, "via de conntrack-tabel terug naar de juiste PC.", "l", "middle")
