@@ -1,0 +1,196 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe een vroege kernelmodule de gehalveerde rekensnelheid van Nvidia Ampere herstelt",
+ "subtitle": "Door interne snelheidsregisters aan te passen vóór het stuurprogramma laadt, verdubbelt een Linux-module de instructie-uitgifte voor FP16 en BF16 op GeForce RTX 30-kaarten.",
+ "topic": "chips",
+ "minutes": 10,
+ "tldr": [
+  "Nvidia halveerde op consumentenkaarten met de Ampere-architectuur kunstmatig de instructie-uitgifte voor FP16- en BF16-berekeningen om professionele GPU's te beschermen.",
+  "Een open-source Linux-kernelmodule overschrijft de verborgen hardware-registers direct tijdens het opstarten, nog vóór het officiële Nvidia-stuurprogramma de videokaart koppelt.",
+  "Bij dichte matrixberekeningen (GEMM) op een RTX 3090 Ti bij 450 W stijgt de BF16-doorvoer van 87,50 naar 157,41 TFLOPS.",
+  "Geheugenbandbreedte-gebonden taken zoals het genereren van losse LLM-tokens, evenals berekeningen in INT8 (waarop de snelheidsbeperking niet van toepassing was), profiteren niet van deze ontgrendeling."
+ ],
+ "plain": "Stel je een fabriek voor met twee identieke assemblagelijnen voor lichte pakketten. De fabrieksdirecteur wil echter dat grote bedrijven zijn duurdere fabrieken huren. Daarom zet hij bij de poort van de consumentenfabriek een bordje neer: de transportband mag slechts één pakket per twee seconden doorlaten, hoewel de machines technisch twee pakketten per seconde aankunnen. De arbeiders binnenin staan de helft van de tijd werkloos te wachten. De nieuwe methode werkt als een beheerder die 's ochtends vroeg, voordat de fabrieksopzichter arriveert, de snelheidsregelaar op het controlepaneel op volle toeren zet en direct een herstart uitvoert. Zodra het werk begint, verwerkt de fabriek plotseling bijna dubbel zoveel pakketten per seconde. Deze vergelijking gaat mank zodra er een tekort is aan grondstoffen bij de aanvoer: als de vrachtwagens de pakketten niet snel genoeg kunnen aanleveren, levert een snellere interne lopende band geen extra winst op.",
+ "why": "Lokale AI-modellen draaien vaak op consumentenkaarten zoals de RTX 3090. Omdat machine learning zwaar leunt op matrixvermenigvuldigingen in FP16 en BF16, verdubbelt deze ontgrendeling op chipniveau de theoretische instructiedoorvoer. Bij het inladen en verwerken van lange invoerprompts (LLM-prefill) levert dit tijdwinst op. Voor wie lokaal neurale netwerken traint of beeldgeneratie via diffusiemodellen draait, worden bestaande Ampere-kaarten zonder extra hardwarekosten aanzienlijk sneller inzetbaar.",
+ "sections": [
+  {
+   "title": "De marktsegmentatie en de gehalveerde uitgiftesnelheid",
+   "md": "Je leert hier waarom Nvidia consumentenchips afknijpt op instructieniveau en hoe de uitgiftesnelheid van FP16 en BF16 verschilt van professionele kaarten.\n\n### Gelijke siliciumchips met gescheiden markten\nIn de halfgeleiderindustrie bepaalt niet alleen het fysieke siliciumontwerp wat een chip kan, maar ook hoe fabrikanten die capaciteit segmenteren. Bij de introductie van de Ampere-architectuur produceerde Nvidia chips voor twee verschillende doelgroepen:\n1. **Datacenters en professionele werkstations**: kaarten zoals de A40 en RTX A6000, verkocht tegen hoge zakelijke prijzen.\n2. **Consumenten en gamers**: de GeForce RTX 30-serie (RTX 3050 tot RTX 3090 Ti).\n\nDe fysieke chip GA102 vormt het hart van zowel consumentenvlaggenschepen (zoals de RTX 3080 en RTX 3090) als professionele werkstationkaarten (zoals de RTX A6000). Beide kaartreeksen delen het 8 nm-productieproces van Samsung en nagenoeg identieke streaming multiprocessors (SM's). Toch rekenden professionele kaarten bij halve precisie (16-bits floating-point) per klokcyclus tweemaal zo snel als hun GeForce-tegenhangers.\n\n### Het mechanisme van de instructieplanner\nOm te begrijpen waar dat snelheidsverschil ontstaat, kijken we naar de instructiepijplijn van een moderne GPU. Binnen elke SM bevinden zich warp schedulers (instructieplanners) die instructies selecteren en doorsturen naar de fysieke rekeneenheden, zoals de Tensor Cores. Nvidia halveerde de instructie-uitgiftesnelheid voor FP/BF16 FMA-operaties op Ampere-consumentenkaarten kunstmatig ten opzichte van professionele kaarten, en de module verdubbelt deze snelheid.\n\nIn een ongehinderde processorarchitectuur geldt voor dichte matrixberekeningen de volgende theoretische doorvoer $T$:\n\n$$T = f_{\\text{klok}} \\times N_{\\text{kernen}} \\times I \\times O$$\n\nHierbij staat $f_{\\text{klok}}$ voor de klokfrequentie, $N_{\\text{kernen}}$ voor het aantal actieve rekeneenheden, $I$ voor de instructie-uitgiftesnelheid (*issue rate*) in instructies per klokcyclus, en $O$ voor het aantal wiskundige bewerkingen per instructie.\n\n| Chip / Kaart | Compute Capability | Productieproces | Instructie-uitgiftesnelheid (FP16/BF16 FMA) |\n|---|---|---|---|\n| Nvidia A40 (GA102) | 8.6 | Samsung 8 nm | Volledige snelheid |\n| RTX A6000 (GA102) | 8.6 | Samsung 8 nm | Volledige snelheid |\n| GeForce RTX 3090 (GA102, standaard) | 8.6 | Samsung 8 nm | Gehalveerde snelheid |\n| GeForce RTX 3090 (GA102, ontgrendeld) | 8.6 | Samsung 8 nm | Volledige snelheid |\n\n> [!note] Kunstmatige wachtcycli\n> Waar een klassieke processorvertraging (*pipeline stall* of *bubble*) volgens instructiepijplijnprincipes ontstaat door afhankelijkheden tussen instructies (*hazards*), grijpt Nvidia hier direct in op de uitgiftesnelheid van de scheduler. De instructieplanner last kunstmatig wachtcycli in voor FP/BF16 FMA-operaties. Hierdoor blijven de rekeneenheden tijdens tussenliggende cycli onbenut: het silicium staat stil, niet door ontbrekende data of hardwarematige datahazards, maar door een kunstmatig opgelegde begrenzing.\n\nDoor deze beperking behaalden GeForce Ampere-kaarten voor FP16 en BF16 slechts de helft van de instructiesnelheid die fysiek op de chip aanwezig was, totdat de module deze uitgiftesnelheid verdubbelt."
+  },
+  {
+   "title": "De verborgen registers en de timing van de kernelmodule",
+   "md": "Je leert hier hoe de configuratieregisters SS0 en SS1 werken en waarom de ontgrendeling strikt vóór het laden van het Nvidia-stuurprogramma moet plaatsvinden.\n\n### De registers achter het slot\nDe beperking op de uitgiftesnelheid zit niet vastgebakken in doorgesneden printbanen op de chip, maar wordt bestuurd via interne hardware-selectors op het PCIe-apparaat. Twee specifieke registers controleren de klokdelers van de instructie-uitgifte:\n- **SS0 (Speed Selector 0)**: een register dat de klokverhouding voor BF16-uitgifte regelt. De hexadecimale waarde `0x88888888` schakelt de volledige doorvoersnelheid in.\n- **SS1 (Speed Selector 1)**: een 4-bits register (`0x8 IMLA4`) dat gekoppeld is aan de instructiedoorvoer voor matrixbewerkingen.\n\nNvidia schermt deze configuratieregisters af via het officiële stuurprogramma. Zodra het stuurprogramma (`nvidia.ko`) aan de videokaart bindt, vergrendelt het de toegang tot deze interne instellingen.\n\n### Waarom eerdere methoden tekortschoten\nVóór deze module werd de ontgrendeling bereikt via een handmatig gepatchte Nvidia-driver (CMP-unlocker) of via een UEFI-applicatie onder Windows. De Linux-kernelmodule combineert de vroege timing van de UEFI-aanpak met de ontgrendeltechniek van de CMP-unlocker, waardoor de officiële Nvidia-driver ongewijzigd kan blijven en niet bij elke update handmatig gepatcht hoeft te worden.\n\n```\nTraditionele opstartvolgorde:\n[Initramfs] ──► [Nvidia-driver bindt kaart] ──► Registers vergrendeld op halve snelheid\n\nNieuwe opstartvolgorde met gpu-unlock:\n[Initramfs] ──► [gpu_unlock.ko laadt] ──► [Schrijf SS0 & SS1] ──► [FLR-reset] ──► [Nvidia-driver bindt kaart]\n```\n\n### De vroege kernelmodule in de initramfs\nDe open-source Linux-kernelmodule `gpu-unlock` lost dit timingprobleem op door zich in het initiële RAM-schijfbestand (*initramfs*) te nestelen, vlak vóór het stuurprogramma van Nvidia. De module voert de volgende stappen uit:\n1. **Doelen identificeren**: de module zoekt via de PCIe-bus naar ondersteunde Ampere-chips (GA102, GA103, GA104 en GA106).\n2. **Bus mastering opschonen**: eventuele actieve direct memory access (DMA)-toegang die de moederbordfirmware liet openstaan, wordt eerst gewist.\n3. **Snelheidsselectors schrijven**: de module voert de ontgrendelroutine uit en schrijft `0x88888888` naar selector SS0 en `0x8` naar SS1.\n4. **Function Level Reset (FLR)**: de module dwingt via PCIe een reset op functieniveau af. Hierdoor initialiseert de interne logica van de GPU zich opnieuw met de zojuist geschreven selectorwaarden, zonder dat de stroomtoevoer naar de kaart wegvalt.\n5. **Overdracht aan de officiële driver**: pas nadat de FLR is voltooid, laadt het ongewijzigde Nvidia-stuurprogramma. De driver treft een kaart aan die reeds op volle snelheid draait en bindt het apparaat zonder foutmeldingen.\n\n> [!tip] Slaapstand en herstel\n> Wanneer een computer in slaapstand gaat (*suspend to RAM*), verliest de GPU zijn spanning en resetten de snelheidsselectors naar de standaardwaarde. De module registreert daarom een eigen suspend-notifier die net vóór de notifier van de officiële Nvidia-driver draait (waarbij de Nvidia-driver standaard `NVreg_UseKernelSuspendNotifiers=1` hanteert). Bij het ontwaken schrijft de module binnen circa één seconde de registers opnieuw in, nog vóór het Nvidia-stuurprogramma de kaart hervat."
+  },
+  {
+   "title": "Wat versnelt en wat botst op fysieke limieten",
+   "md": "Je leert hier waarom matrixintensieve AI-taken sterk versnellen, terwijl LLM-tokengeneratie en INT8-berekeningen ongewijzigd blijven.\n\n### De gemeten winst in cijfers\nDe impact van het verdubbelen van de instructie-uitgiftesnelheid hangt af van het type wiskundige bewerking. Bij dichte matrixvermenigvuldigingen (*dense GEMM*, General Matrix Multiply) op een RTX 3090 Ti bij een vermogenslimiet van 450 W tonen prestatietests duidelijke verschuivingen:\n- **BF16**: de rekensnelheid stijgt van 87,50 TFLOPS naar 157,41 TFLOPS (een toename van circa 80%).\n- **TF32**: de rekensnelheid stijgt van 42,58 TFLOPS naar 82,61 TFLOPS (bijna een verdubbeling).\n- **FP16**: de doorvoer klimt van 87,46 TFLOPS naar 118,39 TFLOPS.\n\nBij andere consumentenkaarten met de GA102-, GA104- en GA106-chips rapporteren gebruikers vergelijkbare sprongen: de RTX 3070 noteert winsten tussen +73% en +81% op BF16 GEMM, en de RTX 3060 12 GB wint circa +80%.\n\nBovendien stelden rapporten vast dat de berekende waarden vóór en na de ontgrendeling bit-identiek zijn. De rekeneenheden leveren dezelfde wiskundige uitkomst af, alleen zonder tussenliggende pauzes.\n\n### Prefill versus decode bij taalmodellen\nVoor lokale toepassingen van machine learning maakt de ontgrendeling een specifiek onderscheid tussen twee fasen van taalmodellen:\n1. **Prefill-fase (invoerprompt verwerken)**: hierbij berekent de GPU alle tokens van de gebruikersvraag gelijktijdig. Dit is een zware matrixbewerking waarbij de rekeneenheden continu aan het werk zijn. Gebruikersrapporten tonen hier merkbare versnellingen bij LLM-prefill, diffusiemodellen en FlashAttention.\n2. **Decode-fase (tekst genereren)**: bij het genereren van antwoorden produceert het model één token per stap.\n\nIn de decode-fase geldt het klassieke geheugenknelpunt:\n\n$$t_{\\text{token}} \\approx \\frac{M_{\\text{parameters}} \\times b_{\\text{precisie}}}{B_{\\text{geheugen}}}$$\n\nWaarbij $M_{\\text{parameters}}$ het aantal modelparameters is, $b_{\\text{precisie}}$ het aantal bytes per parameter, en $B_{\\text{geheugen}}$ de geheugenbandbreedte van het videogeheugen (GDDR6 of GDDR6X, afhankelijk van het kaartmodel). Omdat de GPU voor elk gegenereerd token het volledige model opnieuw uit het geheugen moet inlezen, staan de Tensor Cores te wachten op data. Het verdubbelen van de instructie-uitgiftesnelheid brengt hier geen verandering in.\n\n### Waarom INT8-berekeningen gelijk blijven\nNaast de decodeerfase blijven ook berekeningen in INT8 (8-bits geheeltallen) qua prestaties nagenoeg gelijk. INT8-werklasten blijven gelijk omdat de ontgrendeling en de registerschakelaars (zoals SS0) specifiek ingrijpen op de uitgiftesnelheid van FP/BF16-FMA-operaties naar FP32, waardoor INT8-bewerkingen buiten het bereik van deze aanpassing vallen.\n\n> [!warning] Vermogensgrenzen als begrenzer\n> Het verdubbelen van de instructiesnelheid verhoogt de activiteit van de schakelcircuits. Daardoor stijgt het stroomverbruik van de GPU aanzienlijk. Op kaarten waarvan het vermogen begrensd is op 225 W, zakt de winst terug naar circa +25%. De chip bereikt zijn vermogenslimiet (*power limit*) en verlaagt de klokfrequentie om binnen zijn thermisch budget te blijven."
+  },
+  {
+   "title": "Compatibiliteit, uitzonderingen en systeemintegratie",
+   "md": "Je leert hier welke Ampere-chips compatibel zijn, welke uitzonderingen optreden en hoe de module configureerbaar is.\n\n### Ondersteunde chips en geteste configuraties\nDe kernelmodule ondersteunt de consumentenchips GA102, GA103, GA104 en GA106 (de kleinere GA107-chip uit onder meer de RTX 3050 wordt niet ondersteund). In de praktijk hebben gebruikers succesvolle ontgrendelingen gemeld op uiteenlopende kaarten:\n- **RTX 3090 Ti**: winsten van +68–80% op BF16 GEMM (rapport #1).\n- **RTX 3090**: winsten tussen +25% en +67% (rapporten #5, #9, #10, #17, #25, #27 en #33), sterk afhankelijk van de vermogenslimiet.\n- **RTX 3080 (10 GB en gemodificeerde 20 GB)**: ontgrendeld met aanzienlijke winsten op BF16 GEMM.\n- **RTX 3070**: winsten tussen +73% en +81%.\n- **RTX 3060 12 GB**: circa +80% winst.\n\nDe module werkt zowel met losse rekenkaarten als met de primaire videokaart die het beeldscherm aanstuurt. Tijdens de resetperiode blijft het beeldscherm kortstondig zwart totdat het Nvidia-stuurprogramma (`nvidia-drm`) het overneemt. Ook doorvoer naar virtuele machines via `vfio-pci` en opstellingen met tot vier GPU's in één systeem zijn gedocumenteerd.\n\n### De uitzondering van de OEM RTX 3080 Ti\nNiet elke kaart reageert echter identiek. Een opvallende uitzondering in de testresultaten is de **RTX 3080 Ti 20 GB OEM (GA102-250)** met PCI-identificatie `10de:2205`.\n\nBij deze specifieke chipvariant meldt de module dat de ontgrendelprocedure en het schrijven van de registers foutloos worden afgerond. Desondanks blijft de BF16-doorvoer in benchmarks exact op de gehalveerde snelheid steken. Waarom deze specifieke OEM-kaart op halve snelheid blijft steken is onbekend; mogelijk hanteert deze sub-revisie een aanvullende hardwarebeperking die niet louter door snelheidsselectors kan worden overschreven.\n\n### Veilige configuratie via de kernel-opdrachtregel\nOm onverwachte crashes te voorkomen, voert de module standaard geen acties uit tenzij de beheerder expliciet toestemming geeft via de kernel-opstartparameters:\n- `gpu_unlock.targets=all`: ontgrendelt elke niet-gekoppelde GA102-, GA103-, GA104- of GA106-kaart in het systeem.\n- `gpu_unlock.targets=0000:21:00.0`: ontgrendelt uitsluitend de kaart op het opgegeven PCIe-adres.\n\nDoor de configuratie via de bootloader te regelen, blijft het systeem beheersbaar: bij problemen volstaat het verwijderen van de opstartparameter om de computer direct weer in de officiële standaardtoestand op te starten."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "157.41 TFLOPS",
+   "label": "dense BF16 GEMM-rekenkracht met FP32-accumulatie op een RTX 3090 Ti bij 450 W na ontgrendeling",
+   "quote": "| BF16\n| 87.50 TFLOPS\n| 157.41 TFLOPS",
+   "source": 1
+  },
+  {
+   "value": "87.50 TFLOPS",
+   "label": "standaard dense BF16 GEMM-rekenkracht met FP32-accumulatie op een RTX 3090 Ti bij 450 W vóór ontgrendeling",
+   "quote": "| BF16\n| 87.50 TFLOPS\n| 157.41 TFLOPS",
+   "source": 1
+  },
+  {
+   "value": "82.61 TFLOPS",
+   "label": "dense TF32 GEMM-rekenkracht met FP32-accumulatie op een RTX 3090 Ti bij 450 W na ontgrendeling",
+   "quote": "| TF32\n| 42.58 TFLOPS\n| 82.61 TFLOPS",
+   "source": 1
+  },
+  {
+   "value": "0x88888888",
+   "label": "registerwaarde voor selector SS0 die de volledige BF16-instructiesnelheid inschakelt",
+   "quote": "It runs the unlock, writes the speed selectors (SS0 0x88888888, which selects the full BF16 rate, and the 4-bit SS1 0x8 IMLA4) and performs FLR before the unmodified NVIDIA driver binds the card.",
+   "source": 1
+  },
+  {
+   "value": "+25%",
+   "label": "laagst gemeten winst in BF16 GEMM-doorvoer op kaarten begrensd op 225 W",
+   "quote": "The gains are dense GEMM throughput from each report's own benchmark, so\nthey are not directly comparable. The power limit matters a lot: the lowest\nfigure (+25%) is from cards capped at 225 W.",
+   "source": 1
+  },
+  {
+   "value": "8.6",
+   "label": "CUDA compute capability van GeForce 30-serie GPU's",
+   "quote": "CUDA Compute Capability 8.0 for A100 and 8.6 for the GeForce 30 series",
+   "source": 3
+  },
+  {
+   "value": "118.39 TFLOPS",
+   "label": "dense FP16 GEMM-rekenkracht met FP32-accumulatie op een RTX 3090 Ti bij 450 W na ontgrendeling",
+   "quote": "| FP16\n| 87.46 TFLOPS\n| 118.39 TFLOPS",
+   "source": 1
+  }
+ ],
+ "caveats": "Er zijn duidelijke technische beperkingen en kanttekeningen bij deze methode:\n\n1. **Afhankelijkheid van vermogenslimieten**: De gemeten winst varieert sterk per opstelling. Op kaarten die begrensd zijn op 225 W zakt de winst terug naar circa +25%, doordat de GPU tegen zijn thermische en elektrische limiet botst.\n2. **Geen versnelling van geheugengebonden taken**: Taken die begrensd worden door de bandbreedte van het videogeheugen (GDDR6 of GDDR6X, afhankelijk van het kaartmodel), zoals de decodeerfase van grote taalmodellen waarin telkens één nieuw token wordt berekend, vertonen geen meetbare winst. Ook INT8-bewerkingen blijven ongewijzigd.\n3. **Hardwarematige uitzonderingen**: Op de OEM RTX 3080 Ti 20 GB (GA102-250) voltooit de ontgrendelingsroutine wel, maar blijft de BF16-snelheid gehalveerd. De bronnen geven geen uitsluitsel over de exacte hardwarematige oorzaak van deze afwijking.\n4. **Geen officiële ondersteuning**: De methode maakt gebruik van een open-source kernelmodule en binaire payloads afgeleid van CMP-firmware. Nvidia kan in toekomstige firmware- of driverversies tegenmaatregelen introduceren.\n5. **Geen ondersteuning voor winterslaap**: De module dekt ontwaken uit suspend-to-RAM, maar biedt geen ondersteuning voor hibernate (suspend-to-disk).",
+ "glossary": [
+  {
+   "term": "Warp scheduler",
+   "def": "Een hardware-eenheid binnen de GPU-rekenkern die instructies selecteert en uitdeelt aan beschikbare rekeneenheden voor een groep van 32 parallelle threads."
+  },
+  {
+   "term": "Instruction issue rate",
+   "def": "De frequentie waarmee een processor instructies vanuit de wachtrij naar de uitvoerende rekeneenheden stuurt, uitgedrukt in instructies per klokcyclus."
+  },
+  {
+   "term": "Function Level Reset (FLR)",
+   "def": "Een PCIe-mechanisme waarmee de interne logica en registers van een specifiek apparaat opnieuw worden geïnitialiseerd zonder het hele computersysteem te herstarten."
+  },
+  {
+   "term": "Tensor Core",
+   "def": "Een gespecialiseerde rekeneenheid op Nvidia-GPU's die ontworpen is voor matrixbewerkingen en per klokcyclus honderden FMA-bewerkingen parallel kan uitvoeren."
+  },
+  {
+   "term": "BF16 (bfloat16)",
+   "def": "Een 16-bits floating-pointformaat met hetzelfde exponentbereik als 32-bits FP32 maar met een lagere 7-bits precisie, veelgebruikt in neurale netwerken."
+  },
+  {
+   "term": "GEMM (General Matrix Multiply)",
+   "def": "De fundamentele lineaire algebra-operatie die de rekenkundige kern vormt van dichte lagen in neurale netwerken."
+  },
+  {
+   "term": "LLM-prefill",
+   "def": "De initiële rekenfase van een taalmodel waarin de volledige invoerprompt parallel wordt verwerkt via dichte matrixberekeningen."
+  },
+  {
+   "term": "Initramfs",
+   "def": "Een minimaal bestandssysteem in het werkgeheugen dat de Linux-kernel tijdens het opstarten laadt om benodigde stuurprogramma's te initialiseren vóór het besturingssysteem start."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom leidde Nvidia's kunstmatige beperking op GeForce Ampere-kaarten tot onbenutte capaciteit in de Tensor Cores?",
+   "options": [
+    "De rekeneenheden konden fysiek elke cyclus rekenen, maar ontvingen door de instructieplanner slechts om de twee klokcycli een instructie.",
+    "De geheugenbandbreedte van het videogeheugen werd softwarematig gehalveerd zodra een FP16-instructie werd gedetecteerd.",
+    "De Tensor Cores werden hardwarematig uitgeschakeld zodra de temperatuur van de grafische processor boven 60 graden steeg.",
+    "De floating-point-rekenpijplijn werd gedwongen om elke 16-bits berekening tweemaal achter elkaar uit te voeren ter verificatie."
+   ],
+   "answer": 0,
+   "explain": "De fysieke rekencapaciteit in de Tensor Cores was aanwezig, maar de instructieplanner gaf slechts om de twee klokcycli een nieuwe FMA-instructie uit. Hierdoor bleven de verwerkingseenheden tijdens de kunstmatig ingelaste wachtcycli onbenut."
+  },
+  {
+   "id": "q2",
+   "type": "multi",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Welke twee taken vertonen volgens de bronnen vrijwel geen prestatiewinst na het ontgrendelen van de instructie-uitgiftesnelheid?",
+   "options": [
+    "Het genereren van individuele tokens tijdens LLM-inferentie (decode-fase)",
+    "Het verwerken van invoerprompts bij grote taalmodellen (prefill-fase)",
+    "Matrixberekeningen met 8-bits geheeltallen (INT8)",
+    "Beeldgeneratie met diffusiemodellen"
+   ],
+   "answers": [
+    0,
+    2
+   ],
+   "explain": "De LLM-decodeerfase is gebonden aan de geheugenbandbreedte van het videogeheugen (voor elk token moeten alle modelgewichten opnieuw worden ingelezen), en INT8-operaties vielen niet onder deze snelheidsbeperking. Prefill en diffusiemodellen zijn juist wel matrix- en rekengestuurd en versnellen daardoor wel."
+  },
+  {
+   "id": "q3",
+   "type": "order",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Zet de stappen van het ontgrendelingsproces van de kernelmodule in de juiste chronologische volgorde tijdens het opstarten:",
+   "tiles": [
+    "De Linux-kernel laadt de gpu_unlock-module binnen de initramfs vóór de officiële stuurprogramma's",
+    "De module overschrijft de snelheidsselectors SS0 en SS1 met waarden voor de volledige uitgiftesnelheid",
+    "Er wordt een Function Level Reset (FLR) uitgevoerd om de nieuwe hardware-instellingen vast te zetten",
+    "Het ongewijzigde Nvidia-stuurprogramma koppelt de grafische kaart en start de reguliere werking"
+   ],
+   "explain": "De ontgrendeling moet plaatsvinden voordat het Nvidia-stuurprogramma initialiseert: de module start in de initramfs, schrijft de registers SS0 en SS1, voert een FLR-reset uit en draagt de ontgrendelde kaart vervolgens over aan de officiële driver."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Omdat deep learning-modellen steunen op dichte matrixvermenigvuldigingen in FP16 en BF16, bepaalt de instructiedoorvoer van de Tensor Cores direct de verwerkingssnelheid van lokale AI-werklasten."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "GPU-unlock: FP/BF16 instruction issue rate on Nvidia 3000's cards",
+   "url": "https://github.com/Zagitta/gpu-unlock"
+  },
+  {
+   "n": 2,
+   "title": "Wikipedia — GeForce RTX 30 series",
+   "url": "https://en.wikipedia.org/wiki/GeForce_RTX_30_series"
+  },
+  {
+   "n": 3,
+   "title": "Wikipedia — Ampere (microarchitecture)",
+   "url": "https://en.wikipedia.org/wiki/Ampere_%28microarchitecture%29"
+  }
+ ],
+ "id": "2026-10-25-hoe-een-vroege-kernelmodule-de-gehalveerde-reken",
+ "kind": "news",
+ "date": "2026-10-25",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-25",
+  "kind": "news",
+  "verified": "2026-10-25",
+  "candidate": "hn:50219700",
+  "signal": "219 punten en 69 reacties op Hacker News",
+  "significance": 4
+ }
+}

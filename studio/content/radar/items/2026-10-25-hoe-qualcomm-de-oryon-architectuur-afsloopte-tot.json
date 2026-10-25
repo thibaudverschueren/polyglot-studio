@@ -1,0 +1,191 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe Qualcomm de Oryon-architectuur afsloopte tot een compacte rekenkern",
+ "subtitle": "Met een vierbaans out-of-order ontwerp en een grote instructiecache ruilt Qualcomm de all-big-core strategie in voor een hybride processoropzet in de Snapdragon X2 Elite.",
+ "topic": "chips",
+ "minutes": 10,
+ "tldr": [
+  "De eerste generatie Snapdragon X Elite gebruikte uitsluitend grote rekenkernen, wat bij lichte achtergrondtaken leidde tot onnodig energieverlies door lekstroom.",
+  "Qualcomm introduceert in de Snapdragon X2 Elite daarom compactere vierbaans rekenkernen met een ruime instructiecache van 128 KB.",
+  "De kern behaalt bij 3,6 GHz een load-to-use latentie van 3 klokcycli naar zijn eerstelijns datacache (L1D) om lichte computertaken efficiënt te verwerken.",
+  "Zodra code buiten de instructiecache valt, zakt de instructiedoorvoer via het tweedelijnsgeheugen terug naar twee instructies per cyclus."
+ ],
+ "plain": "Stel je een transportbedrijf voor dat pakketten bezorgt. Jarenlang zette het bedrijf uitsluitend zware vrachtwagens in, zelfs om één enkele brief af te leveren. Dat kostte veel brandstof terwijl de laadruimte voor negentig procent leeg bleef. Nu zet het bedrijf voor kleine zendingen wendbare bestelwagens in die precies vier dozen tegelijk vervoeren. De vrachtwagens blijven geparkeerd tot er een grote verhuizing klaarstaat. Zo'n bestelwagen verbruikt weinig brandstof, maar bezorgt vier brieven netjes in drie minuten. De vergelijking loopt spaak bij de taakverdeling: waar bestelwagens en vrachtwagens fysiek gescheiden routes rijden op de openbare weg, verdelen de grote en kleine rekenkernen op een processor exact dezelfde digitale rekentaken via één gedeeld centraal geheugen.",
+ "why": "Voor laptops met Windows op ARM bepaalt de verhouding tussen piekprestaties en rustverbruik de bruikbaarheid. De eerste generatie Snapdragon X Elite lekte relatief veel energie door uitsluitend grote kernen in te zetten. Door achtergrondtaken nu toe te wijzen aan compacte rekenkernen verbetert de accuduur tijdens licht kantoorwerk. Bij zware berekeningen kunnen alle achttien kernen gelijktijdig bijspringen. Dit brengt Qualcomm dichter bij het prestatieniveau per watt dat Apple Silicon al langer biedt.",
+ "sections": [
+  {
+   "title": "Van een uniforme opzet naar een asymmetrische verdeling",
+   "md": "Je leert hier waarom Qualcomm afstapt van een chip met louter zware rekenkernen en hoe de Snapdragon X2 Elite zijn rekencapaciteit verdeelt over twee verschillende kernsoorten.\n\n### De prijs van brede rekenkernen\nIn de eerste generatie Snapdragon X Elite koos Qualcomm voor een opvallende strategie: alle rekenkernen waren identieke, brede 'Prime'-kernen. Hoewel die aanpak piekprestaties vereenvoudigt, brengt het een fysiek nadeel met zich mee. In halfgeleiders bestaat vermogen uit twee componenten:\n1. **Actief schakelvermogen**: energie die nodig is om transistors te laten schakelen van toestand.\n2. **Lekvermogen**: stroom die weglekt door transistors zolang er spanning op staat, ongeacht of ze nuttig werk verrichten.\n\nEen brede out-of-order kern bezit miljoenen logische poorten voor instructieherordening, buffers en brede rekeneenheden. Zelfs wanneer een besturingssysteem lichte achtergrondtaken uitvoert — zoals het synchroniseren van e-mail of het bijwerken van een klok — blijven al die logische structuren onder spanning staan. Het verlagen van de klokfrequentie helpt tegen actief vermogen, maar lost het lekvermogen van ongebruikte circuits niet op.\n\n### De hybride configuratie van de X2E96100\nMet de introductie van de **Snapdragon X2 Elite Extreme (X2E96100)**, getest in de Asus Zenbook A16, stapt Qualcomm over op een hybride opzet met in totaal achttien rekenkernen:\n- **12 Prime-kernen (P-cores)**: gericht op piekprestaties met een 9-baans decodeerbreedte en een klokfrequentie van 5 GHz.\n- **6 Performance-kernen (E-cores)**: compactere kernen die functioneren als efficiëntiekernen, geklokt op 3,6 GHz met een 4-baans architectuur.\n\nQualcomm noemt deze kleinere kernen officieel 'performance cores', maar qua functie en afmetingen vervullen ze de klassieke rol van een 'little core' of E-core binnen een ARM big.LITTLE-configuratie. Lichte processen worden op deze kleinere eenheden geïsoleerd, zodat de zware Prime-kernen volledig spanningsloos kunnen blijven. Pas wanneer multithreaded werklasten maximale doorvoer vereisen, worden alle achttien kernen gelijktijdig ingeschakeld via *heterogeneous multi-processing* (HMP)."
+  },
+  {
+   "title": "De instructietoevoer en sprongvoorspelling",
+   "md": "Je leert hier hoe de branch predictor en instructiecache van de E-core zijn gedimensioneerd om de pijplijn gevuld te houden zonder overtollig siliciumoppervlak te verbruiken.\n\n### Sprongvoorspelling zonder overbodige ballast\nIn een moderne processor is gemiddeld één op de vijf instructies een spronginstructie (*branch*). Als de processor moet wachten tot een eerdere berekening uitsluitsel geeft over de richting van de sprong, valt de pijplijn stil. Een verkeerde voorspelling dwingt de kern bovendien om reeds berekende stappen weg te gooien.\n\nQualcomm voorziet de E-core van een gerichte set voorspellers:\n- **Branch Target Buffer (BTB)**: een tabel met 1024 posities. Deze tabel levert achtereenvolgens voorspelde sprongadressen af met een snelheid van één genomen sprong per cyclus. Ter vergelijking: grote kernen van AMD en Intel kunnen vaak twee genomen sprongen per cyclus verwerken, maar voor een 4-baans efficiëntiekern volstaat één sprong per cyclus.\n- **Patroonherkenning**: de richtingvoorspeller kan patronen volgen over circa 16.000 combinaties bij 512 actieve sprongen, of circa 1.000 patronen bij één enkele herhalende sprong. De nauwkeurigheid in Geekbench 7 ligt op het niveau van ARM's Neoverse N2.\n- **Return stack**: voor functie-aanroepen en terugkeerinstructies beschikt de kern over een stapel met 40 posities. Deze structuur kan elke twee klokcycli een paar van aanroep en terugkeer verwerken (gemiddeld één genomen sprong per cyclus).\n\n> [!note] Ontkoppelde BTB\n> De 1024-entry BTB van deze kern is ontkoppeld van de L1-instructiecache. De gemeten capaciteit blijft constant, ongeacht de spreiding van sprongen door de code. Zodra een programma echter meer dan 1024 sprongdoelen aanspreekt, zakt de doorvoer terug naar één genomen sprong per drie cycli.\n\n### Een opvallend ruime instructiecache\nZodra instructies uit het cachegeheugen moeten worden aangevoerd, toont Qualcomms ontwerp een duidelijke ontwerpkeuze. De eerstelijns instructiecache (L1I) is **128 KB** groot. Veel hedendaagse efficiëntiekernen gebruiken 32 KB of 64 KB.\n\nDe reden voor deze royale L1I-capaciteit blijkt uit metingen bij cachemissers: wanneer code buiten de 128 KB valt en moet worden opgehaald uit de gedeelde L2-cache, daalt de invoerbandbreedte naar circa twee instructies per cyclus. Omdat de tweedelijnscache als laatste cachelaag fungeert vóór het hoofdgeheugen, beschermt de 128 KB buffer de kern tegen zware wachttijden."
+  },
+  {
+   "title": "Dispatch, hernoeming en registeroptimalisaties",
+   "md": "Je leert hier hoe de kern instructies ontleedt, registerafhankelijkheden verwijdert en waarom een vierbaans opzet voordelen biedt voor het energiebudget.\n\n### De wiskundige schaal van afhankelijkheden\nNa het decoderen van instructies naar micro-operaties (uops) wijst de *renamer* fysieke registers toe om registerschijnconflicten weg te nemen. Voor een instructiebreedte van $W$ instructies per cyclus moet de hardware controleren of een latere instructie afhankelijk is van een eerdere instructie binnen dezelfde groep. Het aantal noodzakelijke vergelijkingen $C$ schaalt kwadratisch met de breedte:\n\n$$C = \\frac{W(W - 1)}{2}$$\n\nVoor de 9-baans Prime-kern betekent dit minimaal 36 vergelijkingen per groep; voor de 4-baans E-core slechts 6 vergelijkingen. Door de kern op vier instructies per cyclus te dimensioneren, bespaart Qualcomm kwadratisch op logische circuits en bedrading.\n\n| Eigenschap | Qualcomm Oryon E-Core | Intel Skymont E-Core | Qualcomm Prime (P-core) |\n|---|---|---|---|\n| Decodeer-/Dispatchbreedte | 4-baans out-of-order | 8-baans out-of-order | 9-baans out-of-order |\n| Kloksnelheid | 3,6 GHz | 4,6 GHz | 5 GHz |\n| L1-instructiecache | 128 KB | 64 KB | Niet vermeld |\n| Integer ALU-poorten | 4 | Niet vermeld | Niet vermeld |\n| Vectorlengte | 128-bit (SVE2 / SME) | 256-bit (AVX2) | Niet vermeld |\n\n### Move elimination en directe optellingen\nOm de rekeneenheden te ontlasten, voert de dispatchfase optimalisaties uit:\n1. **Move elimination**: instructies die data kopiëren tussen registers (`MOV Rd, Rn`) kunnen zonder latentie worden afgehandeld. De renamer past eenvoudig de *Register Alias Table* (RAT) aan, zodat het bestemmingsregister direct verwijst naar hetzelfde fysieke register als de bron. Dit kost 0 klokcycli en verbruikt geen fysiek register. De E-core kan tot twee afhankelijke register-naar-register verplaatsingen per cyclus elimineren. Onafhankelijke verplaatsingen halen een doorvoer van vier per cyclus.\n2. **Eliminatie van kleine optellingen**: ketens van afhankelijke optelinstructies op hetzelfde register (`ADD Rd, Rd, #imm`) kunnen bij de hernoeming worden samengevoegd met een maximum van twee per cyclus, mits de som van de constanten niet boven de 255 uitkomt.\n3. **Nulstellingen**: het op nul zetten van een register via een directe nulwaarde (`MOV Rd, #0`) wordt niet geëlimineerd; hiervoor alloceert de kern wel een fysiek register.\n\n### Uitvoeringsbackend\nDe backend legt de nadruk op scalar integerwerk. De kern bevat vier onafhankelijke integer ALU-eenheden, gevoed door een gedistribueerde planner met een wachtrij van 19 posities per poort. Drie poorten kunnen statusvlaggen instellen (`CMP`/`SUBS`), één poort handelt vermenigvuldigingen af met een latentie van 3 cycli, en twee poorten lossen spronginstructies op.\n\nVoor floating-point- en vectorberekeningen beschikt de kern over twee rekenpijpen met een vaste vectorbreedte van 128 bits. De kern ondersteunt ARM's **SVE2** (*Scalable Vector Extension 2*) en **SME** (*Scalable Matrix Extension*). Instructies die condities voor vectoren voorbereiden (`while*`) worden afgeleid naar de integerpijplijn om de vectorpoorten vrij te houden."
+  },
+  {
+   "title": "Geheugenpad, cachesnelheid en adresvertaling",
+   "md": "Je leert hier hoe de geheugenhiërarchie van de E-core data aanvoert via een snelle eerstelijnscache en een gedeelde tweedelijnscache met hoge bandbreedte.\n\n### Eerstelijnsdatacache en store forwarding\nDe eerstelijnsdatacache (L1D) heeft een omvang van **64 KB**. Belangrijker dan de omvang is de latentie: data ophalen via een reguliere leesinstructie kost slechts **3 klokcycli** (*load-to-use latency*). Bij geïndexeerde adressering stijgt dit naar 4 cycli. Veel concurrerende ontwerpen vereisen standaard 4 cycli voor L1D-toegang.\n\nWanneer een leesinstructie direct volgt op een eerdere schrijfinstructie naar hetzelfde geheugenadres, treedt *store forwarding* in werking:\n- De latentie bedraagt 6 tot 7 klokcycli.\n- De hardware handelt ook situaties af waarin het adresbereik van een leesinstructie slechts gedeeltelijk overlapt met een eerdere schrijfinstructie, zonder extra vertragingsstraf (*forwarding penalty*), wat de voorspelbaarheid van de geheugendoorvoer ten goede komt.\n\n```\n[Geheugeninstructie]\n        │\n        ▼\n   L1 DTLB (192 posities)\n        │\n        ├──► Hit: adres vertaald ─────────────────┐\n        │                                         │\n        └──► Miss ──► L2 TLB (8.192 posities)     │\n                           (> 8 cycli)            │\n                                │                 │\n                                └────────►────────┤\n                                                  ▼\n                                             L1D-cache (64 KB) ───────► Hit: Data in 3 klokcycli\n                                                  │\n                                                  ▼ Miss\n                                             Gedeelde L2 (Cluster) ──► Hit: Data in 21 klokcycli\n```\n\n### Adresvertaling met diepe buffers\nVirtuele geheugenadressen moeten razendsnel worden omgezet naar fysieke RAM-locaties via de *Translation Lookaside Buffer* (TLB). Prestatietellers tonen aan dat Qualcomm royale tabellen hanteert:\n- Een eerstelijns **L1 DTLB** met naar schatting 192 posities (fouten nemen toe boven 768 KB werkgeheugenspreiding).\n- Een secundaire **L2 TLB** met 8.192 posities (missers treden pas op boven 32 MB). Toegang tot deze L2 TLB kost ruim 8 cycli.\n- De hardware ondersteunt paginaformaten van 4 KB en 64 KB, maar biedt geen ondersteuning voor 16 KB-pagina's.\n\n### Gedeelde clusterbandbreedte\nIn tegenstelling tot ontwerpen met een privé-L2 per kern, delen de zes E-cores één gezamenlijke L2-cache. De latentie bedraagt 21 klokcycli. Deze gedeelde cache levert meer dan **400 GB/s leesbandbreedte** aan het 6-core cluster gezamenlijk. Dit resulteert in ongeveer 18 bytes per klokcyclus per actieve rekenkern onder zware belasting. De tweedelijnscache fungeert direct als laatste cachelaag voor het CPU-cluster, waardoor een misser direct leidt tot een tragere DRAM-toegang."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "4-wide",
+   "label": "instructiebreedte van de out-of-order pijplijn van Qualcomms E-core",
+   "quote": "Qualcomm’s E-Core is a 4-wide out-of-order architecture running at 3.6 GHz, making it a modest affair next to the likes of Intel’s Skymont, or even the older Crestmont architecture used in Intel’s last-gen Meteor Lake chip.",
+   "source": 1
+  },
+  {
+   "value": "3.6 GHz",
+   "label": "klokfrequentie van de efficiëntiekernen in de geteste configuratie",
+   "quote": "Qualcomm’s E-Core is a 4-wide out-of-order architecture running at 3.6 GHz, making it a modest affair next to the likes of Intel’s Skymont, or even the older Crestmont architecture used in Intel’s last-gen Meteor Lake chip.",
+   "source": 1
+  },
+  {
+   "value": "1024",
+   "label": "aantal ingangen in de branch target buffer van de E-core",
+   "quote": "A 1024 entry branch target buffer (BTB) is fast enough to deliver back-to-back predictions for taken branches.",
+   "source": 1
+  },
+  {
+   "value": "40 entry",
+   "label": "capaciteit van de return stack voor het voorspellen van functie-uitgangen",
+   "quote": "A 40 entry return stack helps predict returns, and can sustain a call+return pair every two cycles.",
+   "source": 1
+  },
+  {
+   "value": "128 KB",
+   "label": "omvang van de eerstelijns instructiecache per rekenkern",
+   "quote": "A 128 KB instruction cache is much larger than the 64 KB or 32 KB ones found on contemporary designs, which helps the core avoid having to fetch instructions from L2.",
+   "source": 1
+  },
+  {
+   "value": "3 cycle",
+   "label": "load-to-use latentie van de 64 KB eerstelijns datacache",
+   "quote": "A 64 KB L1D cache serves as the first stop for memory accesses, and delivers 3 cycle load-to-use latency.",
+   "source": 1
+  },
+  {
+   "value": "400 GB/s",
+   "label": "totale leesbandbreedte van de gedeelde L2-cache naar de zes E-cores",
+   "quote": "The L2 bandwidth can provide just over 400 GB/s of read bandwidth to the six E-Cores it’s connected to.",
+   "source": 1
+  },
+  {
+   "value": "5 GHz",
+   "label": "klokfrequentie van de 9-baans Prime-kernen op dezelfde chip",
+   "quote": "The company is perfectly capable of delivering fast, high throughput cores, as shown by the 9-wide, 5 GHz P-Cores on the same chip.",
+   "source": 1
+  }
+ ],
+ "caveats": "Er zijn duidelijke methodologische kanttekeningen en open vragen bij deze analyse:\n\n1. **Eén enkel testsysteem**: De gegevens zijn gebaseerd op metingen van Chips and Cheese aan een pre-productie laptop (Asus Zenbook A16 UX3607OA). Prestaties en klokfrequenties kunnen variëren in definitieve productiemodellen of afwijkende form factors.\n2. **Onofficiële specificaties**: Qualcomm documenteert de interne buffers van de E-core niet volledig in publieke datasheets. Afmetingen zoals de 192-entry L1 DTLB, de 8K L2 TLB en het gedrag van een eventuele secundaire BTB zijn afgeleid uit hardwareprestatietellers en latentiecurven, niet uit officiële schema's.\n3. **Geen vermogensmetingen in watt**: Het artikel analyseert uitsluitend de microarchitectuur en instructiedoorvoer. Er zijn geen directe metingen gepubliceerd van het werkelijke stroomverbruik in milliwatt of de accuduur onder Windows 11.\n4. **Beperkte vectorcapaciteit**: Hoewel SVE2 en SME worden ondersteund voor softwarecompatibiliteit, blijft de vectorbreedte steken op 128 bits. Dit levert nieuwe instructiemogelijkheden op, maar geen verhoogde parallelle rekendoorvoer ten opzichte van standaard NEON-eenheden.\n5. **Kwetsbaar bij L2-missers**: Omdat de gedeelde L2-cache als laatste niveau binnen het processordeel fungeert, leidt elke L2-misser tot een aanzienlijke vertraging richting het hoofdgeheugen.",
+ "glossary": [
+  {
+   "term": "Out-of-order execution",
+   "def": "Een microprocessorarchitectuur waarbij instructies worden uitgevoerd zodra de benodigde gegevens klaarstaan, in plaats van strikt in de volgorde van de programmacode."
+  },
+  {
+   "term": "Branch Target Buffer (BTB)",
+   "def": "Een intern cachegeheugen dat de doeladressen van eerdere spronginstructies onthoudt om toekomstige sprongen direct te voorspellen."
+  },
+  {
+   "term": "Move elimination",
+   "def": "Een optimalisatie in de registerhernoemer waarbij registerkopiëen virtueel worden afgehandeld in de adrestabel, met een latentie van nul klokcycli."
+  },
+  {
+   "term": "Load-to-use latency",
+   "def": "Het aantal klokcycli dat verloopt tussen het verzoek om gegevens uit de cache en het moment waarop een volgende instructie die data kan gebruiken."
+  },
+  {
+   "term": "Store forwarding",
+   "def": "Een mechanisme waarmee een leesinstructie data rechtstreeks overneemt uit een voorafgaande schrijfbuffer voordat de data fysiek in de cache staat."
+  },
+  {
+   "term": "Translation Lookaside Buffer (TLB)",
+   "def": "Een gespecialiseerd hardwaregeheugen dat recente vertalingen van virtuele geheugenadressen naar fysieke RAM-adressen opslaat."
+  },
+  {
+   "term": "Heterogeneous multi-processing (HMP)",
+   "def": "Een systeemopzet waarbij verschillende typen rekenkernen (zoals grote en kleine kernen) gelijktijdig taken uitvoeren binnen hetzelfde besturingssysteem."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom kiest Qualcomm voor een opvallend ruime eerstelijns instructiecache van 128 KB op deze E-core?",
+   "options": [
+    "Omdat de instructiebandbreedte vanuit de gedeelde L2-cache terugzakt naar circa twee instructies per cyclus zodra code buiten de L1-cache valt.",
+    "Omdat een 128 KB instructiecache vereist is om 128-bit vectorbewerkingen binnen SVE2 direct parallel te ontleden.",
+    "Omdat de branch target buffer anders geen sprongadressen kan voorspellen voor voorwaardelijke instructies.",
+    "Omdat Qualcomm de L2-cache volledig heeft weggelaten tussen de rekenkernen en het centrale werkgeheugen."
+   ],
+   "answer": 0,
+   "explain": "De metingen tonen aan dat de instructietoevoer vanuit de gedeelde L2-cache beperkt is tot circa twee instructies per cyclus. Een grote L1-instructiecache van 128 KB voorkomt dat de 4-baans kern bij grotere programmacode continu op instructies uit L2 moet wachten."
+  },
+  {
+   "id": "q2",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Hoe handelt de renamer van Qualcomms E-core een afhankelijke register-naar-register MOV-instructie af bij succesvolle move elimination?",
+   "options": [
+    "De registertabel koppelt het doel direct aan het bestaande fysieke register, waardoor de operatie nul klokcycli kost en geen nieuw fysiek register inneemt.",
+    "De instructie wordt doorgestuurd naar één van de vier ALU-poorten waar deze met een vaste latentie van één cyclus wordt berekend.",
+    "De waarde wordt tijdelijk geparkeerd in de 40-entry return stack totdat de eerdere bewerking volledig is afgerond.",
+    "De instructie wordt samengevoegd met een floating-point instructie in de tweetakt vectorpijplijn."
+   ],
+   "answer": 0,
+   "explain": "Move elimination lost registerkopieën op in de renamer: de Register Alias Table laat het bestemmingsregister wijzen naar het al gealloceerde fysieke register van de bron. Hierdoor kost de operatie nul cycli latentie en blijft er meer fysieke registerruimte over voor out-of-order herordening."
+  },
+  {
+   "id": "q3",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Waarom levert het ontwerpen van een 4-baans rekenkern voor achtergrondtaken een betere energie-efficiëntie op dan een 8-baans kern?",
+   "options": [
+    "De complexiteit van afhankelijkheidscontroles in de hernoemingsfase schaalt kwadratisch met de breedte, waardoor ongebruikte pijplijnposities bij vertragingen relatief veel lekstroom verspillen.",
+    "Een 8-baans kern kan door beperkingen in de ARM-instructieset geen gebruikmaken van een gedeelde L2-cache.",
+    "Bij een breedte boven vier instructies dwingt het besturingssysteem het gebruik van 64 KB geheugenpagina's af in plaats van 4 KB-pagina's.",
+    "Een bredere kern vereist dat alle wiskundige floating-point eenheden direct worden geïntegreerd in de branch target buffer."
+   ],
+   "answer": 0,
+   "explain": "De controle op afhankelijkheden tussen instructies binnen een uitgiftestap groeit kwadratisch met de pijplijnbreedte. Bij lichte werklasten of cachemissers blijven veel sleuven in een brede 8-baans kern onbenut, terwijl al die transistors wel continu lekvermogen verbruiken. Een 4-baans kern biedt hier een optimaal evenwicht tussen oppervlak, doorvoer en verbruik."
+  }
+ ],
+ "related": [
+  {
+   "track": "jev",
+   "why": "Efficiëntere rekenkernen verlagen het energieverbruik per taak, wat historisch leidt tot een hogere totale vraag naar rekenintensieve achtergrondprocessen op laptops."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "“Performance” Oryon: Qualcomm’s Little Core",
+   "url": "https://chipsandcheese.com/p/performance-oryon-qualcomms-little"
+  },
+  {
+   "n": 2,
+   "title": "ARM big.LITTLE",
+   "url": "https://en.wikipedia.org/wiki/ARM_big.LITTLE"
+  }
+ ],
+ "id": "2026-10-25-hoe-qualcomm-de-oryon-architectuur-afsloopte-tot",
+ "kind": "news",
+ "date": "2026-10-25",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-25",
+  "kind": "news",
+  "verified": "2026-10-25",
+  "candidate": "url:https://chipsandcheese.com/p/performance-oryon-qualcomms-little",
+  "signal": "officieel bericht van Chips and Cheese",
+  "significance": 4
+ }
+}
