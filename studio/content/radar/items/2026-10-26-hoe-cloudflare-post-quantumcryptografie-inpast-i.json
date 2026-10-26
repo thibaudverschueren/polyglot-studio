@@ -1,0 +1,207 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe Cloudflare post-quantumcryptografie inpast in geografisch begrensde sleutelopslag",
+ "subtitle": "Door een hybride combinatie van ML-KEM-768 en X25519 binnen HPKE, gekoppeld aan regionale symmetrische basissleutels, kunnen netwerksleutels uitsluitend binnen wettelijk goedgekeurde regio's worden ontcijferd.",
+ "topic": "crypto",
+ "minutes": 10,
+ "tldr": [
+  "Aanvallers slaan nu versleuteld netwerkverkeer op om dat later met een toekomstige kwantumcomputer alsnog te ontcijferen.",
+  "Cloudflare schermt klantsleutels af met kwantumbestendige wiskunde en ontgrendelt ze uitsluitend op fysieke servers in vooraf goedgekeurde regio's.",
+  "Symmetrische basissleutels van 256 bits beveiligen de sleutelhiërarchie, zodat servers buiten die regio het netwerkverkeer niet kunnen lezen.",
+  "De techniek draait voorlopig enkel in een gesloten testfase en verschijnt pas in het eerste kwartaal van 2027 breed."
+ ],
+ "plain": "Stel dat een bedrijf vertrouwelijke contracten verstuurt in zware kluisjes naar honderden bijkantoren wereldwijd. Ieder kantoor mag het gesloten kluisje opslaan, maar de fysieke sleutel ligt uitsluitend in een beveiligde kluis in Frankfurt. Zelfs als een medewerker het doosje in Madrid bekijkt, kan hij er niets mee: de sleutel verlaat Duitsland nooit. Om te voorkomen dat aanvallers het kluisje bewaren om het over tien jaar met nieuwe apparatuur open te breken, bevat het een dubbel slot dat zowel klassieke als moderne technieken weerstaat. Zo kunnen 300 datacenters het versleutelde pakket bewaren, terwijl slechts 5 Duitse servers de inhoud kunnen lezen.\n\nDe vergelijking houdt op bij de fysieke eigenschappen van sleutels: een metalen sleutel kun je namaken en meesmokkelen, terwijl deze digitale sleutels uitsluitend in het vluchtige werkgeheugen (de Linux kernel keyring) worden vastgehouden nadat de server zijn identiteit via een TPM-chip heeft bewezen, en direct verdampen zodra een server herstart.",
+ "why": "Bedrijven in de financiële sector, zorg en overheid moeten wettelijk aantonen dat hun gegevens Europa niet verlaten. Tegelijk dreigt 'harvest now, decrypt later', waarbij onderschept verkeer wordt bewaard tot kwantumcomputers klassieke cryptografie breken. Door post-quantum sleutelbeheer te koppelen aan hardware-identiteit kunnen organisaties vanaf 2027 data-soevereiniteit garanderen tegen kwantumdreigingen. Net zoals in Solidity-protocollen cryptografische aannames bepalen hoe robuust een systeem op lange termijn blijft, dwingt dit netwerken om klassieke cryptografie op basis van elliptische krommen nu al hybride aan te vullen met kwantumbestendige roosterwiskunde.",
+ "sections": [
+  {
+   "title": "Het dilemma tussen wereldwijde Anycast-prestaties en datasoevereiniteit",
+   "md": "Je leert hier waarom het wereldwijd verspreiden van versleutelde data botst met soevereiniteitseisen en hoe de dreiging van toekomstige kwantumcomputers dit conflict verscherpt.\n\n### Gedistribueerde netwerken en de Anycast-architectuur\nCloudflare beheert een wereldwijd Anycast-netwerk. Bij Anycast kondigen honderden datacenters over de hele wereld hetzelfde IP-adres aan via het Border Gateway Protocol (BGP). Een bezoeker in Berlijn maakt verbinding met een server in Frankfurt, terwijl een bezoeker in Tokio verbinding maakt met een server in Japan. Dit levert lage netwerklatentie op, maar introduceert een juridisch en technisch probleem voor gereguleerde sectoren.\n\nWetgeving rond datasoevereiniteit eist dat gevoelige gegevens van burgers en overheden binnen specifieke landsgrenzen blijven. Voor een bank in Duitsland betekent dit dat het netwerkverkeer uitsluitend binnen Duitsland of de Europese Unie in leesbare tekst (*plaintext*) mag worden omgezet. Als een netwerkleverancier een privésleutel naar alle datacenters kopieert, kan elk willekeurig knooppunt in de wereld de data theoretisch ontcijferen.\n\n### De opkomende dreiging: harvest now, decrypt later\nDe urgentie rond geografische sleutelopslag neemt toe door de aanvalsstrategie *harvest now, decrypt later* (HNDL). Tegenstanders en inlichtingendiensten onderscheppen vandaag grote hoeveelheden versleuteld netwerkverkeer en slaan dit op in datacenters. Ze hebben vandaag nog geen kwantumcomputer nodig om schade aan te richten; zodra er in de toekomst een kwantumcomputer beschikbaar is die groot genoeg is om het algoritme van Shor uit te voeren, kunnen zij die opgeslagen data met terugwerkende kracht ontcijferen.\n\nKlassieke asymmetrische cryptografie, zoals RSA en elliptische krommen (ECDH), berust op wiskundige problemen zoals priemfactorisatie en discrete logaritmen:\n- Het algoritme van Shor lost deze problemen op in polynomiale tijd op een kwantumcomputer.\n- Symmetrische cryptografie, zoals AES-256, is daarentegen bestand tegen kwantumversnelling. Het algoritme van Grover biedt slechts een kwadratische snelheidsverbetering ($\\mathcal{O}(\\sqrt{N})$), wat cryptografen neutraliseren door een sleutellengte van 256 bits aan te houden.\n\nCloudflare moet daarom een architectuur bieden die tegelijk voldoet aan twee harde eisen: gegevens mogen alleen ontcijferd worden op fysiek goedgekeurde locaties, en de gebruikte versleuteling moet bestand zijn tegen aanvallen met terugwerkende kracht via het algoritme van Shor."
+  },
+  {
+   "title": "De evolutie van GeoKey Manager: waarom ABE plaatsmaakt voor KEM",
+   "md": "Je leert hier waarom Cloudflare de overstap maakt van attribuutgebaseerde versleuteling naar hybride sleutelinkapseling met een gestandaardiseerd post-quantum algoritme.\n\n### Van statische lijsten naar attribuutgebaseerde versleuteling\nIn 2017 introduceerde Cloudflare de eerste versie van GeoKey Manager om Transport Layer Security (TLS)-privésleutels geografisch in te perken. Klanten konden bepalen dat het uitpakken van hun privésleutel en het uitvoeren van cryptografische handtekeningen uitsluitend in bepaalde landen plaatsvond, zoals India.\n\nIn 2022 verving Cloudflare dit statische systeem door *Ciphertext-Policy Attribute-Based Encryption* (CP-ABE). In CP-ABE worden geografische eisen geformuleerd als logische attributen, bijvoorbeeld `regio = Europese Unie` of `regio = Canada + Verenigde Staten`. Het voordeel van ABE was operationele schaalbaarheid: wanneer Cloudflare een nieuw datacenter in Frankrijk toevoegde, ontving die server de bijbehorende attribuutsleutels zonder dat Cloudflare alle duizenden klantsleutels opnieuw hoefde in te pakken.\n\n### De post-quantum flessenhals van ABE\nToen Cloudflare begon aan de migratie naar post-quantum cryptografie, stuitte het team op een praktische beperking: er bestaat anno 2026 geen productierijp post-quantum ABE-schema. Roostergebaseerde ABE-constructies zijn academisch complex, vereisen grote sleutels en zijn niet gestandaardiseerd door normalisatie-instituten zoals NIST.\n\nTegelijk wees analyse van klantgegevens uit dat de complexiteit van ABE in de praktijk zelden nodig is. Vrijwel alle gereguleerde klanten kiezen voor een klein aantal vaste regio's (zoals Duitsland of de EU). Cloudflare verving ABE daarom door een beproefd ontwerp op basis van *Hybrid Public Key Encryption* (HPKE), vastgelegd in RFC 9180.\n\n### De opbouw van HPKE met een hybride KEM-combiner\nEen *Key Encapsulation Mechanism* (KEM) is een asymmetrisch cryptosysteem waarbij de zender met behulp van een publieke sleutel een willekeurige symmetrische sleutel genereert en deze ingekapseld verzendt naar de ontvanger, die de sleutel decapsuleert met zijn privésleutel.\n\nIn de Cloudflare One-pijplijn gebruikt GeoKey Manager HPKE (RFC 9180), opgebouwd uit:\n1. **Een hybride KEM-combiner van ML-KEM-768 en X25519**: ML-KEM-768 is een door NIST in 2024 gestandaardiseerd roostergebaseerd algoritme (voortgekomen uit Kyber en gebaseerd op het *Module Learning with Errors*-probleem) dat beschermt tegen kwantumcomputers, terwijl X25519 (op basis van Curve25519) beschermt tegen eventuele verborgen wiskundige fouten in de nieuwe roosterwiskunde.\n2. **HKDF-SHA-256 als KDF**: leidt uit de gecombineerde geheimen een symmetrische sessiesleutel af.\n3. **AES-256-GCM als AEAD-versleuteling**: versleutelt de klantsleutel met geauthenticeerde symmetrische encryptie.\n\n> [!rule] Het principe van de hybride KEM\n> Een hybride KEM-combiner behoudt zijn vertrouwelijkheid zolang minstens één van de onderliggende algoritmes veilig blijft. Faalt ML-KEM door een onverwachte wiskundige doorbraak op klassieke computers, dan beschermt X25519. Wordt X25519 gebroken door een kwantumcomputer via het algoritme van Shor, dan garandeert ML-KEM-768 de beveiliging."
+  },
+  {
+   "title": "De cryptografische sleutelhiërarchie en gescheiden distributiepaden",
+   "md": "Je leert hier hoe Cloudflare klantsleutels opsplitst in een hiërarchie van symmetrische basissleutels en applicatiespecifieke sleutelparen, en hoe data- en controlepaden gescheiden blijven.\n\n### De drie lagen van de sleutelhiërarchie\nIn plaats van elke klantsleutel direct te koppelen aan individuele servers, hanteert GeoKey Manager een hiërarchie met drie niveaus:\n\n1. **Regionale basissleutel (*regional root key*)**: een 256-bit symmetrisch geheim dat specifiek is gekoppeld aan één geografische regio (zoals Duitsland) en één tijdsperiode (*epoch*). Deze sleutel wordt gegenereerd op het controleplane en beheerd in een lokale HashiCorp Vault.\n2. **Applicatiespecifiek sleutelpaar (*application-specific key pair*)**: een asymmetrisch HPKE-sleutelpaar dat cryptografisch wordt afgeleid van de regionale basissleutel. Dit sleutelpaar is gebonden aan één specifieke dienst, zoals Cloudflare Tunnel, Gateway of Access.\n3. **Ingepakte klantsleutel (*wrapped customer private key*)**: de daadwerkelijke privésleutel van de klant. Deze sleutel wordt ingepakt met de publieke component van het applicatiespecifieke sleutelpaar.\n\n```\nRegionale basissleutel (256-bit symmetrisch geheim per regio & epoch)\n            │\n            ├──► Afgeleid HPKE-sleutelpaar: Tunnel (Duitsland, Epoch 1)\n            │         │\n            │         └──► Wikkelt klantsleutel Acme (acme0001)\n            │         └──► Wikkelt klantsleutel Road Runner (runner0001)\n            │\n            └──► Afgeleid HPKE-sleutelpaar: Gateway (Duitsland, Epoch 1)\n                      │\n                      └──► Wikkelt klantsleutel Acme (acme0002)\n```\n\n### Insluiting van beveiligingsincidenten\nDeze hiërarchische structuur beperkt de schade bij een eventueel cryptografisch lek:\n- Als het privésleuteldeel van het applicatiepaar voor *Tunnel in Duitsland* uitlekt, zijn alleen de ingepakte Tunnel-sleutels binnen Duitsland gecompromitteerd (zoals `acme0001` en `runner0001`). Sleutels voor *Gateway in Duitsland* (`acme0002`) blijven veilig.\n- Pas wanneer de 256-bit regionale basissleutel zelf zou lekken, worden alle afgeleide applicatiesleutels binnen die regio en epoch geraakt.\n\n### Strikte scheiding tussen Quicksilver en het Provisioning-pad\nOm netwerkprestaties te waarborgen, scheidt Cloudflare de distributie van de ingepakte data van de distributie van de ontcijfersleutels:\n- **Quicksilver**: Cloudflares wereldwijde configuratiedistributiesysteem verspreidt de ingepakte klantsleutels en metadata naar alle datacenters wereldwijd. Omdat de sleutels zijn ingepakt met HPKE, kan geen enkele server buiten de toegestane regio de inhoud ontcijferen. Quicksilver valt hierdoor buiten de vertrouwensgrens (*trust boundary*).\n- **Provisioning Service**: dit controleplane-mechanisme distribueert uitsluitend de 256-bit regionale basissleutels en communiceert uitsluitend met geverifieerde servers binnen de corresponderende regio."
+  },
+  {
+   "title": "Fysieke serverauthenticatie via TPM, Zinc en Linux Kernel Keyring",
+   "md": "Je leert hier hoe servers hun identiteit en fysieke locatie bewijzen, hoe sleutels in vluchtig geheugen worden bewaard en hoe het systeem faalt bij fouten.\n\n### Drievoudige verificatie van edge-servers\nVoordat een individuele edge-server een regionale basissleutel mag ontvangen, doorloopt het systeem drie verificatiestappen:\n1. **Hardware-identiteit via TPM**: de server toont via een *Trusted Platform Module* (TPM) een cryptografisch bewijs van zijn geregistreerde hardware-identiteit.\n2. **Locatievalidatie via Zinc**: Cloudflares serverinventarissysteem *Zinc* koppelt deze hardware-identiteit aan een fysiek datacenter en een geografische locatie. Dit ondersteunt naleving van de FIPS 140-3 norm.\n3. **Sleutelautorisatie**: de provisioning service evalueert de identiteit en locatie, en verstrekt vervolgens een specifiek autorisatietoken aan de server.\n\nMet dit token haalt de server uitsluitend de basissleutels op die horen bij zijn fysieke locatie. Een server in Spanje kan dus nooit een token bemachtigen voor Duitse basissleutels.\n\n### Geheugenisolatie in de Linux kernel keyring\nZodra een server de regionale basissleutels ophaalt, worden deze niet weggeschreven naar een harde schijf of solid-state drive (SSD). De sleutel wordt rechtstreeks geladen in de **Linux kernel keyring**:\n- Dit is een beveiligd, vluchtig geheugengebied binnen de Linux-kernel.\n- Toegangsrechten op procesniveau (*process-level access controls*) bepalen welke diensten toegang krijgen tot de sleutels.\n- Omdat het geheugen vluchtig is, verdwijnen alle sleutels automatisch zodra een machine herstart of wordt uitgeschakeld. Bij het herstarten moet de server het volledige authenticatieproces met TPM en Zinc opnieuw doorlopen.\n\n### Fail closed: falen zonder datalekken\nIn gedistribueerde systemen ontstaat vaak de keuze tussen *fail open* (bij twijfel doorgaan om uitval te voorkomen) en *fail closed* (bij twijfel direct stoppen om beveiliging te handhaven). Cloudflare kiest voor fail closed:\n- Bij het opstarten controleert de *edge key service* of alle geconfigureerde regionale basissleutels aanwezig en intact zijn. Ontbreekt er een sleutel, dan weigert de dienst op te starten.\n- Als een verzoek voor een Duitse klantsleutel door een routeringsfout toch aankomt op een server in Spanje of Frankrijk, breekt de server de verwerking direct af. Omdat de Spaanse server de Duitse basissleutel niet bezit, kan de sleutel fysiek niet worden uitgepakt."
+  },
+  {
+   "title": "Sleutelrotatie in productie: zachte versus harde transities",
+   "md": "Je leert hier hoe Cloudflare overstapt naar nieuwe sleutelgeneraties via epochs zonder dat actieve netwerkverbindingen wegvallen.\n\n### Het beheer van epochs\nRegionale basissleutels moeten periodiek worden geroteerd om blootstelling bij sleutellekken te minimaliseren. Elke rotatie creëert een nieuwe **epoch** (generatie). Cloudflare hanteert twee rotatiestrategieën:\n\n| Eigenschap | Zachte rotatie (*Soft rotation*) | Harde rotatie (*Hard rotation*) |\n|---|---|---|\n| Doel | Uptime behouden tijdens migraties | Directe intrekking na een incident |\n| Oude epochs | Toegang tot voorgaande generatie blijft tijdelijk actief | Oude generatie wordt direct verwijderd |\n| Nieuwe data | Wordt direct verpakt met nieuwste epoch | Wordt direct verpakt met vervangende epoch |\n| Bestaande data | Blijft bruikbaar zonder herverpakking | Moet direct opnieuw worden ingepakt (*rewrapped*) |\n\n### Dynamische netwerkwijzigingen\nDe fysieke samenstelling van een regio verandert wanneer datacenters onderhoud ondergaan of nieuwe capaciteit wordt bijgebouwd. Wanneer een datacenter in Frankfurt tijdelijk buiten dienst wordt gesteld, werkt Zinc zijn inventarislijst bij. Quicksilver verspreidt deze gewijzigde definitie direct over het netwerk.\n\nDe provisioninglaag synchroniseert de Linux kernel keyrings van edge-servers meerdere keren per dag. Wanneer een datacenter uit de Duitse regio wordt verwijderd, verwijdert de provisioning service direct de corresponderende Duitse basissleutel uit de kernel keyring van die servers. Hoewel de provisioning service de kernel keyring direct synchroniseert, blijft de actieve edge key service de sleutels in procesgeheugen gebruiken totdat de cache verloopt of het proces herstart en de bijgewerkte keyring inleest."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "256-bit",
+   "label": "sleutellengte van de symmetrische regionale basissleutel",
+   "quote": "Regional root keys are 256-bit symmetric secrets.",
+   "source": 1
+  },
+  {
+   "value": "Q1 2027",
+   "label": "geplande introductie voor algemene beschikbaarheid van PQ GeoKey Manager",
+   "quote": "While general availability (GA) is planned for Q1 2027, today’s launch is an important milestone on our journey to support our customers’ data sovereignty goals while also migrating all Cloudflare products to post-quantum (PQ) cryptography.",
+   "source": 1
+  },
+  {
+   "value": "2017",
+   "label": "introductiejaar van de eerste GeoKey Manager op Cloudflares Anycast-netwerk",
+   "quote": "Cloudflare pioneered the concept of geo-restricted transport layer security (TLS) keys back in 2017 with GeoKey Manager.",
+   "source": 1
+  },
+  {
+   "value": "2022",
+   "label": "jaar waarin GeoKey Manager overstapte op attribuutgebaseerde versleuteling",
+   "quote": "GeoKey Manager evolved again in 2022 with ciphertext policy attribute based encryption (ABE).",
+   "source": 1
+  },
+  {
+   "value": "RFC 9180",
+   "label": "IETF-specificatie waarin Hybrid Public Key Encryption is vastgelegd",
+   "quote": "The Cloudflare One path uses HPKE, as defined in RFC 9180.",
+   "source": 1
+  },
+  {
+   "value": "FIPS 140-3",
+   "label": "beveiligingsstandaard voor cryptografische modules waaraan de serverlocatiekoppeling bijdraagt",
+   "quote": "Zinc also associates a registered hardware identity with a server and physical location, which supports FIPS 140-3 compliance.",
+   "source": 1
+  },
+  {
+   "value": "ML-KEM-768",
+   "label": "door NIST gestandaardiseerd post-quantum sleutelinkapselingsmechanisme",
+   "quote": "Cloudflare therefore uses hybrid ML-KEM-768 and X25519 protection with two kinds of keys, out of which ML-KEM-768 is a NIST standard that also opens doors to highly sensitive customers.",
+   "source": 1
+  },
+  {
+   "value": "2024",
+   "label": "jaar waarin NIST de definitieve versies van zijn eerste post-quantum standaarden uitbracht",
+   "quote": "In 2024, the U.S. National Institute of Standards and Technology (NIST) released final versions of its first three Post-Quantum Cryptography Standards.",
+   "source": 2
+  }
+ ],
+ "caveats": "Er zijn duidelijke methodologische en operationele kanttekeningen bij deze opzet:\n\n1. **Beperkte beschikbaarheid**: PQ GeoKey Manager bevindt zich momenteel in een gesloten bètatest voor Cloudflare One (Gateway en Tunnel). Algemene beschikbaarheid (GA) is pas gepland voor het eerste kwartaal van 2027.\n2. **Nog geen CDN-integratie**: Het beschreven post-quantum systeem werkt nu enkel voor Cloudflare One. De bestaande geografische sleutelbeveiliging voor algemeen CDN-verkeer draait nog op oudere protocollen; integratie met de nieuwe post-quantum architectuur is nog in ontwikkeling.\n3. **Verlies van fijnmazige expressie**: Doordat er momenteel geen productierijpe post-quantum ABE-schema's beschikbaar zijn, heeft Cloudflare de flexibele willekeurige attribuutexpressies uit 2022 moeten inruilen voor een grovere, vaste hiërarchie per regio.\n4. **Afhankelijkheid van gecentraliseerde infrastructuur**: De Key Management Service en de opslag van regionale basissleutels in HashiCorp Vault draaien lokaal op Cloudflares eigen controleplane. Als een edge-server na een herstart de verbinding met het controleplane verliest, kan hij geen nieuwe sessies ontgrendelen totdat de provisioninglaag bereikbaar is.\n5. **Afhankelijkheid van hardware-inventaris**: De cryptografische garantie rust mede op de integriteit van de TPM-registratie en inventarisatiedatabase Zinc. Als een serverlocatie daarin verkeerd geregistreerd staat, klopt de geografische toewijzing in de praktijk niet.\n6. **Geen actuele kwantumdreiging**: Kwantumcomputers die in staat zijn om 2048-bit RSA of X25519 te breken met het algoritme van Shor bestaan op dit moment nog niet. De implementatie richt zich preventief op het tegengaan van harvest-now-decrypt-later aanvallen.",
+ "glossary": [
+  {
+   "term": "Key Encapsulation Mechanism (KEM)",
+   "def": "Een cryptografisch algoritme waarmee een zender met behulp van een publieke sleutel een willekeurige symmetrische sleutel aanmaakt en ingekapseld naar de ontvanger stuurt."
+  },
+  {
+   "term": "ML-KEM-768",
+   "def": "Een door NIST gestandaardiseerd post-quantum sleutelinkapselingsmechanisme dat gebaseerd is op de wiskundige moeilijkheid van roosterproblemen (Learning with Errors)."
+  },
+  {
+   "term": "Harvest now, decrypt later",
+   "def": "Een aanvalsstrategie waarbij versleuteld netwerkverkeer nu wordt opgeslagen om dit in de toekomst met een kwantumcomputer te ontcijferen."
+  },
+  {
+   "term": "Hybrid Public Key Encryption (HPKE)",
+   "def": "Een internetstandaard (RFC 9180) die asymmetrische sleutelinkapseling combineert met geauthenticeerde symmetrische dataversleuteling."
+  },
+  {
+   "term": "Trusted Platform Module (TPM)",
+   "def": "Een fysieke beveiligingschip op een computermoederbord die cryptografische sleutels bewaart en de hardwarematige identiteit van een server aantoont."
+  },
+  {
+   "term": "Linux kernel keyring",
+   "def": "Een subsysteem in het werkgeheugen van de Linux-kernel waarin encryptiesleutels veilig kunnen worden beheerd zonder ze naar schijf te schrijven."
+  },
+  {
+   "term": "Fail closed",
+   "def": "Een beveiligingsprincipe waarbij een systeem bij een ontbrekende sleutel of verificatiefout de verwerking direct blokkeert in plaats van onbeveiligd door te gaan."
+  },
+  {
+   "term": "Epoch",
+   "def": "Een specifieke generatie of tijdsperiode binnen sleutelbeheer waarmee sleutelrotaties gecontroleerd worden uitgevoerd."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom combineert Cloudflare in HPKE het nieuwe ML-KEM-768 met het klassieke X25519 in plaats van uitsluitend ML-KEM-768 te gebruiken?",
+   "options": [
+    "Om vertrouwelijkheid te garanderen zolang minstens één van beide algoritmes cryptografisch veilig blijft.",
+    "Omdat ML-KEM-768 uitsluitend werkt op hardware met een TPM-chip en X25519 op oudere dataservers draait.",
+    "Om de netwerkpakketten klein genoeg te houden voor directe verwerking binnen het wereldwijde Anycast-netwerk.",
+    "Omdat standaarden van NIST voorschrijven dat post-quantum algoritmes altijd gecombineerd moeten worden met RSA-certificaten."
+   ],
+   "answer": 0,
+   "explain": "In een hybride KEM-combiner wordt het geheim beschermd door zowel een roostergebaseerd post-quantum algoritme als een klassiek algoritme op basis van elliptische krommen. Zelfs als er een onverwachte wiskundige fout in ML-KEM wordt ontdekt, beschermt X25519 tegen klassieke aanvallers; en omgekeerd beschermt ML-KEM tegen kwantumaanvallen met het algoritme van Shor."
+  },
+  {
+   "id": "q2",
+   "type": "order",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Zet de stappen in de juiste volgorde waarin een edge-server bevoegd wordt om versleutelde klantverzoeken voor een specifieke regio te verwerken:",
+   "tiles": [
+    "De server bewijst zijn hardware-identiteit via de Trusted Platform Module (TPM) aan het controleplane.",
+    "Inventarissysteem Zinc koppelt de geverifieerde hardware-identiteit aan een fysiek datacenter en een regio.",
+    "De provisioning service verstrekt een autorisatietoken aan de goedgekeurde server.",
+    "De server haalt met het token de 256-bit regionale basissleutel op en laadt deze in de Linux kernel keyring."
+   ],
+   "explain": "Voordat een server ontcijferingen mag doen, toont hij eerst cryptografisch zijn hardware-identiteit via de TPM-chip. Zinc controleert vervolgens of die server fysiek in de toegestane regio staat. Pas na deze controle geeft de provisioning service een token af, waarmee de server de regionale basissleutel in zijn vluchtige kernelgeheugen laadt."
+  },
+  {
+   "id": "q3",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Wat gebeurt er als een klantverzoek met een Duitse sleutelmetadata per ongeluk binnenkomt op een Cloudflare-server in Spanje?",
+   "options": [
+    "De Spaanse server weigert het verzoek direct omdat de vereiste regionale basissleutel voor Duitsland lokaal ontbreekt.",
+    "De Spaanse server vraagt de ontbrekende Duitse basissleutel automatisch op via het centrale Quicksilver-netwerk.",
+    "De Spaanse server stuurt het verzoek in leesbare tekst door naar de dichtstbijzijnde server binnen Duitsland.",
+    "De Spaanse server ontcijfert het verzoek met een algemene standaardsleutel om onderbreking van het netwerkverkeer te vermijden."
+   ],
+   "answer": 0,
+   "explain": "GeoKey Manager hanteert het fail-closed principe: servers beschikken uitsluitend over de basissleutels van hun eigen goedgekeurde regio. Aangezien Spanje de Duitse basissleutel niet bezit en deze ook niet mag ophalen, weigert de edge key service de ontcijfering onmiddellijk in plaats van het verkeer onveilig door te laten."
+  }
+ ],
+ "related": [
+  {
+   "track": "routing",
+   "why": "Laat zien hoe geografische scheiding op de data plane afhankelijk is van cryptografische sleuteltoegang in plaats van louter netwerkroutering."
+  },
+  {
+   "track": "solidity",
+   "why": "Toont hoe de overstap naar kwantumbestendige primitieven wiskundige aannames rond asymmetrische sleutels hertekent, vergelijkbaar met toekomstige handtekeningstandaarden in blockchains."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "Bringing post-quantum cryptography to geographically fenced key management",
+   "url": "https://blog.cloudflare.com/post-quantum-geo-key-manager/"
+  },
+  {
+   "n": 2,
+   "title": "Wikipedia — Post-quantum cryptography",
+   "url": "https://en.wikipedia.org/wiki/Post-quantum_cryptography"
+  },
+  {
+   "n": 3,
+   "title": "Wikipedia — Key encapsulation mechanism",
+   "url": "https://en.wikipedia.org/wiki/Key_encapsulation_mechanism"
+  }
+ ],
+ "id": "2026-10-26-hoe-cloudflare-post-quantumcryptografie-inpast-i",
+ "kind": "news",
+ "date": "2026-10-26",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-26",
+  "kind": "news",
+  "verified": "2026-10-26",
+  "candidate": "url:https://blog.cloudflare.com/post-quantum-geo-key-manager/",
+  "signal": "officieel bericht van Cloudflare",
+  "significance": 4
+ }
+}

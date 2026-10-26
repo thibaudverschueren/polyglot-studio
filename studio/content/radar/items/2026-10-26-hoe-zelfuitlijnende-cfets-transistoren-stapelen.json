@@ -1,0 +1,184 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe zelfuitlijnende CFETs transistoren stapelen voorbij de grens van tien ångström",
+ "subtitle": "Door NMOS- en PMOS-transistoren verticaal op elkaar te stapelen met behulp van chemisch zelfuitlijnende contacten en begraven stroomrails, zou de halfgeleiderindustrie de fysieke schaalbeperkingen van klassieke nanosheets kunnen omzeilen.",
+ "topic": "chips",
+ "minutes": 10,
+ "tldr": [
+  "Voorbij tien ångström stuit de verdere krimp van Gate-All-Around (GAA) nanosheet-transistoren volgens experts vermoedelijk op zware kwantummechanische en lithografische grenzen.",
+  "Onderzoekers stapelen de twee basistypes transistoren daarom verticaal boven op elkaar met behulp van zelfuitlijnende verbindingen.",
+  "In computersimulaties verkleint dit het oppervlak van een individuele 6T-SRAM-bitcel met 52,7 procent ten opzichte van N3-technologie, waardoor schakelingen compacter worden.",
+  "Deze zelfuitlijnende SA-CFET-architectuur is voorlopig alleen aangetoond via virtuele procesmodellen en moet zich nog bewijzen op echte siliciumwafers."
+ ],
+ "plain": "Denk aan een wijk waar je twee soorten huizen naast elkaar bouwt: rode huizen en blauwe huizen. Om een wijk te laten werken, heb je altijd van elk type precies één exemplaar nodig. Als de bouwgrond opraakt, kun je de huizen niet oneindig veel smaller maken, want de deuren en gangen worden te smal om er nog doorheen te lopen. De oplossing is simpel: bouw het blauwe huis boven op het rode huis als een dubbeldekker. Waar je eerst twee kavels van tien vierkante meter nodig had, neem je nu genoeg met één kavel van tien meter voor beide woningen. De kabels voor water en elektriciteit schuiven voortaan automatisch via voorgevormde schachten op hun plek zonder dat bouwvakkers op de millimeter hoeven te mikken. Deze vergelijking loopt spaak zodra warmte meespeelt: twee op elkaar gestapelde huizen ventileren makkelijk, maar twee gestapelde microscopische schakelaars houden elkaars warmte stevig vast.",
+ "why": "Transistors verkleinen leverde decennialang snellere en goedkopere chips op. Vandaag stokt die krimp: chipprijzen stijgen en AI-versnellers botsen op de maximale chipoppervlakte (de zogeheten reticle-limiet). Als transistoren gestapeld kunnen worden, past er dubbel zoveel SRAM-geheugen direct naast de rekeneenheden. In AI-modellen bepaalt die on-chip geheugencapaciteit rechtstreeks hoeveel rekenkernen kunnen blijven rekenen zonder te wachten op extern DRAM. Vanaf het sub-nanometertijdperk kan deze stapeltechniek het stroomverbruik en de geheugenbandbreedte van geavanceerde rekencentra op peil houden.",
+ "sections": [
+  {
+   "title": "Waarom de krimp van nanosheets vastloopt rond tien ångström",
+   "md": "Je leert hier welke kwantummechanische en lithografische grenzen optreden wanneer Gate-All-Around nanosheets verder worden verkleind.\n\n### Transistorarchitectuur aan de rand van het atomaire bereik\nDe voorbije decennia volgde de halfgeleiderindustrie het pad van geometrische krimp. Toen traditionele planaire transistoren rond de 22 nanometer te veel stroom lekten door kortekanaaleffecten (*short-channel effects*), stapte de industrie over op FinFETs. Daarbij steekt het geleidende siliciumkanaal als een vin omhoog en omklemt de poortelektrode drie zijden van de vin. Rond de 3- en 2-nanometergeneraties volstond ook die driezijdige controle niet meer. Fabrikanten introduceerden Gate-All-Around (GAA) nanosheets, waarbij horizontale siliciumlinten volledig worden omsloten door het poortmateriaal.\n\nNaarmate de technologienode echter voorbij het 10 ångström-knooppunt (A10) daalt naar sub-10Å-generaties (zoals A7), stuit ook de GAA-architectuur op fysieke grenzen:\n\n1. **Bron-drain-tunneling (*source-drain tunneling*)**: Wanneer het poortkanaal te kort wordt, kunnen elektronen kwantummechanisch door de energiebarrière heen tunnelen. De transistor weigert dan volledig uit te schakelen, wat leidt tot een aanzienlijke lekstroom in ruststand.\n2. **Oppervlakteverstrooiing en mobiliteitsverlies**: Om elektrostatische controle te behouden over een zeer kort kanaal, moet het nanosheetlint zeer dun worden gemaakt. Dunne siliciumlagen veroorzaken verstrooiing van ladingsdragers aan het grensvlak, waardoor de mobiliteit van elektronen en gaten daalt en de schakelsnelheid stagneert.\n3. **Parasitaire contactweerstand**: Bij kleiner wordende contactoppervlakken stijgt de elektrische contactweerstand aan het grensvlak scherp ($R_c = \\rho_c / A$). De winst van een korter kanaal wordt daardoor tenietgedaan door de weerstand van de aansluitpunten.\n4. **Lithografische plaatsingsfouten (*edge placement error*, EPE)**: Het lithografisch uitlijnen van opeenvolgende fotomaskers kent een statistische variatie. Bij afmetingen onder tien ångström is de toelaatbare foutmarge kleiner dan de positioneringsprecisie van geavanceerde EUV-machines.\n\nOmdat het simpelweg verkleinen van de poortlengte of metaalpitch op deze grenzen botst, moet de winst niet langer uit kleinere losse componenten komen, maar uit een herinrichting van de celarchitectuur."
+  },
+  {
+   "title": "Het basisprincipe van de CFET: complementaire logica in 3D",
+   "md": "Je leert hier hoe het verticaal stapelen van n-type en p-type veldeffecttransistoren de traditionele indeling van CMOS-cellen verandert.\n\n### De 2D-beperking van complementaire CMOS\nElke moderne digitale schakeling is gebaseerd op CMOS (*Complementary Metal-Oxide-Semiconductor*). Dit ontwerp combineert twee types veldeffecttransistoren:\n- **NMOS**: gebruikt elektronen als negatieve ladingsdragers en schakelt in bij een positieve spanning.\n- **PMOS**: gebruikt positieve 'gaten' als ladingsdragers en schakelt in bij een lage of negatieve spanning.\n\nDoor NMOS en PMOS in serie te schakelen, vullen ze elkaar aan: wanneer de ene transistor geleidt, spert de andere. Hierdoor vloeit er vrijwel alleen stroom tijdens het omschakelen, wat het energieverbruik sterk beperkt.\n\nIn alle commerciële chipprocessen tot en met 2 nanometer liggen de NMOS- en PMOS-transistoren horizontaal naast elkaar op het siliciumsubstraat. Een standaard logische cel, zoals een inverter of een NAND-poort, bestaat uit een n-zone en een p-zone, gescheiden door een isolerende tussenruimte. Deze horizontale scheiding legt een vaste ondergrens op de hoogte van de cel.\n\n### De verticale stapeling: Complementary FET (CFET)\nDe Complementary FET (CFET) reorganiseert deze geometrie:\n- De PMOS-transistor wordt boven op de NMOS-transistor geplaatst (of vice versa).\n- In plaats van twee afzonderlijke stroken land op de wafer, delen beide apparaten dezelfde tweedimensionale voetafdruk.\n\n```\nTraditionele nanosheet (horizontaal)      Complementary FET (verticaal)\n┌───────────┐      ┌───────────┐          ┌───────────────────────┐\n│ PMOS      │      │ NMOS      │          │ PMOS (bovenste tier)  │\n│ nanosheets│      │ nanosheets│          ├───────────────────────┤\n└───────────┘      └───────────┘          │ Diëlektrische isolatie│\n────────────────────────────────          ├───────────────────────┤\n         Siliciumsubstraat                │ NMOS (onderste tier)  │\n                                          └───────────────────────┘\n                                          ─────────────────────────\n                                              Siliciumsubstraat\n```\n\nDeze verticale configuratie levert twee meetbare voordelen op:\n1. **Halvering van de celvoetafdruk**: Omdat de n- en p-takken boven op elkaar liggen, halveert de benodigde celhoogte (en daarmee de totale tweedimensionale voetafdruk van de cel) vrijwel direct.\n2. **Grotere effectieve kanaalbreedte ($W_{eff}$)**: Omdat de transistoren de celhoogte niet langer met elkaar hoeven te delen, kan elk individueel nanosheet breder worden gemaakt binnen de beschikbare celgrenzen. Een bredere $W_{eff}$ zorgt ervoor dat er per kanaal meer stroom kan vloeien ($I_{on}$) voor een hogere schakelsnelheid, terwijl de Gate-All-Around CFET-geometrie op zichzelf de elektrostatische controle over het kanaal behoudt of verbetert."
+  },
+  {
+   "title": "De integratiekater: metaalpoortsplitsing en contactdrukte",
+   "md": "Je leert hier welke fabricageproblemen ontstaan wanneer twee verschillende transistoren boven op elkaar worden geëtst en aangesloten.\n\n### Het drempelspanningsdilemma en poortisolatie\nHoewel het conceptueel elegant is om transistoren te stapelen, botst de praktische fabricage op zware integratiehindernissen. De eerste hindernis betreft de instelling van het poortmetaal (*work function split*) en poortisolatie.\n\nNMOS- en PMOS-transistoren vereisen verschillende chemische samenstellingen van het poortmetaal om hun respectievelijke uitschakel- en inschakeldrempels ($V_t$) correct in te stellen:\n- NMOS heeft een metaallaag met een lage uittreearbeid nodig.\n- PMOS vereist een metaallaag met een hoge uittreearbeid.\n\nWanneer beide niveaus verticaal op elkaar staan, moeten die verschillende werkfunctiemetalen in een zeer krappe verticale holte van elkaar worden gescheiden. Daarnaast dient een fysieke onderbreking (*metal gate cut*) in conventionele ontwerpen om poorten elektrisch van elkaar te scheiden bij onafhankelijke aansturing. Zowel het nauwkeurig uitsnijden van poortmetaal als het scheiden van werkfunctiemetalen is bij afmetingen onder tien ångström complex en leidt snel tot materiaalbeschadiging of kortsluitingen. Het aanbrengen van een diëlektrische tussenlaag (*Middle Dielectric Isolation*, MDI) biedt hierbij een oplossing door de werkfunctiemetalen van de n- en p-kanalen verticaal van elkaar te isoleren.\n\n### Contactcongestie en het gevaar voor kortsluiting\nDe tweede flessenhals is de aansluiting van de contacten (*contact crowding*). In een conventionele chip dalen metalen contactlijnen rechtstreeks af naar de bron en drain op het waferoppervlak. In een CFET moet het bedradingsnetwerk echter:\n- Contact maken met de bron en drain van de bovenste transistor.\n- Afzonderlijk contact maken met de bron en drain van de onderste transistor, zonder de bovenste transistor te raken.\n- De poorten van beide niveaus onafhankelijk of gezamenlijk aansturen.\n\n> [!warning] Het risico van lithografische overlay-fouten\n> Bij conventionele, niet-zelfuitlijnende lithografie leidt een kleine overlay-afwijking al snel tot kortsluiting met de bovenste tier of een gemist contact. Als een contactgat naar de onderste laag zijdelings verschuift, kan het metaal de flank van de bovenste transistor raken en een kortsluiting (*short*) veroorzaken. Wijkt het contact naar de andere zijde af, dan mist het de onderste aansluiting en ontstaat een open circuit (*open*).\n\nBij traditionele lithografie bepaalt de optische uitlijnfout (*overlay budget*) de minimale afstand tussen geleiders. Bij afmetingen onder de 10 Ångström is die traditionele marge simpelweg verdwenen."
+  },
+  {
+   "title": "De zelfuitlijnende modules: SA-BPR, SA-CT en SA-TSV",
+   "md": "Je leert hier hoe chemische zelfuitlijning en diëlektrische tussenlagen de afhankelijkheid van optische lithografieprecisie verminderen.\n\n### Chemische selectiviteit in plaats van optisch mikken\nOm de integratieknoop op te lossen, stelde het Semiverse Solutions team van Lam Research een zelfuitlijnende CFET-architectuur (SA-CFET) voor. Het kernprincipe van zelfuitlijning (*self-alignment*) is dat de positie van een component niet wordt bepaald door de mechanische nauwkeurigheid van een fotomasker, maar door de chemische en geometrische eigenschappen van reeds aanwezige structuren.\n\nWanneer materiaal A selectief kan worden geëtst terwijl materiaal B onaangetast blijft, fungeert materiaal B automatisch als een fysieke barrière. Zelfs als het lichtpatroon van de lithografiemachine enkele nanometers verschuift, landt het etsmiddel of het afgezette metaal uitsluitend in de voorgevormde holte.\n\n### Drie zelfuitlijnende bouwstenen\nDe SA-CFET-architectuur integreert drie specifieke zelfuitlijnende modules:\n\n1. **SA-BPR (Self-Aligned Buried Power Rail)**: De voedingslijnen die $V_{dd}$ en aarde leveren, worden verzonken in het siliciumsubstraat onder de transistoren. Doordat deze rails zelfuitlijnend zijn, nemen ze geen kostbare ruimte in aan de voorzijde van de chip en ontlasten ze de signaalbedrading.\n2. **SA-CT (Self-Aligned Contacts)**: De contactpluggen naar de bronnen en drains van zowel de onderste als bovenste nanosheets lijnen zichzelf uit via materiaalspecifieke ets- en afzettingsstappen. Dit voorkomt dat een contact naar de onderste laag zijdelings contact maakt met de bovenste geleider.\n3. **SA-TSV (Self-Aligned Through-Silicon Via)**: Verticale doorkoppelingen die signalen en voeding tussen de voorzijde en de achterzijde van de wafer transporteren binnen het zelfuitlijnende stramien.\n\n| Module | Functie | Fabricagevoordeel |\n|---|---|---|\n| **SA-BPR** | Begraven stroomrails verzonken in het substraat (onder de transistoren) | Verwijdert stroomlijnen van de overvolle voorzijde |\n| **SA-CT** | Zelfuitlijnende bron- en draincontacten | Voorkomt kortsluitingen tussen bovenste en onderste tier |\n| **SA-TSV** | Verticale doorkoppelingen naar achterzijde | Biedt directe verticale interconnectie, vergroot het overlayvenster en vermindert contactcongestie |\n| **MDI** | Diëlektrische isolatielaag tussen tiers | Scheidt de werkfunctiemetalen (work function split) van n- en p-transistoren |\n\n### Middle Dielectric Isolation (MDI) voor werkfunctiesplitsing\nOm het drempelspanningsprobleem op te lossen, past het ontwerp *Middle Dielectric Isolation* (MDI) toe. Dit is een diëlektrische laag die exact tussen de onderste en bovenste nanosheetstapel wordt aangebracht.\n\nDeze MDI-laag dient specifiek voor de scheiding van de werkfunctiemetalen (*work function split*) van de n- en p-transistoren. Daarnaast hanteert de architectuur een ontwerp zonder metaalpoortdoorsnijding (*non-metal gate cut*) en vereisen de SRAM- en standaard logische cellen geen metaalpoortsplitsing (*metal gate split*) binnen een vin. Het fabricageproces wordt hierdoor vereenvoudigd en de kans op defecten of kortsluitingen neemt af.\n\n> [!rule] Behoud van ontwerpregels\n> Een belangrijk aspect van het SA-CFET-voorstel is de compatibiliteit met bestaande specificaties van de N3-generatie: een poortafstand (*contacted poly pitch*, CPP) van 42 nanometer en een metaalpitch van 21 nanometer. De winst in dichtheid komt dus niet voort uit het forceren van nog fijnere lithografielijnen, maar uit de verticale ordening en de zelfuitlijnende processtappen."
+  },
+  {
+   "title": "Simulatieresultaten voor SRAM en logische cellen",
+   "md": "Je leert hier welke oppervlaktewinst de gemodelleerde 6T-SRAM-geheugencel en logische poorten boeken en hoe robuust het procesvenster blijft.\n\n### Virtuele procesmodellering met digitale tweelingen\nOmdat het fysiek bouwen en testen van nieuwe chipgeneraties miljarden euro's kost, maakt de halfgeleiderindustrie intensief gebruik van geavanceerde 3D-procesmodellering. Het team van Lam Research gebruikte het softwarepakket SEMulator3D om een digitale tweeling (*digital twin*) van het complete SA-CFET-productieproces op te zetten.\n\nIn deze virtuele omgeving worden alle opeenvolgende stappen — epitaxiale groei, atoomlaagdepositie (ALD), reactief ionenetsen (RIE) en chemisch-mechanisch polijsten (CMP) — fysisch gesimuleerd volgens de wetten van materiaalkunde en chemie.\n\n### Kwantitatieve resultaten voor 6T-SRAM\nSRAM (Static Random-Access Memory) vormt het kloppend hart van snelle processorcaches. In recente chipprocessen is de schaling van SRAM vrijwel volledig stilgevallen, waardoor caches een steeds groter percentage van het siliciumoppervlak opeisen.\n\nDe simulatie van een klassieke zes-transistor SRAM-bitcel (6T SRAM) op basis van de SA-CFET-architectuur toont de volgende resultaten:\n- **Bitceloppervlak**: De SA-CFET-cel realiseert een oppervlak van 0,0094 μm².\n- **Besparing tegenover N3**: Dit betekent een afname van de celoppervlakte met 52,7 procent vergeleken met de commerciële N3-technologie.\n- **Besparing tegenover A7-CFET**: Vergeleken met state-of-the-art CFET-ontwerpen voor de 7-ångströmgeneratie (A7) bedraagt de oppervlaktereductie nog steeds 19 procent.\n\n### Verificatie van het overlay-venster\nNaast geheugencellen toonde de simulatie aan dat standaard logische poorten (NOT, NAND, NOR) succesvol kunnen worden geconstrueerd met een driedimensionaal interconnectienetwerk zonder dat een poortmetaalsplitsing binnen een vin vereist is.\n\nDe doorslaggevende test voor maakbaarheid was de robuustheidsvalidatie van het lithografische proces:\n- De simulaties wezen uit dat het proces een overlay-venster van ten minste 10 nm behoudt voor alle kritieke contactlagen.\n- Binnen dit venster van 10 nanometer traden er geen onbedoelde kortsluitingen (*shorts*) of onderbroken verbindingen (*opens*) op.\n\nVoor chipfabrikanten betekent een marge van 10 nanometer een reële productietolerantie: zelfs wanneer fotomaskers licht verschuiven tijdens de fabricage, blijft de resulterende chip functioneel."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "0.0094 μm²",
+   "label": "oppervlakte van de gesimuleerde 6T-SRAM-bitcel",
+   "quote": "SA-CFET achieves a 6T SRAM bit cell area of 0.0094 μm²—a 52.7% reduction versus N3 technology6 and 19% reduction versus state-of-the-art A7 CFET designs.",
+   "source": 1
+  },
+  {
+   "value": "52.7%",
+   "label": "oppervlaktebesparing van de 6T-SRAM-bitcel ten opzichte van N3-technologie",
+   "quote": "SA-CFET achieves a 6T SRAM bit cell area of 0.0094 μm²—a 52.7% reduction versus N3 technology6 and 19% reduction versus state-of-the-art A7 CFET designs.",
+   "source": 1
+  },
+  {
+   "value": "19%",
+   "label": "oppervlaktebesparing van de 6T-SRAM-bitcel ten opzichte van A7-CFET-ontwerpen",
+   "quote": "SA-CFET achieves a 6T SRAM bit cell area of 0.0094 μm²—a 52.7% reduction versus N3 technology6 and 19% reduction versus state-of-the-art A7 CFET designs.",
+   "source": 1
+  },
+  {
+   "value": "10-nm",
+   "label": "minimale overlay-marge over alle kritieke contactlagen zonder kortsluiting of breuk",
+   "quote": "Process robustness validation shows at least a 10-nm overlay window for all critical contact layers with no open/short failures, confirming robust process margin.",
+   "source": 1
+  },
+  {
+   "value": "42-nm",
+   "label": "contacted poly pitch (CPP) overgenomen uit de N3-specificatie",
+   "quote": "SA-CFET maintains compatibility with N3 specifications (42-nm CPP, 21-nm metal pitch), transforming overlay-sensitive steps into self-aligned processes for better manufacturability.",
+   "source": 1
+  },
+  {
+   "value": "21-nm",
+   "label": "metaalpitch overgenomen uit de N3-specificatie",
+   "quote": "SA-CFET maintains compatibility with N3 specifications (42-nm CPP, 21-nm metal pitch), transforming overlay-sensitive steps into self-aligned processes for better manufacturability.",
+   "source": 1
+  },
+  {
+   "value": "10 angstrom (Å)",
+   "label": "technologienode waaronder conventionele nanosheets volgens experts op fysieke grenzen stuiten",
+   "quote": "Many experts believe that the currently most-advanced transistor architecture, silicon GAA nanosheets, may begin to have physics and manufacturing issues past the 10 angstrom (Å) node.",
+   "source": 1
+  }
+ ],
+ "caveats": "Er zijn belangrijke technische en operationele kanttekeningen bij deze resultaten:\n\n1. **Uitsluitend virtuele modellering**: Alle gepresenteerde cijfers — inclusief de 52,7 procent celreductie en het 10-nm overlay-venster — zijn berekend met de SEMulator3D-software van Lam Research. Er zijn in de bron geen fysieke testchips of siliciumwafers geproduceerd om deze prestaties in een reële fabriek te verifiëren.\n2. **Thermische dissipatie**: Het verticaal stapelen van twee actieve transistoren verdubbelt de vermogensdichtheid op dezelfde oppervlakte. De afvoer van warmte uit de onderste transistorlaag door de diëlektrische isolatielaag en bovenste transistor heen is een bekend fysisch knelpunt dat in de bron niet kwantitatief wordt behandeld.\n3. **Complexe achterzijdebewerking**: Het gebruik van begraven stroomrails (SA-BPR) en doorkoppelingen (SA-TSV) vereist chemisch-mechanisch dunner slijpen van de wafer, waferbonding en tweezijdige lithografie. Dit verhoogt het risico op defecten en verlaagt de initiële productieopbrengst (*yield*).\n4. **Ontbrekende systeemprestaties**: De bron verstrekt geen gegevens over klokfrequenties, lekstromen in rusttoestand, dynamisch energieverbruik of de productiekosten per wafer vergeleken met bestaande N3- of N2-processen.\n5. **Lange tijdshorizon**: CFET-architecturen zijn gericht op het sub-nanometertijdperk (voorbij de 10 Ångström-grens). Commerciële massaproductie door grote foundries wordt daarom pas tegen het einde van dit decennium of begin jaren 2030 verwacht.",
+ "glossary": [
+  {
+   "term": "Complementary Field-Effect Transistor (CFET)",
+   "def": "Een transistorarchitectuur waarbij een NMOS- en een PMOS-transistor verticaal op elkaar worden gestapeld om het benodigde chipoppervlak te halveren."
+  },
+  {
+   "term": "Gate-All-Around (GAA)",
+   "def": "Een transistorontwerp waarbij het poortmateriaal het geleidende siliciumkanaal aan alle vier de zijden omsluit voor optimale elektrostatische controle."
+  },
+  {
+   "term": "Zelfuitlijning (Self-alignment)",
+   "def": "Een fabricagetechniek waarbij de geometrische positie van contacten of geleiders chemisch wordt bepaald door omliggende structuren in plaats van door optische lithografie."
+  },
+  {
+   "term": "Middle Dielectric Isolation (MDI)",
+   "def": "Een isolerende tussenlaag van diëlektrisch materiaal die de onderste en bovenste transistor in een CFET fysiek en elektrisch van elkaar scheidt."
+  },
+  {
+   "term": "Buried Power Rail (BPR)",
+   "def": "Een stroomgeleider die onder de actieve transistorlaag in het siliciumsubstraat is verzonken om interconnectiedrukte aan de bovenzijde te verminderen."
+  },
+  {
+   "term": "Overlay-venster",
+   "def": "De maximaal toelaatbare positioneringsafwijking tussen verschillende lithografische proceslagen waarbinnen een schakeling zonder kortsluitingen of onderbrekingen functioneert."
+  },
+  {
+   "term": "Through-Silicon Via (TSV)",
+   "def": "Een verticale elektrische verbinding die dwars door een siliciumlaag heen loopt om verschillende niveaus of de achterzijde van een chip met elkaar te verbinden."
+  },
+  {
+   "term": "Edge Placement Error (EPE)",
+   "def": "De totale meetkundige afwijking tussen de ontworpen rand van een transistorpatroon en de werkelijk geëtste rand op de siliciumwafer."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom levert het verticaal stapelen van transistoren in een CFET een grotere effectieve kanaalbreedte (Weff) op dan een traditionele nanosheet-layout binnen dezelfde celgrootte?",
+   "options": [
+    "Omdat de n- en p-transistoren niet langer de celhoogte hoeven te delen, waardoor de nanosheets binnen de beschikbare celhoogte breder kunnen worden gemaakt.",
+    "Omdat de poortelektrode door de stapeling minder lagen hoeft te omringen, wat de elektronenmobiliteit verdubbelt.",
+    "Omdat de diëlektrische tussenlaag de parasitaire contactweerstand van het kanaal tot nul reduceert.",
+    "Omdat de verticale stapeling de dikte van het siliciumoxide chemisch vermeerdert."
+   ],
+   "answer": 0,
+   "explain": "In een standaard CMOS-cel liggen NMOS en PMOS gescheiden tussen de voedingsrails en delen ze de beschikbare celhoogte. Door ze boven op elkaar te stapelen, hoeven ze die hoogte niet langer te delen, waardoor de nanosheets binnen de beschikbare celhoogte breder kunnen worden gemaakt. Dit vergroot de effectieve kanaalbreedte (Weff) en verhoogt de stroomsterkte."
+  },
+  {
+   "id": "q2",
+   "type": "order",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Plaats de structurele lagen van de beschreven SA-CFET-architectuur in de juiste volgorde van de onderkant van het substraat naar de bovenkant van de cel.",
+   "tiles": [
+    "Begraven stroomrail (SA-BPR) in het substraat",
+    "Onderste transistorlaag (NMOS of PMOS)",
+    "Diëlektrische tussenlaag (Middle Dielectric Isolation, MDI)",
+    "Bovenste transistorlaag (PMOS of NMOS)",
+    "Bovengelegen contact- en metaallagen"
+   ],
+   "explain": "De voedingsrails (SA-BPR) liggen verzonken onderin het substraat. Daarbovenop bevindt zich de onderste transistor, afgedekt door de isolerende MDI-laag die de poortmetalen scheidt. Bovenop ligt de complementaire transistor, afgesloten door de bovenste signaalcontacten."
+  },
+  {
+   "id": "q3",
+   "type": "numeric",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Met welk percentage neemt de oppervlakte van een 6T-SRAM-bitcel af in de gemodelleerde SA-CFET vergeleken met een N3-referentiecel?",
+   "value": 52.7,
+   "tolerance": 0.5,
+   "unit": "%",
+   "explain": "Volgens de digitale tweelingmodellering van het Semiverse Solutions team realiseert de SA-CFET een 6T-SRAM-celoppervlak van 0,0094 μm², wat neerkomt op een oppervlaktevermindering van precies 52,7 procent ten opzichte van de N3-technologie."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "De dichtheid van SRAM-geheugencellen bepaalt rechtstreeks de omvang van on-chip caches in AI-versnellers, waar datatransport van en naar extern DRAM de voornaamste energieverslinder is."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "How Self-Aligned CFET Technology Could Extend CMOS Scaling Beyond 10 Å",
+   "url": "https://semiengineering.com/how-self-aligned-cfet-technology-could-extend-cmos-scaling-beyond-10-a/"
+  }
+ ],
+ "id": "2026-10-26-hoe-zelfuitlijnende-cfets-transistoren-stapelen",
+ "kind": "news",
+ "date": "2026-10-26",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-26",
+  "kind": "news",
+  "verified": "2026-10-26",
+  "candidate": "url:https://semiengineering.com/how-self-aligned-cfet-technology-could-extend-cmos-scaling-beyond-10-a/",
+  "signal": "officieel bericht van Semiconductor Engineering",
+  "significance": 4
+ }
+}
