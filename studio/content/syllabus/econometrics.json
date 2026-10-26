@@ -1,0 +1,240 @@
+{
+ "track": "econometrics",
+ "goal": "Alle empirische schattingsmethoden, toetsen en Stata-commando's uit de 8 computerklassen van Applied Econometrics (2128TEWECP) zelfstandig programmeren, interpreteren en toepassen op examenniveau in AlephQ — van data preparation en IV/2SLS tot binaire/multinominale modellen, selectiemodellen, paneldata en program evaluation.",
+ "principles": [
+  "Empirische interpretatie is verplicht: geef bij elke regressietabel altijd de economische en statistische intuïtie (richting, grootte, significantie en eenheid van de coëfficiënt).",
+  "Ken de grote examenvallen: verwar het marginale effect bij Tobit niet (effect op latente y* vs waargenomen y), schat bij de Hausman-paneltoets FE en RE eerst zonder vce() (anders weigert Stata de toets), en rapporteer nooit naakte tabellen zonder toelichting.",
+  "Modelkeuze volgt de datastructuur: binaire uitkomsten vragen Logit/Probit (geen LPM wegens voorspellingen buiten [0,1] en heteroskedasticiteit), hoekoplossingen vragen Tobit, niet-willekeurige steekproefselectie vraagt Heckman, en herhaalde waarnemingen vragen paneldata-schatters.",
+  "Toets altijd de identificatie-aannames: instrumenten moeten relevant (first-stage F > 10) én exogeen (Sargan p > 0.05) zijn; multinomiale logit vereist IIA; fixed effects vereist voldoende within-variatie; DiD vereist parallel trends vóór de interventie.",
+  "Werk gestructureerd in Stata: start altijd met een logbestand (log using), gebruik factor variable notatie (i. en c.##c.) voor interacties en marginale effecten, en inspecteer post-estimation resultaten via estat en margins."
+ ],
+ "modules": [
+  {
+   "id": "m1",
+   "title": "Module 1 — Stata Fundamenten & Datamanagement (Computer Class 1)",
+   "topics": [
+    "econometrics-01-stata-fundamentals"
+   ]
+  },
+  {
+   "id": "m2",
+   "title": "Module 2 — Dummy-variabelen, Interacties & Hypothesen (Computer Class 2)",
+   "topics": [
+    "econometrics-02-dummy-variables-interactions"
+   ]
+  },
+  {
+   "id": "m3",
+   "title": "Module 3 — Endogeniteit, Instrumentele Variabelen & 2SLS (Computer Class 3)",
+   "topics": [
+    "econometrics-03-instrumental-variables-2sls"
+   ]
+  },
+  {
+   "id": "m4",
+   "title": "Module 4 — Binaire Uitkomstmodellen: LPM, Logit & Probit (Computer Class 4)",
+   "topics": [
+    "econometrics-04-binary-outcome-models"
+   ]
+  },
+  {
+   "id": "m5",
+   "title": "Module 5 — Multinominale, Geordende & Telmodellen (Computer Class 5)",
+   "topics": [
+    "econometrics-05-multinomial-ordered-models"
+   ]
+  },
+  {
+   "id": "m6",
+   "title": "Module 6 — Beperkte Afhankelijke Variabelen: Tobit & Heckman (Computer Class 6)",
+   "topics": [
+    "econometrics-06-limited-dependent-variables"
+   ]
+  },
+  {
+   "id": "m7",
+   "title": "Module 7 — Paneldata Schatters: Pooled OLS, FE & RE (Computer Class 7)",
+   "topics": [
+    "econometrics-07-panel-data-estimators"
+   ]
+  },
+  {
+   "id": "m8",
+   "title": "Module 8 — Program Evaluation: DiD, Synthetic Control & RDD (Computer Class 8)",
+   "topics": [
+    "econometrics-08-program-evaluation-methods"
+   ]
+  }
+ ],
+ "topics": [
+  {
+   "id": "econometrics-01-stata-fundamentals",
+   "title": "Introductie Stata, Data Cleaning & Data Management",
+   "level": "fundament",
+   "objectives": [
+    "De Stata-omgeving, het Command-venster, do-files en logbestanden (log using) professioneel bedienen",
+    "Datasets inspecteren, beschrijven en samenvatten met describe, summarize, codebook en tabulate",
+    "Nieuwe variabelen genereren, transformeren en hercoderen met generate, replace, recode en label",
+    "Datasets combineren en structureren via merge 1:1, merge m:1, append en reshape long/wide"
+   ],
+   "theory": [
+    "Do-files garanderen reproduceerbaarheid; log-bestanden leggen alle output en interpretaties vast voor het examen",
+    "Summarize toont gemiddelde, standaardafwijking, min en max; summarize, detail geeft medianen en percentielen",
+    "Missing values in Stata worden gerepresenteerd door een punt (.), wat numeriek groter is dan elk reëel getal; wees alert bij logische checks zoals 'if x > 5'",
+    "Merge combineert variabelen van verschillende bronnen op basis van een unieke sleutel; _merge == 3 toont succesvolle matches",
+    "Reshape transformeert tussen breed formaat (wide: id, wage90, wage91) en lang formaat (long: id, year, wage) nodig voor paneldata"
+   ],
+   "example": "use wage.dta, clear | summarize wage educ exper, detail | gen lwage = ln(wage) | label var lwage \"Logaritmisch uurloon\" | reshape long wage, i(id) j(year)",
+   "exercise": "Voer data3.dta in, transformeer brede variabelen naar een long-panelstructuur en controleer op missing values.",
+   "test": "Vragen over data management commando's, missing value logica en merge/reshape syntax."
+  },
+  {
+   "id": "econometrics-02-dummy-variables-interactions",
+   "title": "Dummy-variabelen, Interacties & OLS-verdieping",
+   "level": "fundament",
+   "objectives": [
+    "Dummy-variabelen correct specificeren en de dummy variable trap vermijden via een referentiecategorie",
+    "De referentiecategorie wijzigen via ib#. en coëfficiënten interpreteren als relatieve verschillen",
+    "Interacties tussen continue en discrete variabelen (c.##i.) en dubbele dummy-interacties schatten en interpreteren",
+    "Gezamenlijke hypothesen en structurele breuken toetsen via testparm en robuuste variantie-covariantiematrices (vce(robust))"
+   ],
+   "theory": [
+    "Voor k categorieën neem je maximaal k-1 dummy's op in het model als er een constante is; anders ontstaat perfecte multicollineariteit (dummy trap)",
+    "In een log-lineair model ln(y) = b0 + b1*D geeft 100*(exp(b1) - 1)% het exacte procentuele verschil weer ten opzichte van de referentiegroep",
+    "Interactietermen (c.exper##i.female) laten toe dat het marginale effect van ervaring verschilt tussen mannen en vrouwen (verschil in helling)",
+    "F-toetsen (testparm) testen of een set van interacties of categorieën gezamenlijk gelijk aan nul is (H0: b1 = b2 = 0)",
+    "Heteroskedasticiteit vertekent standaardfouten maar niet de coëfficiënten; vce(robust) herstelt de geldigheid van t- en F-statistieken"
+   ],
+   "example": "regress lwage c.exper##c.exper ib3.educ_cat i.female##i.married, robust | testparm i.female#i.married",
+   "exercise": "Schat een loonvergelijking met interacties tussen geslacht en huwelijkse staat en interpreteer het basiseffect en het interactie-effect.",
+   "test": "Berekening van differentiatie-effecten, keuze van basiscategorie en F-toets interpretaties."
+  },
+  {
+   "id": "econometrics-03-instrumental-variables-2sls",
+   "title": "Instrumentele Variabelen (IV) & Two-Stage Least Squares (2SLS)",
+   "level": "gevorderd",
+   "objectives": [
+    "Endogeniteit diagnosticeren veroorzaakt door omitted variable bias, meetfouten of simultaneïteit",
+    "De twee formele vereisten voor een geldig instrument (instrument relevance en instrument exogeneity) evalueren",
+    "2SLS-schattingen uitvoeren met ivregress 2sls en handmatig de eerste en tweede trap narekenen",
+    "Zwakke instrumenten opsporen via de first-stage F-statistiek (Stock-Yogo drempelwaarden) en overidentificatie toetsen (Sargan/Hansen)"
+   ],
+   "theory": [
+    "Endogeniteit: Cov(x, u) != 0 leidt tot inconsistente OLS-schatters (bias verdwijnt niet bij grote steekproeven)",
+    "Instrument Z moet relevant zijn (Cov(Z, x) != 0, testbaar in eerste trap via F > 10) én exogeen (Cov(Z, u) = 0, niet direct testbaar bij exacte identificatie)",
+    "First stage: x = g0 + g1*Z + v; Second stage: y = b0 + b1*x_hat + e; handmatige standaardfouten in stap 2 zijn echter te klein (gebruik altijd ivregress)",
+    "Hausman-endogeniteitstoets: vergelijkt OLS en 2SLS; verwerping (p < 0.05) bevestigt dat OLS inconsistent is en IV noodzakelijk is",
+    "Overidentificatietoets (Sargan/Hansen estat overid): vereist meer instrumenten dan endogene variabelen (m > k); toetst of extra instrumenten ongecorreleerd zijn met het residu"
+   ],
+   "example": "ivregress 2sls lwage exper (educ = mothereduc fathereduc), robust first | estat firststage | estat overid | estat endogenous",
+   "exercise": "Schat het rendement op onderwijs met ouderlijk onderwijs als instrumenten, toets op zwakke instrumenten en overidentificatie.",
+   "test": "Interpreteren van first-stage F-waarden, Hausman-toetsen en overidentificatie-statistieken."
+  },
+  {
+   "id": "econometrics-04-binary-outcome-models",
+   "title": "Binaire Uitkomstmodellen: LPM, Logit & Probit",
+   "level": "gevorderd",
+   "objectives": [
+    "De tekortkomingen van het Lineair Kansmodel (LPM) identificeren (voorspellingen buiten [0,1], heteroskedasticiteit)",
+    "Logistische (Logit) en Normale (Probit) cumulatieve verdelingsfuncties formuleren en schatten via Maximum Likelihood",
+    "Odds ratio's (logit, or) en marginale effecten (AME via margins, dydx(*)) correct berekenen en onderscheiden",
+    "Modelprestaties evalueren via Likelihood Ratio tests (lrtest), McFadden's Pseudo-R² en classificatietabellen (estat classification)"
+   ],
+   "theory": [
+    "LPM schat P(y=1|x) via OLS: simpel te interpreteren, maar schendt kansaxioma's (P < 0 of P > 1) en heeft inherente heteroskedasticiteit Var(y|x) = p(1-p)",
+    "Logit gebruikt de logistische functie G(z) = exp(z)/(1 + exp(z)); Probit gebruikt de standaardnormale verdeling Phi(z)",
+    "Coëfficiënten in Logit/Probit zijn latent en niet direct interpreteerbaar als verandering in kans; margins, dydx(*) berekent het gemiddelde marginale effect (AME)",
+    "Odds ratio in logit: exp(beta) geeft de relatieve toename in kansverhouding p/(1-p) bij een toename van x met 1 eenheid",
+    "Pseudo-R2 = 1 - (ln L_ur / ln L_0); lrtest toetst geneste modellen via 2*(ln L_ur - ln L_r) ~ Chi2"
+   ],
+   "example": "logit inlf educ age kidslt6, robust | margins, dydx(*) | logit inlf educ age kidslt6, or | estat classification",
+   "exercise": "Vergelijk LPM, Logit en Probit voor de arbeidsparticipatie van vrouwen en bereken het AME van jonge kinderen.",
+   "test": "Omrekenen van odds ratios naar procenten, berekenen van AME vs MEM, en interpreteren van classificatietabellen."
+  },
+  {
+   "id": "econometrics-05-multinomial-ordered-models",
+   "title": "Multinominale, Geordende & Telmodellen",
+   "level": "expert",
+   "objectives": [
+    "Multinomiale keuzemodellen specificeren met mlogit en coëfficiënten interpreteren als Relative Risk Ratios (RRR)",
+    "De Independence of Irrelevant Alternatives (IIA) aanname toetsen via de Hausman-toets en alternatieven overwegen",
+    "Geordende uitkomsten modelleren met oprobit en ologit en drempelwaarden (cut points) interpreteren",
+    "Count data modelleren met Poisson-regressie (poisson) en Incident Rate Ratios (IRR) analyseren"
+   ],
+   "theory": [
+    "Multinomiaal logit modelleert ongeordende keuzes (bv. transportmiddel: auto, bus, trein) ten opzichte van één basiscategorie",
+    "RRR = exp(beta) geeft de relatieve kansverhouding P(y=k)/P(y=base) weer voor een stijging van x",
+    "IIA-aanname (Rode bus / Blauwe bus paradox): de kansverhouding tussen twee opties mag niet afhangen van de aan- of afwezigheid van andere opties; hausman full part toetst dit",
+    "Geordend probit (oprobit) modelleert geordende categorieën (bv. tevredenheid: laag, midden, hoog) via een latente index y* en grenswaarden (cuts)",
+    "Poisson-regressie modelleert teldata (y = 0, 1, 2, ...); assumptie dat E(y|x) = Var(y|x) (equidispersie); test op overdispersie via negative binomial"
+   ],
+   "example": "mlogit vote educ age i.region, base(1) rrr robust | hausman full restricted | oprobit health educ age, robust | poisson doctorvisits age chronic, irr",
+   "exercise": "Schat een stemkeuzemodel met 3 partijen, interpreteer de RRR van opleiding, en voer een IIA-toets uit.",
+   "test": "Vragen over RRR-interpretaties, IIA-schendingen, en cut-point kansberekeningen bij geordend probit."
+  },
+  {
+   "id": "econometrics-06-limited-dependent-variables",
+   "title": "Beperkte Afhankelijke Variabelen: Tobit & Heckman Selectie",
+   "level": "expert",
+   "objectives": [
+    "Het conceptuele onderscheid tussen gecensureerde data (censoring) en getrunceerde data (truncation) toepassen",
+    "Het Tobit-model schatten en de drie verschillende marginale effecten (latente y*, waargenomen y, en P(y>0)) correct ontleden",
+    "Niet-willekeurige steekproefselectie (sample selection bias) herkennen en formaliseren",
+    "Het Heckman-tweestapsmodel schatten, de Inverse Mills Ratio (lambda) berekenen en de exclusierestrictie verantwoorden"
+   ],
+   "theory": [
+    "Tobit (Type 1): y* = x*b + u, y = max(0, y*). OLS op de gehele steekproef of alleen positieve waarnemingen is inconsistent",
+    "Examenval bij Tobit: de coëfficiënt beta is het effect op de *latente* variabele y*, NIET op de waargenomen y! Marginaal effect op waargenomen y is beta * Phi(x*b/sigma)",
+    "Heckman selectiemodel (Type 2): selectievergelijking (wel/niet participeren) en uitkomstvergelijking (loon). Ongeobserveerde factoren kunnen gecorreleerd zijn (rho != 0)",
+    "Inverse Mills Ratio: lambda(z) = phi(z)/Phi(z). Toevoegen van lambda corrigeert voor de omitted variable bias in de loonregressie",
+    "Exclusierestrictie: de selectievergelijking MOET minstens één valide variabele bevatten die wél participatie beïnvloedt maar géén direct effect heeft op de uitkomst"
+   ],
+   "example": "tobit hours educ age kids, ll(0) | margins, dydx(*) predict(ystar(0,.)) | heckman lwage educ exper, select(lfp = educ age kids) twostep",
+   "exercise": "Schat een donatiemodel met Tobit en ontleed het effect van inkomen; schat daarna een loonvergelijking gecorrigeerd voor participatie via Heckman.",
+   "test": "Verschil tussen de 3 marginale effecten van Tobit, toets op rho = 0 bij Heckman, en identificatie via exclusierestricties."
+  },
+  {
+   "id": "econometrics-07-panel-data-estimators",
+   "title": "Paneldata Schatters: Pooled OLS, Fixed Effects & Random Effects",
+   "level": "expert",
+   "objectives": [
+    "Paneldata structureren met xtset en within- versus between-variatie ontleden via xtsum",
+    "Fixed Effects (FE / xtreg, fe) en Least Squares Dummy Variable (LSDV) schatten om voor tijd-invariante heterogeniteit te controleren",
+    "Random Effects (RE / xtreg, re) schatten en de quasiverschild parameter theta interpreteren",
+    "Statistische modelselectie uitvoeren via de Breusch-Pagan LM-toets (xttest0), de Hausman-toets (hausman fe re), en de Mundlak-benadering"
+   ],
+   "theory": [
+    "Paneldata volgt N individuen over T tijdsperioden; unobserved heterogeneity alpha_i veroorzaakt bias in pooled OLS als Cov(x_it, alpha_i) != 0",
+    "Fixed Effects veegt alpha_i weg door tijdgemiddelden af te trekken (time-demeaning); tijdsinvariante variabelen (geslacht, etniciteit) vallen weg",
+    "Random Effects veronderstelt Cov(x_it, alpha_i) = 0; efficiënter dan FE en behoudt tijdsinvariante variabelen, maar inconsistent als aanname faalt",
+    "Breusch-Pagan LM-toets (xttest0): toetst H0: Var(alpha_i) = 0 (Pooled OLS) tegen H1: Var(alpha_i) > 0 (Random Effects)",
+    "Hausman-toets (hausman fixed random): toetst H0: RE is consistent en efficiënt tegen H1: RE is inconsistent (gebruik FE). Schat altijd ZONDER vce() vooraf!",
+    "Two-way Fixed Effects: voeg jaardummy's toe (i.year) om macro-economische schokken op te vangen; testparm i.year toetst tijdseffecten"
+   ],
+   "example": "xtset id year | xtsum lwage educ exper | xtreg lwage exper tenure i.year, fe vce(cluster id) | hausman fixed_unrobust random_unrobust",
+   "exercise": "Analyseer een loonpanel, vergelijk Pooled OLS, FE en RE, voer de Hausman-toets uit en interpreteer de theta-schatting.",
+   "test": "Keuze tussen FE en RE, Hausman-toets interpretatie, time-demeaning gevolgen, en geclusterde standaardfouten."
+  },
+  {
+   "id": "econometrics-08-program-evaluation-methods",
+   "title": "Program Evaluation: Difference-in-Differences, Synthetic Control & RDD",
+   "level": "expert",
+   "objectives": [
+    "Het Potential Outcomes Framework en causale effecten (ATE, ATT) formaliseren",
+    "Difference-in-Differences (DiD) modellen schatten via interacties (i.post##i.treat) en de parallel trends aanname evalueren",
+    "Event Study specificaties en dynamische behandelingseffecten schatten en visualiseren",
+    "Synthetic Control Methods (synth) en Regression Discontinuity Designs (Sharp & Fuzzy RDD) operationaliseren in Stata"
+   ],
+   "theory": [
+    "Fundamenteel probleem van causale inferentie: we observeren nooit dezelfde eenheid tegelijk mét en zónder behandeling (counterfactual ontbreekt)",
+    "DiD schat het effect via (Y_treat,post - Y_treat,pre) - (Y_control,post - Y_control,pre); identificatie-aanname is parallel trends (trends zouden zonder behandeling gelijk lopen)",
+    "Event Study vervangt post door relatieve tijdsdummy's (ib#.event##i.treat); pre-treatment coëfficiënten moeten rond 0 liggen om parallel trends te staven",
+    "Synthetic Control Method (SCM): construeert een synthetische controlegroep als gewogen combinatie van onbehandelde regio's; inferentie via placebo-runs",
+    "Regression Discontinuity Design (RDD): behandeling springt discontinu bij een drempelwaarde van de 'forcing variable' (bv. testscore >= 50); Sharp RDD via OLS rond de drempel, Fuzzy RDD via IV"
+   ],
+   "example": "xtreg gdp i.post##i.treat controls, re vce(cluster id) | xtreg gdp ib4.event##i.treat, re vce(cluster id) | reg vote c.margin##i.above if abs(margin) <= 10, robust",
+   "exercise": "Schat de economische impact van de Duitse hereniging via DiD en event studies; voer daarna een RDD uit op verkiezingsuitslagen.",
+   "test": "Identificatie-aannames van DiD, interpreteren van event-study grafieken, en de werking van Sharp vs Fuzzy RDD."
+  }
+ ]
+}

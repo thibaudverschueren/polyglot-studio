@@ -1,0 +1,556 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "econometrics",
+ "id": 7,
+ "roadmap": "econometrics-07-panel-data-estimators",
+ "kind": "core",
+ "title": "Paneldata: Pooled OLS, Fixed Effects & Random Effects",
+ "subtitle": "xtset, within vs. between variatie, LSDV, xtreg fe/re met geclusterde fouten, Breusch-Pagan LM en de Hausman-toets",
+ "level": "expert",
+ "minutes": 45,
+ "summary": "Paneldata volgt dezelfde micro-eenheden over de tijd, waardoor we kunnen controleren voor ongeobserveerde, tijdsinvariante heterogeniteit. In deze les leer je hoe je paneldata structureert met `xtset`, de variantie ontleedt via `xtsum`, en kiest tussen Pooled OLS (Ordinary Least Squares), Fixed Effects (FE) en Random Effects (RE) aan de hand van de Lagrange Multiplier (LM) toets en de Hausman-toets.",
+ "objectives": [
+  {
+   "id": "panel-structure-variation",
+   "text": "Paneldata declareren met xtset en de within- versus between-variatie ontleden via xtsum"
+  },
+  {
+   "id": "fe-lsdv-demeaning",
+   "text": "Fixed Effects (Within) en LSDV (Least Squares Dummy Variable) schatten, time-demeaning begrijpen en de individuele effecten toetsen via testparm"
+  },
+  {
+   "id": "re-gls-theta",
+   "text": "Random Effects schatten via quasi-demeaning (theta) en de Breusch-Pagan LM-toets (xttest0) interpreteren"
+  },
+  {
+   "id": "model-selection-traps",
+   "text": "De Hausman-toets correct uitvoeren zonder geclusterde fouten, Two-Way FE schatten en de Mundlak-benadering toepassen"
+  }
+ ],
+ "sections": [
+  {
+   "id": "sec-panel-structuur-en-pooled-ols",
+   "title": "1. De aard van paneldata: structuur, variatie en Pooled OLS",
+   "md": "### De aard van paneldata: structuur, variatie en Pooled OLS\n\nPaneldata (of longitudinale data) combineert de dimensies van cross-sectionele data en tijdreeksen. We observeren $N$ individuele eenheden (individuen, huishoudens, bedrijven of staten, geïndexeerd door $i = 1, \\dots, N$) over $T$ opeenvolgende tijdsperioden ($t = 1, \\dots, T$). In totaal beschikken we over $N \\times T$ waarnemingen.\n\nWe onderscheiden twee types panelen:\n1. **Gebalanceerd panel** (*balanced panel*): elke eenheid $i$ wordt geobserveerd gedurende exact dezelfde $T$ tijdsperioden zonder ontbrekende waarden. In Stata heet dit *strongly balanced*.\n2. **Ongebalanceerd panel** (*unbalanced panel*): verschillende eenheden worden gedurende een wisselend aantal perioden $T_i$ waargenomen (bv. door uitval (*attrition*), laattijdige toetreding of ontbrekende jaren).\n\nVoordat we in Stata enige paneldata-analyse kunnen uitvoeren, moeten we Stata expliciet vertellen welke variabele de doorsnede-eenheid identificeert en welke de tijdsdimensie representeert. Dit gebeurt met het commando `xtset`:\n\n```stata\nxtset id year\n```\n\nStata controleert onmiddellijk of de combinatie `(id, year)` uniek is en rapporteert de structuur van de dataset:\n\n```text\n       panel variable:  id (strongly balanced)\n        time variable:  year, 82 to 88, but with gaps\n                delta:  1 unit\n```\n\nHier zien we dat `id` de panelvariabele is, dat de tijdsvariabele loopt van 1982 tot 1988 met tussenpozen (*with gaps*), en dat de tijdseenheid 1 jaar bedraagt (`delta: 1 unit`).\n\n---\n\n### Binnen- en tussenvariantie ontleden via `xtsum`\n\nIn een paneldataset kan een variabele $x_{it}$ op twee manieren variëren:\n- **Tussen individuen** (*between-variation*): persoon $A$ heeft gemiddeld over alle jaren een hoger loon dan persoon $B$.\n- **Binnen hetzelfde individu over de tijd** (*within-variation*): het loon van persoon $A$ groeit van jaar tot jaar naarmate hij meer ervaring opdoet.\n\nMet het commando `xtsum` ontleden we de totale steekproefvariantie formeel in deze twee componenten:\n\n```stata\nxtsum lwage educ exper tenure black south union\n```\n\nBeschouw de resulterende output voor het log-uurloon (`lwage`) en de etniciteitsindicator (`black`):\n\n```text\nVariable         |      Mean   Std. dev.       Min        Max |    Observations\n-----------------+--------------------------------------------+----------------\nlwage    overall |  1.918238    .4646068   .137109   4.254619 |     N =    3580\n         between |              .4249598   .4554959   3.528558 |     n =     716\n         within  |              .1883361   .6674484   3.831204 |     T =       5\n-----------------+--------------------------------------------+----------------\nblack    overall |  .2821229    .4500957         0          1 |     N =    3580\n         between |              .4503475         0          1 |     n =     716\n         within  |                     0   .2821229   .2821229 |     T =       5\n```\n\nWiskundig berekent Stata deze componenten als volgt:\n1. **Overall variatie**: de gewone standaardafwijking over alle $N \\times T = 3580$ waarnemingen rond het algemene gemiddelde $\\bar{x}$:\n   $$s_O = \\sqrt{\\frac{1}{NT-1} \\sum_{i=1}^N \\sum_{t=1}^T (x_{it} - \\bar{x})^2} = 0.4646$$\n2. **Between variatie**: de standaardafwijking van de individuele gemiddelden $\\bar{x}_i = \\frac{1}{T} \\sum_{t=1}^T x_{it}$ rond het algemene gemiddelde $\\bar{x}$:\n   $$s_B = \\sqrt{\\frac{1}{N-1} \\sum_{i=1}^N (\\bar{x}_i - \\bar{x})^2} = 0.4250$$\n3. **Within variatie**: de standaardafwijking van de afwijkingen van het persoonsgemiddelde $(x_{it} - \\bar{x}_i)$ gecentreerd rond het globale gemiddelde:\n   $$s_W = \\sqrt{\\frac{1}{NT-1} \\sum_{i=1}^N \\sum_{t=1}^T (x_{it} - \\bar{x}_i)^2} = 0.1883$$\n\n> [!rule] Regel voor tijdsinvariante variabelen in `xtsum`\n> Voor een strikt tijdsinvariante variabele (zoals `black` of geboortejaar) is de within-standaardafwijking exact `0`. Omdat $x_{it} = \\bar{x}_i$ voor alle $t$, is er nul variatie over de tijd binnen een individu. Stata toont als minimum en maximum van de within-statistiek exact het globale gemiddelde ($0.2821$).\n\n---\n\n### Ongeobserveerde heterogeniteit en de gevaren van Pooled OLS\n\nHet klassieke paneldatamodel specificeert de uitkomst $y_{it}$ als:\n$$y_{it} = \\beta_0 + \\mathbf{x}_{it}' \\boldsymbol{\\beta} + \\alpha_i + \\varepsilon_{it}$$\nwaarbij:\n- $\\alpha_i$ de **tijdsinvariante individuele heterogeniteit** voorstelt (zoals aangeboren vaardigheid, genetische aanleg, bedrijfscultuur of geografische ligging).\n- $\\varepsilon_{it}$ de **idiosyncratische foutterm** is, die varieert over zowel individuen als tijd.\n- $v_{it} = \\alpha_i + \\varepsilon_{it}$ de **samengestelde foutterm** (*composite error*) vormt.\n\nWat gebeurt er als we de panelstructuur negeren en simpelweg Pooled OLS (Ordinary Least Squares) toepassen via `reg lwage educ exper tenure black south union`?\n\n1. **Endogeniteit en Omitted Variable Bias**:\n   Als de individuele effecten $\\alpha_i$ gecorreleerd zijn met de verklarende variabelen $\\mathbf{x}_{it}$ (bijvoorbeeld: personen met een hogere niet-geobserveerde vaardigheid $\\alpha_i$ volgen gemiddeld meer onderwijs `educ`), dan geldt $\\text{Cov}(\\mathbf{x}_{it}, v_{it}) = \\text{Cov}(\\mathbf{x}_{it}, \\alpha_i) \\neq 0$. De Pooled OLS schatter is dan **vertekend en inconsistent**:\n   $$\\text{plim} \\, \\hat{\\boldsymbol{\\beta}}_{\\text{POLS}} \\neq \\boldsymbol{\\beta}$$\n2. **Seriële correlatie binnen clusters (foutieve standaardfouten)**:\n   Zelfs als $\\text{Cov}(\\mathbf{x}_{it}, \\alpha_i) = 0$ (geen endogeniteit), delen alle opeenvolgende waarnemingen van hetzelfde individu $i$ hetzelfde individuele effect $\\alpha_i$. Daardoor zijn de fouttermen positief gecorreleerd over de tijd:\n   $$\\text{Cov}(v_{it}, v_{is}) = \\text{Var}(\\alpha_i) = \\sigma_\\alpha^2 > 0 \\quad (\\text{voor } t \\neq s)$$\n   Standaard OLS veronderstelt onafhankelijke waarnemingen en negeert deze intra-groep correlatie volkomen. Hierdoor worden de standaardfouten **zwaar onderschat** (vaak met een factor 2 of meer), zijn de $t$-statistieken kunstmatig hoog en worden variabelen ten onrechte significant verklaard.\n\n---\n\n### Oplossing voor standaardfouten: geclusterde varianties\n\nOm de standaardfouten te corrigeren voor intra-individu correlatie en willekeurige heteroskedasticiteit, voegen we de optie `vce(cluster id)` toe:\n\n```stata\nreg lwage educ c.exper##c.exper c.tenure##c.tenure black south union, vce(cluster id)\n```\n\nVergelijk de standaardfouten tussen standaard OLS en cluster-robuuste OLS:\n- Standaard OLS: $\\text{SE}(\\hat{\\beta}_{\\text{educ}}) = 0.00269$, $t = 26.57$\n- Geclusterde OLS: $\\text{SE}(\\hat{\\beta}_{\\text{educ}}) = 0.00550$, $t = 12.99$\n\nDe standaardfout verdubbelt nagenoeg zodra we clusteren op persoonsniveau! De puntschatting blijft exact gelijk ($0.0714$), want `vce(cluster id)` past uitsluitend de variantie-covariantiematrix aan.\n\n> [!warning] Grote examenval: clusteren lost endogeniteit niet op\n> Clusteren van standaardfouten (`vce(cluster id)`) herstelt de validiteit van je hypothesetoetsen bij seriële correlatie, maar lost de **omitted variable bias** door $\\text{Cov}(\\mathbf{x}_{it}, \\alpha_i) \\neq 0$ **niet** op! De coëfficiënten blijven inconsistent zolang $\\alpha_i$ gecorreleerd is met $\\mathbf{x}_{it}$."
+  },
+  {
+   "id": "sec-fixed-effects-en-lsdv",
+   "title": "2. Fixed Effects (Within) en Least Squares Dummy Variable (LSDV)",
+   "md": "### Het Fixed Effects uitgangspunt\n\nHet Fixed Effects (FE) model vertrekt van de realistische veronderstelling dat de individuele heterogeniteit $\\alpha_i$ willekeurig gecorreleerd mag zijn met de verklarende variabelen:\n$$\\text{Cov}(\\mathbf{x}_{it}, \\alpha_i) \\neq 0$$\nOmdat $\\alpha_i$ niet geobserveerd wordt, kunnen we er niet rechtstreeks voor controleren in een gewone regressie. Er bestaan echter twee equivalente wiskundige manieren om $\\alpha_i$ te neutraliseren:\n1. De Least Squares Dummy Variable (LSDV) benadering.\n2. De Within-transformatie (*time-demeaning*).\n\n---\n\n### De Least Squares Dummy Variable (LSDV) benadering\n\nIn de LSDV-benadering behandelen we elk individu $i$ als een afzonderlijke parameter door voor elk van de $N$ individuen een dummy-variabele op te nemen:\n$$y_{it} = \\sum_{j=1}^N \\alpha_j D_{j,it} + \\mathbf{x}_{it}' \\boldsymbol{\\beta} + \\varepsilon_{it}$$\nIn Stata schatten we dit eenvoudig met factor-variabele notatie:\n\n```stata\nreg lwage educ c.exper##c.exper c.tenure##c.tenure black south union i.id, vce(cluster id)\n```\n\nStata schat nu 716 dummy-coëfficiënten. We kunnen vervolgens met een $F$-toets formeel nagaan of deze individuele effecten gezamenlijk statistisch significant zijn:\n\n```stata\ntestparm i.id\n```\n\nOutput:\n```text\n       F(  6,   715) =  335.74\n         Prob > F =    0.0000\n```\nOmdat $p < 0.001$, verwerpen we de nulhypothese $H_0: \\alpha_1 = \\alpha_2 = \\dots = \\alpha_N = 0$ met grote overtuiging. Er is massale individuele heterogeniteit tussen personen. Pooled OLS is definitief verworpen.\n\n> [!pitfall] Het Incidental Parameter Problem bij LSDV\n> Wanneer $N$ zeer groot is (bijvoorbeeld duizenden consumenten of bedrijven) en $T$ klein, moet LSDV duizenden parameters schatten. Dit vreet intern geheugen en leidt tot het *incidental parameter problem*. Daarom gebruiken we in de praktijk vrijwel altijd de Within-transformatie via `xtreg, fe`.\n\n---\n\n### De Within-transformatie (Time-Demeaning)\n\nDe Within-schatter lost het heterogeniteitsprobleem algebraïsch op zonder dummy's te schatten. \n\nStap 1: Neem het tijdgemiddelde per individu aan weerszijden van de regressievergelijking:\n$$\\bar{y}_i = \\beta_0 + \\bar{\\mathbf{x}}_i' \\boldsymbol{\\beta} + \\alpha_i + \\bar{\\varepsilon}_i$$\nwaarbij $\\bar{y}_i = \\frac{1}{T} \\sum_{t=1}^T y_{it}$ en $\\bar{\\mathbf{x}}_i = \\frac{1}{T} \\sum_{t=1}^T \\mathbf{x}_{it}$. Omdat $\\alpha_i$ tijdsinvariant is, is haar gemiddelde gelijk aan haarzelf: $\\bar{\\alpha}_i = \\alpha_i$.\n\nStap 2: Trek de gemiddeldenvergelijking af van de oorspronkelijke waarnemingen:\n$$(y_{it} - \\bar{y}_i) = (\\mathbf{x}_{it} - \\bar{\\mathbf{x}}_i)' \\boldsymbol{\\beta} + (\\alpha_i - \\alpha_i) + (\\varepsilon_{it} - \\bar{\\varepsilon}_i)$$\nDefinieer de ontgemiddelde variabelen (*time-demeaned variables*) als $\\ddot{y}_{it} = y_{it} - \\bar{y}_i$ en $\\ddot{\\mathbf{x}}_{it} = \\mathbf{x}_{it} - \\bar{\\mathbf{x}}_i$. De vergelijking vereenvoudigt tot:\n$$\\ddot{y}_{it} = \\ddot{\\mathbf{x}}_{it}' \\boldsymbol{\\beta} + \\ddot{\\varepsilon}_{it}$$\n\n> [!important] Wiskundige magie van de Within-transformatie\n> Omdat $\\alpha_i - \\alpha_i = 0$, is de ongeobserveerde heterogeniteit $\\alpha_i$ **volledig geëlimineerd** uit de vergelijking! De storing $\\ddot{\\varepsilon}_{it}$ is nu orthogonaal op $\\ddot{\\mathbf{x}}_{it}$, zodat OLS op de ontgemiddelde data een zuivere en consistente schatting van $\\boldsymbol{\\beta}$ oplevert, ongeacht eventuele correlatie tussen $\\mathbf{x}_{it}$ en $\\alpha_i$.\n\n---\n\n### Uitvoering in Stata via `xtreg, fe`\n\nIn Stata voeren we de within-schatting uit met de optie `fe`:\n\n```stata\nxtreg lwage educ c.exper##c.exper c.tenure##c.tenure black south union, fe vce(cluster id)\n```\n\nStata geeft onmiddellijk twee waarschuwingen:\n```text\nnote: educ omitted because of collinearity.\nnote: black omitted because of collinearity.\n```\n\nWaarom vallen `educ` en `black` weg?\nVoor elke tijdsinvariante variabele $z_{it} = z_i$ geldt dat het tijdgemiddelde gelijk is aan de waarde zelf: $\\bar{z}_i = z_i$. Het verschil is dus voor elke observatie identiek aan nul:\n$$\\ddot{z}_{it} = z_{it} - \\bar{z}_i = z_i - z_i = 0$$\nEen variabele die uitsluitend nullen bevat vertoont perfecte multicollineariteit met de constante en kan onmogelijk worden geschat!\n\n> [!caution] De prijs van Fixed Effects: geen tijdsinvariante variabelen\n> Met een Fixed Effects schatter kun je het effect van tijdsinvariante kenmerken (zoals geslacht, etniciteit of een voltooide opleiding die tijdens de panelperiode niet meer verandert) **niet** identificeren. FE gooit alle *between*-variatie weg en benut uitsluitend *within*-variatie.\n\n---\n\n### Interpretatie van de Fixed Effects regressietabel\n\nBekijk de resultaten uit `nls_small.dta`:\n\n```text\nFixed-effects (within) regression               Number of obs     =      3,580\nGroup variable: id                              Number of groups  =        716\nR-squared:                                      Obs per group:\n     Within  = 0.1430                                         min =          5\n     Between = 0.1162                                         avg =        5.0\n     Overall = 0.1170                                         max =          5\n                                                F(6, 715)         =      50.43\ncorr(u_i, Xb) = 0.0952                          Prob > F          =     0.0000\n------------------------------------------------------------------------------\n             |               Robust\n       lwage | Coefficient  std. err.      t    P>|t|     [95% conf. interval]\n-------------+----------------------------------------------------------------\n        educ |          0  (omitted)\n       exper |   .0410831   .0082404     4.99   0.000     .0249048    .0572614\n             |\n     c.exper#|\n     c.exper |  -.0004091   .0003299    -1.24   0.215    -.0010568    .0002387\n             |\n      tenure |   .0139089   .0042154     3.30   0.001     .0056329     .022185\n             |\n    c.tenure#|\n    c.tenure |  -.0008962   .0002495    -3.59   0.000    -.0013861   -.0004064\n             |\n       black |          0  (omitted)\n       south |  -.0163224     .05848    -0.28   0.780    -.1311355    .0984907\n       union |   .0636972   .0168605     3.78   0.000     .0305952    .0967993\n       _cons |   1.450034    .055029    26.35   0.000     1.341996    1.558072\n-------------+----------------------------------------------------------------\n     sigma_u |  .40231926\n     sigma_e |  .19511039\n         rho |  .80959194   (fraction of variance due to u_i)\n------------------------------------------------------------------------------\n```\n\nLaten we deze output systematisch ontleden:\n1. **Economische interpretatie van coëfficiënten**:\n   - `exper` ($0.0411$): een individu dat binnen dezelfde baan 1 extra jaar werkervaring opdoet, ziet zijn loon stijgen met circa $4.1\\%$, ceteris paribus ($p < 0.001$). Merk op dat dit binnen-persoonseffect lager ligt dan de Pooled OLS schatting ($5.6\\%$), wat aantoont dat Pooled OLS deels het effect van niet-geobserveerde vaardigheid meepikte.\n   - `union` ($0.0637$): wanneer een werknemer lid wordt van een vakbond, stijgt diens loon met gemiddeld $6.4\\%$ ($p < 0.001$).\n2. **Statistische parameters onderaan de tabel**:\n   - `sigma_u` ($\\hat{\\sigma}_\\alpha = 0.4023$): de geschatte standaardafwijking van het individuele effect $u_i$.\n   - `sigma_e` ($\\hat{\\sigma}_\\varepsilon = 0.1951$): de geschatte standaardafwijking van de idiosyncratische storing $\\varepsilon_{it}$.\n   - `rho` ($\\rho = 0.8096$): de fractie van de totale residuele variantie die veroorzaakt wordt door persistente individuele heterogeniteit:\n     $$\\rho = \\frac{\\sigma_u^2}{\\sigma_u^2 + \\sigma_e^2} = \\frac{0.4023^2}{0.4023^2 + 0.1951^2} = 0.8096$$\n     Ruim $81\\%$ van de variantie in de foutterm ligt dus vast op persoonsniveau!\n   - `corr(u_i, Xb) = 0.0952`: toont aan dat de correlatie tussen de individuele effecten en de lineaire combinatie van regressoren positief is ($9.5\\%$). Dit bevestigt dat de aanname van orthogonaliteit faalt."
+  },
+  {
+   "id": "sec-random-effects-en-quasi-demeaning",
+   "title": "3. Random Effects (RE) & Quasi-Demeaning",
+   "md": "### De Random Effects aanname\n\nIn het Random Effects (RE) model behandelen we de individuele heterogeniteit $\\alpha_i$ niet als vaste parameters, maar als een toevalsgrootheid (*random variable*). De fundamentele identificatie-aanname van RE luidt:\n$$\\text{Cov}(\\mathbf{x}_{it}, \\alpha_i) = 0 \\quad \\text{voor alle } t = 1, \\dots, T$$\nOnder deze aanname is de ongeobserveerde heterogeniteit $\\alpha_i$ **volledig ongecorreleerd** met alle verklarende variabelen in het model. \n\nAls deze aanname klopt, biedt het Random Effects model twee enorme voordelen ten opzichte van Fixed Effects:\n1. **Behoud van tijdsinvariante variabelen**: variabelen zoals `educ`, `black` en `gender` vallen niet weg en kunnen zuiver worden geschat!\n2. **Maximale statistische efficiëntie**: RE benut zowel de *within*- als de *between*-variatie van de dataset via Generalized Least Squares (GLS).\n\n---\n\n### Quasi-Demeaning transformatie (GLS)\n\nIn tegenstelling tot Fixed Effects (dat $100\\%$ van het tijdgemiddelde aftrekt, $\\theta = 1$) trekt de Random Effects GLS-schatter slechts een gewogen fractie $\\theta$ van het individuele gemiddelde af:\n$$(y_{it} - \\theta \\bar{y}_i) = \\beta_0 (1 - \\theta) + (\\mathbf{x}_{it} - \\theta \\bar{\\mathbf{x}}_i)' \\boldsymbol{\\beta} + (v_{it} - \\theta \\bar{v}_i)$$\nDit proces noemen we **quasi-demeaning** of **partiële ontgemiddeling**.\n\nDe transformatieparameter $\\theta$ wordt berekend als:\n$$\\theta = 1 - \\sqrt{\\frac{\\sigma_\\varepsilon^2}{T \\sigma_\\alpha^2 + \\sigma_\\varepsilon^2}} = 1 - \\sqrt{\\frac{1}{1 + T \\frac{\\sigma_\\alpha^2}{\\sigma_\\varepsilon^2}}}$$\nDe parameter $\\theta$ ligt altijd tussen $0$ en $1$ en vertelt ons hoe dicht RE bij Pooled OLS dan wel Fixed Effects ligt:\n- **Als $\\sigma_\\alpha^2 = 0$** (geen individuele heterogeniteit): $\\theta = 1 - \\sqrt{1} = 0$. We trekken niets af en het RE-model reduceert exact tot **Pooled OLS**.\n- **Als $T \\to \\infty$ of $\\sigma_\\alpha^2 \\gg \\sigma_\\varepsilon^2$** (zeer sterke individuele heterogeniteit): $\\theta \\to 1$. We trekken het volledige gemiddelde af en RE convergeert mathematisch naar **Fixed Effects**.\n- **In de praktijk ($0 < \\theta < 1$)**: we trekken een deel van het gemiddelde af. Omdat $1 - \\theta > 0$, blijft er nog steeds variatie over in tijdsinvariante variabelen!\n\n---\n\n### RE schatten in Stata via `xtreg, re`\n\nWe schatten het Random Effects model met de optie `re`. Om de geschatte waarde van $\\theta$ te zien, voegen we de optie `theta` toe:\n\n```stata\nxtreg lwage educ c.exper##c.exper c.tenure##c.tenure black south union, re vce(cluster id) theta\n```\n\nOutput:\n```text\nRandom-effects GLS regression                   Number of obs     =      3,580\nGroup variable: id                              Number of groups  =        716\nR-squared:                                      Obs per group:\n     Within  = 0.1411                                         min =          5\n     Between = 0.3543                                         avg =        5.0\n     Overall = 0.3191                                         max =          5\n                                                Wald chi2(8)      =     721.58\ncorr(u_i, X)   = 0 (assumed)                    Prob > chi2       =     0.0000\ntheta          = .74368295\n------------------------------------------------------------------------------\n             |               Robust\n       lwage | Coefficient  std. err.      z    P>|z|     [95% conf. interval]\n-------------+----------------------------------------------------------------\n        educ |   .0732536   .0053983    13.57   0.000     .0626731     .083834\n       exper |    .043617   .0075459     5.78   0.000     .0288273    .0584066\n             |\n     c.exper#|\n     c.exper |   -.000561   .0003068    -1.83   0.068    -.0011623    .0000404\n             |\n      tenure |   .0141541   .0039972     3.54   0.000     .0063197    .0219885\n             |\n    c.tenure#|\n    c.tenure |  -.0007553   .0002355    -3.21   0.001    -.0012169   -.0002938\n             |\n       black |  -.1167366   .0292834    -3.99   0.000     -.174131   -.0593422\n       south |  -.0818117    .028329    -2.89   0.004    -.1373356   -.0262878\n       union |   .0802353   .0154657     5.19   0.000      .049923    .1105476\n       _cons |   .5339295    .0820901     6.50   0.000     .3730359    .6948232\n-------------+----------------------------------------------------------------\n     sigma_u |  .32904965\n     sigma_e |  .19511039\n         rho |  .73986872   (fraction of variance due to u_i)\n------------------------------------------------------------------------------\n```\n\nWat valt direct op?\n1. `theta = .74368`: Stata trekt $74.4\\%$ van het persoonsgemiddelde af. De resterende $25.6\\%$ zorgt ervoor dat `educ` ($+7.3\\%$) en `black` ($-11.7\\%$) behouden blijven en statistisch zeer significant geschat worden.\n2. `corr(u_i, X) = 0 (assumed)`: Stata herinnert ons er expliciet aan dat orthogonaliteit hier een **aanname** is, geen empirische bevinding!\n\n---\n\n### De Breusch-Pagan Lagrange Multiplier (LM) toets: `xttest0`\n\nHoe weten we of we überhaupt een panelmodel nodig hebben in plaats van gewone Pooled OLS?\nDe **Breusch en Pagan Lagrange Multiplier (LM) toets** toetst formeel of de variantie van de individuele storing nul is:\n$$H_0: \\sigma_\\alpha^2 = \\text{Var}(\\alpha_i) = 0 \\quad (\\text{Pooled OLS volstaat})$$\n$$H_1: \\sigma_\\alpha^2 > 0 \\quad (\\text{Random Effects aanwezig})$$\n\nIn Stata voeren we deze toets onmiddellijk na `xtreg, re` uit via:\n\n```stata\nxttest0\n```\n\nOutput:\n```text\nBreusch and Pagan Lagrangian multiplier test for random effects\n        lwage[id,t] = Xb + u[id] + e[id,t]\nEstimated results:\n                     Var       SD = sqrt(Var)\n        ---------+-----------------------------\n           lwage |  .2158595       .4646068\n               e |  .0380681       .1951104\n               u |  .1082737       .3290497\n\n        Test: Var(u) = 0\n              chibar2(01) = 3859.28\n             Prob > chibar2 = 0.0000\n```\n\nDe toetsingsgrootheid volgt een $\\bar{\\chi}^2(01)$ verdeling (een mengverdeling omdat de variantie onder $H_1$ niet negatief kan zijn). \nMet $\\bar{\\chi}^2 = 3859.28$ en $p = 0.0000$ verwerpen we $H_0$ overtuigend:\n- Er is sterke individuele heterogeniteit ($u_i$).\n- Pooled OLS is **statistisch inefficiënt** en levert foutieve standaardfouten op.\n- We moeten definitief kiezen voor een panelschatter (RE of FE)."
+  },
+  {
+   "id": "sec-modelkeuze-en-examentraps",
+   "title": "4. Statistische Modelkeuze, Examentraps & Geavanceerde Panelschatters",
+   "md": "### De Hausman-toets: FE versus RE\n\nNadat de Breusch-Pagan LM-toets Pooled OLS heeft uitgesloten, rest de centrale vraag: **Fixed Effects of Random Effects?**\n- **Fixed Effects (FE)**: altijd consistent, zelfs als $\\text{Cov}(\\mathbf{x}_{it}, \\alpha_i) \\neq 0$. Maar inefficiënt en gooit tijdsinvariante variabelen weg.\n- **Random Effects (RE)**: maximaal efficiënt en behoudt alle variabelen, maar **inconsistent** zodra $\\text{Cov}(\\mathbf{x}_{it}, \\alpha_i) \\neq 0$.\n\nDe **Hausman-toets** toetst formeel of het verschil tussen de FE-schattingen $\\hat{\\boldsymbol{\\beta}}_{\\text{FE}}$ en de RE-schattingen $\\hat{\\boldsymbol{\\beta}}_{\\text{RE}}$ systematisch afwijkt van nul:\n$$H_0: \\text{Cov}(\\mathbf{x}_{it}, \\alpha_i) = 0 \\implies \\hat{\\boldsymbol{\\beta}}_{\\text{RE}} \\text{ is consistent en efficiënt (gebruik RE)}$$\n$$H_1: \\text{Cov}(\\mathbf{x}_{it}, \\alpha_i) \\neq 0 \\implies \\hat{\\boldsymbol{\\beta}}_{\\text{RE}} \\text{ is inconsistent (gebruik FE)}$$\n\nDe teststatistiek volgt asymptotisch een chi-kwadraatverdeling:\n$$W = (\\hat{\\boldsymbol{\\beta}}_{\\text{FE}} - \\hat{\\boldsymbol{\\beta}}_{\\text{RE}})' \\left[ \\hat{\\mathbf{V}}(\\hat{\\boldsymbol{\\beta}}_{\\text{FE}}) - \\hat{\\mathbf{V}}(\\hat{\\boldsymbol{\\beta}}_{\\text{RE}}) \\right]^{-1} (\\hat{\\boldsymbol{\\beta}}_{\\text{FE}} - \\hat{\\boldsymbol{\\beta}}_{\\text{RE}}) \\sim \\chi^2(k)$$\nwaarbij $k$ het aantal tijdsvariërende variabelen is.\n\n---\n\n### CRUCIALE EXAMENVAL: Hausman vereist niet-robuuste schattingen!\n\n> [!pitfall] De grootste valkuil op het examen: `hausman` weigert `vce(cluster)`\n> De wiskundige vereenvoudiging van de variantie $\\text{Var}(\\hat{\\boldsymbol{\\beta}}_{\\text{FE}} - \\hat{\\boldsymbol{\\beta}}_{\\text{RE}}) = \\text{Var}(\\hat{\\boldsymbol{\\beta}}_{\\text{FE}}) - \\text{Var}(\\hat{\\boldsymbol{\\beta}}_{\\text{RE}})$ geldt **uitsluitend** wanneer $\\hat{\\boldsymbol{\\beta}}_{\\text{RE}}$ de theoretische Cramer-Rao ondergrens bereikt onder $H_0$. \n> Als je de modellen schat met `vce(cluster id)` of `vce(robust)`, weigert Stata de Hausman-toets met de foutmelding:\n> `hausman cannot be used with clustered or robust standard errors`\n\nDe verplichte examenprocedure verloopt daarom in drie exacte stappen:\n```stata\n* Stap 1: Schat FE ZONDER vce() en sla op\nquietly eststo fixed_u: xtreg lwage educ c.exper##c.exper c.tenure##c.tenure black south union, fe\n\n* Stap 2: Schat RE ZONDER vce() en sla op\nquietly eststo random_u: xtreg lwage educ c.exper##c.exper c.tenure##c.tenure black south union, re\n\n* Stap 3: Voer de Hausman-toets uit (altijd consistent model FE eerst!)\nhausman fixed_u random_u\n```\n\nOutput:\n```text\n                 ---- Coefficients ----\n             |      (b)          (B)            (b-B)     sqrt(diag(V_b-V_B))\n             |    fixed_u      random_u      Difference       Std. err.\n-------------+----------------------------------------------------------------\n       exper |    .0410831      .043617       -.0025338        .0018455\n   c.exper#..|   -.0004091    -.000561         .0001519        .0000758\n      tenure |    .0139089     .0141541       -.0002452        .0008468\n  c.tenure#..|   -.0008962    -.0007553       -.0001409        .0000668\n       south |   -.0163224    -.0818117        .0654893        .0283637\n       union |    .0636972     .0802353       -.0165381        .0053462\n------------------------------------------------------------------------------\nb = consistent under Ho and Ha; obtained from xtreg\nB = inconsistent under Ha, efficient under Ho; obtained from xtreg\n\nTest:  Ho:  difference in coefficients not systematic\n       chi2(6) = (b-B)'[(V_b-V_B)^(-1)](b-B) = 20.73\n       Prob>chi2 = 0.0021\n```\n\nMet $\\chi^2(6) = 20.73$ en $p = 0.0021 < 0.01$ verwerpen we de nulhypothese overtuigend op het $1\\%$-significantieniveau. De verschillen in coëfficiënten zijn systematisch. Random Effects is **inconsistent** wegens endogeniteit. Het **Fixed Effects model** is het enig statistisch zuivere model!\n\n---\n\n### Alternatief 1: De Mundlak-benadering\n\nWat als we geclusterde standaardfouten willen gebruiken én tijdsinvariante variabelen willen schatten én de exogeniteit van $\\alpha_i$ willen toetsen? De klassieke Hausman-toets faalt hier, maar de **Mundlak (1978) benadering** lost dit op.\n\nMundlak veronderstelt dat het individuele effect lineair afhangt van de tijdgemiddelden van de tijdsvariërende variabelen:\n$$\\alpha_i = \\bar{\\mathbf{x}}_i' \\boldsymbol{\\gamma} + \\eta_i \\quad \\text{waarbij } \\text{Cov}(\\mathbf{x}_{it}, \\eta_i) = 0$$\n\nStappen in Stata:\n```stata\n* Bereken het tijdgemiddelde per individu voor alle tijdsvariërende variabelen\nbysort id: egen m_exper = mean(exper)\nbysort id: egen m_tenure = mean(tenure)\nbysort id: egen m_south = mean(south)\nbysort id: egen m_union = mean(union)\n\n* Schat een RE-regressie met de oorspronkelijke variabelen én hun gemiddelden, mét cluster-fouten!\nxtreg lwage educ c.exper##c.exper c.tenure##c.tenure black south union ///\n      c.m_exper##c.m_exper c.m_tenure##c.m_tenure m_south m_union, re vce(cluster id) theta\n```\n\n> [!important] Twee briljante eigenschappen van Mundlak\n> 1. **Coëfficiënten zijn identiek aan FE**: De geschatte coëfficiënten van de tijdsvariërende variabelen $\\mathbf{x}_{it}$ in deze RE-regressie zijn **exact gelijk** aan de Fixed Effects schattingen (bv. $\\hat{\\beta}_{\\text{exper}} = 0.0406$).\n> 2. **Robuuste Hausman-toets via Wald**: Een gezamenlijke toets op de gemiddelden (`testparm m_* c.m_*#c.m_*`) toetst exact $H_0: \\boldsymbol{\\gamma} = \\mathbf{0}$. Dit is conceptueel identiek aan de Hausman-nulhypothese, maar is wél **100% geldig met geclusterde standaardfouten**!\n\n---\n\n### Alternatief 2: De Hausman-Taylor schatter (`xthtaylor`)\n\nAls we een tijdsinvariante variabele hebben die endogeen is (zoals `educ`, die gecorreleerd is met $\\alpha_i$), en we haar effect toch willen schatten, gebruiken we de **Hausman-Taylor instrumentele-variabelenschatter**:\n\n```stata\nxthtaylor lwage educ exper exper2 tenure tenure2 black south union, ///\n          endog(educ) constant(educ black) vce(cluster id)\n```\n\nHausman-Taylor gebruikt de binnen- en tussenvariatie van de *exogene* variabelen als interne instrumenten voor de *endogene tijdsinvariante* variabele. In `nls_small.dta` stijgt het rendement op onderwijs hierdoor naar een indrukwekkende $18.1\\%$ ($p < 0.001$).\n\n---\n\n### Two-Way Fixed Effects (TWFE) met jaardummy's\n\nMacro-economische schokken (zoals inflatie, conjunctuurcycli of nieuwe nationale wetgeving) treffen alle individuen gelijktijdig in een bepaald jaar $t$. Om te controleren voor deze gemeenschappelijke tijdschokken voegen we **jaardummy's** toe:\n$$y_{it} = \\mathbf{x}_{it}' \\boldsymbol{\\beta} + \\alpha_i + \\lambda_t + \\varepsilon_{it}$$\nIn Stata specificeren we Two-Way Fixed Effects (TWFE) via factor-variabelen:\n\n```stata\nxtreg lwage educ c.exper##c.exper c.tenure##c.tenure black south union ib82.year, fe vce(cluster id)\n```\n\nWe toetsen vervolgens of de jaardummy's gezamenlijk significant zijn:\n\n```stata\ntestparm i.year\n```\n\nAls $p < 0.05$, moeten de jaardummy's definitief in het model worden gehandhaafd om vertekening door macro-economische schokken te voorkomen."
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "panel-structure-variation",
+   "level": 1,
+   "prompt": "Wat meet de **within-standaardafwijking** (`within std. dev.`) in de Stata-output van het commando `xtsum`?",
+   "explain": "De within-standaardafwijking meet de variatie van observaties $x_{it}$ rond het eigen individuele tijdsgemiddelde $\\bar{x}_i$. Dit toont zuiver de dynamiek over de tijd binnen hetzelfde individu.",
+   "options": [
+    "De zuivere variatie over de tijd binnen hetzelfde individu rond diens eigen persoonsgemiddelde",
+    "De spreiding van de individuele tijdsgemiddelden rond het totale steekproefgemiddelde van het panel",
+    "De totale ongecorrigeerde steekproefspreiding over alle individuen en jaargangen samengenomen",
+    "De verhouding van de variantie van het individuele effect tot de variantie van de idiosyncratische storing"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "type",
+   "skill": "panel-structure-variation",
+   "level": 2,
+   "prompt": "Welk Stata-commando declareert een dataset formeel als panel met individu-identificator `id` en tijdseenheid `year`?",
+   "explain": "Het commando `xtset id year` vertelt Stata dat de dataset een panelstructuur heeft met doorsnede-eenheid `id` en tijdseenheid `year`.",
+   "answers": [
+    "xtset id year"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p03",
+   "type": "cloze",
+   "skill": "panel-structure-variation",
+   "level": 2,
+   "prompt": "Vul de statistische eigenschappen van een tijdsinvariante variabele (zoals ras of geboorteland) in `xtsum` aan:",
+   "explain": "Voor een variabele die niet verandert in de tijd geldt $x_{it} = \\bar{x}_i$, waardoor de within-standaardafwijking exact 0 is. Stata centreert de within-statistiek rond het globale gemiddelde, waardoor min en max gelijk zijn aan $\\bar{x}$.",
+   "text": "Voor een tijdsinvariante variabele is de within-standaardafwijking exact {{0}} en zijn het binnen-minimum en maximum identiek aan het {{overall gemiddelde|gemiddelde}}."
+  },
+  {
+   "id": "p04",
+   "type": "match",
+   "skill": "panel-structure-variation",
+   "level": 2,
+   "prompt": "Koppel elke variantievorm uit `xtsum` aan de juiste econometrische definitie:",
+   "explain": "Overall meet de totale steekproefvariantie, between meet de spreiding tussen persoonsgemiddelden, en within meet veranderingen binnen hetzelfde individu over de tijd.",
+   "pairs": [
+    [
+     "Overall variatie",
+     "Spreiding van alle N × T observaties rond de totale steekproefmean"
+    ],
+    [
+     "Between variatie",
+     "Spreiding van de individuele gemiddelden rond de totale mean"
+    ],
+    [
+     "Within variatie",
+     "Spreiding van de observaties rond het eigen individuele gemiddelde"
+    ]
+   ]
+  },
+  {
+   "id": "p05",
+   "type": "mcq",
+   "skill": "fe-lsdv-demeaning",
+   "level": 1,
+   "prompt": "Wat gebeurt er met tijdsinvariante variabelen (zoals `black` of `educ`) wanneer je een Fixed Effects regressie schat via `xtreg, fe`?",
+   "explain": "De Within-transformatie trekt van elke variabele haar persoonsgemiddelde af ($x_{it} - \\bar{x}_i$). Omdat tijdsinvariante variabelen niet veranderen, is dit verschil voor elke observatie 0. Stata verwijdert ze automatisch wegens perfecte multicollineariteit.",
+   "options": [
+    "Ze vallen volledig weg wegens perfecte collineariteit met de persoonsgemiddelden",
+    "Ze worden automatisch geïnstrumenteerd met de tijdsgemiddelden van de tijdsvariërende variabelen",
+    "Ze krijgen een geschatte coëfficiënt die zuiver de between-variatie van het panel weerspiegelt",
+    "Ze veroorzaken een foutmelding waardoor Stata de schatting direct afbreekt"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p06",
+   "type": "type",
+   "skill": "fe-lsdv-demeaning",
+   "level": 2,
+   "prompt": "Welk post-estimation commando toetst na de Least Squares Dummy Variable regressie `reg lwage educ exper tenure i.id` of alle individuele effecten gezamenlijk statistisch significant zijn?",
+   "explain": "Met `testparm i.id` voert Stata een F-toets uit op de gezamenlijke hypothese dat alle $N-1$ individuele dummy's gelijk zijn aan nul ($H_0: \\alpha_1 = \\dots = \\alpha_N = 0$).",
+   "answers": [
+    "testparm i.id"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p07",
+   "type": "cloze",
+   "skill": "fe-lsdv-demeaning",
+   "level": 2,
+   "prompt": "Vul de wiskundige werking van de Within-transformatie aan:",
+   "explain": "Omdat \\alpha_i constant is over de tijd voor individu i, is haar tijdgemiddelde gelijk aan zichzelf (\\bar{\\alpha}_i = \\alpha_i). Daardoor valt \\alpha_i - \\bar{\\alpha}_i = 0 volledig weg.",
+   "text": "De Within-transformatie trekt van elke waarneming $y_{it}$ het individuele tijdgemiddelde {{y_bar_i|gemiddelde}} af, waardoor de ongeobserveerde heterogeniteit $\\alpha_i$ wegvalt omdat $\\alpha_i - \\bar{\\alpha}_i = {{0}}."
+  },
+  {
+   "id": "p08",
+   "type": "order",
+   "skill": "fe-lsdv-demeaning",
+   "level": 2,
+   "prompt": "Plaats de wiskundige stappen van de Within-transformatie (time-demeaning) in de juiste chronologische volgorde:",
+   "explain": "De transformatie vertrekt van het basisfunctiemodel, berekent vervolgens per individu het tijdsgemiddelde, trekt dit af zodat $\\alpha_i$ wegvalt, en schat ten slotte OLS op de ontgemiddelde waarden.",
+   "tiles": [
+    "Specificeer het panelmodel met individuele heterogeniteit: y_it = beta*x_it + alpha_i + eps_it",
+    "Bereken per individu het tijdsgemiddelde: y_bar_i = beta*x_bar_i + alpha_i + eps_bar_i",
+    "Trek het persoonsgemiddelde af van de oorspronkelijke waarneming: (y_it - y_bar_i)",
+    "Schat de getransformeerde vergelijking via OLS: y_ddot_it = beta*x_ddot_it + eps_ddot_it"
+   ]
+  },
+  {
+   "id": "p09",
+   "type": "mcq",
+   "skill": "re-gls-theta",
+   "level": 2,
+   "prompt": "Wat is de cruciale aanname van het Random Effects model ten aanzien van de individuele heterogeniteit $\\alpha_i$?",
+   "explain": "Random Effects vereist dat $\\text{Cov}(\\mathbf{x}_{it}, \\alpha_i) = 0$. Als deze aanname faalt, is de RE-schatter vertekend en inconsistent door omitted variable bias.",
+   "options": [
+    "De individuele heterogeniteit is ongecorreleerd met alle verklarende variabelen in alle perioden",
+    "De individuele heterogeniteit heeft een variantie die lineair toeneemt met het aantal tijdseenheden",
+    "De idiosyncratische storing is perfect gecorreleerd met de individuele heterogeniteit van het panel",
+    "Alle verklarende variabelen in het regressiemodel moeten strikt tijdsinvariant zijn over de tijd"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p10",
+   "type": "numeric",
+   "skill": "re-gls-theta",
+   "level": 2,
+   "prompt": "Stel dat in een Random Effects regressie de geschatte variantie van het individuele effect $\\sigma_u^2 = 0$ is. Wat is dan de wiskundige waarde van de quasi-demeaning parameter $\\theta$?",
+   "explain": "In de formule $\\theta = 1 - \\sqrt{\\sigma_e^2 / (T \\sigma_u^2 + \\sigma_e^2)}$, wanneer $\\sigma_u^2 = 0$, staat er $\\theta = 1 - \\sqrt{\\sigma_e^2 / \\sigma_e^2} = 1 - 1 = 0$. RE reduceert dan exact tot Pooled OLS.",
+   "value": 0.0,
+   "tolerance": 0.001
+  },
+  {
+   "id": "p11",
+   "type": "type",
+   "skill": "re-gls-theta",
+   "level": 2,
+   "prompt": "Welk Stata-commando voert na een Random Effects schatting de Breusch-Pagan Lagrange Multiplier (LM) toets uit?",
+   "explain": "Het commando `xttest0` toetst $H_0: \\text{Var}(u_i) = 0$ (geen random effects) tegen $H_1: \\text{Var}(u_i) > 0$.",
+   "answers": [
+    "xttest0"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p12",
+   "type": "cloze",
+   "skill": "re-gls-theta",
+   "level": 2,
+   "prompt": "Vul de hypothese en interpretatie van de Breusch-Pagan LM-toets aan:",
+   "explain": "Onder $H_0: \\sigma_u^2 = 0$ is er geen individuele heterogeniteit en volstaat Pooled OLS. Verwerping ($p < 0.05$) toont aan dat er significante panel-effecten aanwezig zijn.",
+   "text": "De Breusch-Pagan LM-toets (`xttest0`) toetst de nulhypothese dat de variantie van het individuele effect $\\text{Var}(u_i)$ gelijk is aan {{0}}; bij verwerping concluderen we dat er significante {{panel-effecten|random effects}} aanwezig zijn en Pooled OLS inefficiënt is."
+  },
+  {
+   "id": "p13",
+   "type": "mcq",
+   "skill": "model-selection-traps",
+   "level": 2,
+   "prompt": "Waarom weigert Stata het commando `hausman fixed random` als je de modellen hebt geschat met de optie `vce(cluster id)`?",
+   "explain": "De klassieke Hausman-toets steunt op het theorema van Hausman (1978) dat de variantie van het verschil gelijk is aan het verschil van de varianties: $\\text{Var}(b - B) = \\text{Var}(b) - \\text{Var}(B)$. Dit geldt uitsluitend als $B$ (de RE-schatter) asymptotisch efficiënt is onder $H_0$, wat niet-robuuste schattingen vereist.",
+   "options": [
+    "Omdat de klassieke Hausman-toets steunt op de aanname dat RE asymptotisch efficiënt is",
+    "Omdat geclusterde standaardfouten de vrijheidsgraden van de chi-kwadraat toets reduceren tot nul",
+    "Omdat Stata geclusterde standaardfouten alleen toestaat bij binaire en geordende logitmodellen",
+    "Omdat het Fixed Effects model met geclusterde fouten geen binnen-variantie meer overhoudt"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p14",
+   "type": "type",
+   "skill": "model-selection-traps",
+   "level": 2,
+   "prompt": "Met welk Stata-commando voer je de Hausman-toets uit na het opslaan van de niet-robuuste modellen `fixed_u` en `random_u`?",
+   "explain": "Het commando `hausman fixed_u random_u` vergelijkt de consistente schatting `fixed_u` met de onder $H_0$ efficiënte schatting `random_u`.",
+   "answers": [
+    "hausman fixed_u random_u"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p15",
+   "type": "cloze",
+   "skill": "model-selection-traps",
+   "level": 2,
+   "prompt": "Vul de Mundlak-benadering aan:",
+   "explain": "Mundlak berekent per individu het gemiddelde met `egen m_x = mean(x)`. Het toevoegen van deze gemiddelden aan een RE-model levert voor de tijdsvariërende variabelen exact dezelfde coëfficiënten op als Fixed Effects.",
+   "text": "In de Mundlak-procedure bereken je per individu het tijdsgemiddelde met `bysort id: egen m_x = {{mean(x)}}`; wanneer je deze gemiddelden toevoegt aan een RE-regressie, zijn de coëfficiënten van $x_{it}$ exact gelijk aan de {{Fixed Effects|FE}} schattingen."
+  },
+  {
+   "id": "p16",
+   "type": "order",
+   "skill": "model-selection-traps",
+   "level": 2,
+   "prompt": "Plaats de stappen om op examenniveau een Hausman-toets correct uit te voeren in de juiste volgorde:",
+   "explain": "De verplichte workflow: schat FE zonder vce(), schat RE zonder vce(), voer `hausman fe re` uit met FE als eerste argument, en interpreteer de resulterende p-waarde.",
+   "tiles": [
+    "Schat het Fixed Effects model zonder vce() en sla op: quietly eststo fe: xtreg y x, fe",
+    "Schat het Random Effects model zonder vce() en sla op: quietly eststo re: xtreg y x, re",
+    "Voer het Hausman-contrast uit met FE eerst: hausman fe re",
+    "Interpreteer de p-waarde: verwerp H0 bij p < 0.05 en concludeer dat FE vereist is"
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "type",
+   "skill": "panel-structure-variation",
+   "level": 2,
+   "prompt": "Welk Stata-commando gebruik je om de within-, between- en overall-statistieken op te vragen voor de variabelen `lwage`, `educ` en `exper`?",
+   "explain": "Het commando `xtsum lwage educ exper` genereert specifiek voor paneldata de ontleding in overall, between en within gemiddelden en standaardafwijkingen.",
+   "answers": [
+    "xtsum lwage educ exper"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m02",
+   "type": "cloze",
+   "skill": "panel-structure-variation",
+   "level": 2,
+   "prompt": "Vul de Stata-status van een paneldataset aan:",
+   "explain": "Een panel waarin elk individu voor exact dezelfde perioden en zonder gaten geobserveerd wordt, noemt Stata `strongly balanced`.",
+   "text": "Wanneer in een paneldataset alle 716 individuen over exact 5 tijdsperioden zonder hiaten worden geobserveerd, rapporteert Stata bij `xtset` dat het panel `strongly {{balanced}}` is."
+  },
+  {
+   "id": "m03",
+   "type": "mcq",
+   "skill": "panel-structure-variation",
+   "level": 2,
+   "prompt": "Wat gebeurt er met de regressieresultaten wanneer je `vce(cluster id)` toevoegt aan een Pooled OLS regressie (`reg y x`)?",
+   "explain": "Cluster-robuuste varianties passen uitsluitend de standaardfouten aan voor intra-groep correlatie en heteroskedasticiteit. De puntschattingen van OLS veranderen niet.",
+   "options": [
+    "De geschatte coëfficiënten blijven exact gelijk, maar de standaardfouten worden gecorrigeerd voor intra-groep correlatie",
+    "De geschatte coëfficiënten veranderen omdat Stata de within-transformatie toepast op alle verklarende variabelen",
+    "Alle tijdsinvariante variabelen vallen automatisch weg uit het model wegens perfecte collineariteit met de cluster",
+    "De standaardfouten worden kleiner omdat de effectieve steekproefomvang toeneemt met het aantal clusters"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m04",
+   "type": "order",
+   "skill": "panel-structure-variation",
+   "level": 2,
+   "prompt": "Plaats de stappen om een paneldata-analyse op te starten in Stata in de juiste volgorde:",
+   "explain": "De correcte volgorde: inladen (`use`), structuur vastleggen (`xtset`), variatie inspecteren (`xtsum`), en Pooled OLS benchmark met geclusterde fouten schatten.",
+   "tiles": [
+    "Laad de dataset in het geheugen via use nls_small, clear",
+    "Declareer de doorsnede- en tijdseenheid via xtset id year",
+    "Inspecteer de verdeling en binnen- en tussenspreiding via xtsum",
+    "Schat de initiële Pooled OLS benchmark met geclusterde fouten: reg y x, vce(cluster id)"
+   ]
+  },
+  {
+   "id": "m05",
+   "type": "type",
+   "skill": "fe-lsdv-demeaning",
+   "level": 2,
+   "prompt": "Typ het Stata-commando om een Fixed Effects regressie te schatten van `lwage` op `exper`, `tenure` en `union` met geclusterde standaardfouten op persoonsniveau `id`:",
+   "explain": "`xtreg lwage exper tenure union, fe vce(cluster id)` schat de within-parameters en corrigeert de standaardfouten voor correlatie binnen hetzelfde individu.",
+   "answers": [
+    "xtreg lwage exper tenure union, fe vce(cluster id)"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m06",
+   "type": "numeric",
+   "skill": "fe-lsdv-demeaning",
+   "level": 2,
+   "prompt": "In de output van een Fixed Effects regressie lees je af: `sigma_u = .40` en `sigma_e = .30`. Bereken de waarde van `rho` (de fractie van de variantie toe te schrijven aan $u_i$) afgerond op 2 decimalen.",
+   "explain": "$\\rho = \\frac{\\sigma_u^2}{\\sigma_u^2 + \\sigma_e^2} = \\frac{0.40^2}{0.40^2 + 0.30^2} = \\frac{0.16}{0.16 + 0.09} = \\frac{0.16}{0.25} = 0.64$.",
+   "value": 0.64,
+   "tolerance": 0.01
+  },
+  {
+   "id": "m07",
+   "type": "cloze",
+   "skill": "fe-lsdv-demeaning",
+   "level": 2,
+   "prompt": "Vul de interpretatie van de variantiecomponenten in de Stata Fixed Effects output aan:",
+   "explain": "De parameter `rho` meet de intraclass correlatie: de verhouding $\\sigma_u^2 / (\\sigma_u^2 + \\sigma_e^2)$, wat het aandeel van de individuele heterogeniteit $u_i$ in de totale residuele variantie aangeeft.",
+   "text": "In `xtreg, fe` meet `sigma_u` de standaardafwijking van de individuele heterogeniteit $u_i$, meet `sigma_e` de standaardafwijking van de idiosyncratische fout $\\varepsilon_{it}$, en geeft `rho` de fractie weer van de totale residuele variantie toe te schrijven aan {{u_i|individuele heterogeniteit|individuele effecten}}."
+  },
+  {
+   "id": "m08",
+   "type": "mcq",
+   "skill": "fe-lsdv-demeaning",
+   "level": 2,
+   "prompt": "In de LSDV-regressie `reg lwage educ exper tenure i.id` rapporteert Stata een coëfficiënt voor `educ` van 0.210, terwijl `educ` in `xtreg, fe` wegvalt. Hoe verklaar je dit verschil?",
+   "explain": "In LSDV leidt het opnemen van $N-1$ dummy's naast een tijdsinvariante variabele en een constante tot collineariteit. Stata lost dit intern op door arbitrair een extra dummy weg te laten, waardoor de coëfficiënt van `educ` een betekenisloos numeriek artefact wordt. `xtreg, fe` toont correct dat tijdsinvariante variabelen niet identificeerbaar zijn.",
+   "options": [
+    "Omdat Stata bij LSDV met N-1 dummy's één dummy weglaat, waardoor educ collineariteit vertoont met de overblijvende basis",
+    "Omdat LSDV en FE fundamenteel verschillende schatters zijn met een andere asymptotische verdeling voor tijdsinvariante variabelen",
+    "Omdat educ in feite tijdsvariërend is in LSDV maar door xtreg automatisch als categorische factor wordt behandeld",
+    "Omdat LSDV de variantie van educ kunstmatig opblaast door geclusterde standaardfouten toe te voegen aan de individuele dummy's"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "re-gls-theta",
+   "level": 2,
+   "prompt": "Welke optie voeg je toe aan `xtreg y x, re` om de geschatte waarde van de transformatieparameter $\\theta$ in de tabel af te drukken?",
+   "explain": "Met de optie `theta` toont Stata onderaan de tabel de geschatte waarde van $\\theta = 1 - \\sqrt{\\sigma_e^2 / (T \\sigma_u^2 + \\sigma_e^2)}$.",
+   "answers": [
+    "theta"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m10",
+   "type": "cloze",
+   "skill": "re-gls-theta",
+   "level": 2,
+   "prompt": "Vul de limieteigenschappen van de quasi-demeaning transformatie in:",
+   "explain": "Wanneer $\\theta \\to 1$, trekt het Random Effects model $100\\%$ van het tijdsgemiddelde af, waardoor de quasi-demeaning transformatie mathematisch samenvalt met de Within-transformatie van Fixed Effects.",
+   "text": "Wanneer het aantal tijdsperioden $T \\to \\infty$ of de individuele variantie $\\sigma_u^2$ veel groter is dan de idiosyncratische variantie $\\sigma_e^2$, nadert de transformatieparameter $\\theta$ naar {{1}} en convergeert de Random Effects schatter naar de {{Fixed Effects|FE}} schatter."
+  },
+  {
+   "id": "m11",
+   "type": "mcq",
+   "skill": "re-gls-theta",
+   "level": 2,
+   "prompt": "Een onderzoeker voert `xttest0` uit na een Random Effects schatting en verkrijgt `chibar2(01) = 3859.28` met `Prob > chibar2 = 0.0000`. Wat is de juiste statistische conclusie?",
+   "explain": "`xttest0` toetst $H_0: \\text{Var}(u_i) = 0$. Een statistisch significante uitkomst ($p < 0.05$) betekent dat de individuele heterogeniteit niet verwaarloosbaar is en Pooled OLS inefficiënt is.",
+   "options": [
+    "Verwerp H0: er is significante individuele heterogeniteit, waardoor Pooled OLS ontoereikend en inefficiënt is",
+    "Behoud H0: er is geen bewijs voor individuele heterogeniteit, waardoor Pooled OLS de voorkeur verdient boven RE",
+    "Verwerp H0: de aanname van exogene individuele effecten faalt, waardoor Fixed Effects verplicht gekozen moet worden",
+    "Behoud H0: de regressoren zijn endogeen gecorreleerd met de tijdsinvariante storing in het Fixed Effects model"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m12",
+   "type": "numeric",
+   "skill": "re-gls-theta",
+   "level": 2,
+   "prompt": "Bereken de quasi-demeaning parameter $\\theta$ in een gebalanceerd panel met $T = 4$, $\\sigma_e^2 = 0.04$ en $\\sigma_u^2 = 0.16$. Rond af op 2 decimalen.",
+   "explain": "$\\theta = 1 - \\sqrt{\\frac{\\sigma_e^2}{T \\sigma_u^2 + \\sigma_e^2}} = 1 - \\sqrt{\\frac{0.04}{4(0.16) + 0.04}} = 1 - \\sqrt{\\frac{0.04}{0.68}} = 1 - \\sqrt{0.05882} = 1 - 0.2425 = 0.7575 \\approx 0.76$.",
+   "value": 0.76,
+   "tolerance": 0.02
+  },
+  {
+   "id": "m13",
+   "type": "mcq",
+   "skill": "model-selection-traps",
+   "level": 2,
+   "prompt": "Na het uitvoeren van `hausman fixed_u random_u` rapporteert Stata: `chi2(6) = 20.73` met `Prob > chi2 = 0.0021`. Welke conclusie trekt de onderzoeker?",
+   "explain": "De nulhypothese van de Hausman-toets luidt dat er geen systematisch verschil is tussen FE en RE (RE is consistent en efficiënt). Omdat $p = 0.0021 < 0.05$, verwerpen we $H_0$. RE is inconsistent door endogeniteit; FE is vereist.",
+   "options": [
+    "Verwerp de nulhypothese: de individuele effecten zijn gecorreleerd met de regressoren; rapporteer het Fixed Effects model",
+    "Behoud de nulhypothese: de verschillen zijn niet systematisch; rapporteer het efficiëntere Random Effects model",
+    "Verwerp de nulhypothese: het panel bevat geen tijdseffecten; rapporteer de Pooled OLS schatting met geclusterde fouten",
+    "Behoud de nulhypothese: het Fixed Effects model is inconsistent door perfecte collineariteit met tijdsinvariante factoren"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m14",
+   "type": "type",
+   "skill": "model-selection-traps",
+   "level": 2,
+   "prompt": "Welk Stata-commando gebruik je om na de regressie `xtreg y x ib82.year, fe vce(cluster id)` de gezamenlijke significantie van de jaardummy's te toetsen?",
+   "explain": "`testparm i.year` voert een gezamenlijke Wald- of F-toets uit op alle dummy's van de factorvariabele `year` om na te gaan of er significante tijdseffecten zijn.",
+   "answers": [
+    "testparm i.year"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m15",
+   "type": "cloze",
+   "skill": "model-selection-traps",
+   "level": 2,
+   "prompt": "Vul de examentrap rond de Hausman-toets aan:",
+   "explain": "Stata weigert `hausman` als de voorafgaande modellen met `vce(cluster id)` of `vce(robust)` zijn geschat, omdat het Hausman-theorema vereist dat RE asymptotisch efficiënt is onder de theoretische GLS-matrix.",
+   "text": "Om de Hausman-toets in Stata uit te voeren, moeten zowel het FE- als het RE-model vooraf worden geschat {{zonder vce|zonder vce()|zonder geclusterde standaardfouten}}, omdat de klassieke test de aanname vereist dat RE asymptotisch efficiënt is onder de theoretische {{GLS|Generalized Least Squares}} variantie-covariantiematrix."
+  },
+  {
+   "id": "m16",
+   "type": "multi",
+   "skill": "model-selection-traps",
+   "level": 3,
+   "prompt": "Welke van de volgende stellingen over de Mundlak-benadering zijn econometrisch correct? (Selecteer alle juiste antwoorden)",
+   "explain": "Mundlak voegt de individuele tijdgemiddelden van tijdsvariërende variabelen toe aan een RE-regressie. Dit levert numeriek identieke coëfficiënten op als Fixed Effects voor de tijdsvariërende variabelen, behoudt tijdsinvariante variabelen, en maakt het mogelijk om met geclusterde fouten endogeniteit te toetsen via `testparm m_*`.",
+   "options": [
+    "De Mundlak-procedure modelleert het individuele effect als een lineaire functie van de persoonsgemiddelden van de tijdsvariërende variabelen",
+    "De coëfficiënten van de tijdsvariërende variabelen in het Mundlak RE-model zijn numeriek exact gelijk aan de Fixed Effects schattingen",
+    "De gezamenlijke toets op de tijdsgemiddelden (testparm m_*) biedt een endogeniteitstoets die wél compatibel is met geclusterde standaardfouten",
+    "De Mundlak-benadering vereist dat alle tijdsinvariante variabelen uit de dataset worden verwijderd alvorens de gemiddelden te berekenen"
+   ],
+   "answers": [
+    0,
+    1,
+    2
+   ]
+  }
+ ],
+ "production": {
+  "type": "explain",
+  "prompt": "Je onderzoekt de impact van 'shall-issue' verborgen wapenwetten (`shall = 1`) op de gewelddadige criminaliteit (`lvio = ln(vio)`) in de Verenigde Staten aan de hand van `Guns.dta` (51 staten, 1977-1999).\nIn een initiële Pooled OLS regressie met controlevariabelen (`incarc_rate`, `density`, `avginc`, `pop`, demografie) vind je een coëfficiënt voor `shall` van -0.368 ($p = 0.002$).\nWanneer je vervolgens State Fixed Effects toevoegt (`xtreg ..., fe vce(cluster stateid)`), daalt de coëfficiënt naar -0.046 ($p = 0.275$).\nWanneer je bovendien jaardummy's toevoegt (`i.year`), wordt de coëfficiënt -0.028 ($p = 0.495$), waarbij `testparm i.year` een $F(22, 50) = 21.62$ ($p = 0.0000$) oplevert.\nDe Breusch-Pagan LM-toets (`xttest0`) geeft $\\bar{\\chi}^2 = 6920.82$ ($p = 0.0000$) en de Hausman-toets zonder geclusterde fouten geeft $\\chi^2(29) = 41.63$ ($p = 0.0606$).\nIn de Mundlak-regressie met `m_*` vind je voor `shall` exact -0.02799.\n\nBeantwoord de volgende 4 empirische vragen:\n1. Hoe verklaar je econometrisch de dramatische daling in magnitude en het verlies van statistische significantie van `shall` tussen Pooled OLS (-36.8%) en State Fixed Effects (-4.6%)?\n2. Waarom is het Two-Way Fixed Effects model (met `i.year`) hier te verkiezen boven het model met enkel State Fixed Effects, en hoe ondersteunt `testparm i.year` dit?\n3. Interpreteer de uitkomsten van de Breusch-Pagan LM-toets en de Hausman-toets. Welke modelkeuze dicteren deze toetsen op het 5%- en 10%-niveau?\n4. Waarom is het resultaat van de Mundlak-benadering voor `shall` (-0.028) zo opmerkelijk, en wat is het grote voordeel van de Mundlak-methode boven de klassieke Hausman-toets?",
+  "model": "1. Omitted Variable Bias in Pooled OLS: De sterke negatieve correlatie in Pooled OLS (-36.8%) werd veroorzaakt door ongeobserveerde, tijdsinvariante heterogeniteit tussen staten (zoals historische wapencultuur, conservatisme, geografie of institutionele kwaliteit). Staten die 'shall-issue' wetten aannamen verschilden fundamenteel van staten die dat niet deden. Zodra we State Fixed Effects toevoegen, veegt de Within-transformatie (time-demeaning) alle tijdsinvariante heterogeniteit weg en kijken we uitsluitend naar binnen-staat veranderingen over de tijd. Het effect verschrompelt tot -4.6% en is statistisch insignificant (p = 0.275), wat aantoont dat Pooled OLS zwaar vertekend was.\n\n2. Noodzaak van Two-Way Fixed Effects: Naast staatsspecifieke heterogeniteit spelen er nationale macro-economische trends en schokken (zoals de nationale daling van criminaliteit in de jaren 90 en federale handhavingscampagnes) die alle staten gelijktijdig beïnvloeden. De gezamenlijke F-toets via 'testparm i.year' toont F(22, 50) = 21.62 met p = 0.0000. Omdat de tijdseffecten zeer sterk significant zijn, moeten de jaardummy's definitief worden opgenomen om te voorkomen dat nationale trends ten onrechte aan de wapenwetgeving worden toegeschreven.\n\n3. Modelkeuze via LM- en Hausman-toetsen: De Breusch-Pagan LM-toets (xttest0) verwerpt H0: Var(u_i) = 0 overtuigend (chibar2 = 6920.82, p = 0.0000), waardoor Pooled OLS statistisch ontoereikend en inefficiënt is. De Hausman-toets levert chi2(29) = 41.63 met p = 0.0606 op. Op het conventionele 5%-significantieniveau kunnen we H0 net niet verwerpen (wat formeel RE zou toelaten), maar op het 10%-niveau verwerpen we H0 wél (wat FE vereist). Gezien de sterke a priori redenen om correlatie tussen staatseigenschappen en wetgeving te verwachten, is Fixed Effects (of Two-Way FE) econometrisch de meest robuuste keuze.\n\n4. Mundlak-benadering en geclusterde standaardfouten: In de Mundlak-regressie met gemiddelden 'm_*' is de coëfficiënt voor shall exact -0.02799, wat tot op het laatste decimaal identiek is aan de Fixed Effects schatting. Het grote voordeel van Mundlak boven de klassieke Hausman-toets is dat Mundlak wél 100% compatibel is met geclusterde standaardfouten (vce(cluster stateid)). Bovendien biedt een gezamenlijke F-toets op de gemiddelden (testparm m_*) een robuuste endogeniteitstoets die ongevoelig is voor niet-positief definiete verschilmatrices.",
+  "rubric": [
+   "Juiste verklaring van omitted variable bias in Pooled OLS en het neutraliseren van staatsspecifieke heterogeniteit door State Fixed Effects.",
+   "Onderbouwing van Two-Way FE met jaardummy's om nationale trends op te vangen, ondersteund door de testparm i.year uitkomst (p < 0.001).",
+   "Correcte econometrische interpretatie van de Breusch-Pagan LM-toets (afwijzing Pooled OLS) en de Hausman-toets (afweging 5% versus 10% niveau).",
+   "Verklaring van de Mundlak-benadering: numerieke gelijkheid van de coëfficiënt met FE en de mogelijkheid om geclusterde fouten te hanteren."
+  ]
+ },
+ "cards": [
+  {
+   "id": "c01",
+   "front": "Hoe declareer je in Stata een panelstructuur met eenheid `id` en tijdsvariabele `year`?",
+   "back": "`xtset id year`",
+   "answers": [
+    "xtset id year"
+   ],
+   "lang": "code",
+   "skill": "panel-structure-variation"
+  },
+  {
+   "id": "c02",
+   "front": "Welk commando ontleedt panelvariabelen in overall-, between- en within-statistieken?",
+   "back": "`xtsum`",
+   "answers": [
+    "xtsum"
+   ],
+   "lang": "code",
+   "skill": "panel-structure-variation"
+  },
+  {
+   "id": "c03",
+   "front": "Hoe schat je een Fixed Effects model met geclusterde standaardfouten op `id`?",
+   "back": "`xtreg y x, fe vce(cluster id)`",
+   "answers": [
+    "xtreg y x, fe vce(cluster id)"
+   ],
+   "lang": "code",
+   "skill": "fe-lsdv-demeaning"
+  },
+  {
+   "id": "c04",
+   "front": "Hoe schat je een Random Effects model met geclusterde standaardfouten en weergave van $\\theta$?",
+   "back": "`xtreg y x, re vce(cluster id) theta`",
+   "answers": [
+    "xtreg y x, re vce(cluster id) theta"
+   ],
+   "lang": "code",
+   "skill": "re-gls-theta"
+  },
+  {
+   "id": "c05",
+   "front": "Welk Stata-commando voert de Breusch-Pagan Lagrange Multiplier (LM) toets voor random effects uit?",
+   "back": "`xttest0`",
+   "answers": [
+    "xttest0"
+   ],
+   "lang": "code",
+   "skill": "re-gls-theta"
+  },
+  {
+   "id": "c06",
+   "front": "Wat is de cruciale syntax-eis vóór het uitvoeren van `hausman fixed random` in Stata?",
+   "back": "Schat FE en RE eerst **zonder** `vce()` (niet-robuust), want `hausman` weigert geclusterde of robuuste fouten.",
+   "skill": "model-selection-traps"
+  },
+  {
+   "id": "c07",
+   "front": "Welk commando berekent in de Mundlak-benadering het persoonsgemiddelde van variabele `x`?",
+   "back": "`bysort id: egen m_x = mean(x)`",
+   "answers": [
+    "bysort id: egen m_x = mean(x)",
+    "bysort id: egen m_x=mean(x)"
+   ],
+   "lang": "code",
+   "skill": "model-selection-traps"
+  },
+  {
+   "id": "c08",
+   "front": "Hoe toets je na een Two-Way Fixed Effects regressie de gezamenlijke significantie van de jaardummy's `i.year`?",
+   "back": "`testparm i.year`",
+   "answers": [
+    "testparm i.year"
+   ],
+   "lang": "code",
+   "skill": "model-selection-traps"
+  }
+ ],
+ "sources": [
+  "Applied Econometrics Computer Class 7 (UAntwerpen)",
+  "Wooldridge, J. M. (2010). Econometric Analysis of Cross Section and Panel Data. MIT Press.",
+  "Cameron, A. C., & Trivedi, P. K. (2010). Microeconometrics Using Stata. Stata Press."
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-26"
+ }
+}

@@ -93,5 +93,18 @@
     "goal": "Doel: netwerkarchitectuur, routering (RIB/FIB, OSPF, BGP) en edge gateways (NAT, DHCP, DNS, bufferbloat) tot in detail doorgronden — met als einddoel het bouwen van een applicatiespecifieke reasoning LLM die autonoom netwerkstoringen op routers oplost.",
     "emoji": "🌐",
     "promptName": "Netwerken & Autonomous Routing"
+  },
+  "econometrics": {
+    "title": "Toegepaste Econometrie",
+    "short": "Econometrie",
+    "subtitle": "De 8 computerklassen in Stata: van data-handling, dummy's en 2SLS tot Logit/Probit, Tobit/Heckman, Paneldata (FE/RE) en Beleidsevaluatie (DiD, RDD, Synth).",
+    "glyph": "β̂",
+    "glyphMono": true,
+    "lang": "nl",
+    "levels": "Computer Class 1 → 8",
+    "icon": "chart",
+    "goal": "Doel: alle empirische schattingsmethoden, toetsen en Stata-commando's uit de 8 computerklassen van Applied Econometrics (2128TEWECP) zelfstandig programmeren, interpreteren en rapporteren op het examen — van data preparation en IV/2SLS tot binaire/multinominale modellen, selectiemodellen, paneldata en program evaluation.",
+    "emoji": "📊",
+    "promptName": "Toegepaste Econometrie (Applied Econometrics)"
   }
 }

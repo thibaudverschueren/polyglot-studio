@@ -1,0 +1,559 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "econometrics",
+ "id": 5,
+ "roadmap": "econometrics-05-multinomial-ordered-models",
+ "kind": "core",
+ "title": "Multinominale, Geordende & Telmodellen",
+ "subtitle": "Multinomial logit (mlogit, RRR), de IIA-aanname, conditional logit (asclogit), geordend probit (oprobit) en Poisson-regressie",
+ "level": "expert",
+ "minutes": 45,
+ "summary": "Wanneer de afhankelijke variabele niet continu is maar bestaat uit nominale keuzes, geordende categorieën of discrete tellingen, faalt lineaire regressie (Ordinary Least Squares, OLS). In deze les leer je ongeordende keuzes modelleren met multinomial logit (`mlogit`) en Relative Risk Ratios (RRR), de cruciale Independence of Irrelevant Alternatives (IIA) aanname toetsen met de Hausman-test, alternatief-specifieke kenmerken schatten met conditional logit (`asclogit`), ordinale schalen analyseren met geordend probit (`oprobit`) via drempelwaarden (cut points), en teldata modelleren met Poisson-regressie en Incident Rate Ratios (IRR).",
+ "objectives": [
+  {
+   "id": "mlogit-rrr",
+   "text": "Multinomiale logitmodellen specificeren via mlogit, een basiscategorie instellen en Relative Risk Ratios (RRR) correct interpreteren ten opzichte van de referentiegroep."
+  },
+  {
+   "id": "iia-asclogit",
+   "text": "De Independence of Irrelevant Alternatives (IIA) aanname en de rode bus/blauwe bus paradox begrijpen, de Hausman-McFadden toets uitvoeren, en conditional logit (asclogit) toepassen bij alternatief-specifieke kenmerken."
+  },
+  {
+   "id": "oprobit-cuts",
+   "text": "Geordende uitkomsten modelleren met geordend probit (oprobit) via een latente index $y^*$, drempelwaarden (cut points) interpreteren en marginale effecten per ordinale categorie berekenen via margins."
+  },
+  {
+   "id": "poisson-irr",
+   "text": "Teldata ($y \\ge 0$) analyseren met Poisson-regressie, Incident Rate Ratios (IRR) interpreteren, de aanname van equidispersie toetsen en marginale effecten evalueren op verschillende percentielen."
+  }
+ ],
+ "sections": [
+  {
+   "id": "multinomial-logit-rrr",
+   "title": "Multinomiaal logit: modelstructuur, referentiecategorie en Relative Risk Ratios",
+   "md": "In micro-economisch onderzoek analyseren we veelvuldig uitkomsten die bestaan uit een discrete verzameling van drie of meer ongeordende alternatieven. Denk aan stemkeuze bij een verkiezing (zoals Remain, Leave of Niet-stemmen in het British Election Study, BES-survey), de keuze van een afgestudeerde voor een sector (overheid, consultancy of onderwijs), of vervoerskeuze (auto, trein of bus).\n\n### Waarom falen lineaire regressiemodellen?\nEen lineair regressiemodel (zoals Ordinary Least Squares, OLS) of Lineair Kansmodel (LPM) is conceptueel onbruikbaar voor nominale variabelen. Wanneer we Remain coderen als 0, Leave als 1 en Niet-stemmen als 2, dwingt OLS een willekeurige numerieke rangorde en gelijke afstanden af ($2 - 1 = 1 - 0$). Dit impliceert ten onrechte dat Niet-stemmen 'twee keer zo groot' is als Leave en dat de afstand tussen Leave en Remain identiek is aan de afstand tussen Niet-stemmen en Leave. Bij nominale categorieën bestaat er echter geen enkele logische ordening.\n\n### De wiskundige formulering van het Multinomiaal Logitmodel\nHet multinomiale logitmodel (Multinomial Logit, MNL) lost dit op door voor elk alternatief $j \\in \\{0, 1, \\dots, J-1\\}$ de keuzekans als een logistische functie te specificeren:\n\n$$P(y_i = j \\mid \\mathbf{x}_i) = \\frac{\\exp(\\mathbf{x}_i \\boldsymbol{\\beta}_j)}{\\sum_{k=0}^{J-1} \\exp(\\mathbf{x}_i \\boldsymbol{\\beta}_k)}$$\n\nOmdat de kansen over alle $J$ alternatieven moeten sommeren tot 1 ($\\sum_{j=0}^{J-1} P(y_i = j \\mid \\mathbf{x}_i) = 1$), ontstaat er een identificatieprobleem: een constante optellen bij alle parametervectoren $\\boldsymbol{\\beta}_j$ verandert de kansen niet. Ter identificatie normaliseren we één categorie tot referentiecategorie (basisgroep), doorgaans $j = 0$, waarbij we $\\boldsymbol{\\beta}_0 = \\mathbf{0}$ stellen.\n\nHierdoor reduceren de kansen voor de overige categorieën ($j = 1, \\dots, J-1$) tot:\n\n$$P(y_i = j \\mid \\mathbf{x}_i) = \\frac{\\exp(\\mathbf{x}_i \\boldsymbol{\\beta}_j)}{1 + \\sum_{k=1}^{J-1} \\exp(\\mathbf{x}_i \\boldsymbol{\\beta}_k)}$$\n\nen voor de referentiecategorie $j = 0$:\n\n$$P(y_i = 0 \\mid \\mathbf{x}_i) = \\frac{1}{1 + \\sum_{k=1}^{J-1} \\exp(\\mathbf{x}_i \\boldsymbol{\\beta}_k)}$$\n\n### Relative Risk Ratios (RRR)\nDe relatieve kansverhouding (odds of relative risk) van alternatief $j$ ten opzichte van de basiscategorie $0$ is gelijk aan:\n\n$$\\frac{P(y_i = j \\mid \\mathbf{x}_i)}{P(y_i = 0 \\mid \\mathbf{x}_i)} = \\exp(\\mathbf{x}_i \\boldsymbol{\\beta}_j)$$\n\nWanneer een verklarende variabele $x_k$ met 1 eenheid toeneemt, verandert deze kansverhouding met een factor:\n\n$$RRR_{jk} = \\exp(\\beta_{jk}) = \\frac{\\frac{P(y=j \\mid x_k + 1)}{P(y=0 \\mid x_k + 1)}}{\\frac{P(y=j \\mid x_k)}{P(y=0 \\mid x_k)}}$$\n\n> [!rule] Interpretatieregel voor Relative Risk Ratios (RRR)\n> - Als $RRR_{jk} > 1$ (dus $\\beta_{jk} > 0$): de odds om optie $j$ te kiezen ten opzichte van de basisoptie nemen toe met $(RRR_{jk} - 1) \\times 100\\%$.\n> - Als $RRR_{jk} < 1$ (dus $\\beta_{jk} < 0$): de odds om optie $j$ te kiezen ten opzichte van de basisoptie nemen af met $(1 - RRR_{jk}) \\times 100\\%$.\n> - Als $RRR_{jk} = 1$ (dus $\\beta_{jk} = 0$): de variabele heeft geen effect op de relatieve kansverhouding.\n\n### Stata Syntaxis en Computerklas Output (`bes2019.dta`)\nIn Computerklas 5 analyseren we het Britse stemgedrag (`euRefVoteW10`):\n- `0`: Stay/remain in the EU (49.12%)\n- `1`: Leave the EU (49.50%)\n- `2`: I would/will not vote (1.39%)\n\nHet Stata-commando met survey-gewichten (`[pw=...]`), robuuste standaardfouten en basisgroep 0 luidt:\n\n```stata\nmlogit euRefVoteW10 i.age1834 i.age3554 i.age5564 i.female i.Scotland i.Wales [pw=wt_full_W10], robust b(0) rrr\n```\n\nIn de Stata-output verschijnen twee aparte panelen met schattingen (één voor `Leave_the_EU` en één voor `I_would_will_not_vote`). De basisgroep `Stay_remain_in_the_EU` krijgt geen coëfficiënten omdat $\\boldsymbol{\\beta}_0 = \\mathbf{0}$.\n\nVoor de dummy `age1834` in het Leave-paneel vinden we een $RRR = 0.3106$ ($z = -12.44, p < 0.001$).\n**Economische interpretatie**: Voor jongvolwassenen (18-34 jaar) liggen de odds om voor 'Leave' te stemmen ten opzichte van 'Stay' ceteris paribus $(1 - 0.3106) \\times 100\\% = 68.94\\%$ lager dan voor 65-plussers (de weggelaten referentiegroep van leeftijd). Jongeren hadden dus een uitgesproken voorkeur om in de Europese Unie te blijven.\n\nVoor `female` in hetzelfde paneel is de $RRR = 1.0537$ ($p = 0.354$). Vrouwen hebben 5.37% hogere odds om voor Leave te kiezen dan mannen, maar dit verschil is statistisch niet significant bij het 5%-niveau.\n\n### Hypothesetoetsing in Multinomiaal Logit\nOmdat een variabele in elk paneel een eigen coëfficiënt heeft, onderscheidt Stata verschillende Wald-toetsen:\n1. `test 1.female`: Toetst of geslacht gezamenlijk gelijk aan nul is over álle vergelijkingen ($H_0: \\beta_{\\text{female, Leave}} = 0 \\text{ én } \\beta_{\\text{female, NoVote}} = 0$). Dit heeft 2 vrijheidsgraden ($J-1$).\n2. `test [#2]`: Toetst of álle verklarende variabelen in paneel 2 (`Leave`) gezamenlijk nul zijn.\n3. `test [#2]1.female`: Toetst het effect van de vrouwendummy uitsluitend binnen paneel 2.\n\nTot slot berekenen we de Average Marginal Effects (AME) met `margins, dydx(female)`. Een fundamentele wiskundige eigenschap is dat de som van de marginale effecten over alle mogelijke keuzes altijd exact gelijk is aan nul: $\\sum_{j=0}^{J-1} \\frac{\\partial P(y=j)}{\\partial x_k} = 0$."
+  },
+  {
+   "id": "iia-en-conditional-logit",
+   "title": "De IIA-aanname, Hausman-toets en conditional logit (asclogit)",
+   "md": "Het multinomiale logitmodel bezit een zeer sterke theoretische eigenschap die zowel zijn grootste kracht als zijn grootste zwakte vormt: de **Independence of Irrelevant Alternatives (IIA)** aanname.\n\n### De IIA-eigenschap en de Rode Bus / Blauwe Bus Paradox\nBeschouw de verhouding van de keuzekansen tussen twee willekeurige alternatieven $j$ en $k$:\n\n$$\\frac{P(y_i = j \\mid \\mathbf{x}_i)}{P(y_i = k \\mid \\mathbf{x}_i)} = \\frac{\\frac{\\exp(\\mathbf{x}_i \\boldsymbol{\\beta}_j)}{\\sum_m \\exp(\\mathbf{x}_i \\boldsymbol{\\beta}_m)}}{\\frac{\\exp(\\mathbf{x}_i \\boldsymbol{\\beta}_k)}{\\sum_m \\exp(\\mathbf{x}_i \\boldsymbol{\\beta}_m)}} = \\frac{\\exp(\\mathbf{x}_i \\boldsymbol{\\beta}_j)}{\\exp(\\mathbf{x}_i \\boldsymbol{\\beta}_k)} = \\exp(\\mathbf{x}_i (\\boldsymbol{\\beta}_j - \\boldsymbol{\\beta}_k))$$\n\nMerk op dat de gemeenschappelijke noemer wegvalt! De relatieve kansverhouding tussen keuze $j$ en keuze $k$ hangt **uitsluitend** af van de kenmerken van alternatieven $j$ en $k$, en is volkomen onafhankelijk van welke andere alternatieven aanwezig zijn in de keuzeset.\n\nDaniel McFadden (Nobelprijs Economie 2000) illustreerde het gevaar hiervan met de beroemde **rode bus / blauwe bus paradox**:\n- Een forens kan kiezen tussen de Auto ($A$) en een Rode Bus ($RB$). Veronderstel dat beide opties even aantrekkelijk zijn: $P(A) = 0.5$ en $P(RB) = 0.5$. De kansverhouding is $\\frac{P(A)}{P(RB)} = 1$.\n- De busmaatschappij introduceert nu een Blauwe Bus ($BB$), die technisch en qua comfort identiek is aan de rode bus.\n- In werkelijkheid stappen alleen busreizigers over: de kans op de auto blijft $P(A) = 0.5$, en de busreizigers verdelen zich gelijk: $P(RB) = 0.25$ en $P(BB) = 0.25$.\n- Onder de IIA-aanname moet echter de kansverhouding tussen de auto en de rode bus exact 1 blijven: $\\frac{P(A)}{P(RB)} = 1$. Evenzo moet $\\frac{P(A)}{P(BB)} = 1$ en $\\frac{P(RB)}{P(BB)} = 1$ gelden. Omdat alle kansen moeten sommeren tot 1, dwingt multinomial logit af dat $P(A) = 1/3, P(RB) = 1/3, P(BB) = 1/3$.\n- De introductie van een louter blauw geverfde bus zou volgens het MNL-model het marktaandeel van de auto doen kelderen van 50% naar 33%! Dit is economisch absurd en treedt op zodra alternatieven onderlinge substituten zijn.\n\n### De Hausman-McFadden Toets op IIA\nOm te verifiëren of IIA empirisch standhoudt, vergelijken we de schattingen van het volledige model met een gereduceerd model waarin één alternatief wordt weggelaten:\n- Schat het volledige model op alle keuzes en bewaar de coëfficiënten $\\hat{\\boldsymbol{\\beta}}_f$ en covariantiematrix $\\hat{\\mathbf{V}}_f$.\n- Verwijder één keuze (bijv. $y = 2$) en schat het gereduceerde model op de overblijvende waarnemingen met coëfficiënten $\\hat{\\boldsymbol{\\beta}}_r$ en covariantiematrix $\\hat{\\mathbf{V}}_r$.\n- Als IIA geldt, zijn beide schatters consistent en verschillen ze niet systematisch.\n\nDe toetsingsgrootheid volgt een Chi-kwadraat verdeling:\n\n$$H = (\\hat{\\boldsymbol{\\beta}}_r - \\hat{\\boldsymbol{\\beta}}_f)' [\\hat{\\mathbf{V}}_r - \\hat{\\mathbf{V}}_f]^{-1} (\\hat{\\boldsymbol{\\beta}}_r - \\hat{\\boldsymbol{\\beta}}_f) \\sim \\chi^2(K)$$\n\nIn Stata:\n```stata\neststo full: mlogit euRefVoteW10 i.age1834 i.age3554 i.age5564 i.female i.Scotland i.Wales, b(0) nolog\neststo part: mlogit euRefVoteW10 i.age1834 i.age3554 i.age5564 i.female i.Scotland i.Wales if euRefVoteW10!=2, b(0) nolog\nhausman full part\n```\n\n> [!caution] Cruciale Examenvalkuil: Hausman vereist niet-robuuste schatters!\n> Schat de modellen voor de Hausman-toets **nooit** met `robust`, `vce(robust)` of survey-weights (`[pw=...]`). De toetsingsgrootheid steunt op de wiskundige eigenschap dat de efficiënte schatter de asymptotische variantie $\\mathbf{V}_r - \\mathbf{V}_f$ heeft. Met robuuste variantieschatters gaat deze eigenschap verloren en kan de matrix $[\\hat{\\mathbf{V}}_r - \\hat{\\mathbf{V}}_f]$ niet-positief definiet worden, waardoor Stata de toets weigert met een foutmelding!\n\nBij het EU-referendum levert de toets een p-waarde op van $p = 0.9997$ ($\\chi^2(6) = 0.17$). We verwerpen de nulhypothese niet: de IIA-aanname wordt hier niet geschonden.\n\n### Conditional Logit (`asclogit`): Alternatief-specifieke variabelen\nIn `mlogit` variëren regressoren tussen individuen (zoals leeftijd of geslacht), maar zijn ze constant over de alternatieven. Wat als we variabelen hebben die juist **per alternatief** variëren, zoals de prijs of reistijd van vervoersmiddelen, of frisdrankprijzen in `cola.dta`?\n\nIn dat geval gebruiken we **alternative-specific conditional logit** (`asclogit`). Dit model vereist dat de data in **lang formaat (long format)** staan, waarbij elk individu meerdere rijen heeft (één rij per beschikbaar alternatief in de keuzeset).\n\n```stata\nuse cola, clear\nbysort id: gen alt = _n\nlab def alt_lab 1 \"Pepsi\" 2 \"SevenUp\" 3 \"Coke\"\nlab val alt alt_lab\nasclogit choice price, case(id) alternatives(alt) basealternative(Coke) nolog r\n```\n\nHierbij specificeert:\n- `choice`: binaire indicator (1 als het merk gekozen is, 0 anders);\n- `price`: het alternatief-specifieke attribuut dat varieert per frisdrankmerk;\n- `case(id)`: de unieke identificator van de consument;\n- `alternatives(alt)`: de variabele die aangeeft over welk merk de rij gaat.\n\nMet `margins, dydx(*)` evalueren we de eigen-prijselasticiteit en kruiselingse prijselasticiteit. Als de prijs van Pepsi met 10 dollarcent stijgt, daalt de kans dat een consument Pepsi kiest met 4.8 procentpunt (eigen prijseffect). Tegelijkertijd stijgt de kans om SevenUp te kiezen met 2.8 procentpunt (kruiselings prijseffect), wat bewijst dat SevenUp een direct substituut is voor Pepsi."
+  },
+  {
+   "id": "geordend-probit-en-drempelwaarden",
+   "title": "Geordende keuzemodellen: latente index, cut points en marginale effecten",
+   "md": "Veel economische enquêtes meten meningen, subjectief welzijn of gedrag op een ordinale schaal:\n- Tevredenheid: 0 = ontevreden, 1 = neutraal, 2 = tevreden.\n- Zelfgerapporteerde gezondheid: 1 = slecht, 2 = matig, 3 = goed, 4 = uitstekend.\n- Regelgeving en normen in de European Social Survey (ESS): hoe belangrijk vindt iemand het om regels te volgen (`ipfrule1` in `ESS_limited.dta`), gecodeerd als 0 (zeer belangrijk), 1 (matig) en 2 (helemaal niet belangrijk).\n\n### Waarom noch OLS noch Multinomial Logit?\n- **OLS** faalt omdat het de schaal kardinaal behandelt. Het veronderstelt dat de overgang van categorie 0 naar 1 exact even groot is als de overgang van categorie 1 naar 2.\n- **Multinomial Logit** faalt omdat het de intrinsieke ordening volkomen negeert. Door voor elke categorie afzonderlijke parametervectoren te schatten, gooit MNL nuttige informatie weg en verliest het statistische efficiëntie.\n\n### Het Latente Variabele Model\nEen geordend probitmodel (Ordered Probit, `oprobit`) veronderstelt het bestaan van een continue, niet-waargenomen latente variabele $y_i^*$:\n\n$$y_i^* = \\mathbf{x}_i \\boldsymbol{\\beta} + \\varepsilon_i, \\quad \\varepsilon_i \\sim \\mathcal{N}(0, 1)$$\n\nWe observeren de discrete ordinale uitkomst $y_i \\in \\{0, 1, \\dots, J-1\\}$ op basis van onbekende drempelwaarden (threshold parameters of cut points) $\\kappa_1 < \\kappa_2 < \\dots < \\kappa_{J-1}$:\n\n$$y_i = \\begin{cases}\n0 & \\text{als } y_i^* \\le \\kappa_1 \\\\\n1 & \\text{als } \\kappa_1 < y_i^* \\le \\kappa_2 \\\\\n2 & \\text{als } \\kappa_2 < y_i^* \\le \\kappa_3 \\\\\n\\vdots & \\\\\nJ-1 & \\text{als } y_i^* > \\kappa_{J-1}\n\\end{cases}$$\n\nDe theoretische keuzekansen zijn af te leiden via de cumulatieve standaardnormale verdelingsfunctie $\\Phi(\\cdot)$:\n\n$$P(y_i = 0 \\mid \\mathbf{x}_i) = P(\\mathbf{x}_i \\boldsymbol{\\beta} + \\varepsilon_i \\le \\kappa_1) = \\Phi(\\kappa_1 - \\mathbf{x}_i \\boldsymbol{\\beta})$$\n\n$$P(y_i = 1 \\mid \\mathbf{x}_i) = \\Phi(\\kappa_2 - \\mathbf{x}_i \\boldsymbol{\\beta}) - \\Phi(\\kappa_1 - \\mathbf{x}_i \\boldsymbol{\\beta})$$\n\n$$P(y_i = 2 \\mid \\mathbf{x}_i) = 1 - \\Phi(\\kappa_2 - \\mathbf{x}_i \\boldsymbol{\\beta})$$\n\n### De Grote Examenvalkuil: Coëfficiënten vs Marginale Effecten\nIn tegenstelling tot lineaire regressie mag je de coëfficiënten $\\boldsymbol{\\beta}$ van een geordend probitmodel **nooit** interpreteren als marginale effecten op de geobserveerde categorieën!\n\nDe parameter $\\beta_k$ meet de verandering in de latente index $y^*$ bij een toename van $x_k$ met 1 eenheid: $\\frac{\\partial y^*}{\\partial x_k} = \\beta_k$.\nWanneer $\\beta_k > 0$, schuift de verdeling van $y^*$ naar rechts:\n1. De kans op de **laagste categorie** ($y = 0$) daalt ondubbelzinnig:\n   $$\\frac{\\partial P(y=0 \\mid \\mathbf{x})}{\\partial x_k} = -\\phi(\\kappa_1 - \\mathbf{x}\\boldsymbol{\\beta}) \\beta_k < 0$$\n2. De kans op de **hoogste categorie** ($y = J-1$) stijgt ondubbelzinnig:\n   $$\\frac{\\partial P(y=J-1 \\mid \\mathbf{x})}{\\partial x_k} = \\phi(\\kappa_{J-1} - \\mathbf{x}\\boldsymbol{\\beta}) \\beta_k > 0$$\n3. **Maar voor alle tussenliggende categorieën ($j = 1, \\dots, J-2$) is het effect ambigu!**\n   $$\\frac{\\partial P(y=j \\mid \\mathbf{x})}{\\partial x_k} = [\\phi(\\kappa_{j-1} - \\mathbf{x}\\boldsymbol{\\beta}) - \\phi(\\kappa_j - \\mathbf{x}\\boldsymbol{\\beta})] \\beta_k$$\n\nHet teken van het marginale effect op categorie 1 hangt volledig af van welke normale dichtheid $\\phi(\\cdot)$ groter is! Een statistisch significante positieve coëfficiënt $\\beta_k > 0$ kan voor een tussenliggende categorie dus perfect een **negatief** marginaal effect opleveren.\n\n> [!pitfall] Rapporteer nooit enkel oprobit-coëfficiënten op het examen!\n> Wie op het examen schrijft dat een positieve $\\beta$ betekent dat de kans op categorie 1 stijgt, verliest direct punten. Bereken altijd Average Marginal Effects (AME) per categorie via `margins, dydx(*)` en controleer dat de effecten over alle categorieën exact optellen tot 0: $\\sum_{j=0}^{J-1} \\frac{\\partial P(y=j)}{\\partial x_k} = 0$.\n\n### Stata Implementatie en Hit Rate (`ESS_limited.dta`)\n```stata\noprobit ipfrule1 female eduyrs hinctnta agea child i.country, robust nolog\nmargins, dydx(*)\n```\nIn de output vinden we voor `female` een positieve coëfficiënt $\\beta = 0.1327$ ($p < 0.001$).\nKijken we naar de AME's:\n- $P(y=0)$ daalt met 4.4 procentpunt ($p < 0.001$).\n- $P(y=1)$ daalt licht met 0.2 procentpunt ($p = 0.052$).\n- $P(y=2)$ stijgt met 4.5 procentpunt ($p < 0.001$).\n\nOm te evalueren hoe goed het model voorspelt, berekenen we de classificatietabel (hit rate) door voor elke observatie de categorie met de hoogste voorspelde kans toe te wijzen:\n```stata\npredict prob*\negen max_prob = rowmax(prob*)\ngen pred_ch = 0 if max_prob==prob1\nreplace pred_ch = 1 if max_prob==prob2\nreplace pred_ch = 2 if max_prob==prob3\ncount if pred_ch==ipfrule1\ndi r(N)/e(N)\n```\nIn de computerklas voorspelt het model 2.056 van de 4.435 gevallen correct, wat neerkomt op een succespercentage van 46.4%."
+  },
+  {
+   "id": "poisson-en-telmodellen",
+   "title": "Telmodellen: Poisson-regressie, Incident Rate Ratios en equidispersie",
+   "md": "Veel economische variabelen zijn niet-negatieve gehele getallen ($y \\in \\{0, 1, 2, 3, \\dots\\}$): het aantal doktersbezoeken (`num_visits` in `health.dta`), patenten van een bedrijf, claims bij een verzekeraar, of het aantal dagen werkloos.\n\n### Kenmerken van count data\nWanneer we een histogram van teldata inspecteren via `hist num_visits, frequency`, vallen twee eigenschappen op:\n1. Een opeenhoping van observaties op nul (de overgrote meerderheid van de patiënten bezoekt de arts nul keer per jaar).\n2. Een sterke scheefheid naar rechts met een lange staart van individuen met veel bezoeken.\n\nOLS is hier ongeschikt omdat lineaire voorspellingen $\\mathbf{x}_i \\boldsymbol{\\beta}$ negatief kunnen uitvallen (een verwachting van -0.5 doktersbezoeken is onzinnig) en omdat de variantie inherent toeneemt met het verwachte aantal gebeurtenissen (heteroskedasticiteit).\n\n### Het Poisson-regressiemodel\nHet Poisson-model veronderstelt dat de kans op $k$ gebeurtenissen gegeven $\\mathbf{x}_i$ een Poisson-verdeling volgt:\n\n$$P(y_i = k \\mid \\mathbf{x}_i) = \\frac{\\exp(-\\lambda_i) \\lambda_i^k}{k!}, \\quad k = 0, 1, 2, \\dots$$\n\nOm te garanderen dat de conditionele verwachting strikt positief is ($\\lambda_i > 0$), specificeren we de verwachting als een exponentiële functie van de regressoren:\n\n$$E(y_i \\mid \\mathbf{x}_i) = \\lambda_i = \\exp(\\mathbf{x}_i \\boldsymbol{\\beta}) = \\exp(\\beta_0 + \\beta_1 x_{1i} + \\dots + \\beta_K x_{Ki})$$\n\nof equivalent in logaritmische vorm (de log-link functie):\n\n$$\\ln(E(y_i \\mid \\mathbf{x}_i)) = \\mathbf{x}_i \\boldsymbol{\\beta}$$\n\n### Interpretatie: Semi-elasticiteit en Incident Rate Ratios (IRR)\nDe ruwe coëfficiënt $\\beta_k$ meet de semi-elasticiteit van de verwachte uitkomst:\n\n$$\\frac{\\partial \\ln E(y \\mid \\mathbf{x})}{\\partial x_k} = \\frac{1}{E(y \\mid \\mathbf{x})} \\frac{\\partial E(y \\mid \\mathbf{x})}{\\partial x_k} = \\beta_k$$\n\nEen toename van $x_k$ met 1 eenheid verhoogt het verwachte aantal gebeurtenissen met ongeveer $(\\beta_k \\times 100)\\%$.\n\nOm het exacte multiplicatieve effect te bekijken, exponentiëren we de coëfficiënten tot **Incident Rate Ratios (IRR)** via de optie `irr`:\n\n$$IRR_k = \\exp(\\beta_k) = \\frac{E(y \\mid x_k + 1, \\mathbf{x}_{-k})}{E(y \\mid x_k, \\mathbf{x}_{-k})}$$\n\nIn `health.dta` schatten we:\n```stata\npoisson num_visits age gender income hscore, robust irr\n```\nVoor leeftijd (`age`) vinden we $\\beta = 0.0211$ ($z = 6.47, p < 0.001$) en $IRR = 1.0213$.\n**Economische interpretatie**: Elk extra levensjaar verhoogt het verwachte aantal artsenbezoeken met een factor 1.0213, oftewel een stijging van $(1.0213 - 1) \\times 100\\% = 2.13\\%$, ceteris paribus. Dit effect is statistisch zeer significant.\n\n### Niet-lineaire Marginale Effecten op Verschillende Percentielen\nHet marginale effect op het verwachte aantal bezoeken is niet-lineair en afhankelijk van de basisverwachting $\\lambda_i$:\n\n$$\\frac{\\partial E(y \\mid \\mathbf{x})}{\\partial x_k} = \\beta_k \\exp(\\mathbf{x}\\boldsymbol{\\beta}) = \\beta_k \\lambda_i$$\n\nPatiënten met een hogere verwachting $\\lambda_i$ (zoals ouderen of personen met chronische aandoeningen) ervaren in absolute termen een veel sterkere toename in bezoeken dan gezonde jongeren:\n- Op 19-jarige leeftijd (`margins, dydx(age) at(age=19)`): het marginale effect is $0.0025$ bezoeken per extra levensjaar.\n- Op 72-jarige leeftijd (`margins, dydx(age) at(age=72)`): het marginale effect is $0.0077$ bezoeken per extra levensjaar.\nVoor een 72-jarige patiënt is de absolute toename per levensjaar dus meer dan drie keer zo groot als voor een jongvolwassene!\n\n### De Equidispersie Aanname en Overdispersie\nEen kenmerkende eigenschap van de theoretische Poisson-verdeling is **equidispersie**: de conditionele variantie is exact gelijk aan de conditionele verwachting:\n\n$$\\text{Var}(y_i \\mid \\mathbf{x}_i) = E(y_i \\mid \\mathbf{x}_i) = \\lambda_i$$\n\nIn vrijwel alle empirische teldata is deze aanname geschonden door onwaargenomen heterogeniteit: de variantie is aanzienlijk groter dan het gemiddelde. Dit fenomeen heet **overdispersie** ($\\text{Var}(y \\mid \\mathbf{x}) > E(y \\mid \\mathbf{x})$).\n\n> [!warning] Gevaar van overdispersie zonder robuuste standaardfouten\n> Bij overdispersie blijven de Poisson-puntschatters $\\hat{\\boldsymbol{\\beta}}$ consistent (mits de verwachtingsfunctie correct gespecificeerd is), maar de klassieke standaardfouten zijn zwaar **onderschat**. Hierdoor zijn t-statistieken veel te hoog en p-waarden kunstmatig klein. Onderzoekers trekken dan ten onrechte de conclusie dat variabelen statistisch significant zijn (Type I-fout).\n> **Oplossingen**:\n> 1. Gebruik altijd robuuste standaardfouten via `poisson ..., robust` (Quasi-Maximum Likelihood Estimation, QMLE).\n> 2. Schat een Negatief Binomiaal model (`nbreg ..., robust`), dat overdispersie expliciet modelleert met een extra dispersieparameter $\\alpha$."
+  }
+ ],
+ "practice": [
+  {
+   "id": "p-mlogit-01",
+   "type": "mcq",
+   "skill": "mlogit-rrr",
+   "level": 1,
+   "prompt": "Waarom is een standaard lineaire regressie (OLS) fundamenteel ongeschikt voor het analyseren van een nominale uitkomstvariabele zoals stemkeuze bij een referendum (0 = Remain, 1 = Leave, 2 = Niet gestemd)?",
+   "options": [
+    "De numerieke codering legt een willekeurige rangorde en gelijke afstanden op die inhoudelijk betekenisloos zijn.",
+    "Lineaire regressie vereist dat de afhankelijke variabele strikt continu en logaritmisch getransformeerd is.",
+    "OLS schat in dit geval automatisch te veel parameters omdat er geen referentiecategorie gekozen kan worden."
+   ],
+   "answer": 0,
+   "explain": "Bij een nominale variabele hebben de getallen 0, 1 en 2 geen kwantitatieve betekenis of rangorde. OLS behandelt 2 als 'dubbel zo groot' als 1 en groter dan 0, wat bij politieke keuzes inhoudelijk absurd is. Multinomiaal logit modelleert de keuzekansen ten opzichte van een gekozen referentiecategorie zonder enige ordening te veronderstellen."
+  },
+  {
+   "id": "p-mlogit-02",
+   "type": "numeric",
+   "skill": "mlogit-rrr",
+   "level": 2,
+   "prompt": "In een multinomiaal logitmodel voor stemkeuze (`mlogit euRefVoteW10 ..., b(0) rrr`) bedraagt de geschatte Relative Risk Ratio (RRR) voor de leeftijdsgroep 18–34 jaar in het Leave-paneel precies $0.31$ (ten opzichte van de basiscategorie Stay en vergeleken met 65-plussers). Met hoeveel procent is de relatieve kans (odds) om Leave te kiezen lager voor deze jongeren dan voor 65-plussers? (Geef een positief percentage afgerond op 1 decimaal, bv. 69.0).",
+   "value": 69.0,
+   "tolerance": 0.5,
+   "unit": "%",
+   "explain": "De procentuele verandering in de odds (relatieve kansverhouding) ten opzichte van de basisoptie is gelijk aan $(RRR - 1) \\times 100\\%$. Hier geldt $(0.31 - 1) \\times 100\\% = -69.0\\%$. De odds om Leave te kiezen ten opzichte van Stay liggen voor jongvolwassenen dus 69,0% lager dan voor 65-plussers."
+  },
+  {
+   "id": "p-mlogit-03",
+   "type": "cloze",
+   "skill": "mlogit-rrr",
+   "level": 2,
+   "prompt": "Vul de ontbrekende opties van het Stata-commando in om een multinomiaal logitmodel te schatten met referentiecategorie 0 en geëxponentieerde coëfficiënten (Relative Risk Ratios):",
+   "text": "`mlogit euRefVoteW10 i.age1834 i.female, base({{0}}) {{rrr}} robust`",
+   "explain": "In Stata stelt `base(0)` (of `b(0)`) expliciet categorie 0 in als referentiegroep. De optie `rrr` rapporteert Relative Risk Ratios (de geëxponentieerde coëfficiënten $\\exp(\\beta)$) in plaats van de ruwe logit-coëfficiënten."
+  },
+  {
+   "id": "p-mlogit-04",
+   "type": "match",
+   "skill": "mlogit-rrr",
+   "level": 2,
+   "prompt": "Koppel elk Stata post-estimation hypothesecommando na `mlogit` aan de juiste getoetste hypothese:",
+   "pairs": [
+    [
+     "test 1.female",
+     "Toetst of de dummy female gezamenlijk nul is over álle keuzepanelen tegelijk."
+    ],
+    [
+     "test [#2]",
+     "Toetst of álle verklarende variabelen in paneel 2 gezamenlijk gelijk aan nul zijn."
+    ],
+    [
+     "test [#2]1.female",
+     "Toetst of het effect van female uitsluitend in paneel 2 gelijk aan nul is."
+    ]
+   ],
+   "explain": "`test 1.female` voert een gezamenlijke Wald-toets uit over alle vergelijkingen ($J-1$ restricties). `test [#2]` toetst de algemene fit van het tweede keuzepaneel. `test [#2]1.female` toetst uitsluitend de parameter van female in het tweede paneel."
+  },
+  {
+   "id": "p-iia-01",
+   "type": "mcq",
+   "skill": "iia-asclogit",
+   "level": 1,
+   "prompt": "Wat impliceert de Independence of Irrelevant Alternatives (IIA) aanname in Daniel McFaddens klassieke rode bus / blauwe bus voorbeeld?",
+   "options": [
+    "De kansverhouding tussen de auto en de rode bus blijft exact gelijk na introductie van een identieke blauwe bus.",
+    "De introductie van een blauwe bus halveert uitsluitend het aantal reizigers dat met de rode bus reist.",
+    "Het totale marktaandeel van openbaar vervoer stijgt altijd lineair met het aantal aangeboden buskleuren."
+   ],
+   "answer": 0,
+   "explain": "IIA dwingt af dat de relatieve kansverhouding $P(\\text{auto})/P(\\text{rode bus})$ niet mag veranderen door het toevoegen van een derde alternatief (de blauwe bus). Omdat de blauwe bus een perfect substituut is voor de rode bus, zou in werkelijkheid alleen het busaandeel versnipperen, maar IIA dwingt af dat de auto evenveel marktaandeel inlevert als de rode bus."
+  },
+  {
+   "id": "p-iia-02",
+   "type": "cloze",
+   "skill": "iia-asclogit",
+   "level": 2,
+   "prompt": "Vul de ontbrekende commando's in voor het uitvoeren van een Hausman-toets op de IIA-aanname in Stata:",
+   "text": "`eststo full: mlogit y x, b(0) nolog`\n`eststo part: mlogit y x if y!=2, b(0) nolog`\n`{{hausman}} full {{part}}`",
+   "explain": "Voor de Hausman-toets schat je eerst het volledige model (`eststo full`) en vervolgens hetzelfde model op een gereduceerde keuzeset waarbij één alternatief ontbreekt (`eststo part`). Daarna vergelijkt `hausman full part` de coëfficiëntenvectoren van beide schattingen."
+  },
+  {
+   "id": "p-iia-03",
+   "type": "match",
+   "skill": "iia-asclogit",
+   "level": 2,
+   "prompt": "Koppel het modeltype aan de aard van de verklarende variabelen en de vereiste datastructuur:",
+   "pairs": [
+    [
+     "Multinomial logit (mlogit)",
+     "Regressoren variëren per individu (bv. leeftijd, inkomen), brede datastructuur met 1 rij per persoon."
+    ],
+    [
+     "Conditional logit (asclogit)",
+     "Regressoren variëren per alternatief (bv. prijs, reistijd), lange datastructuur met meerdere rijen per persoon."
+    ],
+    [
+     "Ordered probit (oprobit)",
+     "Afhankelijke variabele heeft een natuurlijke rangorde met geordende categorieën (bv. tevredenheid 0-2)."
+    ]
+   ],
+   "explain": "Bij `mlogit` zijn de regressoren persoonskenmerken (individual-specific). Bij `asclogit` variëren de attributen over de alternatieven zelf (alternative-specific, zoals productprijzen in `cola.dta`). `oprobit` modelleert geordende uitkomsten via een latente index."
+  },
+  {
+   "id": "p-iia-04",
+   "type": "type",
+   "skill": "iia-asclogit",
+   "level": 2,
+   "prompt": "Geef het Stata-commando om een conditional logit-model te schatten waarbij `choice` de binaire afhankelijke keuzevariabele is, `price` de alternatief-specifieke regressor is, het individu geïdentificeerd wordt door `id` en de alternatieven door `alt`:",
+   "answers": [
+    "asclogit choice price, case(id) alternatives(alt)",
+    "asclogit choice price, case(id) alt(alt)",
+    "asclogit choice price, case(id) alternatives(alt) robust",
+    "asclogit choice price, case(id) alternatives(alt) r"
+   ],
+   "lang": "code",
+   "explain": "Het commando `asclogit choice price, case(id) alternatives(alt)` schat een alternative-specific conditional logit model. De optie `case(id)` groepeert de rijen per beslisser en `alternatives(alt)` definieert de alternatieven binnen elke keuzeset."
+  },
+  {
+   "id": "p-oprobit-01",
+   "type": "mcq",
+   "skill": "oprobit-cuts",
+   "level": 2,
+   "prompt": "In een geordend probitmodel (`oprobit`) met drie categorieën ($y \\in \\{0, 1, 2\\}$) is de geschatte coëfficiënt voor opleidingsjaren $\\beta_{\\text{educ}} = +0.15$ ($p < 0.001$). Wat weten we met wiskundige zekerheid over de marginale effecten?",
+   "options": [
+    "De kans op de laagste categorie daalt en de kans op de hoogste categorie stijgt, maar het effect op categorie 1 is ambigu.",
+    "De kans op alle drie de categorieën stijgt omdat de coëfficiënt strikt positief en statistisch significant is.",
+    "Het marginale effect op categorie 1 is gegarandeerd positief omdat een hogere latente score iedereen naar boven stuwt."
+   ],
+   "answer": 0,
+   "explain": "Een positieve coëfficiënt $\\beta > 0$ verschuift de verdeling van de latente variabele $y^*$ ondubbelzinnig naar rechts. Hierdoor daalt de kans op de laagste categorie ($P(y=0)$) en stijgt de kans op de hoogste categorie ($P(y=2)$). Voor tussenliggende categorieën hangt het teken echter af van de dichtheden bij de drempelwaarden: $\\frac{\\partial P(y=1)}{\\partial x} = [\\phi(\\kappa_1 - \\mathbf{x}\\boldsymbol{\\beta}) - \\phi(\\kappa_2 - \\mathbf{x}\\boldsymbol{\\beta})] \\beta$, wat zowel positief als negatief kan zijn!"
+  },
+  {
+   "id": "p-oprobit-02",
+   "type": "numeric",
+   "skill": "oprobit-cuts",
+   "level": 2,
+   "prompt": "Beschouw een geordend probitmodel met drempelwaarde $\\kappa_1 = 0.50$. Voor een specifiek individu bedraagt de lineaire index $\\mathbf{x}_i \\boldsymbol{\\beta} = 0.50$. Gegeven dat de standaardnormale cumulatieve verdelingsfunctie $\\Phi(0) = 0.50$, wat is de voorspelde kans $P(y_i = 0)$? (Geef de kans als decimaal getal, bv. 0.50).",
+   "value": 0.5,
+   "tolerance": 0.01,
+   "explain": "In een geordend probitmodel geldt $P(y_i = 0 \\mid \\mathbf{x}_i) = \\Phi(\\kappa_1 - \\mathbf{x}_i \\boldsymbol{\\beta})$. Met $\\kappa_1 = 0.50$ en $\\mathbf{x}_i \\boldsymbol{\\beta} = 0.50$ krijgen we $\\Phi(0.50 - 0.50) = \\Phi(0) = 0.50$ (ofwel 50%)."
+  },
+  {
+   "id": "p-oprobit-03",
+   "type": "cloze",
+   "skill": "oprobit-cuts",
+   "level": 2,
+   "prompt": "Vul de ontbrekende termen in over de structuur van het geordend probitmodel:",
+   "text": "De geobserveerde ordinale variabele $y$ wordt gegenereerd door een continue latente variabele $y^* = \\mathbf{x}\\boldsymbol{\\beta} + \\varepsilon$. De grenzen tussen de categorieën worden bepaald door geschatte {{drempelwaarden|cut points}} (cuts) en bij Probit volgt de storingsterm $\\varepsilon$ een standaardnormale verdeling met variantie gelijk aan {{1}}.",
+   "explain": "In geordend probit worden de overgangen tussen categorieën gemodelleerd via drempelwaarden (cut points $\\kappa$). Ter identificatie wordt de variantie van de storingsterm genormaliseerd op 1 (bij geordend logit is dat $\\pi^2/3$)."
+  },
+  {
+   "id": "p-oprobit-04",
+   "type": "order",
+   "skill": "oprobit-cuts",
+   "level": 2,
+   "prompt": "Zet de Stata-commando's in de juiste chronologische volgorde om na `oprobit` de voorspelde keuzes te bepalen en de fractie correcte voorspellingen (hit rate) te berekenen:",
+   "tiles": [
+    "predict prob*",
+    "egen max_prob = rowmax(prob*)",
+    "gen pred_ch = 0 if max_prob==prob1",
+    "count if pred_ch==ipfrule1"
+   ],
+   "explain": "Eerst bereken je de voorspelde kansen per categorie via `predict prob*`. Vervolgens zoek je met `egen max_prob = rowmax(prob*)` de hoogste kans per observatie. Daarna wijs je de categorie met de hoogste kans toe via `gen pred_ch = ...` en vergelijk je die met de feitelijke keuze via `count if pred_ch == actual`."
+  },
+  {
+   "id": "p-poisson-01",
+   "type": "mcq",
+   "skill": "poisson-irr",
+   "level": 1,
+   "prompt": "Wat is een fundamenteel theoretisch probleem wanneer je een telvariabele ($y \\in \\{0, 1, 2, \\dots\\}$) analyseert met een lineair regressiemodel (OLS)?",
+   "options": [
+    "OLS kan negatieve voorspellingen produceren voor tellingen, wat fysisch onmogelijk is.",
+    "OLS levert inconsistente puntschatters op omdat teldata altijd een normale verdeling moeten volgen.",
+    "OLS kan niet omgaan met nulwaarden en verwijdert alle observaties met $y = 0$ automatisch."
+   ],
+   "answer": 0,
+   "explain": "Bij teldata kan $y$ nooit negatief zijn ($y \\ge 0$). Een lineair model $\\mathbf{x}\\boldsymbol{\\beta}$ kan gemakkelijk negatieve waarden voorspellen bij lage waarden van $x$. Poisson-regressie lost dit op door de verwachting exponentieel te specificeren: $E(y|\\mathbf{x}) = \\exp(\\mathbf{x}\\boldsymbol{\\beta}) > 0$."
+  },
+  {
+   "id": "p-poisson-02",
+   "type": "numeric",
+   "skill": "poisson-irr",
+   "level": 2,
+   "prompt": "In een Poisson-regressie op doktersbezoeken (`poisson num_visits age ..., robust irr`) is de geschatte Incident Rate Ratio (IRR) voor leeftijd gelijk aan $1.021$. Met hoeveel procent stijgt het verwachte aantal doktersbezoeken per extra levensjaar? (Geef het percentage afgerond op 1 decimaal, bv. 2.1).",
+   "value": 2.1,
+   "tolerance": 0.1,
+   "unit": "%",
+   "explain": "De Incident Rate Ratio geeft de multiplicatieve factor weer: $IRR = \\exp(\\beta) = 1.021$. De procentuele verandering is $(IRR - 1) \\times 100\\% = (1.021 - 1) \\times 100\\% = 2.1\\%$. Elk extra levensjaar verhoogt het verwachte aantal bezoeken met 2,1%."
+  },
+  {
+   "id": "p-poisson-03",
+   "type": "cloze",
+   "skill": "poisson-irr",
+   "level": 2,
+   "prompt": "Vul de ontbrekende statistische eigenschappen van het Poisson-model in:",
+   "text": "De centrale aanname van het klassieke Poisson-model is {{equidispersie}}, wat inhoudt dat de conditionele variantie gelijk is aan de conditionele {{verwachting|verwachtingswaarde}}. Wanneer de variantie groter is dan de verwachting, spreekt men van {{overdispersie}}.",
+   "explain": "Equidispersie betekent $\\text{Var}(y|\\mathbf{x}) = E(y|\\mathbf{x}) = \\lambda$. In de praktijk is er bijna altijd sprake van overdispersie (variantie > gemiddelde), waardoor standaardfouten zonder de optie `robust` zwaar worden onderschat."
+  },
+  {
+   "id": "p-poisson-04",
+   "type": "type",
+   "skill": "poisson-irr",
+   "level": 2,
+   "prompt": "Geef het Stata-commando om een Poisson-regressie te schatten van `num_visits` op `age` en `income`, met robuuste standaardfouten en de resultaten gerapporteerd als Incident Rate Ratios:",
+   "answers": [
+    "poisson num_visits age income, robust irr",
+    "poisson num_visits age income, r irr",
+    "poisson num_visits age income, irr robust",
+    "poisson num_visits age income, irr r"
+   ],
+   "lang": "code",
+   "explain": "`poisson num_visits age income, robust irr` schat het Poisson-model met quasi-maximum likelihood (robuuste standaardfouten tegen overdispersie) en toont Incident Rate Ratios in plaats van de log-coëfficiënten."
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m-mlogit-01",
+   "type": "type",
+   "skill": "mlogit-rrr",
+   "level": 2,
+   "prompt": "Geef het Stata-commando om na `mlogit vote educ age` te toetsen of de variabele `educ` een statistisch significant effect heeft binnen vergelijking 2 (de tweede keuzecategorie):",
+   "answers": [
+    "test [#2]educ",
+    "test [#2] educ",
+    "test [2]educ",
+    "test [2] educ"
+   ],
+   "lang": "code",
+   "explain": "`test [#2]educ` toetst specifiek de nulhypothese dat de coëfficiënt van `educ` gelijk is aan 0 in de tweede vergelijking van het multinomiale model."
+  },
+  {
+   "id": "m-mlogit-02",
+   "type": "numeric",
+   "skill": "mlogit-rrr",
+   "level": 2,
+   "prompt": "In een multinomiaal logitmodel is de geschatte coëfficiënt van inkomen voor categorie 2 ten opzichte van basiscategorie 0 gelijk aan $\\beta = 0.6931$. Bereken de bijbehorende Relative Risk Ratio (RRR). Rond af op 2 decimalen.",
+   "value": 2.0,
+   "tolerance": 0.05,
+   "explain": "De Relative Risk Ratio is gedefinieerd als $RRR = \\exp(\\beta)$. Hier geldt $\\exp(0.6931) \\approx 2.00$. Dit betekent dat de odds om categorie 2 te kiezen t.o.v. de basiscategorie verdubbelen bij elke eenheid toename in inkomen."
+  },
+  {
+   "id": "m-mlogit-03",
+   "type": "mcq",
+   "skill": "mlogit-rrr",
+   "level": 2,
+   "prompt": "Wat is de wiskundige eigenschap van Average Marginal Effects (AME) berekend via `margins, dydx(*)` na een multinomiaal logitmodel?",
+   "options": [
+    "De som van de marginale effecten over alle mogelijke keuzecategorieën is voor elke regressor exact gelijk aan nul.",
+    "De som van de marginale effecten over alle keuzecategorieën is altijd gelijk aan één.",
+    "De marginale effecten hebben in elk keuzepaneel gegarandeerd hetzelfde voorteken als de geschatte coëfficiënt."
+   ],
+   "answer": 0,
+   "explain": "Omdat de kansen op alle alternatieven voor elk individu moeten sommeren tot 1 ($\\sum_j P(y=j|\\mathbf{x}) = 1$), moet elke toename in de kans op één optie gecompenseerd worden door een gelijke daling in de kansen op de overige opties. Derhalve is $\\sum_j \\frac{\\partial P(y=j)}{\\partial x_k} = 0$."
+  },
+  {
+   "id": "m-mlogit-04",
+   "type": "multi",
+   "skill": "mlogit-rrr",
+   "level": 2,
+   "prompt": "Welke van de volgende stellingen over de referentiecategorie (base outcome) in `mlogit` zijn correct? (Selecteer alle juiste opties).",
+   "options": [
+    "De keuze van de referentiecategorie heeft geen enkele invloed op de berekende voorspelde kansen $P(y=j|\\mathbf{x})$.",
+    "Voor de referentiecategorie worden alle coëfficiënten genormaliseerd op nul ($\\boldsymbol{\\beta}_{\\text{base}} = \\mathbf{0}$).",
+    "Het wijzigen van de referentiecategorie verandert de p-waarden en de economische interpretatie van de Average Marginal Effects.",
+    "De Relative Risk Ratio (RRR) van elke categorie wordt altijd geïnterpreteerd ten opzichte van de gekozen referentiecategorie."
+   ],
+   "answers": [
+    0,
+    1,
+    3
+   ],
+   "explain": "Opties 1, 2 en 4 zijn correct. De normalisatie $\\boldsymbol{\\beta}_{\\text{base}} = \\mathbf{0}$ is puur een identificatiestap: de voorspelde kansen en de Average Marginal Effects (AME) veranderen niet wanneer je een andere basis kiest. De RRR's en de ruwe coëfficiënten veranderen uiteraard wel omdat ze relatief zijn aan de basis."
+  },
+  {
+   "id": "m-iia-01",
+   "type": "cloze",
+   "skill": "iia-asclogit",
+   "level": 2,
+   "prompt": "Vul de ontbrekende termen aan over de Hausman-McFadden toets op IIA:",
+   "text": "Bij de Hausman-toets op IIA toetst men onder de nulhypothese dat de parameters van het volledige model en het gereduceerde model {{systematisch niet|niet systematisch}} verschillen. Een p-waarde kleiner dan 0.05 leidt tot het {{verwerpen}} van de IIA-aanname.",
+   "explain": "Onder $H_0$ geldt de IIA-aanname en zijn de schattingen op de deelsteekproef consistent en niet systematisch verschillend van het volledige model. Verwerping ($p < 0.05$) betekent dat IIA geschonden is."
+  },
+  {
+   "id": "m-iia-02",
+   "type": "type",
+   "skill": "iia-asclogit",
+   "level": 2,
+   "prompt": "Welke optie mag je in Stata NOOIT toevoegen aan de `mlogit`-schattingen die je opslaat voor de Hausman-toets (`hausman full part`), omdat de toetsingsgrootheid anders ongeldig wordt of Stata weigert?",
+   "answers": [
+    "robust",
+    "vce(robust)",
+    "r"
+   ],
+   "lang": "code",
+   "explain": "De klassieke Hausman-toets vereist dat het efficiënte model geschat wordt onder de standaard aannamen zonder robuuste standaardfouten (`robust`). Met robuuste variantieschatters is de covariantie-eigenschap $\\text{Var}(\\hat{\\beta}_r - \\hat{\\beta}_f) = \\mathbf{V}_r - \\mathbf{V}_f$ niet gegarandeerd, wat leidt tot negatieve chi-kwadraat statistieken of foutmeldingen in Stata."
+  },
+  {
+   "id": "m-iia-03",
+   "type": "mcq",
+   "skill": "iia-asclogit",
+   "level": 3,
+   "prompt": "In een conditional logit model voor frisdrankkeuze (`asclogit choice price, case(id) alternatives(alt)`) vind je dat de kruiselingse prijselasticiteit van SevenUp op de keuze voor Pepsi positief is ($\\frac{\\partial P(\\text{Pepsi})}{\\partial \\text{price}_{\\text{SevenUp}}} > 0$). Wat betekent dit economisch?",
+   "options": [
+    "Pepsi en SevenUp zijn substituten: als SevenUp duurder wordt, stijgt de kans dat consumenten overstappen naar Pepsi.",
+    "Pepsi en SevenUp zijn complementen: als SevenUp duurder wordt, daalt de consumptie van beide frisdranken tegelijk.",
+    "Consumenten vertonen prijsstarheid en negeren prijsverhogingen van alternatieve merken volledig."
+   ],
+   "answer": 0,
+   "explain": "Een positieve kruiselingse prijscoëfficiënt toont aan dat de producten substituten zijn: een prijsstijging van het ene alternatief vergroot de relatieve aantrekkelijkheid en dus de keuzekans van het andere alternatief."
+  },
+  {
+   "id": "m-iia-04",
+   "type": "match",
+   "skill": "iia-asclogit",
+   "level": 2,
+   "prompt": "Koppel elke onderzoeksvraag aan het meest geschikte econometrische model:",
+   "pairs": [
+    [
+     "Keuze tussen transportmiddelen waarbij prijs en reistijd per optie variëren",
+     "asclogit (conditional logit)"
+    ],
+    [
+     "Stemkeuze tussen politieke partijen op basis van leeftijd en inkomen van de kiezer",
+     "mlogit (multinomial logit)"
+    ],
+    [
+     "Mening over overheidsbeleid gemeten op een schaal van 1 (zeer oneens) tot 5 (zeer eens)",
+     "oprobit (ordered probit)"
+    ],
+    [
+     "Aantal geregistreerde patenten per innovatief bedrijf per jaar",
+     "poisson (Poisson-regressie)"
+    ]
+   ],
+   "explain": "Attributen die variëren over alternatieven vereisen `asclogit`. Persoonskenmerken bij nominale keuzes vragen `mlogit`. Ordinale schalen vragen `oprobit`. Niet-negatieve gehele tellingen vragen `poisson`."
+  },
+  {
+   "id": "m-oprobit-01",
+   "type": "order",
+   "skill": "oprobit-cuts",
+   "level": 2,
+   "prompt": "Rangschik de beslissingsregels voor de latente variabele $y^*$ van laagste categorie naar hoogste categorie in een geordend model met drie categorieën (0, 1, 2) en drempelwaarden $\\kappa_1 < \\kappa_2$:",
+   "tiles": [
+    "y* <= kappa_1 (categorie 0)",
+    "kappa_1 < y* <= kappa_2 (categorie 1)",
+    "y* > kappa_2 (categorie 2)"
+   ],
+   "explain": "De categorie 0 wordt geobserveerd wanneer de latente score onder de eerste drempel valt ($y^* \\le \\kappa_1$), categorie 1 tussen $\\kappa_1$ en $\\kappa_2$, en categorie 2 boven de hoogste drempel $\\kappa_2$."
+  },
+  {
+   "id": "m-oprobit-02",
+   "type": "type",
+   "skill": "oprobit-cuts",
+   "level": 2,
+   "prompt": "Geef het Stata-commando om na `oprobit` het Average Marginal Effect van alle variabelen te berekenen specifiek voor de hoogste uitkomstcategorie 2:",
+   "answers": [
+    "margins, dydx(*) predict(outcome(2))",
+    "margins, dydx(*) predict(outcome(2))",
+    "margins, dydx(*) pr(outcome(2))",
+    "margins, dydx(*) outcome(2)"
+   ],
+   "lang": "code",
+   "explain": "Met `margins, dydx(*) predict(outcome(2))` specificeer je dat het marginale effect berekend moet worden voor de kans op categorie 2 ($P(y=2)$)."
+  },
+  {
+   "id": "m-oprobit-03",
+   "type": "numeric",
+   "skill": "oprobit-cuts",
+   "level": 3,
+   "prompt": "In een geordend probitmodel is de geschatte tweede drempelwaarde $\\kappa_2 = 1.00$. Voor een individu is de voorspelde latente index $\\mathbf{x}_i \\boldsymbol{\\beta} = 1.00$. Gegeven dat $\\Phi(0) = 0.50$, wat is de voorspelde kans $P(y_i = 2)$ op de hoogste categorie? (Geef de kans als decimaal getal, bv. 0.50).",
+   "value": 0.5,
+   "tolerance": 0.01,
+   "explain": "De kans op de hoogste categorie (hier $y=2$) is $P(y_i = 2) = 1 - \\Phi(\\kappa_2 - \\mathbf{x}_i \\boldsymbol{\\beta})$. Met $\\kappa_2 = 1.00$ en $\\mathbf{x}_i \\boldsymbol{\\beta} = 1.00$ geldt $1 - \\Phi(1.00 - 1.00) = 1 - \\Phi(0) = 1 - 0.50 = 0.50$."
+  },
+  {
+   "id": "m-oprobit-04",
+   "type": "mcq",
+   "skill": "oprobit-cuts",
+   "level": 2,
+   "prompt": "Waarom is het op een examen econometrie een zware fout om bij een geordend probitmodel enkel de coëfficiënten $\\beta$ te rapporteren en te interpreteren alsof het marginale effecten zijn?",
+   "options": [
+    "Ze tonen enkel de verschuiving van de latente index $y^*$, terwijl marginale effecten op categoriekansen niet-lineair zijn en voor tussenliggende categorieën zelfs van teken kunnen wisselen.",
+    "Ze meten direct de verandering in keuzekansen onder de foutieve aanname dat de latente variabele $y^*$ een constante uniforme dichtheid bezit tussen alle opeenvolgende drempelwaarden.",
+    "Ze berekenen uitsluitend de odds ratio ten opzichte van de laagste categorie, waardoor de effecten op hogere ordinale categorieën wiskundig niet geïdentificeerd kunnen worden."
+   ],
+   "answer": 0,
+   "explain": "De coëfficiënt $\\beta$ meet uitsluitend het effect op de niet-waargenomen latente schaal $y^*$. De werkelijke beleidsrelevante effecten zijn de veranderingen in categoriekansen $\\frac{\\partial P(y=j)}{\\partial x}$, die niet constant zijn en voor intermediaire categorieën niet noodzakelijk hetzelfde teken hebben als $\\beta$."
+  },
+  {
+   "id": "m-poisson-01",
+   "type": "type",
+   "skill": "poisson-irr",
+   "level": 2,
+   "prompt": "Geef het Stata-commando om na het schatten van een Poisson-model de voorspelde aantallen gebeurtenissen ($E(y|\\mathbf{x}) = \\hat{\\lambda}$) te berekenen en op te slaan in de nieuwe variabele `pred_n`:",
+   "answers": [
+    "predict pred_n, n",
+    "predict pred_n",
+    "predict pred_n, rate"
+   ],
+   "lang": "code",
+   "explain": "`predict pred_n, n` berekent de voorspelde aantallen gebeurtenissen ($E(y|\\mathbf{x})$). In Stata is `n` de standaardoptie na `poisson`."
+  },
+  {
+   "id": "m-poisson-02",
+   "type": "cloze",
+   "skill": "poisson-irr",
+   "level": 2,
+   "prompt": "Vul de formule in voor het marginale effect van regressor $x_k$ op het verwachte aantal gebeurtenissen in een Poisson-regressie:",
+   "text": "Het marginale effect is gelijk aan $\frac{\\partial E(y|\\mathbf{x})}{\\partial x_k} = \beta_k \times$ {{E(y|x)|E(y|mathbf{x})|lambda|lambda_i}}. Omdat deze verwachtingswaarde altijd positief is, is het marginale effect groter voor individuen met een {{hogere}} basisverwachting.",
+   "explain": "Het marginale effect van een continue regressor in het Poisson-model is niet-lineair en multiplicatief: $\\frac{\\partial E(y|\\mathbf{x})}{\\partial x_k} = \\beta_k \\exp(\\mathbf{x}\\boldsymbol{\\beta}) = \\beta_k \\lambda$. Personen met een hogere verwachte frequentie ondervinden dus een grotere absolute verandering."
+  },
+  {
+   "id": "m-poisson-03",
+   "type": "numeric",
+   "skill": "poisson-irr",
+   "level": 3,
+   "prompt": "Voor een individu levert de lineaire index van een Poisson-model de waarde $\\mathbf{x}_i \\boldsymbol{\\beta} = -1.609$ op. Gegeven dat $\\exp(-1.609) \\approx 0.20$, wat is het verwachte aantal gebeurtenissen $E(y_i|\\mathbf{x}_i)$? (Geef het antwoord als decimaal getal afgerond op 2 decimalen, bv. 0.20).",
+   "value": 0.2,
+   "tolerance": 0.02,
+   "explain": "In Poisson-regressie geldt de exponentiële linkfunctie: $E(y_i|\\mathbf{x}_i) = \\exp(\\mathbf{x}_i \\boldsymbol{\\beta}) = \\exp(-1.609) \\approx 0.20$ gebeurtenissen."
+  },
+  {
+   "id": "m-poisson-04",
+   "type": "mcq",
+   "skill": "poisson-irr",
+   "level": 2,
+   "prompt": "Wat is het statistische gevaar wanneer een onderzoeker Poisson-regressie schat op data met sterke overdispersie zónder de optie `robust` of `vce(robust)`?",
+   "options": [
+    "De berekende standaardfouten zijn te klein, waardoor t-statistieken kunstmatig hoog zijn en variabelen ten onrechte als statistisch significant worden beschouwd (Type I-fout).",
+    "De geschatte puntschatters $\\hat{\\beta}$ worden inconsistent en convergeren niet langer naar de werkelijke populatieparameters.",
+    "Stata weigert de regressie uit te voeren en meldt een wiskundige deling door nul tijdens de optimalisatie."
+   ],
+   "answer": 0,
+   "explain": "Bij overdispersie blijven de Poisson-puntschatters consistent (zolang de voorwaardelijke verwachting correct gespecificeerd is), maar de standaardfouten berekend onder de klassieke Poisson-likelihood zijn zwaar onderschat. Hierdoor zijn p-waarden veel te klein en concludeert men ten onrechte dat variabelen significant zijn."
+  }
+ ],
+ "production": {
+  "type": "explain",
+  "prompt": "Je treedt op als empirisch gezondheidseconoom en adviseert het Federaal Kenniscentrum voor de Gezondheidszorg (KCE). Je beschikt over de dataset `health.dta` (5.190 observaties) om het zorggebruik en doktersbezoeken (`num_visits`, aantal bezoeken in het afgelopen jaar) te analyseren. De beschikbare regressoren zijn leeftijd in jaren (`age`), geslacht (`gender` = 1 voor vrouw), gezinsinkomen (`income`), subjectieve gezondheidsscore (`hscore`, hogere waarde = slechtere gezondheid), verzekeringsstatuten (`private`, `medicaid`, `medicare`) en het aantal ziektedagen (`dayssick`).\n\nBeantwoord de volgende vier academische en beleidsmatige kernvragen:\n1. **Modelkeuze & Motivering**: Leg uit waarom een lineair OLS-model conceptueel en statistisch faalt voor de afhankelijke variabele `num_visits`. Waarom is het Poisson-regressiemodel hier superieur, en welke aanname omtrent de variantie veronderstelt het standaard Poisson-model?\n2. **Stata Syntax & Regressie**: Geef de exacte Stata-code om:\n   - Een Poisson-regressie te schatten van `num_visits` op `age`, `gender`, `income` en `hscore` met robuuste standaardfouten en Incident Rate Ratios (IRR);\n   - De voorspelde aantallen bezoeken te berekenen en het gemiddelde te vergelijken met de feitelijke data;\n   - De marginale effecten van leeftijd (`age`) te berekenen op het 10e percentiel (19 jaar) en het 90e percentiel (72 jaar);\n   - Het model uit te breiden met `private`, `medicaid`, `medicare` en `dayssick`, en de gezamenlijke significantie van de verzekeringsvariabelen te toetsen.\n3. **Empirische Interpretatie**: Interpreteer de coëfficiënt en IRR van leeftijd ($\\beta = 0.0211, p < 0.001, IRR = 1.0213$) conform de academische standaarden (richting, grootte, significantie en eenheid). Verklaar tevens waarom het marginale effect op 72-jarige leeftijd ($0.0077$) ruim drie keer zo groot is als op 19-jarige leeftijd ($0.0025$).\n4. **Overdispersie & Beleidsrisico's**: Wat houdt overdispersie in, wat gebeurt er met de standaardfouten en significantietesten als je `robust` vergeet, en welk alternatief model kan geschat worden indien overdispersie expliciet gemodelleerd moet worden?",
+  "model": "Hieronder volgt de complete uitwerking conform de academische standaarden van UAntwerpen:\n\n### 1. Modelkeuze en Motivering\nDe variabele `num_visits` is een discrete telvariabele ($y \\in \\{0, 1, 2, \\dots\\}$) met een sterke ophoping op nul en een uitgesproken positieve scheefheid.\n- **Tekortkomingen OLS**: Een lineair OLS-model faalt fundamenteel omdat het negatieve voorspelde waarden kan opleveren ($\\hat{y} < 0$), wat bij artsenbezoeken fysisch onmogelijk is. Bovendien veronderstelt OLS een constante additieve relatie en homoskedasticiteit, terwijl bij teldata de variantie inherent toeneemt met de verwachtingswaarde.\n- **Voordelen Poisson**: Poisson-regressie modelleert de conditionele verwachting via een exponentiële linkfunctie: $E(y_i \\mid \\mathbf{x}_i) = \\lambda_i = \\exp(\\mathbf{x}_i \\boldsymbol{\\beta}) > 0$. Dit garandeert strikt positieve voorspellingen en modelleert proportionele effecten.\n- **Variantie-aanname**: Het klassieke Poisson-model veronderstelt equidispersie, waarbij de conditionele variantie identiek is aan de conditionele verwachting: $\\text{Var}(y_i \\mid \\mathbf{x}_i) = E(y_i \\mid \\mathbf{x}_i) = \\lambda_i$.\n\n### 2. Volledige Stata Syntaxis\n```stata\n* 2.a Basismodel met robuuste SE's en Incident Rate Ratios\npoisson num_visits age gender income hscore, robust irr\n\n* 2.b Voorspelde aantallen en vergelijking gemiddelden\npredict pred_n, n\nsummarize pred_n num_visits\n\n* 2.c Marginale effecten van leeftijd op percentielen\nmargins, dydx(age) at(age=19)\nmargins, dydx(age) at(age=72)\n\n* 2.d Modeluitbreiding en gezamenlijke Wald-toets\npoisson num_visits age gender income hscore private medicaid medicare dayssick, robust\ntest private medicaid medicare\n```\n\n### 3. Empirische Interpretatie\n- **Leeftijdscoëfficiënt & IRR**: De geschatte Poisson-coëfficiënt voor leeftijd is $\\beta = 0.0211$ ($z = 6.47, p < 0.001$), wat correspondeert met een Incident Rate Ratio van $IRR = \\exp(0.0211) = 1.0213$.\n  *Richting & Grootte*: Elk extra levensjaar verhoogt het verwachte aantal artsenbezoeken multiplicatief met een factor 1.0213, oftewel een relatieve toename van $(1.0213 - 1) \\times 100\\% = 2.13\\%$, ceteris paribus.\n  *Significantie*: Het effect is statistisch zeer significant bij het 1%-niveau ($p < 0.001$).\n- **Verschil in Marginaal Effect tussen 19 en 72 jaar**: Het marginale effect in het Poisson-model is niet-lineair en gelijk aan $\\frac{\\partial E(y \\mid \\mathbf{x})}{\\partial \\text{age}} = \\beta_{\\text{age}} \\times \\lambda_i$. Omdat ouderen een veel hogere basisverwachting $\\lambda_i$ op zorggebruik hebben (meer chronische klachten) dan jongeren, vertaalt dezelfde procentuele stijging van 2.13% zich voor een 72-jarige in een aanzienlijk grotere absolute stijging ($0.0077$ bezoeken per levensjaar) dan voor een 19-jarige ($0.0025$ bezoeken per levensjaar).\n\n### 4. Overdispersie en Beleidsrisico's\n- **Definitie**: Overdispersie treedt op wanneer de empirische conditionele variantie groter is dan de conditionele verwachting ($\\text{Var}(y \\mid \\mathbf{x}) > E(y \\mid \\mathbf{x})$).\n- **Gevolgen zonder `robust`**: Zonder robuuste standaardfouten blijven de puntschatters $\\hat{\\boldsymbol{\\beta}}$ weliswaar consistent, maar worden de standaardfouten zwaar onderschat. De gerapporteerde z-statistieken zijn daardoor kunstmatig hoog en p-waarden kunstmatig laag, wat leidt tot Type I-fouten (vals-positieve beleidsconclusies dat niet-werkzame interventies of verzekeringsstatuten significant zijn).\n- **Oplossing**: De optie `robust` berekent Huber-White quasi-maximum likelihood standaardfouten die bestand zijn tegen overdispersie. Als alternatief parametrisch model kan het Negatief Binomiaal model (`nbreg num_visits ..., robust`) geschat worden, dat een expliciete dispersieparameter $\\alpha$ includeert.",
+  "rubric": [
+   "Correcte econometrische motivering van Poisson versus OLS (niet-negativiteit, discrete verdeling, heteroskedasticiteit) en definitie van de equidispersie-aanname.",
+   "Foutloze en volledige Stata-code inclusief opties (`robust`, `irr`), predictie (`predict ..., n`), marginale effecten (`margins, dydx(age) at(...)`) en gezamenlijke toetsing (`test private medicaid medicare`).",
+   "Volledige empirische interpretatie van de IRR ($+2.13\\%$ per levensjaar, richting, grootte, significantie) en wiskundige verklaring van het niet-lineaire marginale effect $\\beta \\lambda$.",
+   "Grondige analyse van overdispersie, inclusief de statistische impact op standaardfouten/Type I-fouten en de bespreking van robuuste standaardfouten versus het Negatief Binomiaal model."
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-mlogit-rrr",
+   "front": "Wat betekent een Relative Risk Ratio ($RRR = \\exp(\\beta)$) van 0.31 voor een regressor in multinomial logit ten opzichte van de basiscategorie?",
+   "back": "De odds (relatieve kansverhouding) op die uitkomstcategorie ten opzichte van de basiscategorie liggen $(1 - 0.31) \\times 100\\% = 69\\%$ lager bij een toename van de verklarende variabele met één eenheid, ceteris paribus.",
+   "skill": "mlogit-rrr"
+  },
+  {
+   "id": "c-mlogit-test",
+   "front": "Hoe toets je in Stata of de dummy `1.female` gezamenlijk statistisch significant is over álle keuzepanelen in een multinomial logitmodel?",
+   "back": "`test 1.female`. Dit voert een gezamenlijke Wald-toets uit met $J-1$ restricties over alle vergelijkingen tegelijk.",
+   "answers": [
+    "test 1.female",
+    "test female"
+   ],
+   "lang": "code",
+   "skill": "mlogit-rrr"
+  },
+  {
+   "id": "c-iia-trap",
+   "front": "Welke twee opties mag je NOOIT gebruiken bij de regressies die je bewaart voor de Hausman-IIA-toets (`hausman full part`)?",
+   "back": "Gebruik GEEN robuuste standaardfouten (`robust` of `vce(robust)`) en GEEN gewichten (`[pw=...]`). De klassieke Hausman-toets vereist efficiëntie onder $H_0$; met robuuste varianties weigert Stata de toets of wordt het matrixverschil niet-positief definiet.",
+   "skill": "iia-asclogit"
+  },
+  {
+   "id": "c-asclogit",
+   "front": "Wanneer gebruik je conditional logit (`asclogit`) in plaats van multinomial logit (`mlogit`)?",
+   "back": "Wanneer verklarende variabelen variëren per alternatief (bv. prijs of reistijd van specifieke opties), en de data in lang formaat (long format) per keuzeset gestructureerd zijn.",
+   "skill": "iia-asclogit"
+  },
+  {
+   "id": "c-oprobit-cuts",
+   "front": "Waarom mag je het teken van een coëfficiënt in `oprobit` niet zomaar gelijkstellen aan het teken van het marginale effect van een tussenliggende categorie?",
+   "back": "Een positieve $\\beta$ verschuift de latente verdeling naar rechts, waardoor $P(y=0)$ daalt en $P(y=K)$ stijgt. Voor tussenliggende categorieën hangt het effect echter af van $[\\phi(\\kappa_{j-1} - \\mathbf{x}\\boldsymbol{\\beta}) - \\phi(\\kappa_j - \\mathbf{x}\\boldsymbol{\\beta})] \\beta$, wat zowel positief als negatief kan zijn!",
+   "skill": "oprobit-cuts"
+  },
+  {
+   "id": "c-poisson-irr",
+   "front": "Hoe interpreteer je een Incident Rate Ratio ($IRR = \\exp(\\beta)$) van 1.05 in een Poisson-regressie?",
+   "back": "Elke toename van de verklarende variabele met 1 eenheid verhoogt het verwachte aantal gebeurtenissen multiplicatief met factor 1,05, oftewel een stijging van $(1.05 - 1) \\times 100\\% = 5\\%$.",
+   "skill": "poisson-irr"
+  },
+  {
+   "id": "c-poisson-equidispersion",
+   "front": "Wat houdt equidispersie in bij Poisson en wat is het gevaar van overdispersie zonder de optie `robust`?",
+   "back": "Equidispersie vereist dat $\\text{Var}(y|\\mathbf{x}) = E(y|\\mathbf{x})$. Bij overdispersie ($\\text{Var} > E$) blijven de puntschatters consistent, maar zijn de standaardfouten zwaar onderschat, waardoor variabelen ten onrechte significant lijken (Type I-fout). Remedie: `robust` of een Negatief Binomiaal model (`nbreg`).",
+   "skill": "poisson-irr"
+  }
+ ],
+ "sources": [
+  "McFadden, D. (1974). Conditional logit analysis of qualitative choice behavior. In P. Zarembka (Ed.), Frontiers in Econometrics (pp. 105-142). Academic Press.",
+  "Hausman, J., & McFadden, D. (1984). Specification Tests for the Multinomial Logit Model. Econometrica, 52(5), 1219-1240.",
+  "Cameron, A. C., & Trivedi, P. K. (2013). Regression Analysis of Count Data (2nd ed.). Cambridge University Press.",
+  "Wooldridge, J. M. (2010). Econometric Analysis of Cross Section and Panel Data (2nd ed.). MIT Press.",
+  "Applied Econometrics (2128TEWECP) Computer Class 5, Universiteit Antwerpen (2025-2026)."
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-26"
+ }
+}

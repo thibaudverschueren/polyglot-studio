@@ -1,0 +1,595 @@
+{
+  "schema": "polyglot.lesson/v2",
+  "track": "econometrics",
+  "id": 3,
+  "roadmap": "econometrics-03-instrumental-variables-2sls",
+  "kind": "core",
+  "title": "Instrumentele Variabelen (IV) & Two-Stage Least Squares (2SLS)",
+  "subtitle": "Endogeniteit oplossen met ivregress 2sls: instrumentrelevantie (F > 10), Hausman-endogeniteitstoets en Sargan-overidentificatie",
+  "level": "gevorderd",
+  "minutes": 45,
+  "summary": "Wanneer verklarende variabelen endogeen zijn door weggelaten variabelen (omitted variable bias), meetfouten of simultaneïteit, faalt Ordinary Least Squares (OLS) en levert inconsistente schattingen op. In deze les leer je hoe je met Instrumentele Variabelen (IV) en Two-Stage Least Squares (2SLS via `ivregress 2sls`) exogene variatie isoleert om causale effecten zuiver te schatten. Je toetst de instrumentrelevantie aan de hand van de first-stage F-statistiek ($F > 10$), voert de Hausman-endogeniteitstoets uit om te bepalen of IV noodzakelijk is, en toetst de geldigheid van overidentificerende restricties via de Sargan-toets ($NR^2$).",
+  "objectives": [
+    {
+      "id": "endogeneity-diagnosis",
+      "text": "Je diagnosticeert endogeniteit (Cov(x, u) ≠ 0) door omitted variables, meetfouten of simultaneïteit en verklaart waarom OLS faalt."
+    },
+    {
+      "id": "instrument-validity",
+      "text": "Je toetst en beargumenteert de twee kernvoorwaarden voor een geldig instrument: instrumentrelevantie en exogeniteit."
+    },
+    {
+      "id": "twosls-estimation",
+      "text": "Je voert 2SLS-schattingen uit met ivregress 2sls en toont aan waarom handmatige tweede-traps standaardfouten ongeldig zijn."
+    },
+    {
+      "id": "diagnostic-tests",
+      "text": "Je voert de first-stage F-toets (F > 10), de Hausman-endogeniteitstoets en de Sargan-overidentificatietoets uit en interpreteert de toetsstatistieken."
+    }
+  ],
+  "sections": [
+    {
+      "id": "endogeniteit-ols-falen",
+      "title": "Het endogeniteitsprobleem: waarom OLS faalt",
+      "md": "De hoeksteen van Ordinary Least Squares (OLS) is de aanname van strikte exogeniteit: de verklarende variabelen $x$ mogen niet gecorreleerd zijn met de foutterm $u$:\n\n$$\\mathbb{E}[u \\mid x] = 0 \\implies \\text{Cov}(x, u) = 0$$\n\nWanneer aan deze voorwaarde voldaan is, is de OLS-schatter zuiver (unbiased) en consistent. Zodra $\\text{Cov}(x, u) \\neq 0$, noemen we de regressor $x$ **endogeen**. Bij endogeniteit verliest OLS niet alleen zijn zuiverheid in kleine steekproeven, maar faalt de schatter fundamenteel op het vlak van **consistentie**:\n\n$$\\text{plim}\\,\\hat{\\beta}_{1, OLS} = \\beta_1 + \\frac{\\text{Cov}(x, u)}{\\text{Var}(x)} \\neq \\beta_1$$\n\nZelfs wanneer de steekproefomvang naar oneindig nadert ($N \\to \\infty$), convergeert $\\hat{\\beta}_{1, OLS}$ niet naar de ware causale parameter $\\beta_1$. Het verschil $\\frac{\\text{Cov}(x, u)}{\\text{Var}(x)}$ noemen we de **asymptotic bias** (asymptotische vertekening).\n\n### De drie klassieke oorzaken van endogeniteit\n\nIn de empirische micro-economie ontstaat endogeniteit door drie voorname mechanismen:\n\n1. **Omitted Variable Bias (Weggelaten variabelen):**\n   Een relevante variabele die zowel $x$ als $y$ beïnvloedt, is niet opgenomen in het model (vaak omdat ze niet geobserveerd kan worden).\n   *Klassiek voorbeeld (Mincer-loonvergelijking):*\n   $$\\ln(\\text{wage}) = \\beta_0 + \\beta_1 \\text{educ} + u$$\n   De foutterm $u$ bevat ongeobserveerde aangeboren vaardigheid (*ability*, intelligentie, doorzettingsvermogen). Individuen met een hogere vaardigheid volgen gemiddeld meer onderwijs (lagere marginale studiekosten) én ontvangen hogere lonen. Hierdoor geldt $\\text{Cov}(\\text{educ}, \\text{ability}) > 0$. Omdat $\\beta_{\\text{ability}} > 0$, leidt OLS tot een **opwaartse vertekening** (*upward ability bias*): $\\hat{\\beta}_{1, OLS} > \\beta_1$.\n\n2. **Meetfouten in verklarende variabelen (Errors-in-Variables):**\n   Wanneer een verklarende variabele met toevallige ruis gemeten wordt ($x = x^* + e$ met klassieke meetfout $e$), absorbeert de storingsterm de meetfout:\n   $$y = \\beta_0 + \\beta_1 x + (u - \\beta_1 e)$$\n   Omdat $\\text{Cov}(x, u - \\beta_1 e) = -\\beta_1 \\sigma_e^2 \\neq 0$, ontstaat **attenuation bias** (dempingsvertekening): $\\text{plim}\\,\\hat{\\beta}_1 = \\beta_1 \\frac{\\sigma_{x^*}^2}{\\sigma_{x^*}^2 + \\sigma_e^2}$. De geschatte coëfficiënt wordt systematisch naar nul gedrukt.\n\n3. **Simultaneïteit / Simultane causaliteit (Reverse Causality):**\n   $x$ beïnvloedt $y$, maar $y$ beïnvloedt tegelijkertijd $x$.\n   *Voorbeeld uit Computerklas 3 (`cigarette_cons.dta`):* Vraag en aanbod bepalen simultaan de prijs (`avgprs`) en de hoeveelheid (`packpc`). Een vraagschok in $u$ verandert het marktevenwicht en daarmee direct de evenwichtsprijs. OLS schat een mengsel van de vraag- en aanbodcurve.\n   *Voorbeeld uit Angrist & Evans (1998) (`fertility.dta`):* Beïnvloedt een derde kind (`morekids`) het arbeidsaanbod van de moeder (`weeksm1`), of bepalen ongeobserveerde voorkeuren voor gezin versus carrière ($u$) beide keuzes gelijktijdig?\n\n> [!pitfall] Grote datasets lossen endogeniteit niet op\n> Een veelgemaakte examenfout is de aanname dat een grotere steekproefomvang ($N$) endogeniteit compenseert. Bij multicollineariteit verlaagt meer data de standaardfout, maar bij endogeniteit blijft de vertekening $\\frac{\\text{Cov}(x, u)}{\\text{Var}(x)}$ exact even groot bij $N = 100\\,000$ als bij $N = 100$. OLS blijft inconsistent.",
+      "checks": [
+        {
+          "id": "c1",
+          "type": "mcq",
+          "skill": "endogeneity-diagnosis",
+          "level": 1,
+          "prompt": "Waarom lost het verzamelen van méér data (een grotere steekproef N) het endogeniteitsprobleem van OLS niet op?",
+          "explain": "De asymptotische vertekening van OLS is Cov(x, u) / Var(x). Deze term hangt af van populatie-eigenschappen en krimpt niet naar nul als N groeit; de OLS-schatter convergeert naar de foute waarde (inconsistentie).",
+          "options": [
+            "Omdat de asymptotische bias afhangt van Cov(x, u) / Var(x) en niet naar nul krimpt als N toeneemt",
+            "Omdat de standaardfout van OLS oneindig groot wordt bij een grotere steekproef",
+            "Omdat OLS bij grotere steekproeven automatisch overschakelt op robuuste standaardfouten",
+            "Omdat multicollineariteit altijd toeneemt naarmate N groeit"
+          ],
+          "answer": 0
+        }
+      ]
+    },
+    {
+      "id": "instrument-relevance-exogeneity-2sls",
+      "title": "Kernvoorwaarden voor een geldig instrument & 2SLS-mechanica",
+      "md": "Om de causale parameter $\\beta_1$ consistent te schatten ondanks $\\text{Cov}(x, u) \\neq 0$, introduceren we een **Instrumentele Variabele** $Z$. Een geldig instrument isoleert dat deel van de variatie in $x$ dat zuiver exogeen is.\n\n### De twee formele voorwaarden voor een geldig instrument\n\nEen instrument $Z$ moet aan twee strikte voorwaarden voldoen:\n\n1. **Instrumentrelevantie (Instrument Relevance / First Stage):**\n   $$Z \\text{ moet gecorreleerd zijn met } x: \\quad \\text{Cov}(Z, x) \\neq 0$$\n   In een regressiemodel met exogene controlevariabelen $W$:\n   $$x = \\pi_0 + \\pi_1 Z + \\pi_2 W + v \\quad \\text{waarbij } \\pi_1 \\neq 0$$\n   *Status:* Deze voorwaarde is **empirisch toetsbaar** in de eerste trap (first stage) via een t-toets of F-toets op de uitgesloten instrumenten.\n\n2. **Instrumentexogeniteit / Uitsluitingsrestrictie (Instrument Exogeneity / Exclusion Restriction):**\n   $$Z \\text{ is ongecorreleerd met de storingsterm } u: \\quad \\text{Cov}(Z, u) = 0$$\n   Dit omvat twee inhoudelijke principes:\n   - **Quasi-random toewijzing:** $Z$ is zo goed als willekeurig toegewezen (*as good as randomly assigned*), niet gecorreleerd met ongeobserveerde factoren zoals vaardigheid of voorkeuren.\n   - **Uitsluitingsrestrictie:** $Z$ heeft **geen direct effect** op uitkomst $y$. $Z$ beïnvloedt $y$ uitsluitend indirect via het causale kanaal van de endogene variabele $x$.\n   *Status:* Bij exacte identificatie (1 instrument voor 1 endogene variabele) is deze voorwaarde **niet statistisch toetsbaar**. Ze moet inhoudelijk, institutioneel of theoretisch verdedigd worden!\n\n### Voorbeelden uit de literatuur en computerklas\n\n| Dataset / Studie | Endogene variabele ($x$) | Instrument ($Z$) | Waarom relevant? | Waarom exogeen (uitsluitingsrestrictie)? |\n|---|---|---|---|---|\n| **Angrist & Evans (1998)** (`fertility.dta`) | `morekids` (gezin met $\\ge 3$ kinderen) | `samesex` (eerste twee kinderen hebben hetzelfde geslacht) | Ouders met twee jongens of twee meisjes wensen vaker een kind van het andere geslacht ($p < 0.001$). | Biologische toevalstreffer door de natuur ($P(\\text{jongen}) \\approx 0.51$). Geslacht van de eerste twee kinderen heeft geen direct effect op moeders arbeidsmarktkansen. |\n| **Mroz (1987)** (`mroz.dta`) | `educ` (opleiding van de vrouw) | `mothereduc`, `fathereduc` (opleiding ouders) | Hoogopgeleide ouders investeren meer in scholing van kinderen ($F = 55.40$). | Opleiding van ouders bepaalt niet direct het loon van de volwassen dochter wanneer gecontroleerd wordt voor haar eigen opleiding en ervaring. |\n| **Sigaretten** (`cigarette_cons.dta`) | `lavgprs` (log gemiddelde sigarettenprijs) | `stax` (specifieke verkoopbelasting per staat) | Belastingen worden doorgerekend in de winkelprijs ($F = 40.96$). | Belastingen worden vastgesteld door wetgevers en correleren niet met individuele consumentenpreferenties voor roken. |\n\n### Two-Stage Least Squares (2SLS) in theorie en Stata\n\nDe klassieke schatter bij instrumentele variabelen is Two-Stage Least Squares (2SLS):\n\n- **Eerste trap (First stage):** Regresseer de endogene variabele $x$ op de instrumenten $Z$ en alle exogene controles $W$:\n  $$x = \\pi_0 + \\pi_1 Z + \\pi_2 W + v$$\n  Sla de voorspelde waarden $\\hat{x} = \\hat{\\pi}_0 + \\hat{\\pi}_1 Z + \\hat{\\pi}_2 W$ op. Omdat $Z$ en $W$ exogeen zijn, is $\\hat{x}$ per definitie ongecorreleerd met $u$.\n- **Tweede trap (Second stage):** Vervang de werkelijke $x$ in de oorspronkelijke vergelijking door de voorspelde $\\hat{x}$:\n  $$y = \\beta_0 + \\beta_1 \\hat{x} + \\beta_2 W + \\epsilon$$\n  Schat dit model met OLS om de consistente schatter $\\hat{\\beta}_{1, 2SLS}$ te verkrijgen.\n\n### De grote Stata-valkuil: handmatig vs ivregress\n\nIn Stata kan je handmatige tweetraps-OLS programmeren:\n```stata\nreg educ exper exper2 mothereduc fathereduc\npredict xhat, xb\nreg lwage xhat exper exper2, robust\n```\nDe puntschatting van $\\hat{\\beta}_1$ is wiskundig **exact gelijk** aan het officiële IV-commando. Maar: **De standaardfouten in de tweede stap zijn verkeerd!**\n\nWaarom? In de tweede stap berekent Stata de residuele variantie $s^2 = \\frac{1}{N-K}\\sum \\hat{e}_i^2$ op basis van de residuen met de voorspelde $\\hat{x}$:\n$$\\hat{e}_{\\text{manual}} = y - \\hat{\\beta}_0 - \\hat{\\beta}_1 \\hat{x} - \\hat{\\beta}_2 W$$\nHet werkelijke economische model is echter gedefinieerd ten opzichte van de **werkelijke waargenomen variabele** $x$:\n$$\\hat{u}_{2SLS} = y - \\hat{\\beta}_0 - \\hat{\\beta}_1 x - \\hat{\\beta}_2 W$$\nOmdat $\\hat{x}$ minder variantie heeft dan $x$ (de variantie van $\\hat{x}$ is $R_1^2 \\text{Var}(x)$), berekent de handmatige tweede stap de verkeerde residuele kwadratensom. Hierdoor zijn alle standaardfouten, t-statistieken, betrouwbaarheidsintervallen en p-waarden ongeldig!\n\n> [!important] Gebruik altijd het officiële ivregress-commando\n> Gebruik in Stata altijd `ivregress 2sls` (of `ivreg2`):\n> ```stata\n> ivregress 2sls lwage exper exper2 (educ = mothereduc fathereduc), robust first\n> ```\n> De syntaxis is: `ivregress 2sls depvar [exogene controles] (endogene regressor = uitgesloten instrumenten), opties`.",
+      "checks": [
+        {
+          "id": "c2",
+          "type": "type",
+          "skill": "twosls-estimation",
+          "level": 2,
+          "prompt": "Welke optie voeg je aan `ivregress 2sls y x1 (x = z), robust` toe om de schattingsresultaten van de eerste trap direct weer te geven?",
+          "explain": "De optie 'first' vraagt Stata om de first-stage regressieresultaten en diagnostische F-toetsen voor de uitgesloten instrumenten af te drukken.",
+          "answers": [
+            "first"
+          ],
+          "lang": "nl"
+        }
+      ]
+    },
+    {
+      "id": "weak-instruments-first-stage-f",
+      "title": "Zwakke instrumenten & de first-stage F-statistiek",
+      "md": "Een instrument dat formeel voldoet aan $\\text{Cov}(Z, x) \\neq 0$, kan in de praktijk toch zeer gevaarlijk zijn als de correlatie tussen $Z$ en $x$ gering is. We spreken dan van een **zwak instrument** (*weak instrument*).\n\n### De drie gevaren van zwakke instrumenten\n\n1. **Exploderende standaardfouten (groot efficiëntieverlies):**\n   De asymptotische variantie van de IV-schatter (bij één instrument) is:\n   $$\\text{Var}(\\hat{\\beta}_{IV}) = \\frac{\\sigma_u^2}{N \\cdot \\text{Var}(x) \\cdot R_{x, Z}^2} = \\frac{\\text{Var}(\\hat{\\beta}_{OLS})}{R_{x, Z}^2}$$\n   waarbij $R_{x, Z}^2$ het verklaringspercentage van het instrument voor $x$ is. Als $R_{x, Z}^2 = 0{,}02$ (slechts 2% verklaarde variantie), is de variantie van IV vijftig keer groter dan die van OLS. De standaardfout is $\\sqrt{50} \\approx 7{,}07$ keer zo groot!\n\n2. **Vertekening naar OLS in eindige steekproeven (Finite Sample Bias):**\n   Bound, Jaeger & Baker (1995) toonden aan dat in eindige steekproeven 2SLS vertekend is in de richting van OLS:\n   $$\\frac{\\mathbb{E}[\\hat{\\beta}_{2SLS} - \\beta]}{\\text{Bias}_{OLS}} \\approx \\frac{1}{F + 1}$$\n   waarbij $F$ de F-statistiek van de uitgesloten instrumenten in de eerste trap is. Als $F = 2$, bedraagt de vertekening van 2SLS maar liefst $\\frac{1}{2 + 1} = 33\\%$ van de OLS-vertekening, zelfs als het instrument perfect exogeen is!\n\n3. **Grote gevoeligheid voor minieme schendingen van exogeniteit:**\n   Zelfs als $\\text{Cov}(Z, u)$ niet exact 0 is maar een minuscuul getalletje $\\epsilon$, geldt:\n   $$\\text{plim}\\,\\hat{\\beta}_{IV} - \\beta = \\frac{\\text{Cov}(Z, u)}{\\text{Cov}(Z, x)} = \\frac{\\text{Corr}(Z, u)}{\\text{Corr}(Z, x)} \\cdot \\frac{\\sigma_u}{\\sigma_x}$$\n   Als $\\text{Corr}(Z, x)$ heel klein is, wordt een verwaarloosbare schending van exogeniteit met factor duizend uitvergroot, waardoor de IV-schatter erger vertekend raakt dan OLS!\n\n### De first-stage F-toets in Stata\n\nOm de relevantie formeel te toetsen, inspecteren we de eerste trap:\n```stata\nreg educ exper exper2 mothereduc fathereduc, robust\ntest mothereduc fathereduc\n```\nOf direct via post-estimation na `ivregress 2sls`:\n```stata\nestat firststage\n```\n\nStata toont de F-toets op de uitgesloten instrumenten (*F test of excluded instruments*). In Computerklas 3 (`mroz.dta`):\n```text\nF test of excluded instruments:\n  F(  2,   423) =    55.40\n  Prob > F      =   0.0000\n```\n\n### Vuistregels: Staiger-Stock & Stock-Yogo\n\n- **Staiger & Stock (1997) vuistregel:**\n  $$F > 10$$\n  Als de F-statistiek voor gezamenlijke significantie van de uitgesloten instrumenten in de eerste trap groter is dan 10, worden de instrumenten beschouwd als voldoende sterk. Is $F < 10$, dan zijn de instrumenten zwak.\n- **Stock & Yogo (2005) kritieke waarden:**\n  Stock en Yogo verfijnden deze vuistregel door exacte kritieke drempelwaarden te berekenen op basis van twee criteria:\n  1. *Maximal IV relative bias:* De maximaal toelaatbare vertekening van 2SLS relatief ten opzichte van OLS (bv. 10% bias).\n  2. *Maximal IV size distortion:* De werkelijke kans dat een 5%-hypothesetoets de nulhypothese ten onrechte verwerpt (bv. maximaal 10%, 15% of 20% werkelijke toetsgrootte).\n  Voor $K_1 = 1$ endogene variabele en $L_1 = 2$ uitgesloten instrumenten is de Stock-Yogo drempel voor 10% maximale vertekening $F = 19{,}93$. Met $F = 55{,}40 > 19{,}93$ zijn de ouderlijke opleidingsinstrumenten in Mroz ruimschoots sterk.\n\n> [!rule] Kijk naar de F-toets van de **uitgesloten** instrumenten\n> Kijk nooit naar de algemene model-F-statistiek van de first-stage regressie bovenaan de tabel! Die omvat immers ook de exogene controlevariabelen zoals ervaring (`exper`). Kijk uitsluitend naar de F-toets van de uitgesloten instrumenten (`test z1 z2`).",
+      "checks": [
+        {
+          "id": "c3",
+          "type": "numeric",
+          "skill": "diagnostic-tests",
+          "level": 2,
+          "prompt": "Wat is de klassieke Staiger-Stock (1997) vuistregel voor de minimale first-stage F-statistiek om zwakke instrumenten uit te sluiten?",
+          "explain": "De bekende vuistregel van Staiger en Stock (1997) stelt dat de F-statistiek van de uitgesloten instrumenten in de eerste trap groter moet zijn dan 10.",
+          "value": 10,
+          "abs": 0.1
+        }
+      ]
+    },
+    {
+      "id": "diagnostische-toetsen-hausman-sargan",
+      "title": "Diagnostische toetsen: Hausman-endogeniteit & Sargan-overidentificatie",
+      "md": "Na het schatten van een 2SLS-model dienen twee cruciale diagnostische vragen beantwoord te worden:\n1. **Was IV wel nodig?** Is de variabele daadwerkelijk endogeen, of had OLS volstaan? (**Hausman-endogeniteitstoets**)\n2. **Zijn de instrumenten wel geldig?** Voldoen de overtallige instrumenten aan de uitsluitingsrestrictie? (**Sargan-overidentificatietoets**)\n\n### 1. De Hausman-endogeniteitstoets (Durbin-Wu-Hausman)\n\nOnder de nulhypothese is $x$ exogeen:\n- $H_0: \\text{Cov}(x, u) = 0$ (regressoren zijn exogeen: OLS is consistent én efficiënt; 2SLS is consistent maar inefficiënt).\n- $H_1: \\text{Cov}(x, u) \\neq 0$ (regressoren zijn endogeen: OLS is inconsistent; 2SLS is vereist).\n\n#### Uitvoering in Stata\n\n**Methode A: Post-estimation met `estat endogenous`:**\n```stata\nivregress 2sls lwage exper exper2 (educ = mothereduc fathereduc)\nestat endogenous\n```\nStata toont:\n```text\nTests of endogeneity\n  H0: Variables are exogenous\n  Durbin (score) chi2(1)          =  2.80707  (p = 0.0938)\n  Wu-Hausman F(1,423)             =  2.79259  (p = 0.0954)\n```\n\n**Methode B: Handmatige residu-inclusie (Control Function Approach):**\n1. Schat de eerste trap: `qui: reg educ exper exper2 mothereduc fathereduc`\n2. Voorspel de eerste-trapsresiduen: `predict haus_resid, residuals`\n3. Schat de hoofdvergelijking met OLS inclusief de residuen: `reg lwage educ exper exper2 haus_resid`\n4. Toets de significantie van het residu: `test haus_resid`\nDe F-toets op `haus_resid` ($F = 2{,}79$, $p = 0{,}0954$) levert exact de Wu-Hausman toetsstatistiek op!\n\n*Interpretatie:*\n- Op het 5%-significantieniveau ($p > 0{,}05$) kunnen we $H_0$ niet verwerpen. Er is onvoldoende empirisch bewijs om de exogeniteit van `educ` te verwerpen. In dat geval verkiest men vaak OLS vanwege de kleinere standaardfouten.\n- Op het 10%-significantieniveau ($p < 0{,}10$) verwerpen we $H_0$ wel en besluiten we dat `educ` endogeen is.\n\n### 2. De Sargan / Hansen overidentificatietoets\n\nKan de uitsluitingsrestrictie ($\\text{Cov}(Z, u) = 0$) getoetst worden?\n- Bij **exacte identificatie** ($m = k$: aantal instrumenten $m$ gelijk aan aantal endogene variabelen $k$): **Nee**. De vrijheidsgraden zijn $m - k = 0$.\n- Bij **overidentificatie** ($m > k$: meer instrumenten dan endogene variabelen): **Ja**. Er zijn $m - k$ overtallige (overidentificerende) restricties die getoetst kunnen worden.\n\n*Hypothesen:*\n- $H_0$: Alle instrumenten zijn geldig (ongecorreleerd met de structurele foutterm $u$).\n- $H_1$: Minstens één instrument is ongeldig (gecorreleerd met $u$ of heeft een direct effect op $y$).\n\n#### Uitvoering in Stata\n\n**Methode A: Post-estimation met `estat overid`:**\n```stata\nivregress 2sls lwage exper exper2 (educ = mothereduc fathereduc)\nestat overid\n```\nOutput:\n```text\nTests of overidentifying restrictions:\n  Sargan (score) chi2(1)          = .378071  (p = 0.5386)\n  Basmann chi2(1)                 = .373985  (p = 0.5408)\n```\n*(Opmerking: bij robuuste standaardfouten toont `ivreg2` de heteroskedasticiteit-robuuste Hansen J-statistiek).*\n\n**Methode B: Handmatige berekening via $N \\times R^2$:**\n1. Sla de 2SLS-residuen op: `predict resid1, residuals`\n2. Regresseer de residuen op **alle** exogene variabelen en instrumenten:\n   ```stata\n   reg resid1 exper exper2 mothereduc fathereduc\n   ```\n3. Bereken de Sargan-toetsstatistiek $J = N \\times R^2$:\n   ```stata\n   scalar NR2 = e(N) * e(r2)\n   di NR2\n   // Geeft: 428 * 0.00088334 = 0.37807\n   di chi2tail(1, NR2)\n   // Geeft p-waarde: 0.5386\n   ```\n4. Vergelijk met de $\\chi^2(m - k)$ kritieke waarde op 5%:\n   ```stata\n   scalar CV_NR2 = invchi2tail(1, 0.05)\n   di CV_NR2\n   // Geeft kritieke waarde: 3.8415\n   ```\n\n*Besluitvorming:*\nOmdat de toetsstatistiek ($0{,}378$) veel kleiner is dan de kritieke waarde ($3{,}841$), en de p-waarde ($0{,}5386 > 0{,}05$) niet significant is, kunnen we de nulhypothese **niet verwerpen**. De overtallige instrumenten zijn statistisch compatibel en er is geen bewijs dat de uitsluitingsrestrictie geschonden is.\n\n> [!caution] De Sargan-toets bewijst niet dat álle instrumenten exogeen zijn\n> De overidentificatietoets toetst uitsluitend de *onderlinge consistentie* van de instrumenten. Als alle instrumenten dezelfde correlatie met de storingsterm delen (bijvoorbeeld als zowel moeder- als vaderopleiding direct gecorreleerd zijn met erfelijke vaardigheid), kan de Sargan-toets toch $p > 0{,}05$ geven. Economische logica blijft onmisbaar!",
+      "checks": [
+        {
+          "id": "c4",
+          "type": "type",
+          "skill": "diagnostic-tests",
+          "level": 2,
+          "prompt": "Welk Stata-commando voer je direct na `ivregress 2sls` uit om de Sargan en Basmann overidentificatietoetsen te genereren?",
+          "explain": "Het post-estimation commando 'estat overid' toetst de overidentificerende restricties na een 2SLS-schatting.",
+          "answers": [
+            "estat overid"
+          ],
+          "lang": "nl"
+        }
+      ]
+    }
+  ],
+  "practice": [
+    {
+      "id": "p01",
+      "type": "mcq",
+      "skill": "endogeneity-diagnosis",
+      "level": 1,
+      "prompt": "Welke van de volgende situaties leidt niet tot endogeniteit (Cov(x, u) ≠ 0) in een OLS-regressiemodel?",
+      "explain": "Heteroskedasticiteit (het niet-constant zijn van de foutvariantie) tast de zuiverheid en consistentie van de OLS-coëfficiënten niet aan; het leidt enkel tot foutieve standaardfouten (op te lossen via robust). Omitted variable bias, meetfouten in x en simultaneïteit veroorzaken daarentegen directe correlatie tussen x en de storingsterm u, wat OLS inconsistent maakt.",
+      "options": [
+        "Heteroskedasticiteit van de storingsterm",
+        "Omitted variable bias door het ontbreken van relevante controlevariabelen",
+        "Klassieke meetfout in de verklarende variabele x",
+        "Simultane causaliteit tussen x en y"
+      ],
+      "answer": 0
+    },
+    {
+      "id": "p02",
+      "type": "mcq",
+      "skill": "endogeneity-diagnosis",
+      "level": 2,
+      "prompt": "Wat gebeurt er met de OLS-schatter wanneer de steekproefomvang N naar oneindig nadert terwijl Cov(x, u) > 0?",
+      "explain": "Bij endogeniteit geldt plim beta_hat = beta + Cov(x, u)/Var(x). Omdat Cov(x, u) > 0, convergeert de OLS-schatter naar een waarde die strikt groter is dan de ware parameter beta, ongeacht hoe groot de steekproef is. De schatter is inconsistent.",
+      "options": [
+        "De schatter convergeert naar een waarde strikt groter dan de ware parameter beta",
+        "De schatter convergeert naar de ware causale parameter beta dankzij de centrale limietstelling",
+        "De variantie van de schatter explodeert naar oneindig",
+        "De schatter convergeert naar exact nul door attenuation bias"
+      ],
+      "answer": 0
+    },
+    {
+      "id": "p03",
+      "type": "cloze",
+      "skill": "endogeneity-diagnosis",
+      "level": 2,
+      "prompt": "Vul de types vertekening aan voor de Mincer-loonvergelijking en meetfouten.",
+      "explain": "Wanneer vaardigheid (positief gecorreleerd met scholing en loon) ontbreekt, ontstaat opwaartse vertekening (upward bias). Klassieke meetfout in x dempt de coëfficiënt naar nul toe (attenuation bias).",
+      "text": "In de Mincer-loonvergelijking leidt het weglaten van vaardigheid tot een {{opwaartse|positieve}} vertekening van het scholingseffect, terwijl een toevallige meetfout in x leidt tot {{attenuation|dempings}} bias naar nul toe."
+    },
+    {
+      "id": "p04",
+      "type": "type",
+      "skill": "endogeneity-diagnosis",
+      "level": 1,
+      "prompt": "Welke cruciale statistische eigenschap verliest de OLS-schatter wanneer Cov(x, u) ≠ 0, waardoor de schatter zelfs in oneindig grote steekproeven niet convergeert naar de werkelijke populatieparameter?",
+      "explain": "Consistentie (consistency) betekent dat plim beta_hat = beta als N -> oneindig. Bij endogeniteit is de OLS-schatter inconsistent.",
+      "answers": [
+        "consistentie",
+        "consistente"
+      ],
+      "lang": "nl"
+    },
+    {
+      "id": "p05",
+      "type": "mcq",
+      "skill": "instrument-validity",
+      "level": 1,
+      "prompt": "Welke van de twee kernvoorwaarden voor een geldig instrument is bij een exact geïdentificeerd model (m = 1, k = 1) direct empirisch toetsbaar via regressie?",
+      "explain": "Instrumentrelevantie (Cov(Z, x) ≠ 0) kan direct empirisch getoetst worden via een t- of F-toets in de first-stage regressie. Exogeniteit (Cov(Z, u) = 0) kan bij exacte identificatie nooit direct statistisch getoetst worden omdat de werkelijke storingsterm u niet geobserveerd wordt.",
+      "options": [
+        "Instrumentrelevantie via de first-stage t- of F-toets",
+        "Instrumentexogeniteit via de correlatie tussen Z en residuen e",
+        "Zowel relevantie als exogeniteit zijn direct toetsbaar",
+        "Geen van beide voorwaarden is empirisch toetsbaar"
+      ],
+      "answer": 0
+    },
+    {
+      "id": "p06",
+      "type": "match",
+      "skill": "instrument-validity",
+      "level": 2,
+      "prompt": "Koppel elk instrument aan zijn economische of institutionele identificatielogica uit de computerklas:",
+      "explain": "samesex berust op een biologisch toeval (sibling-sex mix) dat leidt tot een hogere wens voor een derde kind; stax berust op variatie in accijnzen tussen staten die de consumentenprijs beïnvloedt; mothereduc berust op intergenerationele overdracht van scholingsniveau.",
+      "pairs": [
+        [
+          "samesex (Angrist & Evans)",
+          "Biologisch toeval induceert wens voor een derde kind"
+        ],
+        [
+          "stax (sigaretten)",
+          "Fiscale beleidsvariatie beïnvloedt winkelprijs direct"
+        ],
+        [
+          "mothereduc (Mroz)",
+          "Ouderlijk milieu voorspelt scholing dochter"
+        ]
+      ]
+    },
+    {
+      "id": "p07",
+      "type": "cloze",
+      "skill": "instrument-validity",
+      "level": 2,
+      "prompt": "Vul de formele definitie van de uitsluitingsrestrictie (exclusion restriction) aan.",
+      "explain": "De uitsluitingsrestrictie eist dat het instrument Z de afhankelijke variabele y uitsluitend via de endogene variabele x beïnvloedt, en dat de covariantie tussen Z en de storingsterm u gelijk is aan nul: Cov(Z, u) = 0.",
+      "text": "De uitsluitingsrestrictie stelt dat instrument Z de uitkomst y {{uitsluitend|alleen}} mag beïnvloeden via x, zodat de covariantie met de storingsterm nul is: Cov(Z, {{u}}) = 0."
+    },
+    {
+      "id": "p08",
+      "type": "type",
+      "skill": "instrument-validity",
+      "level": 2,
+      "prompt": "Welke Engelse frase (4 woorden) gebruiken Angrist en Pischke om aan te duiden dat een instrument in observationele data qua toewijzing functioneert alsof het door een gerandomiseerd experiment is ontstaan? (as ...)",
+      "explain": "De term 'as good as randomly assigned' (of 'as good as random') duidt erop dat het instrument exogeen tot stand is gekomen ten opzichte van potentiële uitkomsten en ongeobserveerde factoren.",
+      "answers": [
+        "as good as randomly assigned",
+        "as good as random"
+      ],
+      "lang": "en"
+    },
+    {
+      "id": "p09",
+      "type": "type",
+      "skill": "twosls-estimation",
+      "level": 2,
+      "prompt": "Vul de ontbrekende Stata-optie aan om heteroskedasticiteit-robuuste standaardfouten te verkrijgen: `ivregress 2sls lwage exper (educ = mothereduc fathereduc), ______`",
+      "explain": "In Stata vraag je robuuste (Huber-White) standaardfouten op met de optie 'robust' of verkort 'r'.",
+      "answers": [
+        "robust",
+        "r"
+      ],
+      "lang": "nl"
+    },
+    {
+      "id": "p10",
+      "type": "mcq",
+      "skill": "twosls-estimation",
+      "level": 2,
+      "prompt": "Waarom zijn de standaardfouten van een handmatige tweetraps-OLS (`reg educ z` -> `predict xhat, xb` -> `reg y xhat`) ongeldig voor hypothesetoetsing?",
+      "explain": "Stata berekent in de tweede stap de residuen als y - beta*xhat in plaats van y - beta*x (met de werkelijke geobserveerde x). Omdat de residuele kwadratensom afwijkt van de werkelijke residuele variantie van het structurele model, kloppen de resulterende standaardfouten niet.",
+      "options": [
+        "Omdat Stata de residuen berekent met de voorspelde xhat in plaats van de werkelijke x",
+        "Omdat de puntschatting van beta in stap 2 wiskundig niet overeenkomt met de 2SLS-formule",
+        "Omdat een handmatige regressie geen rekening houdt met het aantal vrijheidsgraden in de eerste stap",
+        "Omdat OLS in stap 2 automatisch de constante term verwijdert"
+      ],
+      "answer": 0
+    },
+    {
+      "id": "p11",
+      "type": "order",
+      "skill": "twosls-estimation",
+      "level": 2,
+      "prompt": "Zet de stappen van de handmatige 2SLS-procedure in de juiste chronologische volgorde:",
+      "explain": "Eerst regresseer je de endogene variabele x op alle instrumenten en exogene variabelen. Vervolgens bewaar je de voorspelde waarden xhat. Daarna regresseer je y op xhat en de exogene variabelen. Tot slot moeten de residuen herrekend worden met de werkelijke x om geldige standaardfouten te krijgen.",
+      "tiles": [
+        "Schat de eerste-trapsregressie van x op instrument Z en controles W",
+        "Voorspel de gefitte waarden van de endogene variabele met predict xhat, xb",
+        "Regresseer uitkomst y op de voorspelde xhat en controles W",
+        "Herbereken de residuen ten opzichte van de werkelijke x voor correcte standaardfouten"
+      ]
+    },
+    {
+      "id": "p12",
+      "type": "cloze",
+      "skill": "twosls-estimation",
+      "level": 1,
+      "prompt": "Benoem de rol van de variabelen in de Stata-opdracht: `ivregress 2sls y w1 (x = z1 z2), robust first`.",
+      "explain": "In de ivregress-syntaxis is w1 de opgenomen exogene controle, x de endogene regressor en z1, z2 zijn de uitgesloten instrumenten.",
+      "text": "In de Stata-syntaxis is w1 een opgenomen {{exogene}} controlevariabele, x de {{endogene}} regressor en zijn z1 en z2 de uitgesloten {{instrumenten}}."
+    },
+    {
+      "id": "p13",
+      "type": "numeric",
+      "skill": "diagnostic-tests",
+      "level": 1,
+      "prompt": "Boven welke drempelwaarde van de first-stage F-statistiek voor uitgesloten instrumenten beschouwt men volgens de vuistregel van Staiger en Stock (1997) instrumenten als sterk?",
+      "explain": "De klassieke vuistregel van Staiger & Stock (1997) stelt dat de F-statistiek op de uitgesloten instrumenten groter moet zijn dan 10 om zwakke instrumenten te vermijden.",
+      "value": 10,
+      "abs": 0.1
+    },
+    {
+      "id": "p14",
+      "type": "mcq",
+      "skill": "diagnostic-tests",
+      "level": 2,
+      "prompt": "Na `ivregress 2sls` vind je met `estat endogenous` een Wu-Hausman toetsstatistiek met p-waarde p = 0.018. Wat besluit je op het 5%-significantieniveau?",
+      "explain": "Omdat p = 0.018 < 0.05, verwerpen we de nulhypothese van exogeniteit (H0: regressor is exogeen). We besluiten dat de variabele endogeen is, OLS inconsistent is en 2SLS noodzakelijk is.",
+      "options": [
+        "Verwerp H0: de variabele is endogeen, OLS is inconsistent en 2SLS is vereist",
+        "Verwerp H0 niet: de variabele is exogeen en OLS verdient de voorkeur wegens efficiëntie",
+        "Verwerp H0: de instrumenten zijn ongeldig en schenden de uitsluitingsrestrictie",
+        "De test is niet doorslaggevend omdat F < 10"
+      ],
+      "answer": 0
+    },
+    {
+      "id": "p15",
+      "type": "numeric",
+      "skill": "diagnostic-tests",
+      "level": 2,
+      "prompt": "Je voert een overidentificatietoets uit met N = 500 observaties. Uit de hulp-regressie van de 2SLS-residuen op alle instrumenten en exogene variabelen vind je R^2 = 0.012. Wat is de waarde van de Sargan-toetsstatistiek J = N * R^2?",
+      "explain": "De Sargan-toetsstatistiek is J = N * R^2 = 500 * 0.012 = 6.0.",
+      "value": 6.0,
+      "tolerance": 0.01
+    },
+    {
+      "id": "p16",
+      "type": "cloze",
+      "skill": "diagnostic-tests",
+      "level": 2,
+      "prompt": "Vul de eigenschappen van de Sargan-overidentificatietoets aan.",
+      "explain": "De nulhypothese van de Sargan-toets stelt dat alle instrumenten geldig (exogeen) zijn. Het aantal vrijheidsgraden van de chi-kwadraattoets is gelijk aan m - k, waarbij m het aantal instrumenten is en k het aantal endogene variabelen.",
+      "text": "De Sargan-toets toetst onder de nulhypothese dat alle instrumenten {{geldig|exogeen}} zijn. Het aantal vrijheidsgraden van de chi2-verdeling is gelijk aan het aantal uitgesloten instrumenten verminderd met het aantal {{endogene}} variabelen."
+    }
+  ],
+  "mastery": [
+    {
+      "id": "m01",
+      "type": "mcq",
+      "skill": "endogeneity-diagnosis",
+      "level": 2,
+      "prompt": "Welk type vertekening ontstaat in OLS wanneer een verklarende variabele gemeten wordt met een toevallige, klassieke meetfout (classical measurement error)?",
+      "explain": "Bij klassieke meetfout in een verklarende variabele leidt de correlatie tussen de geobserveerde regressor en de meetfout in de storingsterm tot attenuation bias (dempingsvertekening): de coëfficiënt wordt systematisch naar nul gedrukt.",
+      "options": [
+        "Attenuation bias (demping naar nul toe)",
+        "Upward ability bias",
+        "Simultaneity bias",
+        "Selectiebias door non-respons"
+      ],
+      "answer": 0
+    },
+    {
+      "id": "m02",
+      "type": "type",
+      "skill": "endogeneity-diagnosis",
+      "level": 2,
+      "prompt": "Welk endogeniteitsmechanisme treedt op wanneer de vraag naar sigaretten de prijs beïnvloedt, maar de marktprijs gelijktijdig de gevraagde hoeveelheid bepaalt?",
+      "explain": "Wanneer y x beïnvloedt en x tegelijk y beïnvloedt via marktevenwicht of feedback, noemen we dit simultaneïteit (simultaneity) of simultane causaliteit / reverse causality.",
+      "answers": [
+        "simultaneïteit",
+        "simultane causaliteit",
+        "reverse causality"
+      ],
+      "lang": "nl"
+    },
+    {
+      "id": "m03",
+      "type": "cloze",
+      "skill": "endogeneity-diagnosis",
+      "level": 2,
+      "prompt": "Vul de formule van de asymptotische OLS-vertekening aan.",
+      "explain": "De asymptotische vertekening van OLS bij endogeniteit is gelijk aan plim beta_hat - beta = Cov(x, u) / Var(x).",
+      "text": "De asymptotische vertekening van OLS bij een endogene variabele x is gelijk aan Cov(x, u) gedeeld door de {{variantie|Var(x)}} van x."
+    },
+    {
+      "id": "m04",
+      "type": "mcq",
+      "skill": "endogeneity-diagnosis",
+      "level": 2,
+      "prompt": "In een loonregressie is vaardigheid weggelaten. Aangeboren vaardigheid heeft een positief effect op onderwijs (Cov(educ, ability) > 0) en een positief effect op loon (beta_ability > 0). Welke richting heeft de OLS-vertekening?",
+      "explain": "Volgens de formule voor Omitted Variable Bias geldt Bias = beta_omitted * Cov(x, omitted)/Var(x). Omdat beide termen positief zijn (+ * + = +), is de OLS-schatter opwaarts vertekend (overschatting van het werkelijke effect).",
+      "options": [
+        "Opwaartse vertekening (overestimation van het causale rendement op onderwijs)",
+        "Neerwaartse vertekening (onderschatting van het causale rendement op onderwijs)",
+        "Geen vertekening omdat ervaring als controle is opgenomen",
+        "Attenuation bias naar nul toe"
+      ],
+      "answer": 0
+    },
+    {
+      "id": "m05",
+      "type": "type",
+      "skill": "instrument-validity",
+      "level": 1,
+      "prompt": "Welke van de twee kernvoorwaarden voor een geldig instrument vereist dat Cov(Z, x) ≠ 0? Typ één woord in het Nederlands.",
+      "explain": "De voorwaarde dat Cov(Z, x) ≠ 0 heet instrumentrelevantie (of relevantie).",
+      "answers": [
+        "relevantie",
+        "instrumentrelevantie"
+      ],
+      "lang": "nl"
+    },
+    {
+      "id": "m06",
+      "type": "mcq",
+      "skill": "instrument-validity",
+      "level": 2,
+      "prompt": "Waarom kan de instrumentexogeniteit (Cov(Z, u) = 0) niet direct statistisch getoetst worden wanneer een model exact geïdentificeerd is (m = k = 1)?",
+      "explain": "Omdat de storingsterm u per definitie ongeobserveerd is en in een exact geïdentificeerd model de residuen exact zo worden geconstrueerd dat ze loodrecht staan op het instrument (Cov(Z, e) = 0 als wiskundige rekenregel van de schatter). Er zijn 0 vrijheidsgraden over voor een statistische toets.",
+      "options": [
+        "Omdat de residuen wiskundig per constructie orthogonaal worden gemaakt aan het instrument",
+        "Omdat de F-statistiek van de eerste trap altijd groter is dan 10",
+        "Omdat heteroskedasticiteit statistische toetsen bij één instrument onmogelijk maakt",
+        "Omdat 2SLS in dat geval exact identiek is aan OLS"
+      ],
+      "answer": 0
+    },
+    {
+      "id": "m07",
+      "type": "cloze",
+      "skill": "instrument-validity",
+      "level": 2,
+      "prompt": "Vul de naam van de restrictie aan die verbiedt dat een instrument een direct effect heeft op y.",
+      "explain": "De uitsluitingsrestrictie (exclusion restriction) dicteert dat instrument Z geen enkel direct effect mag uitoefenen op de uitkomstvariabele y buiten de endogene variabele x om.",
+      "text": "Wanneer een instrument Z een direct causaal effect uitoefent op uitkomst y, schendt dit de {{uitsluitingsrestrictie|exclusion restriction}} en is het instrument ongeldig."
+    },
+    {
+      "id": "m08",
+      "type": "order",
+      "skill": "instrument-validity",
+      "level": 2,
+      "prompt": "Rangschik de logische keten van causale identificatie via een instrumentele variabele Z:",
+      "explain": "Eerst zorgt een exogene schok of quasi-experiment voor zuivere variatie in Z. Z induceert vervolgens exogene variatie in x via de first stage. Alleen deze voorspelde exogene component van x wordt gebruikt om uitkomst y te verklaren. Hierdoor blijft de structurele storingsterm ongecorreleerd.",
+      "tiles": [
+        "Een quasi-experiment of exogene institutionele regel genereert variatie in Z",
+        "Instrument Z induceert exogene variatie in de endogene variabele x via de first stage",
+        "Alleen de exogene variatie van x wordt gebruikt om het effect op uitkomst y te schatten",
+        "De storingsterm u blijft ongecorreleerd met de geïsoleerde variatie"
+      ]
+    },
+    {
+      "id": "m09",
+      "type": "type",
+      "skill": "twosls-estimation",
+      "level": 1,
+      "prompt": "Welke optie voeg je aan `ivregress 2sls` toe om tegelijk de eerste-traps regressieresultaten en F-toetsen te printen?",
+      "explain": "De optie 'first' print de first-stage schattingen en toetsen.",
+      "answers": [
+        "first"
+      ],
+      "lang": "nl"
+    },
+    {
+      "id": "m10",
+      "type": "mcq",
+      "skill": "twosls-estimation",
+      "level": 2,
+      "prompt": "Wat is het wiskundige verband tussen de coëfficiëntenschatting beta verkregen via een handmatige tweetraps-OLS en de puntschatting uit `ivregress 2sls`?",
+      "explain": "Wiskundig zijn de puntschattingen van beta exact identiek tussen de handmatige methode en ivregress 2sls. Het verschil zit uitsluitend in de standaardfouten (die bij de handmatige methode fout berekend worden).",
+      "options": [
+        "Ze zijn wiskundig exact identiek",
+        "De handmatige schatting is altijd kleiner door attenuation bias",
+        "De handmatige schatting is vertekend met een factor 1/(F+1)",
+        "ivregress levert alleen dezelfde coëfficiënt als F > 10"
+      ],
+      "answer": 0
+    },
+    {
+      "id": "m11",
+      "type": "cloze",
+      "skill": "twosls-estimation",
+      "level": 2,
+      "prompt": "Vul de formule aan voor de correcte berekening van de 2SLS-residuen.",
+      "explain": "In tegenstelling tot handmatige OLS (die rekent met xhat) berekent ivregress de werkelijke residuen ten opzichte van de geobserveerde x: y - beta0 - beta1*x.",
+      "text": "De werkelijke residuen van het structurele 2SLS-model worden berekend ten opzichte van de werkelijke {{x}}, en niet ten opzichte van de voorspelde {{xhat}}."
+    },
+    {
+      "id": "m12",
+      "type": "numeric",
+      "skill": "twosls-estimation",
+      "level": 2,
+      "prompt": "In een model met één instrument verklaart het instrument 4% van de variantie in x (R^2 = 0.04). De variantie van de OLS-schatter is Var(b_OLS) = 0.002. Wat is de geschatte variantie van de IV-schatter Var(b_IV) = Var(b_OLS) / R^2?",
+      "explain": "De variantie van de IV-schatter is Var(b_OLS) / R^2 = 0.002 / 0.04 = 0.05. De standaardfout is daardoor sqrt(1/0.04) = 5 keer zo groot.",
+      "value": 0.05,
+      "tolerance": 0.001
+    },
+    {
+      "id": "m13",
+      "type": "mcq",
+      "skill": "diagnostic-tests",
+      "level": 2,
+      "prompt": "In de eerste trap van een 2SLS-model met 2 instrumenten vind je F(2, 423) = 4.21 (p = 0.015). Welk probleem doet zich voor?",
+      "explain": "Hoewel de p-waarde statistisch significant is op 5% (p = 0.015), is de F-waarde veel kleiner dan de vuistregel F > 10 (en de Stock-Yogo drempels). De instrumenten zijn zwak, waardoor 2SLS ernstig vertekend is naar OLS en standaard inferentie faalt.",
+      "options": [
+        "De instrumenten zijn zwak (F < 10), waardoor 2SLS aanzienlijk vertekend is in de richting van OLS",
+        "De instrumenten zijn niet geïdentificeerd omdat p > 0.05",
+        "Het model is overgeïdentificeerd en schendt automatisch de uitsluitingsrestrictie",
+        "Er is sprake van perfecte multicollineariteit in de eerste trap"
+      ],
+      "answer": 0
+    },
+    {
+      "id": "m14",
+      "type": "type",
+      "skill": "diagnostic-tests",
+      "level": 2,
+      "prompt": "Welk Stata post-estimation commando voer je uit na `ivregress 2sls` om de Durbin en Wu-Hausman endogeniteitstoetsen uit te voeren?",
+      "explain": "Het commando 'estat endogenous' berekent de Durbin- en Wu-Hausman toetsen om te controleren of de regressor endogeen is.",
+      "answers": [
+        "estat endogenous"
+      ],
+      "lang": "nl"
+    },
+    {
+      "id": "m15",
+      "type": "numeric",
+      "skill": "diagnostic-tests",
+      "level": 2,
+      "prompt": "In een loonmodel (Mroz 1987) met N = 428 observaties levert de regressie van de 2SLS-residuen op ervaring en ouderlijk onderwijs een R^2 van 0.00088334 op. Bereken de Sargan-toetsstatistiek J = N * R^2 op 3 decimalen nauwkeurig.",
+      "explain": "J = N * R^2 = 428 * 0.00088334 = 0.37807, afgerond op 3 decimalen is dit 0.378.",
+      "value": 0.378,
+      "tolerance": 0.005
+    },
+    {
+      "id": "m16",
+      "type": "mcq",
+      "skill": "diagnostic-tests",
+      "level": 2,
+      "prompt": "Na `ivregress 2sls` geeft `estat overid` een Sargan chi2(1) = 0.378 met p = 0.5386. Wat is de juiste methodologische conclusie op het 5%-niveau?",
+      "explain": "Omdat p = 0.5386 > 0.05, kunnen we de nulhypothese (H0: alle instrumenten zijn geldig en exogeen) niet verwerpen. De data leveren geen bewijs dat de overidentificerende restrictie geschonden is; de instrumenten zijn compatibel.",
+      "options": [
+        "H0 kan niet worden verworpen: de data spreken de geldigheid van de overidentificerende instrumenten niet tegen",
+        "Verwerp H0: minstens één van de instrumenten is ongeldig en correleert met de foutterm",
+        "De instrumenten zijn te zwak omdat chi2 < 3.84",
+        "Het model moet opnieuw geschat worden met OLS omdat de toets niet significant is"
+      ],
+      "answer": 0
+    }
+  ],
+  "production": {
+    "type": "explain",
+    "lang": "nl",
+    "minWords": 100,
+    "prompt": "**Empirische Case: Rendement op onderwijs in Stata (`mroz.dta`)**\n\nJe onderzoekt het causale rendement op onderwijs voor gehuwde vrouwen aan de hand van de Mincer-loonvergelijking in `mroz.dta` ($N = 428$ werkende vrouwen):\n\n$$\\ln(\\text{wage}) = \\beta_0 + \\beta_1 \\text{educ} + \\beta_2 \\text{exper} + \\beta_3 \\text{exper}^2 + u$$\n\nOmdat aangeboren vaardigheid ontbreekt in de data, is `educ` potentieel endogeen. Als instrumenten gebruik je de opleiding van de moeder (`mothereduc`) en van de vader (`fathereduc`).\n\nJe voert de volgende Stata-analyses uit:\n\n1. **OLS benchmark:**\n   `reg lwage educ exper exper2`\n   $\\hat{\\beta}_{1, OLS} = 0{,}1075$ (Std. Err. $= 0{,}0141$, $t = 7{,}60$, $p < 0{,}001$).\n2. **2SLS schatting:**\n   `ivregress 2sls lwage exper exper2 (educ = mothereduc fathereduc)`\n   $\\hat{\\beta}_{1, 2SLS} = 0{,}0614$ (Std. Err. $= 0{,}0313$, $z = 1{,}96$, $p = 0{,}050$).\n3. **First-stage diagnostiek:**\n   `test mothereduc fathereduc` levert $F(2, 423) = 55{,}40$ ($p < 0{,}0001$).\n4. **Post-estimation diagnostiek:**\n   `estat endogenous` levert Wu-Hausman $F(1, 423) = 2{,}79$ ($p = 0{,}0954$).\n   `estat overid` levert Sargan $\\chi^2(1) = 0{,}378$ ($p = 0{,}5386$).\n\n**Beantwoord de volgende drie academische vragen grondig:**\n1. **Vergelijk de OLS- en 2SLS-schattingen voor `educ`:** Interpreteer het economische en statistische verschil (richting, magnitude in procentpunten, standaardfout). Hoe verklaart de theorie van *omitted ability bias* de verandering van $10{,}75\\%$ naar $6{,}14\\%$?\n2. **Evalueer de sterkte van de instrumenten:** Interpreteer de first-stage F-statistiek ($F = 55{,}40$) aan de hand van de Staiger-Stock vuistregel en de Stock-Yogo drempelwaarden. Zijn de instrumenten sterk genoeg?\n3. **Evalueer de modelspecificatie via de post-estimation toetsen:** Interpreteer zowel de Hausman-endogeniteitstoets als de Sargan-overidentificatietoets. Formuleer bij beide toetsen de nulhypothese, de p-waarde en het uiteindelijke besluit over het model.",
+    "model": "**1. Vergelijking tussen OLS en 2SLS voor het rendement op onderwijs:**\n- In OLS levert een extra jaar scholing een toename van het loon op met ca. $10{,}75\\%$ ($\\hat{\\beta}_1 = 0{,}1075$, $p < 0{,}001$). In 2SLS daalt deze schatting substantieel naar $6{,}14\\%$ ($\\hat{\\beta}_1 = 0{,}0614$, $p = 0{,}050$).\n- De daling met $4{,}61$ procentpunten ligt geheel in lijn met de economische theorie van *omitted variable bias*: aangeboren vaardigheid (*ability*) is positief gecorreleerd met opleidingsniveau (slimmere mensen studeren langer) én met loon ($+ \\times + = +$). OLS overschat daardoor het werkelijke causale effect van onderwijs. 2SLS zuivert deze ability bias weg.\n- Merk tevens het efficiëntieverlies op: de standaardfout van 2SLS ($0{,}0313$) is meer dan dubbel zo groot als die van OLS ($0{,}0141$), wat typerend is voor IV-schatters omdat alleen de door ouderlijke opleiding verklaarde variatie in scholing benut wordt.\n\n**2. Evaluatie van instrumentrelevantie (sterkte van de instrumenten):**\n- De gezamenlijke F-toets op de uitgesloten instrumenten in de eerste trap bedraagt $F(2, 423) = 55{,}40$ ($p < 0{,}0001$).\n- Volgens de Staiger & Stock (1997) vuistregel ($F > 10$) is $55{,}40 \\gg 10$.\n- Volgens de Stock-Yogo (2005) tabellen voor $K_1 = 1$ en $L_1 = 2$ bedraagt de kritieke waarde voor maximaal 10% relatieve IV-vertekening $19{,}93$. Aangezien $55{,}40 > 19{,}93$, kunnen we de hypothese van zwakke instrumenten met klem verwerpen. De instrumenten zijn zeer sterk en finite-sample bias naar OLS is verwaarloosbaar.\n\n**3. Evaluatie van de post-estimation toetsen:**\n- **Hausman-endogeniteitstoets (`estat endogenous`):**\n  - $H_0$: `educ` is exogeen ($\\text{Cov}(\\text{educ}, u) = 0$). OLS is consistent en efficiënt.\n  - $H_1$: `educ` is endogeen. OLS is inconsistent, 2SLS is vereist.\n  - Resultaat: Wu-Hausman $F(1, 423) = 2{,}79$, $p = 0{,}0954$.\n  - Conclusie: Op het conventionele $5\\%$-niveau ($p > 0{,}05$) kunnen we de nulhypothese van exogeniteit *niet* verwerpen. Op het ruimere $10\\%$-niveau ($p < 0{,}10$) verwerpen we $H_0$ wel. Empirisch betekent dit dat het bewijs voor endogeniteit marginaal is; onderzoekers die efficiëntie vooropstellen behouden OLS, terwijl voorzichtige onderzoekers 2SLS prefereren ter bescherming tegen vertekening.\n- **Sargan-overidentificatietoets (`estat overid`):**\n  - $H_0$: Beide uitgesloten instrumenten zijn geldig (ongecorreleerd met foutterm $u$, voldoen aan uitsluitingsrestrictie).\n  - $H_1$: Minstens één instrument is ongeldig (correleert direct met loon of vaardigheid).\n  - Resultaat: Sargan (score) $\\chi^2(1) = 0{,}378$, $p = 0{,}5386$ (met $df = 2 - 1 = 1$).\n  - Conclusie: Aangezien $p = 0{,}5386 \\gg 0{,}05$, kunnen we $H_0$ geenszins verwerpen. De overtallige instrumenten zijn statistisch compatibel en er is geen indicatie dat de uitsluitingsrestrictie geschonden is.",
+    "rubric": [
+      "Correcte kwantitatieve vergelijking tussen OLS (10,75%) en 2SLS (6,14%) inclusief toelichting op upward ability bias en toegenomen standaardfout",
+      "Beoordeling van instrumentsterkte via first-stage F = 55,40 t.o.v. de Staiger-Stock regel (F > 10) en Stock-Yogo drempelwaarden",
+      "Correcte formulering van H0, toetsstatistiek en p-waarde (p = 0,0954) voor de Hausman-toets met nuance tussen 5% en 10% niveau",
+      "Correcte formulering van H0, vrijheidsgraad (df = 1), toetsstatistiek (0,378) en niet-verwerping (p = 0,5386) bij de Sargan-toets"
+    ]
+  },
+  "cards": [
+    {
+      "id": "c-ivregress-syntax",
+      "front": "Wat is de standaardsyntaxis voor Two-Stage Least Squares in Stata met robuuste standaardfouten?",
+      "back": "`ivregress 2sls depvar [exog] (endog = instruments), robust`\nAlles tussen haakjes definieert de endogene relatie: `(endog = excluded_instruments)`.",
+      "skill": "twosls-estimation"
+    },
+    {
+      "id": "c-first-stage-rule",
+      "front": "Wat is de Staiger & Stock (1997) vuistregel voor de first-stage F-statistiek?",
+      "back": "$F > 10$\nDe F-statistiek voor de gezamenlijke significantie van de **uitgesloten instrumenten** in de eerste trap moet groter zijn dan 10 om zwakke instrumenten (*weak instruments*) uit te sluiten.",
+      "answers": [
+        "F > 10",
+        "10",
+        "F > 10.0"
+      ],
+      "lang": "nl",
+      "skill": "diagnostic-tests"
+    },
+    {
+      "id": "c-manual-se-trap",
+      "front": "Waarom mag je de standaardfouten van een handmatige tweetraps-OLS (`reg y xhat`) nooit rapporteren op het examen?",
+      "back": "De tweede-traps OLS berekent de residuen ten opzichte van $\\hat{x}$ ($y - \\hat{\\beta}\\hat{x}$) in plaats van de werkelijke $x$ ($y - \\hat{\\beta}x$). De residuele kwadratensom is fout, waardoor de standaardfouten en p-waarden ongeldig zijn.",
+      "skill": "twosls-estimation"
+    },
+    {
+      "id": "c-hausman-test",
+      "front": "Wat toetst de Hausman-endogeniteitstoets (`estat endogenous`) en wat is de nulhypothese?",
+      "back": "$H_0$: De regressoren zijn **exogeen** ($\\text{Cov}(x, u) = 0$).\n- $p > 0{,}05$: kan $H_0$ niet verwerpen $\\to$ OLS volstaat (is efficiënter).\n- $p < 0{,}05$: verwerp $H_0 \\to$ regressor is endogeen; OLS is inconsistent, 2SLS is vereist.",
+      "skill": "diagnostic-tests"
+    },
+    {
+      "id": "c-sargan-overid",
+      "front": "Wat toetst de Sargan-overidentificatietoets (`estat overid`) en hoeveel vrijheidsgraden heeft de test?",
+      "back": "$H_0$: Alle instrumenten zijn geldig (ongecorreleerd met storingsterm $u$).\nToetsstatistiek: $J = N \\times R^2 \\sim \\chi^2(m - k)$, waarbij $m$ het aantal uitgesloten instrumenten is en $k$ het aantal endogene variabelen. Vereist $m > k$.",
+      "skill": "diagnostic-tests"
+    },
+    {
+      "id": "c-exclusion-restriction",
+      "front": "Wat houdt de uitsluitingsrestrictie (exclusion restriction) van een instrument $Z$ in?",
+      "back": "$\\text{Cov}(Z, u) = 0$.\nHet instrument $Z$ beïnvloedt de uitkomst $y$ **uitsluitend indirect** via de endogene variabele $x$, en heeft geen direct effect op $y$ of correlatie met ongeobserveerde stoorfactoren.",
+      "skill": "instrument-validity"
+    },
+    {
+      "id": "c-ovb-bias",
+      "front": "Wat is de formule voor de asymptotische vertekening van de OLS-schatter bij endogeniteit?",
+      "back": "$$\\text{plim}\\,\\hat{\\beta}_{1, OLS} - \\beta_1 = \\frac{\\text{Cov}(x, u)}{\\text{Var}(x)}$$\nOmdat de noemer positief is, bepaalt het teken van $\\text{Cov}(x, u)$ direct de richting van de vertekening (opwaarts of neerwaarts).",
+      "skill": "endogeneity-diagnosis"
+    }
+  ],
+  "sources": [
+    "Angrist, J. D., & Evans, W. N. (1998). Children and Their Parents' Labor Supply: Evidence from Exogenous Variation in Family Size. American Economic Review, 88(3), 450-477.",
+    "Mroz, T. A. (1987). The Sensitivity of an Empirical Model of Married Women's Hours of Work to Economic and Statistical Assumptions. Econometrica, 55(4), 765-799.",
+    "Bound, J., Jaeger, D. A., & Baker, R. M. (1995). Problems with Instrumental Variables Estimation When the Correlation Between the Potential Instrument and the Endogenous Regressor is Weak. JASA, 90(430), 443-450.",
+    "Staiger, D., & Stock, J. H. (1997). Instrumental Variables Regression with Weak Instruments. Econometrica, 65(3), 557-586.",
+    "Stock, J. H., & Yogo, M. (2005). Testing for Weak Instruments in Linear IV Regression. In Identification and Inference for Econometric Models: Essays in Honor of Thomas Rothenberg."
+  ],
+  "meta": {
+    "author": "antigravity",
+    "created": "2026-10-26"
+  }
+}

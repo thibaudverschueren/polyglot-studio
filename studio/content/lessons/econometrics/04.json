@@ -1,0 +1,553 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "econometrics",
+ "id": 4,
+ "roadmap": "econometrics-04-binary-outcome-models",
+ "kind": "core",
+ "title": "Binaire Uitkomstmodellen: LPM, Logit & Probit",
+ "subtitle": "Maximum Likelihood, odds ratio's, marginale effecten (AME, MEM via margins) en modelselectie (pseudo-R², lrtest)",
+ "level": "gevorderd",
+ "minutes": 45,
+ "summary": "Wanneer de afhankelijke variabele binair is (0 of 1), faalt het Lineair Kansmodel (LPM) via Ordinary Least Squares (OLS) door onmogelijke kansvoorspellingen buiten $[0, 1]$ en inherente heteroskedasticiteit $\\text{Var}(y|x) = p(1-p)$. In deze les bouw je de niet-lineaire modellen Logit en Probit op via Maximum Likelihood Estimation (MLE), ontrafel je het cruciale onderscheid tussen odds ratio's en marginale effecten (Average Marginal Effect (AME) versus Marginal Effect at the Mean (MEM) via `margins`), en evalueer je modelkwaliteit met McFadden's Pseudo-$R^2$, Likelihood Ratio (LR) toetsen (`lrtest`) en classificatietabellen (`estat classification`).",
+ "objectives": [
+  {
+   "id": "lpm-limitations",
+   "text": "De tekortkomingen van het Lineair Kansmodel (LPM via OLS) identificeren: kansvoorspellingen buiten $[0, 1]$, niet-normale residuen en inherente heteroskedasticiteit."
+  },
+  {
+   "id": "logit-probit-mle",
+   "text": "Logistische (Logit) en Normale (Probit) cumulatieve verdelingsfuncties formuleren en schatten via Maximum Likelihood Estimation (MLE) in Stata."
+  },
+  {
+   "id": "margins-ame-mem-or",
+   "text": "Odds ratio's (`logit, or`) en marginale effecten berekenen en interpreteren: Average Marginal Effect (AME) versus Marginal Effect at the Mean (MEM) via `margins, dydx(*)`."
+  },
+  {
+   "id": "model-fit-selection",
+   "text": "Modelselectie en goodness-of-fit evalueren via McFadden's Pseudo-$R^2$, Likelihood Ratio toetsen (`lrtest`) en classificatietabellen (`estat classification`)."
+  }
+ ],
+ "sections": [
+  {
+   "id": "sec-lpm",
+   "title": "Het Lineair Kansmodel (LPM) via OLS: Eenvoud en Fatale Gebreken",
+   "md": "### 1. Van Continue naar Binaire Uitkomsten\n\nIn veel sociaal-economische vraagstukken is de te verklaren variabele kwalitatief en binair: een actor maakt een keuze of bevindt zich in een toestand ($y_i \\in \\{0, 1\\}$). Denk aan:\n- Overleven van een scheepsramp ($died = 1$ versus $died = 0$ in de Titanic-data);\n- Arbeidsmarktparticipatie ($inlf = 1$ versus $0$);\n- Aanvragen van een werkloosheidsuitkering ($apply = 1$ versus $0$ in `benefits.dta`).\n\nOmdat $y$ enkel de waarden 0 en 1 aanneemt, is de conditionele verwachtingswaarde $E(y|x)$ wiskundig identiek aan de conditionele succeskans $P(y=1|x)$:\n$$E(y|x) = 1 \\cdot P(y=1|x) + 0 \\cdot P(y=0|x) = P(y=1|x)$$\n\nHet eenvoudigste model dat deze kans probeert te beschrijven is het **Lineair Kansmodel** (LPM, *Linear Probability Model*). Hierin modelleren we de kans simpelweg als een lineaire functie van de verklarende variabelen en schatten we de parameters via gewone kleinste kwadraten (OLS, *Ordinary Least Squares*):\n$$P(y=1|x) = \\beta_0 + \\beta_1 x_1 + \\beta_2 x_2 + \\dots + \\beta_k x_k$$\n\nIn Stata schatten we dit model met het vertrouwde `regress`-commando:\n```stata\nreg died age male i.class, robust\n```\n\n| `died` | Coëfficiënt | Robuuste Std. Err. | $t$ | $P > |t|$ | [95% Betr.-interval] |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n| `age` | .0052997 | .0010196 | 5.20 | 0.000 | .0032989 .0073005 |\n| `male` | .5902551 | .0248883 | 23.72 | 0.000 | .5414187 .6390916 |\n| `class` | | | | | |\n| 2nd | .1197529 | .0371398 | 3.22 | 0.001 | .0468753 .1926305 |\n| 3rd | .5674346 | .0466888 | 12.15 | 0.000 | .4758196 .6590497 |\n| `_cons` | -.1586945 | .0403829 | -3.93 | 0.000 | -.2379358 -.0794532 |\n\n#### Het Grote Voordeel: Directe Interpretatie\nHet enige échte voordeel van het LPM is de intuïtieve interpretatie van de coëfficiënten. Omdat het model strikt lineair is, is de partiële afgeleide constant:\n$$\\frac{\\partial P(y=1|x)}{\\partial x_j} = \\beta_j$$\nDe coëfficiënt $\\beta_j$ geeft direct de verandering weer in de kans dat $y=1$ wanneer $x_j$ met één eenheid toeneemt, ceteris paribus. **Let op de eenheid**: we drukken dit altijd uit in **procentpunten**. In onze Titanic-regressie betekent $\\hat{\\beta}_{\\text{male}} = 0.590$ dat mannen, gecontroleerd voor leeftijd en passagiersklasse, gemiddeld 59.0 procentpunt meer kans hadden om te sterven dan vrouwen.\n\n---\n\n### 2. De Drie Fatale Gebreken van het LPM\n\nOndanks deze interpretatieve eenvoud kent het lineair kansmodel drie fundamentele theoretische en statistische gebreken die het ongeschikt maken als definitief eindmodel.\n\n```\n       Kans P(y=1|x)\n         ^\n     1.0 |--------------------------- Plafond = 1.0 (Logit/Probit S-curve)\n         |                        / \n         |                       /  <-- LPM overschrijdt 1.0! (P > 1)\n         |                      /\n     0.5 |                     / \n         |                    /\n         |                   /   <-- LPM duikt onder 0.0! (P < 0)\n     0.0 |--------------------------- Vloer = 0.0\n         +----------------------------> Lineaire index z = x'β\n```\n\n#### Gebrek 1: Voorspelde Kansen Buiten $[0, 1]$\nEen lineaire functie $\\hat{y} = x'\\hat{\\beta}$ is wiskundig niet begrensd. Voor extreme waarden van de verklarende variabelen kan de voorspelde kans kleiner zijn dan 0 of groter dan 1. Dit schendt het allereerste axioma van Kolmogorov uit de kansrekening: $0 \\le P(A) \\le 1$.\nIn Stata controleren we dit met:\n```stata\npredict yhat_lpm\nsummarize yhat_lpm\n```\nIn de Titanic-steekproef varieert $\\hat{y}_{\\text{LPM}}$ van $-0.1587$ (een negatieve overlijdenskans!) tot $1.1578$ (een overlijdenskans van 116%). Dergelijke voorspellingen zijn conceptuele onzin.\n\n#### Gebrek 2: Inherente Heteroskedasticiteit\nOmdat de waargenomen $y_i$ uitsluitend de waarden 0 of 1 kan aannemen, volgt de afhankelijke variabele conditioneel op $x_i$ een Bernoulli-verdeling met succeskans $p_i = P(y_i=1|x_i) = x_i'\\beta$.\nDe conditionele variantie van de storingsterm $u_i = y_i - x_i'\\beta$ is:\n$$\\text{Var}(u_i|x_i) = \\text{Var}(y_i|x_i) = p_i (1 - p_i) = (x_i'\\beta)(1 - x_i'\\beta)$$\n\n> [!important]\n> **De storingsterm in een LPM is altijd heteroskedastisch.**\n> De variantie $\\text{Var}(u_i|x_i)$ is een kwadratische functie van $x_i$: ze is maximaal ($0.25$) wanneer $p_i = 0.5$ en nadert nul naarmate $p_i$ dicht bij 0 of 1 ligt. Homoskedasticiteit (constante variantie $\\sigma^2$) is wiskundig onmogelijk, tenzij alle hellingscoëfficiënten exact nul zijn.\n\nAls gevolg hiervan zijn de gewone OLS-standaardfouten *biased* en ongeldig. Hypothesetoetsen ($t$- en $F$-toetsen) zijn onbetrouwbaar. Hoewel Weighted Least Squares (WLS) theoretisch variantiegewichten $w_i = 1 / \\sqrt{\\hat{p}_i(1 - \\hat{p}_i)}$ kan gebruiken, crasht deze correctie zodra een waarneming $\\hat{p}_i \\le 0$ of $\\hat{p}_i \\ge 1$ oplevert: de wortel uit een negatief getal bestaat niet in het reële domein.\n\n#### Gebrek 3: Niet-normale Storingstermen\nDe storingsterm $u_i = y_i - x_i'\\beta$ kan voor een gegeven $x_i$ slechts twee discrete waarden aannemen:\n- $u_i = 1 - x_i'\\beta$ met kans $p_i$;\n- $u_i = -x_i'\\beta$ met kans $1 - p_i$.\n\nDe storingsterm is dus een discrete tweepuntsverdeling en nooit normaal verdeeld ($u_i \\not\\sim \\mathcal{N}(0, \\sigma^2)$). Exacte $t$-toetsen voor kleine steekproeven zijn ongeldig; inferentie leunt uitsluitend op asymptotische centrale limietstellingen in grote steekproeven.\n\n---\n\n### 3. Diagnostiek in Stata: Breusch-Pagan vs White\n\nWanneer we in Stata toetsen op heteroskedasticiteit na een LPM, stuiten we op een klassieke examensituatie:\n```stata\nquietly reg died age male i.class\nestat hettest\nestat imtest, white\n```\n\n1. **Breusch-Pagan / Cook-Weisberg (`estat hettest`)**: Toetst op een lineair verband tussen de residuen en de fitted values $\\hat{y}$. In onze Titanic-regressie vinden we:\n   $$\\chi^2(1) = 0.57, \\quad P > \\chi^2 = 0.4487$$\n   De Breusch-Pagan toets verwerpt de nulhypothese van homoskedasticiteit *niet*! Dit is echter een gevaarlijke schijnveiligheid: omdat de ware variantiefunctie paraboolvormig is ($(x'\\beta)(1 - x'\\beta)$) en symmetrisch rond 0.5 ligt, pikt een lineaire toets dit niet op.\n2. **White's Test (`estat imtest, white`)**: Neemt alle kwadraten en kruistermen van de regressoren mee. Hier vinden we:\n   $$\\chi^2(10) = 122.01, \\quad P > \\chi^2 = 0.0000$$\n   White verwerpt homoskedasticiteit overtuigend met $p < 0.0001$.\n\n> [!pitfall]\n> **Valkuil op het examen:**\n> Concludeer na `estat hettest` nooit dat een LPM homoskedastisch is! De algebraïsche afleiding $\\text{Var}(y|x) = p(1-p)$ bewijst dat heteroskedasticiteit inherent is aan het model. Gebruik bij een LPM daarom **altijd** de optie `robust` (`vce(robust)`). Maar onthoud: robuuste standaardfouten lossen het begrenzingsprobleem van kansen buiten $[0, 1]$ niet op."
+  },
+  {
+   "id": "sec-logit-probit",
+   "title": "Niet-lineaire Binaire Modellen: Logit & Probit via Maximum Likelihood",
+   "md": "### 1. De Indexbenadering en Transformatiefuncties\n\nOm te garanderen dat de gemodelleerde kans $P(y=1|x)$ te allen tijde strikt binnen het natuurlijke interval $(0, 1)$ blijft, stappen we over van een lineaire functie naar een **indexmodel**:\n$$P(y=1|x) = G(z) = G(\\beta_0 + \\beta_1 x_1 + \\dots + \\beta_k x_k)$$\nwaarbij $z = x'\\beta$ de lineaire index is, en $G(\\cdot)$ een strikt stijgende cumulatieve verdelingsfunctie (CDF, *cumulative distribution function*) met de asymptotische eigenschappen:\n$$\\lim_{z \\to -\\infty} G(z) = 0 \\quad \\text{en} \\quad \\lim_{z \\to +\\infty} G(z) = 1$$\n\nDe twee toonaangevende specificaties in de econometrie verschillen uitsluitend in de keuze van deze verdelingsfunctie $G(z)$:\n\n| Eigenschap | Logit Model | Probit Model |\n| :--- | :--- | :--- |\n| **Cumulatieve verdeling $G(z)$** | Logistische CDF: $\\Lambda(z) = \\frac{e^z}{1 + e^z} = \\frac{1}{1 + e^{-z}}$ | Standaardnormale CDF: $\\Phi(z) = \\int_{-\\infty}^z \\frac{1}{\\sqrt{2\\pi}} e^{-u^2/2} du$ |\n| **Kansdichtheid $g(z) = G'(z)$** | $\\lambda(z) = \\frac{e^z}{(1+e^z)^2} = \\Lambda(z)(1 - \\Lambda(z))$ | $\\phi(z) = \\frac{1}{\\sqrt{2\\pi}} e^{-z^2/2}$ |\n| **Latente foutterm $e_i$** | Standaard logistisch verdeeld | Standaardnormaal verdeeld $\\mathcal{N}(0, 1)$ |\n| **Variantie foutterm $\\text{Var}(e_i)$** | $\\pi^2 / 3 \\approx 3.2898$ | $1.0000$ (genormaliseerd) |\n| **Vorm van de curve** | S-vormig met iets zwaardere staarten (*fatter tails*) | S-vormig, identiek aan Gaussische sigmoïde |\n\n---\n\n### 2. Schatten via Maximum Likelihood Estimation (MLE)\n\nOmdat de regressiefunctie $G(x'\\beta)$ niet-lineair is in de parameters $\\beta$, kan OLS niet worden toegepast. In plaats daarvan gebruiken we **Maximum Likelihood Estimation** (MLE).\n\nVoor elke waarneming $i$ met onafhankelijke uitkomst $y_i \\in \\{0, 1\\}$ is de kans op de geobserveerde uitkomst:\n$$P(Y_i = y_i | x_i) = [G(x_i'\\beta)]^{y_i} [1 - G(x_i'\\beta)]^{1 - y_i}$$\n\nDe aannemelijkheidsfunctie (likelihood) voor de gehele steekproef van $n$ onafhankelijke observaties is het product van deze individuele kansen:\n$$L(\\beta) = \\prod_{i=1}^n [G(x_i'\\beta)]^{y_i} [1 - G(x_i'\\beta)]^{1 - y_i}$$\n\nOmdat optimaliseren van een product numeriek instabiel is, nemen we de natuurlijke logaritme. Dit resulteert in de **log-likelihoodfunctie**:\n$$\\ln L(\\beta) = \\sum_{i=1}^n \\left\\{ y_i \\ln G(x_i'\\beta) + (1 - y_i) \\ln [1 - G(x_i'\\beta)] \\right\\}$$\n\nStata maximaliseert $\\ln L(\\beta)$ numeriek via het **Newton-Raphson algoritme**. In de Stata-output zie je dit proces live convergeren:\n```stata\nlogit died age male i.class, r\n```\n```text\nIteration 0: Log pseudolikelihood = -707.31022\nIteration 1: Log pseudolikelihood = -494.7678\nIteration 2: Log pseudolikelihood = -491.24221\nIteration 3: Log pseudolikelihood = -491.22733\nIteration 4: Log pseudolikelihood = -491.22733\n\nLogistic regression                             Number of obs     =      1,046\n                                                Wald chi2(4)      =     283.56\n                                                Prob > chi2       =     0.0000\nLog pseudolikelihood = -491.22733               Pseudo R2         =     0.3055\n\n------------------------------------------------------------------------------\n             |               Robust\n        died | Coefficient  std. err.      z    P>|z|     [95% conf. interval]\n-------------+----------------------------------------------------------------\n         age |   .0343932   .0064705     5.32   0.000     .0217113    .0470752\n        male |   2.497841   .1624203    15.38   0.000     2.179503    2.816179\n             |\n       class |\n        2nd  |   1.280581   .1977502     6.48   0.000     .8929979    1.668164\n        3rd  |   2.289671   .2313513     9.90   0.000     1.836231    2.743112\n             |\n       _cons |  -3.522082   .3279129   -10.74   0.000     -4.16478   -2.879385\n------------------------------------------------------------------------------\n```\n\nVoor Probit gebruiken we simpelweg:\n```stata\nprobit died age male i.class, r\n```\n\nWanneer we de voorspellingen opslaan en samenvatten:\n```stata\npredict yhat_logit\nsummarize yhat_logit\n```\nzien we dat alle voorspelde kansen gegarandeerd binnen het bereik $[0.0307, 0.9783]$ vallen. Geen enkele kans duikt onder 0 of overschrijdt 1!\n\n---\n\n### 3. Coëfficiënten Vergelijken: Amemiya & Wooldridge Schaalfactoren\n\nMerk op dat de ruwe geschatte coëfficiënten van LPM, Probit en Logit sterk in magnitude verschillen:\n- $\\hat{\\beta}_{\\text{age, LPM}} = 0.0053$\n- $\\hat{\\beta}_{\\text{age, probit}} = 0.0211$\n- $\\hat{\\beta}_{\\text{age, logit}} = 0.0384$\n\nWaarom zijn de Logit-coëfficiënten bijna twee keer zo groot als Probit, en bijna acht keer zo groot als LPM?\nDit is een direct gevolg van de **latente schaal** (de variantie van de storingsterm). In Probit is $\\sigma_e = 1$, terwijl in Logit $\\sigma_e = \\pi / \\sqrt{3} \\approx 1.81$. Bovendien evalueert het LPM een lineaire helling, terwijl Logit en Probit S-curves schatten waarvan de maximale helling in het midden ($z=0$) ligt:\n- Voor Logit is de maximale helling $\\Lambda'(0) = 0.25 = 1/4$.\n- Voor Probit is de maximale helling $\\phi(0) = 1/\\sqrt{2\\pi} \\approx 0.3989 \\approx 1/2.5$.\n\n> [!rule]\n> **Amemiya / Wooldridge Vuistregels voor Coëfficiënten:**\n> $$\\hat{\\beta}_{\\text{logit}} \\approx 4 \\cdot \\hat{\\beta}_{\\text{LPM}}$$\n> $$\\hat{\\beta}_{\\text{probit}} \\approx 2.5 \\cdot \\hat{\\beta}_{\\text{LPM}}$$\n> $$\\hat{\\beta}_{\\text{logit}} \\approx 1.6 \\cdot \\hat{\\beta}_{\\text{probit}}$$\n>\n> In onze data: $1.6 \\times 0.0211 = 0.0338 \\approx 0.0384$. De drie modellen vertellen inhoudelijk hetzelfde verhaal over richting en relatieve significantie, maar hun coëfficiënten staan op verschillende schalen."
+  },
+  {
+   "id": "sec-margins-odds",
+   "title": "Coëfficiënten Interpreteren: Odds Ratio's en Marginale Effecten",
+   "md": "### 1. Het Interpretatieprobleem van Niet-lineaire Coëfficiënten\n\nIn lineaire regressie is de interpretatie eenvoudig: $\\beta_j = \\partial y / \\partial x_j$. In Logit en Probit daarentegen beïnvloedt $x_j$ de uitkomst via de niet-lineaire transformatie $G(x'\\beta)$.\nDe partiële afgeleide naar een continue variabele $x_j$ volgt via de kettingregel:\n$$\\frac{\\partial P(y=1|x)}{\\partial x_j} = G'(x'\\beta) \\cdot \\beta_j = g(x'\\beta) \\cdot \\beta_j$$\n\nDit levert een fundamenteel inzicht op:\n1. **Het teken** van het effect is ondubbelzinnig gelijk aan het teken van $\\beta_j$, want de dichtheidsfunctie $g(z)$ is per definitie altijd strikt positief ($g(z) > 0$).\n2. **De grootte** van de kansverandering hangt af van $g(x'\\beta)$, en dus van de waarden van **alle** verklarende variabelen in $x$! Het marginale effect is niet constant over individuen.\n\nOm dit model toch economisch betekenisvol te rapporteren hebben we twee methodes: **Odds Ratio's** (alleen bij Logit) en **Marginale Effecten** via post-estimation commando's (`margins`).\n\n---\n\n### 2. Methode 1: Odds en Odds Ratio's in Logit (`logit, or`)\n\nDe **odds** (kansverhouding) is gedefinieerd als de kans op succes gedeeld door de kans op falen:\n$$\\text{Odds} = \\frac{P(y=1|x)}{1 - P(y=1|x)}$$\n\nVullen we hier de logistische functie $\\Lambda(z) = e^z / (1 + e^z)$ in, dan vereenvoudigt de noemer tot $1 / (1 + e^z)$, waardoor de breuk reduceert tot:\n$$\\text{Odds} = \\frac{e^z / (1 + e^z)}{1 / (1 + e^z)} = e^z = e^{\\beta_0 + \\beta_1 x_1 + \\dots + \\beta_k x_k}$$\n\nNemen we de natuurlijke logaritme aan beide kanten, dan ontstaat de lineaire relatie:\n$$\\ln(\\text{Odds}) = \\text{logit}(P) = \\beta_0 + \\beta_1 x_1 + \\dots + \\beta_k x_k$$\nDe ruwe Logit-coëfficiënt $\\beta_j$ meet dus de verandering in de **log-odds** bij een stijging van $x_j$ met één eenheid. Exponentiëren we de coëfficiënt:\n$$\\text{OR}_j = \\frac{\\text{Odds}(x_j + 1)}{\\text{Odds}(x_j)} = \\frac{e^{x'\\beta + \\beta_j}}{e^{x'\\beta}} = e^{\\beta_j}$$\n\nIn Stata vragen we odds ratio's direct op met de optie `or`:\n```stata\nlogit y age tenure rr, robust or\n```\n\n| `y` (UI take-up) | Odds Ratio | Robuuste Std. Err. | $z$ | $P > |z|$ | [95% Betr.-interval] |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n| `age` | 1.017913 | .0034437 | 5.25 | 0.000 | 1.011186 1.024685 |\n| `tenure` | 1.026758 | .0070113 | 3.87 | 0.000 | 1.013107 1.040592 |\n| `rr` | .7728997 | .233976 | -0.85 | 0.395 | .427015 1.398953 |\n| `_cons` | 1.118600 | .2025017 | 0.62 | 0.536 | .7844774 1.595030 |\n\n#### Hoe interpreteer je een Odds Ratio?\n- **$\\text{OR} > 1$ (positieve $\\beta$):** De odds nemen toe met een factor $\\text{OR}$. In procenten: $(e^{\\beta_j} - 1) \\times 100\\%$.\n  Voor `age` ($OR = 1.0179$): ceteris paribus stijgen de odds op het aanvragen van een uitkering met **$1.79\\%$** voor elk bijkomend levensjaar.\n  Voor `tenure` ($OR = 1.0268$): elk extra jaar anciënniteit verhoogt de odds met **$2.68\\%$**.\n- **$\\text{OR} < 1$ (negatieve $\\beta$):** De odds nemen af met $(1 - e^{\\beta_j}) \\times 100\\%$.\n  Voor `rr` ($OR = 0.7729$): een toename van de vervangingsratio met 1 eenheid (wat 100 procentpunt is) verlaagt de odds met $(1 - 0.7729) \\times 100\\% = 22.71\\%$. Voor een realistische stijging van 10 procentpunt (0.10 eenheden) is het effect $0.7729^{0.10} - 1 \\approx -2.5\\%$.\n\n> [!pitfall]\n> **Twee Klassieke Examenvallen bij Odds Ratio's:**\n> 1. **Odds zijn géén kansen!** Zeg op het examen nooit: *\"de kans stijgt met 1.79%\"*. Zeg altijd: *\"de odds (kansverhouding $p/(1-p)$) stijgen met 1.79%\"*. Een toename in odds betekent niet een identieke stijging in procentpunten!\n> 2. **Odds ratio's bestaan NIET bij Probit.** Omdat de normale CDF $\\Phi(z)$ geen analytische exponentiële vorm heeft, hangt de odds ratio bij Probit af van alle andere variabelen en is ze niet constant. De optie `or` werkt in Stata uitsluitend na `logit`.\n\n---\n\n### 3. Methode 2: Marginale Effecten via `margins` (AME vs MEM)\n\nWil je het effect uitdrukken in **kansen en procentpunten**, dan berekenen we het marginale effect:\n$$\\frac{\\partial P(y=1|x)}{\\partial x_j} = \\beta_j \\cdot g(x'\\beta)$$\n- Bij Logit is $g(z) = \\Lambda(z)(1 - \\Lambda(z)) = \\frac{e^z}{(1+e^z)^2}$.\n- Bij Probit is $g(z) = \\phi(z) = \\text{normalden}(z) = \\frac{1}{\\sqrt{2\\pi}} e^{-z^2/2}$.\n\nOmdat dit effect voor elk individu anders is, bestaan er in de toegepaste econometrie twee dominante aggregatieniveaus:\n\n```\n+-------------------------------------------------------------------------+\n| Average Marginal Effect (AME)                                           |\n| 1. Bereken voor ieder individu i zijn eigen helling: ME_i = β * g(x_i'β) |\n| 2. Neem het gemiddelde over de hele steekproef: AME = (1/n) Σ ME_i      |\n| Stata syntax: margins, dydx(*)                                          |\n+-------------------------------------------------------------------------+\n                                   vs\n+-------------------------------------------------------------------------+\n| Marginal Effect at the Mean (MEM)                                       |\n| 1. Bereken eerst het steekproefgemiddelde van alle regressoren: x_gem   |\n| 2. Evalueer de helling in dit ene hypothetische punt: MEM = β * g(x_gem'β)|\n| Stata syntax: margins, dydx(*) atmeans                                  |\n+-------------------------------------------------------------------------+\n```\n\nLaten we beide vergelijken na de Titanic-regressie (`logit died age i.male##i.class, r`):\n\n```stata\n* Average Marginal Effect (AME)\nmargins, dydx(*)\n```\n```text\n------------------------------------------------------------------------------\n             |            Delta-method\n             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]\n-------------+----------------------------------------------------------------\n         age |   .0054848   .0009851     5.57   0.000     .0035541    .0074155\n      1.male |    .475184   .0269656    17.62   0.000     .4223324    .5280355\n             |\n       class |\n        2nd  |    .217077   .0342657     6.34   0.000     .1499174    .2842366\n        3rd  |   .3891704   .0356806    10.91   0.000     .3192377    .4591031\n------------------------------------------------------------------------------\n```\n\n```stata\n* Marginal Effect at the Mean (MEM)\nmargins, dydx(*) atmeans\n```\n```text\n------------------------------------------------------------------------------\n             |            Delta-method\n             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]\n-------------+----------------------------------------------------------------\n         age |   .0092657   .0017661     5.25   0.000     .0058042    .0127273\n      1.male |   .5901259    .032721    18.04   0.000     .5259938    .6542579\n             |\n       class |\n        2nd  |   .3602136   .0592414     6.08   0.000     .2441026    .4763247\n        3rd  |   .5543537   .0489269    11.33   0.000     .4584588    .6502486\n------------------------------------------------------------------------------\n```\n\n> [!important]\n> **Waarom AME de voorkeur heeft boven MEM:**\n> - Bij **AME** (`margins, dydx(*)`) berekenen we de reële marginale effecten voor echte mensen in de steekproef en middelen we die uit. Het AME van leeftijd is $+0.55$ procentpunt per jaar.\n> - Bij **MEM** (`margins, dydx(*) atmeans`) berekenen we het effect voor een fictief individu wiens kenmerken gelijk zijn aan het gemiddelde (`male = 0.629`, `class2 = 0.250`, `class3 = 0.479`). Niemand op de Titanic was echter voor 63% man en voor 25% 2e klasse! Hierdoor schat MEM het marginale effect van leeftijd kunstmatig hoog in op $+0.93$ procentpunt.\n> - **Voor dummyvariabelen** berekent Stata automatisch het **discrete verschil**: $\\Delta P = P(y=1|D=1, x) - P(y=1|D=0, x)$ in plaats van een afgeleide."
+  },
+  {
+   "id": "sec-model-fit",
+   "title": "Modelselectie, Goodness-of-Fit en Classificatie",
+   "md": "### 1. Waarom Gewone $R^2$ Niet Bestaat bij MLE\n\nIn een lineair regressiemodel ontbindt OLS de totale variantie netjes in verklaarde en onverklaarde kwadratensommen: $TSS = ESS + RSS$, wat leidt tot $R^2 = 1 - RSS/TSS$.\nBij Maximum Likelihood Estimation optimaliseren we echter geen kwadratensommen, maar de aannemelijkheid $\\ln L$. Omdat $y_i \\in \\{0, 1\\}$ en de voorspelling $\\hat{p}_i$ een kans is, kan het residu $y_i - \\hat{p}_i$ nooit nul worden tenzij de kansen exact 0 of 1 zijn. Een gewone $R^2$ is dus noch wiskundig gedefinieerd, noch theoretisch wenselijk.\n\n---\n\n### 2. McFadden's Pseudo-$R^2$\n\nIn plaats van $R^2$ rapporteert Stata standaard **McFadden's Pseudo-$R^2$** (ook bekend als de *likelihood ratio index*):\n$$R^2_{\\text{McFadden}} = 1 - \\frac{\\ln L_{\\text{ur}}}{\\ln L_0}$$\nwaarbij:\n- $\\ln L_{\\text{ur}}$ de gemaximaliseerde log-likelihood is van het onbeperkte (*unrestricted*) model met alle verklarende variabelen;\n- $\\ln L_0$ de log-likelihood is van het restrictieve nulmodel met **uitsluitend een constante term** (het model waarin alle hellingscoëfficiënten nul zijn).\n\nOmdat toevoegen van variabelen de aannemelijkheid altijd verbetert en log-likelihoods altijd negatief zijn (kansen $< 1 \\implies \\ln P < 0$), geldt:\n$$\\ln L_0 \\le \\ln L_{\\text{ur}} < 0 \\implies 0 \\le \\frac{\\ln L_{\\text{ur}}}{\\ln L_0} \\le 1 \\implies 0 \\le R^2_{\\text{McFadden}} \\le 1$$\n\nIn onze Titanic Logit-schatting:\n- $\\ln L_{\\text{ur}} = -465.99547$\n- $\\ln L_0 = -707.31022$\n$$R^2_{\\text{McFadden}} = 1 - \\frac{-465.99547}{-707.31022} = 1 - 0.658828 = 0.3412$$\n\n> [!rule]\n> **Vuistregel van McFadden:**\n> Waarden van Pseudo-$R^2$ tussen **0.20 en 0.40** duiden al op een **uitstekende pasvorm** van het binaire model! Een Pseudo-$R^2$ van 0.34 komt intuïtief overeen met een OLS $R^2$ van 0.70 tot 0.85 in continue modellen. Verwacht bij binaire keuzemodellen dus nooit Pseudo-$R^2$'s van 0.80 of 0.90.\n\n---\n\n### 3. Modelselectie: Likelihood Ratio Toets (`lrtest`) vs Wald-toets (`testparm`)\n\nWillen we nagaan of een groep variabelen (bijv. alle geslacht- en klasse-interacties) gezamenlijk statistisch significant bijdraagt aan de verklaring van de uitkomst, dan toetsen we:\n$$H_0: \\beta_{\\text{male}} = \\beta_{\\text{class2}} = \\beta_{\\text{class3}} = \\beta_{\\text{male}\\#\\text{class2}} = \\beta_{\\text{male}\\#\\text{class3}} = 0$$\n\nDe klassieke toets hiervoor bij MLE is de **Likelihood Ratio (LR) toets**:\n$$LR = 2 \\cdot (\\ln L_{\\text{ur}} - \\ln L_{\\text{r}}) \\sim \\chi^2(q)$$\nwaarbij $q$ het aantal getoetste restricties is (aantal weggelaten parameters).\n\nIn Stata voeren we dit uit via `lrtest`:\n```stata\n* 1. Schat het onbeperkte model (ZONDER robust!) en sla op\neststo model_ur: logit died age i.male##i.class\n\n* 2. Schat het beperkte model en sla op\neststo model_r: logit died age\n\n* 3. Voer de Likelihood Ratio toets uit\nlrtest model_ur model_r\n```\n```text\nLikelihood-ratio test                                LR chi2(5)  =    479.39\n(Assumption: model_r nested within model_ur)         Prob > chi2 =    0.0000\n```\nMet $\\chi^2(5) = 479.39$ en $p < 0.0001$ verwerpen we $H_0$ met verve: passagiersklasse, geslacht en hun interacties zijn gezamenlijk extreem significant.\n\n> [!pitfall]\n> **De Grote Examenval bij `lrtest`:**\n> De Likelihood Ratio test is **strikt ongeldig** na schattingen met robuuste standaardfouten (`vce(robust)`)!\n> Als je `robust` specificeert, rapporteert Stata een *pseudolikelihood*. De verhouding van pseudolikelihoods volgt geen asymptotische $\\chi^2$-verdeling. Stata weigert `lrtest` resoluut met een foutmelding.\n>\n> **De Oplossing bij Robuuste Fouten:**\n> Gebruik na `logit ..., robust` altijd de **Wald-toets** via `testparm`:\n> ```stata\n> logit died age i.male##i.class, robust\n> testparm i.male##i.class\n> ```\n> De Wald-toets toetst restricties direct op de geschatte coëfficiënten en hun robuuste variantie-covariantiematrix ($W \\sim \\chi^2(q)$) en levert een volledig geldige $p$-waarde op.\n\n---\n\n### 4. De Classificatietabel (`estat classification`)\n\nNaast formele significantietoetsen willen we weten hoe goed het model individuen in de praktijk indeelt. Het post-estimation commando `estat classification` vergelijkt de voorspelling met de werkelijkheid aan de hand van een drempelwaarde (standaard $c = 0.5$):\n- Als $\\hat{p}_i \\ge 0.5 \\implies$ voorspelde uitkomst $\\hat{y}_i = 1$ ($+$);\n- Als $\\hat{p}_i < 0.5 \\implies$ voorspelde uitkomst $\\hat{y}_i = 0$ ($-$).\n\n```stata\nestat classification\n```\n```text\nLogistic model for died\n\n               -------- True --------\nClassified |          D           ~D  |      Total\n-----------+--------------------------+-----------\n     +     |        567          165  |        732\n     -     |         52          262  |        314\n-----------+--------------------------+-----------\nTotal      |        619          427  |       1046\n\nClassified + if predicted Pr(D) >= .5\nTrue D defined as died != 0\n--------------------------------------------------\nSensitivity                     Pr( +| D)   91.60%\nSpecificity                     Pr( -|~D)   61.36%\nPositive predictive value       Pr( D| +)   77.46%\nNegative predictive value       Pr(~D| -)   83.44%\n--------------------------------------------------\nCorrectly classified                        79.25%\n--------------------------------------------------\n```\n\n#### De Drie Kernstatistieken Begrijpen:\n1. **Sensitivity (Gevoeligheid)**: Het percentage van de *werkelijke enen* dat correct als 1 is geclassificeerd:\n   $$\\text{Sensitivity} = \\frac{\\text{True Positives}}{\\text{Totaal Werkelijk } 1} = \\frac{567}{619} = 91.60\\%$$\n2. **Specificity (Specificiteit)**: Het percentage van de *werkelijke nullen* dat correct als 0 is geclassificeerd:\n   $$\\text{Specificity} = \\frac{\\text{True Negatives}}{\\text{Totaal Werkelijk } 0} = \\frac{262}{427} = 61.36\\%$$\n3. **Hit Rate (Percentage Correct Geclassificeerd)**: Het totale percentage juiste beslissingen:\n   $$\\text{Hit Rate} = \\frac{567 + 262}{1046} = \\frac{829}{1046} = 79.25\\%$$\n\n#### Vergelijking met het Naïeve Nulmodel (Benchmark)\nPresteert ons model werkelijk goed met een hit rate van $79.25\\%$?\nOm dat te beoordelen vergelijken we het model altijd met de **naïeve benchmark**: een model met enkel een constante term.\nIn de steekproef stierf $619 / 1046 = 59.18\\%$ van de reizigers. Omdat dit aandeel groter is dan $0.5$, kent het nulmodel aan *iedereen* een voorspelde kans van $0.5918$ toe en voorspelt het dus voor alle 1046 passagiers dat ze overlijden ($\\hat{y} = 1$).\n- De hit rate van dit naïeve nulmodel is simpelweg het aandeel van de meerderheidsklasse: **$59.18\\%$**.\n- Ons model tilt het succespercentage van $59.18\\%$ naar $79.25\\%$. Dat is een reële nettowinst van **20.07 procentpunt** aan verklaringskracht!"
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "mcq",
+   "skill": "lpm-limitations",
+   "level": 1,
+   "prompt": "Wat is het belangrijkste wiskundige probleem wanneer we een binaire uitkomst modelleren via een Lineair Kansmodel (LPM) geschat met OLS?",
+   "explain": "In een lineair kansmodel is de voorspelling x'β niet begrensd. Voor extreme waarden van de verklarende variabelen kan de geschatte kans kleiner worden dan 0 of groter dan 1, wat de grondbeginselen van de kansrekening schendt.",
+   "options": [
+    "De voorspelde kansen kunnen kleiner dan 0 of groter dan 1 worden.",
+    "De geschatte OLS-coëfficiënten zijn altijd inconsistent en vertekend.",
+    "Het model kan niet worden geschat zodra er dummyvariabelen worden opgenomen.",
+    "De residuen hebben altijd een perfecte normale verdeling."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p02",
+   "type": "cloze",
+   "skill": "lpm-limitations",
+   "level": 2,
+   "prompt": "Vul de formule in voor de conditionele variantie van de storingsterm in een Lineair Kansmodel waar de succeskans gelijk is aan p:",
+   "text": "Omdat y conditioneel een Bernoulli-verdeling volgt, is de conditionele variantie gelijk aan Var(y|x) = {{p*(1-p)|p(1-p)}}.",
+   "explain": "Voor een Bernoulli-verdeelde toevalsvariabele met succeskans p geldt dat Var(y|x) = E(y^2|x) - [E(y|x)]^2 = p - p^2 = p(1-p). Omdat p afhangt van x, varieert de variantie met x en is er inherente heteroskedasticiteit."
+  },
+  {
+   "id": "p03",
+   "type": "mcq",
+   "skill": "lpm-limitations",
+   "level": 2,
+   "prompt": "Waarom kan de Breusch-Pagan toets (`estat hettest`) na een LPM ten onrechte homoskedasticiteit NIET verwerpen, terwijl White's test (`estat imtest, white`) dit wél overtuigend doet?",
+   "explain": "De Breusch-Pagan toets toetst uitsluitend op een lineair verband tussen residukwadraten en fitted values. De ware variantiefunctie p(1-p) is echter een parabool (kwadratisch) met een top bij p=0.5. White's test includeert kwadraten en interacties en detecteert deze niet-lineaire vorm wél.",
+   "options": [
+    "Breusch-Pagan toetst enkel op een lineair verband met de fitted values, terwijl de ware variantiefunctie p(1-p) kwadratisch is.",
+    "Breusch-Pagan vereist dat de steekproef groter is dan 100.000 waarnemingen om heteroskedasticiteit te detecteren.",
+    "White's test veronderstelt normale residuen, wat altijd geldt in binaire uitkomstmodellen.",
+    "Breusch-Pagan gebruikt de t-verdeling in plaats van de chi-kwadraatverdeling."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p04",
+   "type": "type",
+   "skill": "lpm-limitations",
+   "level": 2,
+   "prompt": "Welke Stata-optie voeg je verplicht toe aan het commando `regress` om heteroskedasticiteit-robuuste standaardfouten te verkrijgen?",
+   "explain": "De optie `robust` (of afgekort `r`, of `vce(robust)`) berekent Huber-White-sandwichstandaardfouten die consistent zijn onder willekeurige heteroskedasticiteit.",
+   "answers": [
+    "robust",
+    "r",
+    "vce(robust)"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p05",
+   "type": "match",
+   "skill": "logit-probit-mle",
+   "level": 1,
+   "prompt": "Koppel elk econometrisch model aan de bijbehorende cumulatieve verdelingsfunctie en residuele variantie:",
+   "explain": "Logit gebruikt de logistische CDF met variantie pi^2/3; Probit gebruikt de standaardnormale CDF met genormaliseerde variantie 1; LPM gebruikt een onbegrensde lineaire functie.",
+   "pairs": [
+    [
+     "Logit",
+     "Logistische CDF met residuele variantie pi^2/3"
+    ],
+    [
+     "Probit",
+     "Standaardnormale CDF met residuele variantie 1"
+    ],
+    [
+     "LPM",
+     "Lineaire functie zonder verdelingsbegrenzing"
+    ]
+   ]
+  },
+  {
+   "id": "p06",
+   "type": "type",
+   "skill": "logit-probit-mle",
+   "level": 2,
+   "prompt": "Wat is de wiskundige formule van de logistische verdelingsfunctie G(z) uitgedrukt in termen van exp(z)? Schrijf als exp(z)/(1+exp(z)).",
+   "explain": "De logistische cumulatieve verdelingsfunctie is Lambda(z) = exp(z)/(1+exp(z)) oftewel 1/(1+exp(-z)).",
+   "answers": [
+    "exp(z)/(1+exp(z))",
+    "1/(1+exp(-z))",
+    "exp(z)/(1 + exp(z))",
+    "1/(1 + exp(-z))"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p07",
+   "type": "numeric",
+   "skill": "logit-probit-mle",
+   "level": 2,
+   "prompt": "Volgens de vuistregel van Amemiya geldt: beta_logit ≈ 1.6 * beta_probit. Als de geschatte Probit-coëfficiënt van leeftijd 0.25 bedraagt, wat is dan de verwachte Logit-coëfficiënt?",
+   "explain": "Volgens de schaalverhouding geldt beta_logit ≈ 1.6 * 0.25 = 0.40.",
+   "value": 0.4,
+   "tolerance": 0.02,
+   "unit": "coëfficiënt"
+  },
+  {
+   "id": "p08",
+   "type": "mcq",
+   "skill": "logit-probit-mle",
+   "level": 2,
+   "prompt": "Waarom kunnen we de parameters van een Logit- of Probit-model niet schatten met Ordinary Least Squares (OLS)?",
+   "explain": "Omdat de cumulatieve verdelingsfunctie G(x'β) niet-lineair is in de parameters beta, bestaat er geen gesloten matrix-oplossing via OLS. De parameters moeten iteratief gemaximaliseerd worden via Maximum Likelihood Estimation (MLE).",
+   "options": [
+    "Omdat het model niet-lineair is in de parameters, waardoor optimalisatie via Maximum Likelihood vereist is.",
+    "Omdat OLS enkel werkt wanneer de afhankelijke variabele strikt negatief is.",
+    "Omdat OLS geen rekening kan houden met categorische verklarende variabelen.",
+    "Omdat Maximum Likelihood geen residuen berekent."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p09",
+   "type": "type",
+   "skill": "margins-ame-mem-or",
+   "level": 2,
+   "prompt": "Welke optie geef je mee aan het Stata-commando `logit` om de coëfficiënten weer te geven als odds ratio's?",
+   "explain": "De optie `or` achter het commando `logit` zorgt ervoor dat Stata de exponent van de coëfficiënten (exp(b)) rapporteert als odds ratio's.",
+   "answers": [
+    "or"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "p10",
+   "type": "numeric",
+   "skill": "margins-ame-mem-or",
+   "level": 2,
+   "prompt": "In een Logit-regressie naar werkloosheidsuitkeringen bedraagt de geschatte odds ratio voor anciënniteit 1.0268. Met hoeveel procent stijgen de odds op het aanvragen van een uitkering per extra jaar anciënniteit? Rond af op 2 decimalen.",
+   "explain": "Het percentage verandering in odds is gelijk aan (OR - 1) * 100% = (1.0268 - 1) * 100% = 2.68%.",
+   "value": 2.68,
+   "tolerance": 0.05,
+   "unit": "procent"
+  },
+  {
+   "id": "p11",
+   "type": "mcq",
+   "skill": "margins-ame-mem-or",
+   "level": 2,
+   "prompt": "Wat is het fundamentele verschil tussen het Average Marginal Effect (AME) en het Marginal Effect at the Mean (MEM)?",
+   "explain": "AME berekent voor elk individu in de steekproef het marginale effect en middelt die waarden uit (meest realistisch). MEM berekent het marginale effect in één hypothetisch punt waar alle variabelen op hun steekproefgemiddelde staan (vaak een onbestaand individu bij dummy's).",
+   "options": [
+    "AME middelt individuele marginale effecten over de hele steekproef; MEM evalueert het effect in het steekproefgemiddelde.",
+    "AME kan enkel worden berekend voor continue variabelen; MEM enkel voor dummyvariabelen.",
+    "AME gebruikt de normale verdeling; MEM gebruikt uitsluitend de logistische verdeling.",
+    "AME is altijd exact gelijk aan de OLS-coëfficiënt van het Lineair Kansmodel."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p12",
+   "type": "cloze",
+   "skill": "margins-ame-mem-or",
+   "level": 2,
+   "prompt": "Vul de syntax aan voor het Stata-commando margins om het Average Marginal Effect (AME) voor álle variabelen op te vragen:",
+   "text": "Het Stata-commando voor het berekenen van het AME voor alle verklarende variabelen is: margins, {{dydx(*)}}.",
+   "explain": "De optie `dydx(*)` instrueert Stata om de partiële afgeleide (of discrete verandering) voor alle variabelen in het model te berekenen als AME."
+  },
+  {
+   "id": "p13",
+   "type": "cloze",
+   "skill": "model-fit-selection",
+   "level": 2,
+   "prompt": "Vul de wiskundige formule in voor McFadden's Pseudo-R² op basis van de unrestricted log-likelihood ln(L_ur) en de restricted log-likelihood ln(L_0):",
+   "text": "McFadden's Pseudo-R² wordt berekend als: 1 - ({{ln(L_ur)/ln(L_0)|ll_ur/ll_0|ll_u/ll_0}}).",
+   "explain": "McFadden's Pseudo-R2 is gedefinieerd als 1 - (ln L_ur / ln L_0). Omdat de log-likelihood van het nulmodel ln L_0 negatiever is dan ln L_ur, ligt deze maatstaf altijd tussen 0 en 1."
+  },
+  {
+   "id": "p14",
+   "type": "mcq",
+   "skill": "model-fit-selection",
+   "level": 2,
+   "prompt": "Je hebt een Logit-model geschat met de optie `robust`. Waarom weigert Stata het commando `lrtest` om twee geneste modellen te vergelijken?",
+   "explain": "Bij robuuste standaardfouten berekent Stata een pseudolikelihood in plaats van een zuivere aannemelijkheid. De toetsgrootheid 2*(ln L_ur - ln L_r) volgt onder robuustheid geen chi-kwadraatverdeling meer. Je moet dan de Wald-toets (testparm) gebruiken.",
+   "options": [
+    "Omdat de gerapporteerde likelihood een pseudolikelihood is en het verschil niet chi-kwadraat verdeeld is.",
+    "Omdat lrtest enkel werkt op lineaire regressiemodellen geschat met OLS.",
+    "Omdat Stata bij robuuste fouten de log-likelihood niet opslaat in e(ll).",
+    "Omdat lrtest alleen kan worden uitgevoerd als het aantal observaties oneven is."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p15",
+   "type": "numeric",
+   "skill": "model-fit-selection",
+   "level": 2,
+   "prompt": "In een Titanic Logit-model waren er 619 passagiers die werkelijk stierven (died=1). Het model voorspelde voor 567 van hen correct dat ze stierven. Wat is de Sensitivity van het model in procenten? Rond af op 1 decimaal.",
+   "explain": "Sensitivity is de fractie werkelijke positieven die correct wordt voorspeld: 567 / 619 = 0.91599 oftewel 91.6%.",
+   "value": 91.6,
+   "tolerance": 0.2,
+   "unit": "procent"
+  },
+  {
+   "id": "p16",
+   "type": "match",
+   "skill": "model-fit-selection",
+   "level": 2,
+   "prompt": "Koppel elke evaluatiemaatstaf aan zijn formele econometrische definitie:",
+   "explain": "Sensitivity meet Pr(+|D), Specificity meet Pr(-|~D), Hit rate meet het totale aandeel correcte voorspellingen, en Pseudo-R2 vergelijkt de log-likelihood met het nulmodel.",
+   "pairs": [
+    [
+     "Sensitivity",
+     "Percentage van de werkelijke enen (D) dat correct als positief (+) wordt voorspeld"
+    ],
+    [
+     "Specificity",
+     "Percentage van de werkelijke nullen (~D) dat correct als negatief (-) wordt voorspeld"
+    ],
+    [
+     "Hit rate",
+     "Totaal aantal correct geclassificeerde observaties gedeeld door de steekproefgrootte"
+    ],
+    [
+     "McFadden Pseudo-R²",
+     "Relatieve verbetering in log-likelihood ten opzichte van een model met enkel een constante"
+    ]
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "numeric",
+   "skill": "lpm-limitations",
+   "level": 2,
+   "prompt": "Stel dat in een Lineair Kansmodel voor een individu de conditionele succeskans p = P(y=1|x) gelijk is aan 0.80. Wat is de conditionele variantie Var(y|x) van de storingsterm voor deze persoon?",
+   "explain": "De variantie van een Bernoulli-variabele is p(1-p). Voor p = 0.80 geldt: Var(y|x) = 0.80 * (1 - 0.80) = 0.80 * 0.20 = 0.16.",
+   "value": 0.16,
+   "tolerance": 0.005,
+   "unit": "variantie"
+  },
+  {
+   "id": "m02",
+   "type": "cloze",
+   "skill": "lpm-limitations",
+   "level": 2,
+   "prompt": "Vul de ontbrekende termen in over de drie fundamentele tekortkomingen van het Lineair Kansmodel:",
+   "text": "Het LPM kent drie grote gebreken: kansvoorspellingen buiten het interval [0, 1], niet-normale storingstermen en inherente {{heteroskedasticiteit|heteroscedasticiteit}}.",
+   "explain": "Omdat Var(y|x) = p(1-p) varieert met x, heeft het LPM per definitie te kampen met heteroskedasticiteit."
+  },
+  {
+   "id": "m03",
+   "type": "mcq",
+   "skill": "lpm-limitations",
+   "level": 2,
+   "prompt": "Waarom faalt Weighted Least Squares (WLS) vaak als herstelmethode voor de heteroskedasticiteit in het Lineair Kansmodel?",
+   "explain": "WLS gebruikt gewichten gelijk aan 1 / wortel(p_hat * (1 - p_hat)). Wanneer een OLS-voorspelling p_hat buiten [0, 1] valt, is p_hat*(1 - p_hat) negatief, waardoor de wortel niet reëel is en Stata de waarneming moet laten vallen of crasht.",
+   "options": [
+    "Als voorspelde kansen buiten [0, 1] vallen, wordt p*(1-p) negatief en kunnen de gewichten niet worden berekend.",
+    "WLS kan uitsluitend worden toegepast op tijdreeksdata en nooit op cross-sectionele datasets.",
+    "WLS verhoogt de standaardfouten altijd met een factor 4 ten opzichte van OLS.",
+    "WLS vereist dat alle verklarende variabelen strikt discreet zijn."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m04",
+   "type": "type",
+   "skill": "lpm-limitations",
+   "level": 2,
+   "prompt": "Welk Stata post-estimation commando voert de algemene toets van White op heteroskedasticiteit uit?",
+   "explain": "Het commando `estat imtest, white` voert de Cameron & Trivedi decompositie van de Information Matrix test uit, waarvan het heteroskedasticiteitsgedeelte overeenkomt met White's test.",
+   "answers": [
+    "estat imtest, white",
+    "estat imtest , white"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m05",
+   "type": "cloze",
+   "skill": "logit-probit-mle",
+   "level": 2,
+   "prompt": "Vul de vuistregels van Amemiya in om niet-lineaire coëfficiënten te vergelijken met het Lineair Kansmodel:",
+   "text": "Als vuistregel geldt: beta_logit ≈ {{4|vier}} * beta_LPM en beta_probit ≈ {{2.5|2,5}} * beta_LPM.",
+   "explain": "Omdat de maximale helling van Logit 0.25 (= 1/4) is en van Probit ongeveer 0.40 (= 1/2.5), schalen de ruwe coëfficiënten ruwweg met factoren 4 en 2.5 ten opzichte van LPM."
+  },
+  {
+   "id": "m06",
+   "type": "type",
+   "skill": "logit-probit-mle",
+   "level": 2,
+   "prompt": "Welk Stata-commando gebruik je direct na `logit` om de voorspelde succeskansen op te slaan in een nieuwe variabele genaamd `phat`?",
+   "explain": "Het commando `predict phat` (of expliciet `predict phat, pr`) berekent en bewaart de conditionele succeskans P(y=1|x).",
+   "answers": [
+    "predict phat",
+    "predict phat, pr",
+    "predict phat,pr"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m07",
+   "type": "mcq",
+   "skill": "logit-probit-mle",
+   "level": 2,
+   "prompt": "In een Logit-model vind je een coëfficiënt van +0.0384 voor leeftijd. Waarom mag je NIET concluderen dat de kans om te overlijden met 3.84 procentpunt stijgt per levensjaar?",
+   "explain": "De coëfficiënt in Logit meet het effect op de log-odds van de latente index z = x'β, niet op de kans zelf. Het marginale effect op de kans vereist vermenigvuldiging met de dichtheid g(z) en hangt af van alle variabelen in het model.",
+   "options": [
+    "De coëfficiënt meet het effect op de log-odds (de lineaire index), niet op de kans zelf.",
+    "Omdat de coëfficiënt in Logit altijd eerst gedeeld moet worden door het steekproefgemiddelde.",
+    "Omdat Logit-coëfficiënten enkel de richting van het effect aangeven en nooit een meetbare grootte hebben.",
+    "Omdat de coëfficiënt uitsluitend van toepassing is op observaties waar y = 0."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m08",
+   "type": "numeric",
+   "skill": "logit-probit-mle",
+   "level": 2,
+   "prompt": "Wat is in een Logit-model de voorspelde kans P(y=1|x) wanneer de lineaire index z = x'β exact gelijk is aan 0?",
+   "explain": "Voor z = 0 geldt Lambda(0) = exp(0) / (1 + exp(0)) = 1 / (1 + 1) = 0.50.",
+   "value": 0.5,
+   "tolerance": 0.01,
+   "unit": "kans"
+  },
+  {
+   "id": "m09",
+   "type": "numeric",
+   "skill": "margins-ame-mem-or",
+   "level": 2,
+   "prompt": "Stel dat in een Logit-model de geschatte coëfficiënt voor leeftijd beta = 0.040 bedraagt. Voor een bepaald individu is de voorspelde succeskans p = 0.50. Wat is het marginale effect van leeftijd op de kans voor dit individu? Rond af op 3 decimalen.",
+   "explain": "Het marginale effect bij Logit is beta * p * (1 - p). Voor p = 0.50 is de dichtheid 0.50 * 0.50 = 0.25. Het marginale effect is dus 0.040 * 0.25 = 0.010 (oftewel 1.0 procentpunt).",
+   "value": 0.01,
+   "tolerance": 0.001,
+   "unit": "marginaal effect"
+  },
+  {
+   "id": "m10",
+   "type": "type",
+   "skill": "margins-ame-mem-or",
+   "level": 2,
+   "prompt": "Geef het Stata-commando om het marginale effect van leeftijd te berekenen voor een specifiek individu met age=35, male=0 en class=2:",
+   "explain": "Met `margins, dydx(age) at(age=35 male=0 class=2)` evalueert Stata het marginale effect van leeftijd exact in de opgegeven waarden van de verklarende variabelen.",
+   "answers": [
+    "margins, dydx(age) at(age=35 male=0 class=2)",
+    "margins, dydx(age) at(age=35 male=0 class=2) predict(pr)"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m11",
+   "type": "order",
+   "skill": "margins-ame-mem-or",
+   "level": 3,
+   "prompt": "Plaats de stappen in de juiste volgorde om handmatig het Average Marginal Effect (AME) van leeftijd na een Logit-schatting in Stata te berekenen:",
+   "explain": "Eerst bereken je de lineaire index z per persoon via predict xb. Daarna genereer je voor elk individu het marginale effect beta * [exp(z)/(1+exp(z))^2]. Tot slot neem je het gemiddelde over de steekproef met summarize.",
+   "tiles": [
+    "Schat het model: logit died age i.male##i.class, robust",
+    "Bereken de lineaire voorspelling: predict logit_z, xb",
+    "Genereer het individuele marginale effect: gen ME = _b[age] * (exp(logit_z)/(1+exp(logit_z))^2)",
+    "Neem het steekproefgemiddelde van de marginale effecten: summarize ME"
+   ]
+  },
+  {
+   "id": "m12",
+   "type": "mcq",
+   "skill": "margins-ame-mem-or",
+   "level": 2,
+   "prompt": "Waarom levert een toename van x met 1 eenheid in een Logit-model een constante odds ratio op, maar in een Probit-model niet?",
+   "explain": "Bij Logit is de log-odds lineair in x (ln(p/(1-p)) = x'β), waardoor de odds exp(x'β) zijn en een toename van x_j met 1 altijd vermenigvuldigt met de constante exp(β_j). Bij Probit volgt de kans de normale integraal Φ(x'β); de verhouding Φ/(1-Φ) kan niet worden herleid tot een constante factor.",
+   "options": [
+    "Omdat de log-odds bij Logit lineair zijn in x, terwijl bij Probit de verhouding afhangt van alle x.",
+    "Omdat Probit uitsluitend met gestandaardiseerde normaalvariabelen kan worden geschat en Logit niet.",
+    "Omdat Logit-modellen geen stochastische storingsterm bevatten maar Probit-modellen juist wel.",
+    "Omdat bij Probit de odds ratio altijd exact gelijk is aan 1.00 ongeacht de modelparameters."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m13",
+   "type": "numeric",
+   "skill": "model-fit-selection",
+   "level": 2,
+   "prompt": "In een Logit-regressie is de log-likelihood van het onbeperkte model ll_ur = -465.995 en die van het nulmodel ll_0 = -707.310. Bereken McFadden's Pseudo-R². Rond af op 4 decimalen.",
+   "explain": "Pseudo-R2 = 1 - (ll_ur / ll_0) = 1 - (-465.995 / -707.310) = 1 - 0.658827 = 0.3412.",
+   "value": 0.3412,
+   "tolerance": 0.002,
+   "unit": "pseudo-R2"
+  },
+  {
+   "id": "m14",
+   "type": "type",
+   "skill": "model-fit-selection",
+   "level": 2,
+   "prompt": "Welk Stata post-estimation commando genereert de classificatietabel met sensitivity, specificity en het percentage correct voorspelde waarnemingen?",
+   "explain": "Het commando `estat classification` toont de 2x2 classificatietabel bij een drempelwaarde van 0.5.",
+   "answers": [
+    "estat classification"
+   ],
+   "lang": "code"
+  },
+  {
+   "id": "m15",
+   "type": "mcq",
+   "skill": "model-fit-selection",
+   "level": 2,
+   "prompt": "In een steekproef van 1.000 personen heeft 65% de waarde y = 1 en 35% de waarde y = 0. Wat is het percentage correct voorspelde observaties (hit rate) van een naïef model dat enkel een constante term bevat?",
+   "explain": "Een model met enkel een constante voorspelt voor iedereen de gemiddelde kans p_hat = 0.65. Omdat 0.65 >= 0.50, classificeert het model elke observatie als y_hat = 1. Daardoor zijn alle 650 personen met y=1 correct voorspeld en alle 350 personen met y=0 fout. De hit rate is dus exact 65%.",
+   "options": [
+    "65%, omdat het model iedereen indeelt in de meerderheidsklasse y = 1.",
+    "50%, omdat een model zonder regressoren zuiver toevallig gokt.",
+    "0%, omdat een model met enkel een constante geen voorspellende waarde heeft.",
+    "100%, omdat het gemiddelde perfect overeenkomt met de populatie."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m16",
+   "type": "order",
+   "skill": "model-fit-selection",
+   "level": 3,
+   "prompt": "Plaats de stappen in de juiste volgorde om in Stata een Likelihood Ratio toets uit te voeren tussen een onbeperkt model (ur) en een beperkt model (r):",
+   "explain": "Voor lrtest moeten beide modellen zonder robust worden geschat. Eerst schat en bewaar je het onbeperkte model, daarna het beperkte model, en tot slot roep je lrtest op.",
+   "tiles": [
+    "Schat het onbeperkte model zonder robust: eststo model_ur: logit died age i.male##i.class",
+    "Schat het beperkte model zonder robust: eststo model_r: logit died age",
+    "Voer de formele toets uit: lrtest model_ur model_r",
+    "Evalueer de chi-kwadraatstatistiek en bijbehorende p-waarde tegen het significantieniveau"
+   ]
+  }
+ ],
+ "production": {
+  "type": "explain",
+  "prompt": "**Case: Arbeidsmarktdynamiek & Werkloosheidsuitkeringen (`benefits.dta`)**\n\nAls econometrist bij een economisch beleidsinstituut analyseer je het aanvraaggedrag voor werkloosheidsuitkeringen bij 4.877 ontslagen arbeiders (`benefits.dta`). De binaire variabele $y$ is gelijk aan 1 als de werknemer een uitkering heeft aangevraagd en 0 zoniet. De verklarende variabelen zijn `age` (leeftijd in jaren), `tenure` (anciënniteit in jaren) en `rr` (replacement rate, verhouding uitkering/vorig loon).\n\nJe onderzoeksassistent heeft twee modellen geschat in Stata:\n\n```stata\n* Model 1: Logit met robuuste standaardfouten\nlogit y age tenure rr, robust\n\n* Resultaten Model 1:\n* age:     coeff = +0.01775  (SE = 0.00338, z = 5.25, p < 0.001, OR = 1.0179)\n* tenure:  coeff = +0.02641  (SE = 0.00683, z = 3.87, p < 0.001, OR = 1.0268)\n* rr:      coeff = -0.25761  (SE = 0.30273, z = -0.85, p = 0.395, OR = 0.7729)\n* _cons:   coeff = +0.11208  (SE = 0.18103, z = 0.62, p = 0.536)\n* Log pseudolikelihood = -2998.187, N = 4877, Pseudo R2 = 0.0147\n\n* Marginale effecten (AME via margins, dydx(*)):\n* age:     dy/dx = +0.00377 (SE = 0.00071, p < 0.001)\n* tenure:  dy/dx = +0.00561 (SE = 0.00144, p < 0.001)\n* rr:      dy/dx = -0.05472 (SE = 0.06426, p = 0.395)\n\n* Model 2: Linear Probability Model (LPM via OLS)\nreg y age tenure rr, robust\n```\n\nDe assistent schrijft in het conceptrapport:\n> *\"Omdat de coëfficiënt van leeftijd in Logit 0.0178 is, stijgt de kans op het aanvragen van een uitkering met 1.78 procentpunt per levensjaar. De vervangingsratio rr heeft een significante negatieve impact omdat de odds ratio onder de 1 ligt (0.77). Bovendien toont de lage Pseudo-R² van 1.47% aan dat het Logit-model waardeloos is en we beter OLS kunnen blijven gebruiken.\"*\n\nSchrijf een grondige wetenschappelijke repliek (350-500 woorden) waarin je de redeneerfouten van de assistent ontkracht. Behandel verplicht de volgende vier punten:\n1. **Coëfficiënt vs Marginaal Effect**: Waarom is de interpretatie van 1.78 procentpunt fout? Geef de correcte interpretatie van leeftijd via zowel de Odds Ratio (1.0179) als het Average Marginal Effect (+0.00377, in procentpunten!).\n2. **Significantie en Interpretatie van `rr`**: Toon aan waarom de claim over `rr` dubbel fout is (let op de p-waarde en de economische schaal van de variabele).\n3. **De Pseudo-$R^2$ mythe**: Waarom is het afkeuren van een binair model op basis van een Pseudo-$R^2$ van 1.5% misleidend? Leg uit hoe McFadden's Pseudo-$R^2$ tot stand komt en noem twee betere evaluatiecriteria in Stata.\n4. **LPM versus Logit op deze data**: Waarom is het vasthouden aan OLS/LPM hier theoretisch en methodologisch onhoudbaar? Noem de twee kernbeperkingen van LPM die Logit elegant oplost.",
+  "model": "### Wetenschappelijke Evaluatie en Repliek\n\n#### 1. Coëfficiënt versus Marginaal Effect van Leeftijd\nDe bewering van de assistent dat de kans met 1.78 procentpunt stijgt, berust op een fundamentele verwarring tussen lineaire en niet-lineaire modellen:\n- De ruwe Logit-coëfficiënt $\\beta_{\\text{age}} = +0.0178$ meet de verandering in de **log-odds** (de latente index $z = x'\\beta$), **niet** in de kans!\n- **Via Odds Ratio's (`logit, or`)**: Met $\\text{OR} = e^{0.01775} = 1.0179$ stijgen de *odds* (de verhouding $p / (1-p)$) op het aanvragen van een uitkering met **$1.79\\%$** per bijkomend levensjaar ($(1.0179 - 1) \\times 100\\%$), ceteris paribus.\n- **Via het Average Marginal Effect (AME)**: Het werkelijke effect op de kans wordt gemeten door $\\text{AME} = +0.00377$. Voor elk bijkomend levensjaar stijgt de kans op het aanvragen van een uitkering gemiddeld met **$0.38$ procentpunt** (ongeveer 5 keer kleiner dan wat de assistent beweerde).\n\n#### 2. Significantie en Schaal van de Vervangingsratio (`rr`)\nDe interpretatie van de vervangingsratio rammelt aan twee kanten:\n1. **Statistische significantie**: Met een $z$-statistiek van $-0.85$ en een $p$-waarde van $0.395$ is de coëfficiënt **statistisch niet significant** op elk gangbaar significantieniveau ($1\\%$, $5\\%$, $10\\%$). Dat de OR onder de 1 ligt ($0.7729$) weerspiegelt louter het negatieve teken van $\\hat{\\beta}$, maar zegt niets over de statistische betrouwbaarheid. We kunnen de nulhypothese $H_0: \\beta_{\\text{rr}} = 0$ (of $\\text{OR} = 1$) niet verwerpen.\n2. **Economische schaal**: De variabele `rr` is een ratio tussen 0 en 1. Een toename met 1 volle eenheid staat gelijk aan een stijging met 100 procentpunt (onrealistisch). Een beleidsmatig zinvolle verandering van 10 procentpunt ($+0.10$) zou de odds verminderen met $(0.7729^{0.10} - 1) \\approx -2.5\\%$, ware het niet dat het effect statistisch onzeker is.\n\n#### 3. De Pseudo-$R^2$ Mythe en Modelkwaliteit\nEen Pseudo-$R^2$ van $0.0147$ ($1.47\\%$) betekent geenszins dat het model faalt:\n- McFadden's Pseudo-$R^2 = 1 - (\\ln L_{\\text{ur}} / \\ln L_0)$ meet de relatieve verbetering in log-likelihood ten opzichte van een model met enkel een constante. Bij binaire uitkomsten is de inherente ruis zeer groot (individuen met identieke $x$ maken verschillende keuzes $y \\in \\{0, 1\\}$); zelfs een perfect gespecificeerd model haalt zelden waarden boven $0.30$.\n- Twee superieure evaluatiemethoden in Stata:\n  1. **Classificatietabel (`estat classification`)**: Bepaal de *hit rate*, *sensitivity* en *specificity*, en vergelijk deze met het naïeve nulmodel.\n  2. **Likelihood Ratio / Wald-toets (`testparm age tenure rr`)**: De Wald-toets toont $\\chi^2(3) = 74.07$ met $p < 0.0001$; het model als geheel is buitengewoon significant.\n\n#### 4. Waarom LPM/OLS Onhoudbaar Is\nTeruggrijpen naar OLS is een ernstige methodologische fout:\n1. **Voorspellingen buiten $[0, 1]$**: Het LPM produceert voor werknemers met extreme kenmerken voorspelde kansen $< 0$ of $> 1$, wat kansaxioma's schendt.\n2. **Inherente heteroskedasticiteit**: In het LPM is $\\text{Var}(y|x) = p(1-p)$. De storingsterm is per definitie heteroskedastisch en niet-normaal. Logit garandeert via $\\Lambda(x'\\beta)$ dat alle kansen strikt binnen $(0, 1)$ blijven en modelleert de ware Bernoulli-kansstructuur via Maximum Likelihood.",
+  "rubric": [
+   "Ontkracht de bewering over de kansstijging van 1.78 procentpunt en geeft de correcte interpretatie van de odds ratio (+1.79% odds) én het AME (+0.38 procentpunt)",
+   "Corrigeert de assistent over de vervangingsratio: benoemt de niet-significantie (p = 0.395) en de schaalproblematiek (toename met 1 eenheid = 100 procentpunt)",
+   "Weerlegt de afkeuring op basis van Pseudo-R2 (legt de formule 1 - ln L_ur / ln L_0 uit) en noemt geldige alternatieven zoals estat classification en Wald/LR-toetsen",
+   "Benoemt de structurele gebreken van het LPM (kansen buiten [0,1] en inherente heteroskedasticiteit Var(y|x) = p(1-p)) en verklaart waarom Logit superieur is"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-01",
+   "skill": "margins-ame-mem-or",
+   "front": "Wat is het verschil in Stata-syntax tussen het Average Marginal Effect (AME) en het Marginal Effect at the Mean (MEM)?",
+   "back": "- **AME**: `margins, dydx(*)` (middelt individuele effecten over alle observaties)\n- **MEM**: `margins, dydx(*) atmeans` (evalueert het effect in het steekproefgemiddelde van alle $x$)"
+  },
+  {
+   "id": "c-02",
+   "skill": "margins-ame-mem-or",
+   "front": "Hoe interpreteer je een geschatte Odds Ratio van 1.25 in een Logit-model (`logit, or`)?",
+   "back": "Bij een toename van de verklarende variabele met 1 eenheid, nemen de **odds** (kansverhouding $p/(1-p)$) ceteris paribus toe met **25%** ($(1.25 - 1) \\times 100\\%$). Let op: dit is géén toename in kans met 25 procentpunt!"
+  },
+  {
+   "id": "c-03",
+   "skill": "margins-ame-mem-or",
+   "front": "Wat is de wiskundige formule voor het marginale effect van een continue variabele $x_j$ in het Logit-model?",
+   "back": "$$\\frac{\\partial P(y=1|x)}{\\partial x_j} = \\beta_j \\cdot \\Lambda(x'\\beta)(1 - \\Lambda(x'\\beta)) = \\beta_j \\cdot \\frac{e^{x'\\beta}}{(1 + e^{x'\\beta})^2}$$\nHet effect hangt af van de waarden van álle verklarende variabelen via de dichtheid $\\lambda(z) = p(1-p)$."
+  },
+  {
+   "id": "c-04",
+   "skill": "margins-ame-mem-or",
+   "front": "Wat is de wiskundige formule voor het marginale effect van een continue variabele $x_j$ in het Probit-model?",
+   "back": "$$\\frac{\\partial P(y=1|x)}{\\partial x_j} = \\beta_j \\cdot \\phi(x'\\beta) = \\beta_j \\cdot \\frac{1}{\\sqrt{2\\pi}} e^{-(x'\\beta)^2 / 2}$$\nwaarbij $\\phi(z)$ de standaardnormale kansdichtheidsfunctie (`normalden(z)` in Stata) is."
+  },
+  {
+   "id": "c-05",
+   "skill": "logit-probit-mle",
+   "front": "Wat zijn de Amemiya/Wooldridge vuistregels om geschatte coëfficiënten tussen Logit, Probit en LPM om te rekenen?",
+   "back": "- $\\hat{\\beta}_{\\text{logit}} \\approx 4 \\cdot \\hat{\\beta}_{\\text{LPM}}$\n- $\\hat{\\beta}_{\\text{probit}} \\approx 2.5 \\cdot \\hat{\\beta}_{\\text{LPM}}$\n- $\\hat{\\beta}_{\\text{logit}} \\approx 1.6 \\cdot \\hat{\\beta}_{\\text{probit}}$"
+  },
+  {
+   "id": "c-06",
+   "skill": "lpm-limitations",
+   "front": "Waarom heeft het Lineair Kansmodel (LPM) altijd last van inherente heteroskedasticiteit?",
+   "back": "Omdat $y \\in \\{0, 1\\}$ volgt de afhankelijke variabele conditioneel een Bernoulli-verdeling met succeskans $p_i = x_i'\\beta$. De conditionele variantie van de storingsterm is:\n$$\\text{Var}(u_i|x_i) = p_i(1 - p_i) = (x_i'\\beta)(1 - x_i'\\beta)$$\nDeze varieert kwadratisch met $x$ en is dus nooit constant."
+  },
+  {
+   "id": "c-07",
+   "skill": "model-fit-selection",
+   "front": "Waarom faalt de Likelihood Ratio toets (`lrtest`) na een Logit-schatting met `robust`, en wat is het alternatief?",
+   "back": "Met `robust` rapporteert Stata een *pseudolikelihood*. Het verschil in pseudolikelihoods volgt geen $\\chi^2$-verdeling. Gebruik bij robuuste standaardfouten de **Wald-toets** via `testparm` (bv. `testparm i.male##i.class`)."
+  },
+  {
+   "id": "c-08",
+   "skill": "model-fit-selection",
+   "front": "Wat is in een classificatietabel (`estat classification`) het verschil tussen Sensitivity en Specificity?",
+   "back": "- **Sensitivity**: $\\frac{\\text{True Positives}}{\\text{Totaal Werkelijk } 1}$ = percentage werkelijke 1-waarden dat correct als positief is voorspeld.\n- **Specificity**: $\\frac{\\text{True Negatives}}{\\text{Totaal Werkelijk } 0}$ = percentage werkelijke 0-waarden dat correct als negatief is voorspeld."
+  }
+ ],
+ "sources": [
+  "Applied Econometrics Computer Class 4 — Binary Outcome Models (UAntwerpen, 2128TEWECP)",
+  "Wooldridge, J. M. (2020). Introductory Econometrics: A Modern Approach (7th ed.), Chapter 7 & 17",
+  "Cameron, A. C., & Trivedi, P. K. (2010). Microeconometrics Using Stata (Rev. ed.), Chapter 14",
+  "StataCorp. (2023). Stata Base Reference Manual: logit, probit, margins, estat classification"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-26"
+ }
+}

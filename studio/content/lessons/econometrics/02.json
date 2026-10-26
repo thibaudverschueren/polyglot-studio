@@ -1,0 +1,599 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "econometrics",
+ "id": 2,
+ "roadmap": "econometrics-02-dummy-variables-interactions",
+ "kind": "core",
+ "title": "Dummy-variabelen, Interacties & OLS-verdieping",
+ "subtitle": "Referentiecategorieën (ib#.), interactie-effecten (c.##i.), kwadraten en F-toetsen (testparm) met robuuste standaardfouten",
+ "level": "fundament",
+ "minutes": 45,
+ "summary": "Kwalitatieve variabelen en niet-lineaire effecten vormen de kern van empirische micro-economie. In deze les leer je hoe je binaire indicatoren, referentiegroepen (ib#.), interactietermen (c.##i.) en kwadratische verbanden schat en interpreteert via OLS (Ordinary Least Squares) in Stata, en hoe je gezamenlijke hypothesen en Chow-toetsen uitvoert met heteroskedasticiteits-robuuste standaardfouten.",
+ "objectives": [
+  {
+   "id": "dummy-trap",
+   "text": "Dummy-variabelen specificeren, de referentiecategorie interpreteren en de dummy variable trap vermijden."
+  },
+  {
+   "id": "category-semi-elasticity",
+   "text": "Meerdere categorieën vergelijken via factorvariabelen (ib#.) en semi-elasticiteiten exact interpreteren in log-modellen."
+  },
+  {
+   "id": "interaction-nonlinear",
+   "text": "Interactie-effecten (c.##i., i.##i.) en kwadratische relaties modelleren, afleiden en marginaal evalueren."
+  },
+  {
+   "id": "joint-tests-chow",
+   "text": "Gezamenlijke hypothesen en Chow-toetsen uitvoeren met testparm onder robuuste variantie-covariantiematrices (vce(robust))."
+  }
+ ],
+ "sections": [
+  {
+   "id": "sec-dummy-basis",
+   "title": "Binaire indicatoren, de referentiecategorie en de dummy variable trap",
+   "md": "In econometrisch onderzoek onderscheiden we twee fundamentele typen verklarende variabelen:\n1. **Kwantitatieve variabelen**: variabelen gemeten op een continue of discrete kardinale schaal met een natuurlijke maateenheid, waarbij verschillen en verhoudingen een eenduidige economische betekenis hebben (bv. opleidingsjaren, gewerkte uren of inkomen in euro).\n2. **Kwalitatieve variabelen (factoren)**: variabelen die individuen indelen in kwalitatief verschillende, wederzijds uitsluitende categorieën zonder inherente numerieke afstand (bv. geslacht, lidmaatschap van een vakbond, burgerlijke staat of geografische regio).\n\nOm een kwalitatieve eigenschap met twee toestanden op te nemen in een lineair regressiemodel, construeren we een **binaire variabele** (dummyvariabele of indicator) $D_i \\in \\{0, 1\\}$. Beschouw het standaard regressiemodel:\n\n$$y_i = \\beta_0 + \\delta_0 D_i + \\beta_1 x_i + u_i$$\n\nwaarbij $E(u_i \\mid D_i, x_i) = 0$. We analyseren de conditionele verwachtingswaarde voor beide groepen:\n- Voor de groep met $D_i = 0$ (**referentiecategorie** of basisgroep):\n  $$E(y_i \\mid D_i = 0, x_i) = \\beta_0 + \\beta_1 x_i$$\n- Voor de groep met $D_i = 1$ (de vergeleken groep):\n  $$E(y_i \\mid D_i = 1, x_i) = (\\beta_0 + \\delta_0) + \\beta_1 x_i$$\n\nDe parameter $\\delta_0$ meet de **parallelle interceptverschuiving**: het verwachte verschil in uitkomst $y$ tussen groep 1 en groep 0, *ceteris paribus* (geconditioneerd op $x_i$). Omdat de helling $\\beta_1$ voor beide groepen gelijk is, lopen de regressielijnen van groep 0 en groep 1 strikt parallel.\n\n### De dummy variable trap (perfecte multicollineariteit)\n\nEen veelgemaakte fout bij het modelleren van categorieën is de zogeheten **dummy variable trap**. Veronderstel dat we voor geslacht twee afzonderlijke dummy's definiëren: $\\text{female}_i = 1$ voor vrouwen ($0$ voor mannen) en $\\text{male}_i = 1$ voor mannen ($0$ voor vrouwen). Wat gebeurt er als we beide indicatoren samen met een constante term $\\beta_0$ in het model opnemen?\n\n$$\\text{wage}_i = \\beta_0 + \\delta_0 \\text{female}_i + \\gamma_0 \\text{male}_i + \\beta_1 \\text{educ}_i + u_i$$\n\nOmdat elk individu man of vrouw is, geldt voor elke waarneming $i$:\n\n$$\\text{female}_i + \\text{male}_i = 1$$\n\nDe som van de twee regressorkolommen is exact gelijk aan de constantevector $\\mathbf{x}_{0} = \\mathbf{1}$. Dit is een schoolvoorbeeld van **perfecte multicollineariteit**: de regressormatrix $X$ heeft geen volle kolomrang ($\\text{rang}(X) < K+1$). De momentenmatrix $X'X$ is singulier (determinant 0), waardoor de inverse $(X'X)^{-1}$ wiskundig niet bestaat. Het OLS-stelsel van normaalvergelijkingen heeft oneindig veel oplossingen; de individuele parameters $\\beta_0$, $\\delta_0$ en $\\gamma_0$ zijn niet geïdentificeerd.\n\n> [!pitfall]\n> **De Gouden Regel van Dummyvariabelen**\n> Als een regressiemodel een constante term $\\beta_0$ bevat en een kwalitatieve variabele $M$ categorieën telt, mag je maximaal **$M - 1$ dummy's** in het model opnemen. Eén categorie moet worden weggelaten als referentiecategorie.\n> \n> Alternatief: laat de constante term weg (`noconstant` in Stata) en neem alle $M$ dummy's op. Elk geschat intercept meet dan het absolute groepsgemiddelde (bij $x=0$). Let op: zonder constante verliest de conventionele $R^2$ zijn standaardeigenschappen en kan Stata geen standaard globale $F$-toets van het model meer rapporteren.\n\n### Stata-implementatie en factorvariabelen\n\nIn moderne Stata hoef je binaire dummy's zelden handmatig te genereren. Via de **factorvariabele-notatie** (`i.`) herkent Stata categorische variabelen automatisch:\n\n```stata\nuse wage.dta, clear\nregress lwage i.female educ exper, robust\n```\n\nStata kiest standaard de laagste numerieke waarde (hier `0`, man) als referentiecategorie en rapporteert de coëfficiënt voor `1.female`. De optie `robust` (of `vce(robust)`) berekent heteroskedasticiteits-consistente standaardfouten.",
+   "checks": [
+    {
+     "id": "c-dt-check",
+     "type": "mcq",
+     "skill": "dummy-trap",
+     "level": 2,
+     "prompt": "Waarom resulteert een OLS-regressie met een constante én M dummy's voor M wederzijds uitsluitende categorieën in een foutmelding of een automatisch weggelaten variabele in Stata?",
+     "explain": "Omdat voor elk individu exact één dummy gelijk is aan 1, telt de som van de M dummy's voor elke observatie op tot 1. Dit is exact identiek aan de constantevector, wat leidt tot perfecte multicollineariteit. De matrix X'X is daardoor singulier en kan niet geïnverteerd worden.",
+     "options": [
+      "De som van alle dummy's is exact gelijk aan 1 (de constantevector), wat leidt tot perfecte multicollineariteit en een singuliere (X'X)-matrix.",
+      "De residuele som van kwadraten wordt nul, waardoor de noemer in de variantieschatting wegvalt en standaardfouten oneindig worden.",
+      "De storingsterm correleert noodzakelijk met de dummyvariabelen, waardoor het model lijdt onder strikte endogeniteit en bias.",
+      "Stata kan wiskundig geen modellen schatten waarin meer dan twee binaire kwalitatieve variabelen tegelijk worden opgenomen."
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "sec-categories-semielast",
+   "title": "Meerdere categorieën (ib#.) en semi-elasticiteit in log-modellen",
+   "md": "Wanneer een kwalitatieve eigenschap meer dan twee categorieën omvat (polytome factoren zoals scholingsniveau, regio of bedrijfsgrootteklasse), breiden we de referentiegroeplogica uit.\n\n### Factorvariabelen met meerdere categorieën: ib#.\n\nBeschouw de data uit Computer Class 2 (`sleep75.dta`, $N=706$), waar slaapgedrag (`sleep` in minuten per week) wordt gemodelleerd op basis van onderwijsklassen. We kunnen onderwijs (`educ`) opdelen in 4 categorieën:\n- Categorie 0: Geen diploma ($<8$ jaar onderwijs)\n- Categorie 1: Basisonderwijs ($[8, 12[$ jaar onderwijs)\n- Categorie 2: Secundair onderwijs ($[12, 16[$ jaar onderwijs)\n- Categorie 3: Hoger onderwijs / bachelor+ ($\\ge 16$ jaar onderwijs)\n\nIn Stata transformeren we de continue variabele `educ` naar een categorische factor via `recode`:\n\n```stata\nuse sleep75.dta, clear\ngen educ_c = educ\nrecode educ_c (0/7.99 = 0) (8/11.99 = 1) (12/15.99 = 2) (16/. = 3)\ntabstat educ, s(min max) by(educ_c)\n```\n\nAls we regresseren met categorie 0 (geen diploma) als basis:\n\n```stata\nregress sleep male totwrk ib0.educ_c c.age##c.age yngkid, robust\n```\n\nDe geschatte coëfficiënten voor `educ_c` zijn:\n- `1.educ_c`: $-325.46$ minuten\n- `2.educ_c`: $-335.90$ minuten\n- `3.educ_c`: $-349.15$ minuten\n- `_cons`: $3974.56$\n\nIedere coëfficiënt meet het verschil in wekelijkse slaap ten opzichte van personen zonder diploma (categorie 0), ceteris paribus. Een werknemer met een bachelordiploma slaapt gemiddeld $349.15$ minuten minder per week dan iemand zonder diploma.\n\nWillen we de referentiecategorie veranderen naar academici (categorie 3), dan gebruiken we de Stata-prefix `ib3.`:\n\n```stata\nregress sleep male totwrk ib3.educ_c c.age##c.age yngkid, robust\n```\n\nIn deze schatting:\n- `0.educ_c`: $+349.15$ minuten\n- `1.educ_c`: $+23.69$ minuten\n- `2.educ_c`: $+13.26$ minuten\n- `_cons`: $3625.40$ ($= 3974.56 - 349.15$)\n\n> [!important]\n> **Invariantie van de modelschatting**\n> De keuze van de referentiecategorie verandert **niets** aan de werkelijke fit van het model. De determinatiecoëfficiënt $R^2$, de residuele kwadratensom ($SSR$), de voorspelde waarden $\\hat{y}_i$ en de globale $F$-statistiek blijven numeriek exact gelijk. Enkel het perspectief van vergelijking kantelt: categorie 0 ten opzichte van 3 is simpelweg het tegengestelde van categorie 3 ten opzichte van 0 ($+349.15$ vs $-349.15$).\n\n### Semi-elasticiteit en log-lineaire modellen: de Halvorsen-Palmquist formule\n\nIn loonvergelijkingen modelleren we de afhankelijke variabele vrijwel altijd in logaritmen: $\\ln(\\text{wage})$. Beschouw het semi-log model met een dummyindicator $D$:\n\n$$\\ln(y) = \\beta_0 + \\beta_1 D + \\mathbf{x}'\\boldsymbol{\\gamma} + u$$\n\nVeel studenten passen gedachteloos de lineaire benadering toe:\n\n$$\\% \\Delta y \\approx 100 \\cdot \\beta_1 \\%$$\n\nDeze benadering is gebaseerd op de calculusafgeleide $d \\ln(y) = \\frac{dy}{y}$, maar een dummyvariabele $D$ is discreet ($0 \\to 1$) en kan niet infinitesimaal afgeleid worden! \n\nLaten we het exacte relatieve verschil afleiden. Definieer $y_1$ als de uitkomst bij $D=1$ en $y_0$ bij $D=0$ (bij gelijke $\\mathbf{x}$ en $u$):\n\n$$\\ln(y_1) - \\ln(y_0) = \\beta_1 \\iff \\ln\\left(\\frac{y_1}{y_0}\\right) = \\beta_1 \\iff \\frac{y_1}{y_0} = \\exp(\\beta_1)$$\n\nHet proportionele verschil is dan:\n\n$$\\frac{y_1 - y_0}{y_0} = \\frac{y_1}{y_0} - 1 = \\exp(\\beta_1) - 1$$\n\nVermenigvuldigd met 100 levert dit de **exacte procentuele verandering** (Halvorsen & Palmquist, 1980):\n\n$$\\% \\Delta y = 100 \\cdot \\left(\\exp(\\hat{\\beta}_1) - 1\\right)\\%$$\n\n> [!caution]\n> **Klassieke Examenvalkuil: Grote dummycoëfficiënten**\n> In `wage.dta` schatten we de loongeneratiekloof: `regress lwage female married educ c.exper##c.exper, robust`. De geschatte coëfficiënt voor `female` is $\\hat{\\beta} = -0.3292$.\n> - **Foutieve vuistregel:** Vrouwen verdienen $100 \\cdot (-0.3292)\\% = -32.92\\%$ minder.\n> - **Exacte berekening:** $100 \\cdot (\\exp(-0.3292) - 1)\\% = 100 \\cdot (0.7195 - 1)\\% = -28.05\\%$.\n> \n> De lineaire benadering overschat het feitelijke nadeel met bijna 5 procentpunt! Bij coëfficiënten groter dan $0.10$ in absolute waarde eist het examen altijd de exacte berekening via `display 100*(exp(_b[female])-1)`. Bovendien is de exacte procentuele verandering asymmetrisch ten aanzien van de referentiegroep.",
+   "checks": [
+    {
+     "id": "c-se-check",
+     "type": "numeric",
+     "skill": "category-semi-elasticity",
+     "level": 2,
+     "prompt": "In een loonregressie met ln(wage) als afhankelijke variabele vind je voor de binaire indicator foreign (1 = buitenlandse werknemer) een geschatte coëfficiënt van beta = -0.20. Bereken het exacte procentuele loonverschil via 100 * (exp(beta) - 1)%. Rond af op 2 decimalen na de komma (bv. -18.13).",
+     "explain": "Het exacte procentuele verschil is gelijk aan 100 * (exp(-0.20) - 1)% = 100 * (0.81873 - 1)% = -18.13%. De naïeve lineaire benadering zou -20.00% opleveren, wat het werkelijke loonnadeel overschat in absolute waarde.",
+     "value": -18.13,
+     "tolerance": 0.1
+    }
+   ]
+  },
+  {
+   "id": "sec-interactions-quadratics",
+   "title": "Interactie-effecten modelleren (c.##i., i.##i.) en kwadratische relaties",
+   "md": "Een standaard OLS-model legt op dat het marginale effect van een continue regressor $x$ voor alle individuen identiek is, ongeacht hun groepslidmaatschap. Om deze restrictieve aanname los te laten, introduceren we **interactietermen**.\n\n### 1. Dummy × Continu: Verschillende hellingen (slope-dummy)\n\nBeschouw een loonmodel waarin het scholingsrendement mag verschillen tussen mannen en vrouwen:\n\n$$\\ln(\\text{wage}_i) = \\beta_0 + \\delta_0 \\text{female}_i + \\beta_1 \\text{educ}_i + \\gamma_1 (\\text{female}_i \\times \\text{educ}_i) + u_i$$\n\nHet marginale effect van een extra jaar onderwijs op het verwachte logloon is:\n\n$$\\frac{\\partial \\ln(\\text{wage})}{\\partial \\text{educ}} = \\beta_1 + \\gamma_1 \\text{female}$$\n\n- Voor mannen ($\\text{female}=0$): het rendement is $\\beta_1$.\n- Voor vrouwen ($\\text{female}=1$): het rendement is $\\beta_1 + \\gamma_1$.\n\nDe interactieparameter $\\gamma_1$ meet het **verschil in helling** (het surplus of deficit in scholingsrendement voor vrouwen ten opzichte van mannen).\n- Toets op gelijke hellingen: $t$-toets op $H_0: \\gamma_1 = 0$.\n- Toets op samenvallende loonlijnen (geen niveau- noch hellingsverschil): gezamenlijke $F$-toets op $H_0: \\delta_0 = 0, \\gamma_1 = 0$.\n\nIn Stata gebruiken we factorvariabele-syntax met het type-voorvoegsel `c.` (continu) en `i.` (indicator):\n```stata\nregress lwage i.female##c.educ exper, robust\n```\n\n> [!important]\n> **Stata Factor-syntax: # versus ##**\n> - `c.educ#i.female`: neemt **enkel** de interactieterm op. Dit leidt tot misspecificatie als het hoofdeffect niet afzonderlijk in het model staat!\n> - `c.educ##i.female`: de dubbele hekje-notatie (`full factorial`) neemt automatisch het hoofdeffect `educ`, het hoofdeffect `1.female` én de interactieterm `female#c.educ` op. Gebruik op examens altijd `##` om weggelaten hoofdeffecten te voorkomen!\n\n### 2. Dummy × Dummy: Vier afzonderlijke groepen\n\nIn `wage2.dta` ($N=935$) interacteert de onderzoeker twee binaire variabelen: `married` en `black`:\n\n```stata\nregress lwage educ exper tenure i.married##i.black south urban, robust\n```\n\nDit model genereert vier unieke combinaties, elk met een eigen intercept:\n1. **Ongehuwd & niet-zwart (referentiecategorie)**: $\\beta_0$\n2. **Gehuwd & niet-zwart**: $\\beta_0 + \\beta_{\\text{married}}$\n3. **Ongehuwd & zwart**: $\\beta_0 + \\beta_{\\text{black}}$\n4. **Gehuwd & zwart**: $\\beta_0 + \\beta_{\\text{married}} + \\beta_{\\text{black}} + \\beta_{\\text{married}\\times\\text{black}}$\n\n> [!pitfall]\n> **Examenval: Wat is het loonverschil tussen gehuwde zwarte en gehuwde niet-zwarte werknemers?**\n> Veel studenten trekken foutief enkel $\\beta_{\\text{married}\\times\\text{black}}$ af. Kijk naar de intercepten:\n> $$(\\beta_0 + \\beta_{\\text{married}} + \\beta_{\\text{black}} + \\beta_{\\text{married}\\times\\text{black}}) - (\\beta_0 + \\beta_{\\text{married}}) = \\beta_{\\text{black}} + \\beta_{\\text{married}\\times\\text{black}}$$\n> Het hoofdeffect van huwelijk valt weg omdat beiden gehuwd zijn. Het effect is de som van de twee parameters!\n> In Stata bereken je dit via:\n> ```stata\n> display _b[1.black] + _b[1.married#1.black]\n> ```\n> Met schattingen $\\hat{\\beta}_{\\text{black}} = -0.2408$ en $\\hat{\\beta}_{\\text{int}} = +0.0614$ is het verschil $-0.2408 + 0.0614 = -0.1794$ (gehuwde zwarte werknemers verdienen $17.9\\%$ minder dan gehuwde niet-zwarte werknemers).\n\n### 3. Kwadratische specificaties & Afnemende meeropbrengsten\n\nIn de Minceriaanse loonvergelijking modelleert men werkervaring kwadratisch om afnemende meeropbrengsten van menselijk kapitaal op te vangen:\n\n$$\\ln(\\text{wage}) = \\beta_0 + \\beta_1 \\text{exper} + \\beta_2 \\text{exper}^2 + \\dots$$\n\nHet marginale effect is de partiële afgeleide naar `exper`:\n\n$$\\frac{\\partial \\ln(\\text{wage})}{\\partial \\text{exper}} = \\beta_1 + 2 \\beta_2 \\text{exper}$$\n\nDe factor 2 volgt rechtstreeks uit de machtsregel $\\frac{d}{dx}(x^2) = 2x$. Wie de factor 2 vergeet, maakt de meest voorkomende fout op het UAntwerpen econometrie-examen!\n\nHet **keerpunt (top of dal)** waar het marginale effect omslaat van positief naar negatief volgt uit de eerste-ordeconditie:\n\n$$\\beta_1 + 2 \\beta_2 \\text{exper}^* = 0 \\implies \\text{exper}^* = -\\frac{\\beta_1}{2 \\beta_2}$$\n\nIn `wage.dta` vinden we $\\hat{\\beta}_1 = 0.03575$ en $\\hat{\\beta}_2 = -0.000632$:\n\n$$\\text{exper}^* = -\\frac{0.03575}{2 \\cdot (-0.000632)} = 28.28 \\text{ jaar}$$\n\nTot 28 jaar levert een extra jaar werkervaring een loonstijging op; daarna begint het loon te dalen wegens veroudering van vaardigheden.\n\nIn Stata:\n```stata\nregress lwage female married educ c.exper##c.exper, robust\nmargins, dydx(exper) at(exper=(0(5)50))\nmarginsplot, yline(0)\n```\n\nAls je handmatig `gen expersq = exper^2` had gemaakt en `regress lwage exper expersq` had gedraaid, kan `margins, dydx(exper)` de afgeleide **niet** correct berekenen (Stata rapporteert dan enkel $\\hat{\\beta}_1$). Gebruik daarom altijd `c.exper##c.exper`!",
+   "checks": [
+    {
+     "id": "c-in-check",
+     "type": "numeric",
+     "skill": "interaction-nonlinear",
+     "level": 2,
+     "prompt": "Gegeven het geschatte model ln(wage) = 1.20 + 0.05 * exper - 0.001 * exper^2. Wat is het marginale effect van ervaring op het logloon bij 10 jaar ervaring (exper = 10)? Rond af op 3 decimalen na de komma (bv. 0.030).",
+     "explain": "De partiële afgeleide luidt: d ln(wage) / d exper = beta1 + 2 * beta2 * exper = 0.05 - 2 * 0.001 * 10 = 0.05 - 0.02 = 0.030. Bij 10 jaar ervaring verhoogt één extra jaar werkervaring het loon ceteris paribus met circa 3.0%.",
+     "value": 0.03,
+     "tolerance": 0.002
+    }
+   ]
+  },
+  {
+   "id": "sec-joint-tests-chow",
+   "title": "Gezamenlijke hypothesen (testparm), Chow-toetsen en robuuste standaardfouten",
+   "md": "In empirisch onderzoek willen we vaak meerdere parameters tegelijk toetsen. Beschouw twee centrale toepassingen: de gezamenlijke F-toets op niet-lineaire termen en de Chow-toets op structurele breuken.\n\n### Gezamenlijke F-toetsen: test versus testparm\n\nWaarom volstaan afzonderlijke $t$-toetsen niet wanneer we willen weten of ervaring een effect heeft in een kwadratisch model?\nIn het model met `exper` en `c.exper##c.exper` zijn de twee variabelen sterk gecorreleerd (multicollineariteit tussen $x$ en $x^2$). Hierdoor kunnen beide individuele $t$-statistieken niet-significant lijken, terwijl de twee variabelen gezamenlijk hoogst informatief zijn. Bovendien blaast het uitvoeren van meerdere $t$-toetsen de kans op een Type I-fout (valse ontdekking) op.\n\nWe toetsen daarom de gezamenlijke nulhypothese:\n\n$$H_0: \\beta_{\\text{exper}} = 0 \\quad \\text{én} \\quad \\beta_{\\text{exper}^2} = 0$$\n\nIn Stata:\n```stata\nregress lwage educ c.exper##c.exper c.tenure##c.tenure married black south urban, robust\ntestparm exper c.exper#c.exper\n```\nDe uitvoer toont een $F(2, 925) = 10.15$ met $p = 0.0000$: ervaring heeft onmiskenbaar een gezamenlijk significant effect op lonen, ook al is de zuiver kwadratische term op zichzelf minder uitgesproken.\n\nHet commando `testparm` verdient de voorkeur boven `test` omdat het naadloos samenwerkt met factorvariabelen en wildcards (zoals `testparm 1.female#*`).\n\n### De Chow-toets: Twee vergelijkingen vergelijken\n\nDe **Chow-toets** (Gregory Chow, 1960) toetst of de parameters van een regressiemodel identiek zijn over twee deelpopulaties (bv. mannen vs vrouwen, of noord vs zuid). We willen weten of mannen en vrouwen dezelfde loonstructuur delen voor constante én álle hellingen.\n\n#### De klassieke formule via kwadratensommen (SSR)\nDe historische methode schat drie regressies:\n1. Een gepoolde regressie op de totale steekproef ($SSR_P$, restricties opgelegd).\n2. Twee afzonderlijke regressies voor groep 1 ($SSR_1$) en groep 2 ($SSR_2$).\nOmdat de twee groepen onafhankelijk zijn, is de ongerestricteerde kwadratensom gelijk aan $SSR_{UR} = SSR_1 + SSR_2$. De klassieke teststatistiek is:\n\n$$F = \\frac{(SSR_P - (SSR_1 + SSR_2)) / K}{(SSR_1 + SSR_2) / (N_1 + N_2 - 2K)}$$\n\nwaarbij $K$ het aantal geschatte parameters per vergelijking is (inclusief constante).\n\n> [!rule]\n> **De Cruciale Aanname van de Klassieke Chow-toets**\n> De klassieke Chow-toets op basis van $SSR$ is **uitsluitend geldig onder strikte homoskedasticiteit**: de storingstermvarianties in beide deelpopulaties moeten gelijk zijn ($\\sigma_1^2 = \\sigma_2^2$). \n> Als mannen en vrouwen een verschillende residuele variantie vertonen (heteroskedasticiteit tussen groepen), volgt de klassieke Chow-statistiek geen $F$-verdeling en leidt de toets tot foutieve conclusies!\n\n#### De moderne Stata-aanpak: Het volledig geïnteracteerde model\nIn moderne toegepaste econometrie gebruiken we daarom nooit meer de handmatige $SSR$-formule, maar schatten we een **volledig geïnteracteerd model** met heteroskedasticiteits-robuuste standaardfouten:\n\n```stata\nuse sleep75.dta, clear\nregress sleep i.male##(c.totwrk c.educ c.age##c.age c.yngkid), robust\ntestparm 1.male 1.male#*\n```\n\nHierbij interacteert `i.male##(...)` de indicator `male` met de constante en met alle continue regressoren. Het commando `testparm 1.male 1.male#*` toetst vervolgens gezamenlijk:\n\n$$H_0: \\delta_0 = 0, \\gamma_1 = 0, \\gamma_2 = 0, \\gamma_3 = 0, \\gamma_4 = 0, \\gamma_5 = 0$$\n\nOmdat het model geschat is met `robust`, voert Stata een robuuste Wald-toets uit. Deze toets is **asymptotisch geldig onder willekeurige heteroskedasticiteit** zowel tussen als binnen de groepen!\n\n### Waarom vce(robust)?\n\nHet Gauss-Markov theorema garandeert dat OLS de meest efficiënte lineaire zuivere schatter is (Best Linear Unbiased Estimator) onder homoskedasticiteit ($\\text{Var}(u_i \\mid \\mathbf{x}_i) = \\sigma^2$).\nWanneer er sprake is van heteroskedasticiteit ($\\text{Var}(u_i \\mid \\mathbf{x}_i) = \\sigma_i^2$ varieert per individu):\n1. **Puntschattingen $\\hat{\\boldsymbol{\\beta}}$ blijven zuiver en consistent** zolang $E(u_i \\mid \\mathbf{x}_i) = 0$.\n2. **Klassieke standaardfouten $s^2 (X'X)^{-1}$ zijn vertekend en inconsistent.** Meestal worden de standaardfouten onderschat, wat leidt tot kunstmatig hoge $t$-statistieken en onterechte verwerpingen van de nulhypothese (Type I-fout).\n3. De optie `robust` berekent de **Huber-White sandwich-schatter**:\n   $$\\widehat{\\text{Var}}(\\hat{\\boldsymbol{\\beta}}) = (X'X)^{-1} \\left( \\sum_{i=1}^N \\hat{u}_i^2 \\mathbf{x}_i \\mathbf{x}_i' \\right) (X'X)^{-1}$$\n   waarmee statistische inferentie (betrouwbaarheidsintervallen, $t$- en $F$-toetsen) geldig blijft.",
+   "checks": [
+    {
+     "id": "c-jt-check",
+     "type": "mcq",
+     "skill": "joint-tests-chow",
+     "level": 2,
+     "prompt": "Welke restrictieve aanname maakt de klassieke Chow-toets op basis van residusommen (SSR) kwetsbaar, en hoe lost de moderne Stata-aanpak dit op?",
+     "explain": "De klassieke Chow-toets veronderstelt dat de foutvariantie in beide groepen identiek is (homoskedasticiteit). Als deze aanname faalt, is de toets ongeldig. Door een volledig geïnteracteerd model te schatten met vce(robust), berekent Stata een robuuste Wald-toets die bestand is tegen heteroskedasticiteit.",
+     "options": [
+      "De klassieke formule vereist homoskedasticiteit (gelijke foutvarianties over groepen); Stata lost dit op door een volledig geïnteracteerd model te schatten met robust.",
+      "De klassieke formule vereist perfecte multicollineariteit tussen variabelen; Stata lost dit op door regressoren automatisch te standaardiseren.",
+      "De klassieke formule vereist exact evenveel waarnemingen in beide deelsteekproeven; Stata lost dit op via pweights herweging.",
+      "De klassieke formule vereist strikt bivariate regressies; Stata lost dit op door 2SLS toe te passen."
+     ],
+     "answer": 0
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p-dt-01",
+   "type": "mcq",
+   "skill": "dummy-trap",
+   "level": 1,
+   "prompt": "Wat is de econometrische oorzaak van de zogeheten dummy variable trap wanneer een onderzoeker voor een categorische factor met M categorieën M dummy's én een constante opneemt in OLS?",
+   "explain": "Bij opname van alle M dummy's geldt voor elke waarneming dat de som van de dummy's exact gelijk is aan 1. Deze som is identiek aan de constantevector x0 = 1, wat leidt tot perfecte multicollineariteit. De matrix X'X heeft daardoor geen volle kolomrang en kan niet geïnverteerd worden.",
+   "options": [
+    "Er ontstaat perfecte multicollineariteit omdat de som van de dummy's exact samenvalt met de constantevector, waardoor (X'X) singulier is.",
+    "De storingstermen vertonen ernstige heteroskedasticiteit waardoor OLS-coëfficiënten inconsistent en asymmetrisch vertekend worden.",
+    "De residuele kwadratensom wordt wiskundig negatief waardoor de bepaling van de standaardfouten onmogelijk wordt.",
+    "Het model lijdt onder weggelaten variabelen waardoor het Gauss-Markov theorema niet langer geldig is."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p-dt-02",
+   "type": "type",
+   "skill": "dummy-trap",
+   "level": 2,
+   "prompt": "Je schat een loonvergelijking met 5 provincies en wil een constante term in het model behouden. Hoeveel provinciedummy's mag je maximaal opnemen om de dummy variable trap te vermijden? Geef het cijfer.",
+   "explain": "Voor M wederzijds uitsluitende categorieën neem je maximaal M - 1 dummy's op wanneer het model een constante bevat (hier 5 - 1 = 4). Eén categorie dient als referentiecategorie.",
+   "answers": [
+    "4",
+    "vier"
+   ]
+  },
+  {
+   "id": "p-dt-03",
+   "type": "cloze",
+   "skill": "dummy-trap",
+   "level": 2,
+   "prompt": "Vul de ontbrekende termen in over dummy-specificaties in Stata:",
+   "text": "In het model $y = \\beta_0 + \\delta_0 D + \\beta_1 x + u$ met binaire dummy $D \\in \\{0,1\\}$ meet de parameter $\\delta_0$ de parallelle {{interceptverschuiving|verschuiving van het intercept}} ten opzichte van de basisgroep. Als je in Stata de factor-operator `i.` gebruikt zonder extra instellingen, kiest Stata standaard de {{laagste|kleinste}} numerieke waarde als referentiecategorie.",
+   "explain": "De coëfficiënt delta0 verschuift het intercept van de regressielijn parallel voor de groep met D=1 ten opzichte van de referentiegroep D=0. Stata kiest bij de factorvariabele-operator i. standaard de numeriek laagste categorie als referentiepunt."
+  },
+  {
+   "id": "p-dt-04",
+   "type": "match",
+   "skill": "dummy-trap",
+   "level": 2,
+   "prompt": "Koppel elke modelspecificatie aan de juiste econometrische eigenschap:",
+   "explain": "Bij M-1 dummy's met constante meet elke dummy het relatieve verschil t.o.v. de referentiegroep. Alle M dummy's met constante leidt tot de dummy trap. Zonder constante meet elke dummy het eigen absolute intercept, maar verliest R² zijn standaardeigenschappen. i.variabele regelt de weglating automatisch.",
+   "pairs": [
+    [
+     "Model met constante en M-1 dummy's",
+     "Standaard specificatie; weggelaten groep fungeert als referentiepunt"
+    ],
+    [
+     "Model met constante en M dummy's",
+     "Dummy variable trap: matrix X'X is singulier en niet inverteerbaar"
+    ],
+    [
+     "Model zonder constante en M dummy's",
+     "Elke coëfficiënt is het absolute groepsgemiddelde bij x=0; afwijkende R²"
+    ],
+    [
+     "Factorvariabele-notatie i.variabele",
+     "Stata laat automatisch de numeriek laagste categorie vallen als basis"
+    ]
+   ]
+  },
+  {
+   "id": "p-se-01",
+   "type": "numeric",
+   "skill": "category-semi-elasticity",
+   "level": 2,
+   "prompt": "In een semi-log loonmodel ln(wage) = beta0 + beta1 * female + u schat je beta1 = -0.25. Bereken het exacte procentuele loonverschil voor vrouwen ten opzichte van mannen via 100 * (exp(beta1) - 1)%. Rond af op 2 decimalen na de komma (bv. -22.12).",
+   "explain": "Het exacte procentuele verschil is 100 * (exp(-0.25) - 1)% = 100 * (0.77880 - 1)% = -22.12%. De lineaire benadering zou -25.00% opleveren, wat het reële loonnadeel overschat.",
+   "value": -22.12,
+   "tolerance": 0.1
+  },
+  {
+   "id": "p-se-02",
+   "type": "type",
+   "skill": "category-semi-elasticity",
+   "level": 2,
+   "prompt": "Welke Stata factor-prefix gebruik je voor de categorische variabele educ_cat om categorie 3 expliciet als referentiecategorie (base category) aan te wijzen?",
+   "explain": "In Stata definieert het voorvoegsel ib#. de gewenste referentiecategorie. Voor categorie 3 schrijf je ib3.educ_cat.",
+   "answers": [
+    "ib3.educ_cat",
+    "ib3.",
+    "ib(3).educ_cat"
+   ]
+  },
+  {
+   "id": "p-se-03",
+   "type": "mcq",
+   "skill": "category-semi-elasticity",
+   "level": 2,
+   "prompt": "Een onderzoeker schat een slaapmodel met categorie 0 (geen diploma) als basis: de coëfficiënt van categorie 3 (bachelor) is -349.15 minuten. Vervolgens wijzigt zij de basiscategorie naar categorie 3 (ib3.). Wat gebeurt er met de R² en de coëfficiënt van categorie 0?",
+   "explain": "Het wijzigen van de referentiecategorie verandert niets aan de pasvorm van het model: residuen, voorspellingen en R² blijven numeriek identiek. Enkel het vergelijkingspunt kantelt: als categorie 3 t.o.v. 0 gelijk was aan -349.15, is categorie 0 t.o.v. 3 exact het omgekeerde: +349.15.",
+   "options": [
+    "De R² blijft exact identiek en de coëfficiënt van categorie 0 wordt +349.15.",
+    "De R² stijgt door herschaling en de coëfficiënt van categorie 0 wordt -349.15.",
+    "De R² daalt aanzienlijk en de coëfficiënt van categorie 0 wordt gelijk aan nul.",
+    "De R² blijft identiek maar de coëfficiënt van categorie 0 blijft onveranderd op -349.15."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p-se-04",
+   "type": "cloze",
+   "skill": "category-semi-elasticity",
+   "level": 1,
+   "prompt": "Vul de juiste begrippen aan voor log-lineaire modellen:",
+   "text": "In het model $\\ln(y) = \\beta_0 + \\beta_1 D + u$ met dummy $ levert  \\cdot \\beta_1\\%$ de {{lineaire benadering|benadering}} van het procentuele effect. Wanneer $|\\beta_1|$ relatief groot is (bv. groter dan 0.10), moet je de exacte formule toepassen: exact $\\% \\Delta y = 100 \\cdot ($ {{exp(beta1) - 1|e^beta1 - 1|exp(beta_1)-1|exp(b1)-1}} $)\\%$.",
+   "explain": "De formule 100 * beta1% is een calculusbenadering die enkel nauwkeurig is voor kleine coëfficiënten. Voor grotere waarden vereist het examen de exacte formule 100 * (exp(beta1) - 1)%."
+  },
+  {
+   "id": "p-in-01",
+   "type": "numeric",
+   "skill": "interaction-nonlinear",
+   "level": 2,
+   "prompt": "In het model ln(wage) = beta0 + 0.04 * exper - 0.0005 * exper^2 + u bereikt het loon een maximum door afnemende meeropbrengsten. Bereken het aantal jaren werkervaring waarbij het marginale effect exact nul wordt.",
+   "explain": "Het marginale effect is d ln(wage) / d exper = 0.04 - 2 * 0.0005 * exper = 0.04 - 0.001 * exper = 0. Dit levert exper* = 0.04 / 0.001 = 40 jaar. Vergeet niet de factor 2 bij het afleiden van het kwadraat!",
+   "value": 40.0,
+   "tolerance": 0.1
+  },
+  {
+   "id": "p-in-02",
+   "type": "type",
+   "skill": "interaction-nonlinear",
+   "level": 2,
+   "prompt": "Welke Stata factor-interactie syntax specificeert een volledige interactie (beide hoofdeffecten én de interactieterm) tussen continue variabele exper en binaire dummy female?",
+   "explain": "In Stata voegt de dubbele hash ## zowel de hoofdeffecten van beide variabelen als hun interactieterm toe: c.exper##i.female (of i.female##c.exper).",
+   "answers": [
+    "c.exper##i.female",
+    "i.female##c.exper"
+   ]
+  },
+  {
+   "id": "p-in-03",
+   "type": "mcq",
+   "skill": "interaction-nonlinear",
+   "level": 2,
+   "prompt": "Gegeven het model met dubbele dummy-interactie: ln(wage) = beta0 + beta1 * married + beta2 * black + beta3 * (married * black) + controls. Wat is het geschatte verschil in logloon tussen een gehuwde zwarte werknemer en een gehuwde niet-zwarte werknemer?",
+   "explain": "Voor een gehuwde niet-zwarte werknemer is het verwachte logloon beta0 + beta1. Voor een gehuwde zwarte werknemer is dit beta0 + beta1 + beta2 + beta3. Het verschil is (beta0 + beta1 + beta2 + beta3) - (beta0 + beta1) = beta2 + beta3. Het huwelijkseffect valt weg.",
+   "options": [
+    "beta2 + beta3",
+    "beta1 + beta2 + beta3",
+    "beta2",
+    "beta3 - beta1"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p-in-04",
+   "type": "cloze",
+   "skill": "interaction-nonlinear",
+   "level": 2,
+   "prompt": "Vul de formule in voor het marginale effect van een kwadratische regressor:",
+   "text": "Gegeven het model  = \\beta_0 + \\beta_1 x + \\beta_2 x^2 + u$. Het marginale effect van $ op $ is gelijk aan de eerste afgeleide $\\frac{\\partial y}{\\partial x} = \\beta_1 +$ {{2|2*|2 *}} $\\beta_2 x$. Het keerpunt (optimum) bevindt zich bij ^* =$ {{-beta1/(2*beta2)|-\\beta_1/(2\\beta_2)|-b1/(2*b2)}}.",
+   "explain": "De afgeleide van beta2 * x^2 naar x is 2 * beta2 * x. De eerste-ordeconditie beta1 + 2 * beta2 * x = 0 levert het keerpunt x* = -beta1 / (2 * beta2)."
+  },
+  {
+   "id": "p-jt-01",
+   "type": "mcq",
+   "skill": "joint-tests-chow",
+   "level": 2,
+   "prompt": "Onder welke cruciale aanname is de klassieke Chow-toets op basis van residusommen van kwadraten (SSR) uit afzonderlijke regressies enkel wiskundig geldig?",
+   "explain": "De klassieke Chow-F-statistiek $F = \\frac{(SSR_P - (SSR_1 + SSR_2))/k}{(SSR_1 + SSR_2)/(N - 2k)}$ volgt alleen een F-verdeling als de residuele variantie gelijk is over beide deelsteekproeven (homoskedasticiteit). Bij heteroskedasticiteit is de toets ongeldig.",
+   "options": [
+    "Homoskedasticiteit: de variantie van de storingsterm moet gelijk zijn in beide deelsteekproeven.",
+    "Multicollineariteit: de regressoren moeten een correlatie vertonen die groter is dan 0.80.",
+    "Eindige steekproeven: de totale steekproefgrootte mag maximaal 100 waarnemingen bedragen.",
+    "Normaliteit: alle verklarende variabelen moeten strikt standaardnormaal verdeeld zijn."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p-jt-02",
+   "type": "type",
+   "skill": "joint-tests-chow",
+   "level": 2,
+   "prompt": "Welk Stata postestimation-commando gebruik je na regress om gezamenlijk te testen of de kwadratische termen c.exper#c.exper en c.tenure#c.tenure beide gelijk aan nul zijn?",
+   "explain": "testparm test gezamenlijke hypothesen op parameters en ondersteunt factor- en interactie-syntax: testparm c.exper#c.exper c.tenure#c.tenure.",
+   "answers": [
+    "testparm c.exper#c.exper c.tenure#c.tenure",
+    "test c.exper#c.exper c.tenure#c.tenure"
+   ]
+  },
+  {
+   "id": "p-jt-03",
+   "type": "cloze",
+   "skill": "joint-tests-chow",
+   "level": 2,
+   "prompt": "Vul de optie en toetsvorm aan voor robuuste hypothesetoetsing:",
+   "text": "Heteroskedasticiteit vertekent OLS-coëfficiënten niet, maar maakt gewone standaardfouten ongeldig. In Stata voeg je de optie {{robust|vce(robust)|r}} toe aan `regress`. Een gezamenlijke hypothese op meerdere interactietermen toets je vervolgens via een robuuste Wald/F-toets met het commando {{testparm|test}}.",
+   "explain": "vce(robust) (of kortweg robust) berekent de Huber-White sandwich-standaardfouten. Daarna voert testparm een robuuste gezamenlijke F-toets uit."
+  },
+  {
+   "id": "p-jt-04",
+   "type": "order",
+   "skill": "joint-tests-chow",
+   "level": 3,
+   "prompt": "Rangschik de stappen om een robuuste Chow-toets op geslachtsverschillen uit te voeren in de juiste empirische volgorde:",
+   "explain": "De empirische procedure start met het schatten van het volledig geïnteracteerde model met robust. Vervolgens formuleer je de gezamenlijke nulhypothese, voer je testparm uit over de groepsdummy en alle interacties, en interpreteer je de p-waarde.",
+   "tiles": [
+    "Schat het model met interacties tussen female en alle regressoren via regress ..., robust",
+    "Formuleer de gezamenlijke nulhypothese dat alle coëfficiënten op 1.female en de interacties nul zijn",
+    "Voer testparm 1.female 1.female#* uit om de robuuste F-statistiek en p-waarde te berekenen",
+    "Verwerp H0 indien p < 0.05 en concludeer dat de loonstructuur significant verschilt tussen geslachten"
+   ]
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m-dt-01",
+   "type": "mcq",
+   "skill": "dummy-trap",
+   "level": 2,
+   "prompt": "Je onderzoekt de impact van vier arbeidsstatuten (voltijds, deeltijds, zelfstandig, interim). Welke van de volgende modelspecificaties leidt onvermijdelijk tot de dummy variable trap?",
+   "explain": "In de eerste specificatie worden alle 4 de categorieën opgenomen samen met de constante term. Omdat de som van de 4 dummy's voor elke werknemer exact 1 is, ontstaat perfecte multicollineariteit. De overige specificaties laten één basiscategorie of de constante weg.",
+   "options": [
+    "regress wage voltijds deeltijds zelfstandig interim, robust",
+    "regress wage voltijds deeltijds zelfstandig, robust",
+    "regress wage deeltijds zelfstandig interim, robust",
+    "regress wage voltijds deeltijds zelfstandig interim, noconstant robust"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m-dt-02",
+   "type": "mcq",
+   "skill": "dummy-trap",
+   "level": 2,
+   "prompt": "Wat is de exacte interpretatie van de constante term beta0 in het model wage = beta0 + beta1 * female + beta2 * educ + u, waarin female = 1 voor vrouwen en female = 0 voor mannen?",
+   "explain": "Wanneer female = 0 (mannen) en educ = 0, is de verwachte uitkomst exact gelijk aan beta0. Het intercept vertegenwoordigt dus het verwachte loon van een man zonder enige scholing.",
+   "options": [
+    "Het verwachte uurloon voor een man met nul jaar scholing.",
+    "Het gemiddelde uurloon over de gehele steekproef voor alle werknemers.",
+    "Het verwachte uurloon voor een vrouw met het gemiddelde scholingsniveau.",
+    "Het gemiddelde loonverschil tussen mannelijke en vrouwelijke werknemers."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m-dt-03",
+   "type": "type",
+   "skill": "dummy-trap",
+   "level": 2,
+   "prompt": "Een socioloog wil 3 religieuze overtuigingen vergelijken in een OLS-model zonder constante term (noconstant). Hoeveel dummyvariabelen moet zij in het model opnemen om alle categorieën te identificeren?",
+   "explain": "Als de constante term expliciet wordt weggelaten (noconstant), neem je voor alle M categorieën een dummyvariabele op (hier 3). Elk dummycoëfficiënt geeft dan het absolute groepsgemiddelde weer.",
+   "answers": [
+    "3",
+    "drie"
+   ]
+  },
+  {
+   "id": "m-dt-04",
+   "type": "cloze",
+   "skill": "dummy-trap",
+   "level": 2,
+   "prompt": "Vul de ontbrekende begrippen in over kwalitatieve variabelen:",
+   "text": "Bij kwalitatieve variabelen zonder inherente rangschikking spreken we van nominale categorieën. Om multicollineariteit te vermijden bij aanwezigheid van een constante, laten we één categorie weg als {{referentiecategorie|basisgroep|basiscategorie}}. De coëfficiënten van de overige dummy's meten dan het relatieve {{verschil|niveauverschil}} ten opzichte van die weggelaten groep.",
+   "explain": "De weggelaten categorie fungeert als referentiecategorie (basisgroep). De coëfficiënten van de opgenomen dummy's geven het verschil weer ten opzichte van deze basis."
+  },
+  {
+   "id": "m-se-01",
+   "type": "numeric",
+   "skill": "category-semi-elasticity",
+   "level": 2,
+   "prompt": "In een semilogaritmische loonregressie schat Stata de coëfficiënt op union (vakbondslid) op beta = 0.18. Bereken het exacte procentuele loonvoordeel van vakbondsleden ten opzichte van niet-leden via 100 * (exp(beta) - 1)%. Rond af op 2 decimalen na de komma (bv. 19.72).",
+   "explain": "Exacte berekening: 100 * (exp(0.18) - 1)% = 100 * (1.197217 - 1)% = 19.72%. De lineaire benadering 100 * beta% = 18.00% onderschat het werkelijke procentuele voordeel.",
+   "value": 19.72,
+   "tolerance": 0.1
+  },
+  {
+   "id": "m-se-02",
+   "type": "mcq",
+   "skill": "category-semi-elasticity",
+   "level": 2,
+   "prompt": "Waarom is de exacte procentuele verandering 100 * (exp(beta) - 1)% niet symmetrisch wanneer je de referentiecategorie van een binaire indicator omkeert?",
+   "explain": "Procentuele veranderingen hangen af van het basisniveau in de noemer: een toename van 100 naar 125 is +25%, maar een daling van 125 naar 100 is -20%. De lineaire benadering 100*beta is wél symmetrisch (+-beta) en ligt altijd tussen beide exacte waarden in.",
+   "options": [
+    "De relatieve toename vanaf een lagere basis is procentueel groter dan de procentuele daling vanaf een hogere basis.",
+    "De OLS-kwadratensom en determinatiecoëfficiënt veranderen drastisch bij het omkeren van de referentiegroep.",
+    "Het model verliest zijn asymptotische eigenschappen zodra de referentiecategorie van teken wisselt.",
+    "De natuurlijke logaritme kan wiskundig niet berekend worden voor negatieve regressiecoëfficiënten."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m-se-03",
+   "type": "type",
+   "skill": "category-semi-elasticity",
+   "level": 2,
+   "prompt": "Welke Stata factor-prefix gebruik je voor de categorische variabele region om categorie 1 (Noord) als basiscategorie in te stellen?",
+   "explain": "In Stata stel je categorie 1 in als referentiecategorie met het voorvoegsel ib1.region.",
+   "answers": [
+    "ib1.region",
+    "ib1.",
+    "ib(1).region"
+   ]
+  },
+  {
+   "id": "m-se-04",
+   "type": "cloze",
+   "skill": "category-semi-elasticity",
+   "level": 2,
+   "prompt": "Vul de formule in voor de exacte procentuele berekening in een log-level model:",
+   "text": "Als $\\ln(y) = \\beta_0 + \\beta_1 D + u$, dan geldt voor de verhouding van de verwachte uitkomsten dat $\\frac{y_1}{y_0} = \\exp(\\beta_1)$. Het exacte percentage waarmee $ verandert bij =1$ t.o.v. =0$ is gelijk aan  \\cdot ($ {{exp(beta1) - 1|e^beta1 - 1|exp(beta_1)-1|exp(b1)-1}} $)\\%$.",
+   "explain": "Omdat ln(y1) - ln(y0) = beta1, is y1/y0 = exp(beta1). Het relatieve verschil (y1 - y0)/y0 is exp(beta1) - 1. Vermenigvuldigd met 100 levert dit het percentage."
+  },
+  {
+   "id": "m-in-01",
+   "type": "numeric",
+   "skill": "interaction-nonlinear",
+   "level": 2,
+   "prompt": "Gegeven het geschatte model ln(wage) = 0.50 + 0.08 * educ - 0.20 * female + 0.02 * (female * educ). Wat is het geschatte procentuele rendement van één extra jaar opleiding voor een vrouw (in procenten, volgens de benadering)?",
+   "explain": "Het marginale effect van scholing is d ln(wage) / d educ = beta_educ + beta_fem_educ * female = 0.08 + 0.02 * female. Voor een vrouw (female = 1) is het rendement 0.08 + 0.02 = 0.10 oftewel 10.0%.",
+   "value": 10.0,
+   "tolerance": 0.1
+  },
+  {
+   "id": "m-in-02",
+   "type": "mcq",
+   "skill": "interaction-nonlinear",
+   "level": 2,
+   "prompt": "Wat is het fundamentele verschil in Stata tussen de interactienotaties c.age#c.age en c.age##c.age in een regressiemodel?",
+   "explain": "De enkele hash # neemt uitsluitend de interactieterm (age^2) op. De dubbele hash ## neemt automatisch zowel de lineaire term age als de kwadratische term age^2 op. Zonder age is het kwadratische model misgespecificeerd.",
+   "options": [
+    "c.age##c.age voegt zowel de lineaire term age als het kwadraat toe, terwijl c.age#c.age uitsluitend het kwadraat toevoegt.",
+    "c.age#c.age schat een derdegraadspolynoom terwijl c.age##c.age een tweedegraadspolynoom schat.",
+    "c.age##c.age berekent robuuste standaardfouten terwijl c.age#c.age klassieke standaardfouten oplevert.",
+    "Er is geen enkel functioneel verschil tussen beide notaties in Stata."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m-in-03",
+   "type": "cloze",
+   "skill": "interaction-nonlinear",
+   "level": 2,
+   "prompt": "Vul de begrippen in over interactiemodellen:",
+   "text": "Wanneer je een continue variabele interacteert met een binaire variabele (bv. `c.exper##i.female`), laat je toe dat de {{helling|hellingscoëfficiënt|rico}} van de regressielijn verschilt tussen beide groepen. Zonder deze interactie veronderstel je restrictief dat het marginale effect van ervaring voor mannen en vrouwen {{identiek|gelijk|hetzelfde}} is.",
+   "explain": "Een interactie tussen een dummy en een continue variabele moduleert de helling van de regressielijn. Zonder interactieterm dwing je af dat beide groepen dezelfde hellingscoëfficiënt hebben."
+  },
+  {
+   "id": "m-in-04",
+   "type": "numeric",
+   "skill": "interaction-nonlinear",
+   "level": 2,
+   "prompt": "In een kwadratisch model output = 100 + 12 * meststof - 0.3 * meststof^2 bereikt de oogst een maximum wegens afnemende meeropbrengsten. Bij welke hoeveelheid meststof ligt dit optimum?",
+   "explain": "Eerste afgeleide gelijkstellen aan nul: d output / d meststof = 12 - 2 * 0.3 * meststof = 12 - 0.6 * meststof = 0. Dit geeft meststof* = 12 / 0.6 = 20.",
+   "value": 20.0,
+   "tolerance": 0.1
+  },
+  {
+   "id": "m-jt-01",
+   "type": "mcq",
+   "skill": "joint-tests-chow",
+   "level": 2,
+   "prompt": "Waarom verkiest men in moderne toegepaste econometrie het volledig geïnteracteerde model boven de klassieke Chow-toets op basis van kwadratensommen (SSR)?",
+   "explain": "De klassieke SSR-formule veronderstelt gelijke foutvarianties in beide deelsteekproeven (homoskedasticiteit). In een geïnteracteerd model kan je vce(robust) opgeven, waardoor de resulterende Wald-toets via testparm bestand is tegen willekeurige heteroskedasticiteit.",
+   "options": [
+    "Omdat het geïnteracteerde model gecombineerd kan worden met vce(robust), waardoor de toets geldig blijft bij heteroskedasticiteit.",
+    "Omdat het geïnteracteerde model minder vrijheidsgraden verbruikt dan afzonderlijke regressies.",
+    "Omdat de klassieke Chow-toets alleen kan worden toegepast op tijdreeksen met minder dan 50 observaties.",
+    "Omdat het geïnteracteerde model multicollineariteit tussen variabelen automatisch wegwerkt."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m-jt-02",
+   "type": "type",
+   "skill": "joint-tests-chow",
+   "level": 2,
+   "prompt": "Welk Stata-commando voer je uit na de regressie regress lwage i.female##(c.educ c.exper), robust om te toetsen of het scholingsrendement én het ervaringsrendement gezamenlijk gelijk zijn tussen mannen en vrouwen?",
+   "explain": "testparm 1.female#c.educ 1.female#c.exper toetst gezamenlijk of beide hellingsinteracties gelijk zijn aan nul (H0: gamma_educ = 0 en gamma_exper = 0).",
+   "answers": [
+    "testparm 1.female#c.educ 1.female#c.exper",
+    "test 1.female#c.educ 1.female#c.exper"
+   ]
+  },
+  {
+   "id": "m-jt-03",
+   "type": "mcq",
+   "skill": "joint-tests-chow",
+   "level": 2,
+   "prompt": "Wat is de exacte consequentie van heteroskedasticiteit voor de eigenschappen van de OLS-schatter?",
+   "explain": "Heteroskedasticiteit schendt de aanname van constante foutvariantie, maar niet E(u|X) = 0. Daardoor blijven de OLS-coëfficiënten zuiver en consistent. Echter, de standaardfouten zijn foutief (meestal te klein) en OLS verliest zijn efficiëntie (is niet langer de meest efficiënte schatter).",
+   "options": [
+    "OLS-coëfficiënten blijven zuiver en consistent, maar de klassieke standaardfouten zijn vertekend en OLS is niet langer het meest efficiënt.",
+    "OLS-coëfficiënten worden inconsistent en vertekend, waardoor puntschattingen onbruikbaar worden.",
+    "De residuen sommeren niet langer tot nul en de determinatiecoëfficiënt R² kan groter worden dan 1.",
+    "Heteroskedasticiteit heeft enkel invloed op de constante term; hellingscoëfficiënten blijven zuiver en efficiënt."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m-jt-04",
+   "type": "order",
+   "skill": "joint-tests-chow",
+   "level": 3,
+   "prompt": "Rangschik de empirische stappen om een kwadratisch ervaringsmodel in Stata te schatten en het keerpunt grafisch te inspecteren:",
+   "explain": "De logische empirische volgorde start met de schatting via c.exper##c.exper. Vervolgens bereken je marginale effecten op een grid via margins, plot je deze met marginsplot, yline(0) om het nulpunt te vinden, en bereken je het wiskundige keerpunt.",
+   "tiles": [
+    "Schat het model via regress lwage educ c.exper##c.exper, robust",
+    "Bereken de marginale effecten op een grid via margins, dydx(exper) at(exper=(0(5)50))",
+    "Visualiseer de helling en het betrouwbaarheidsinterval via marginsplot, yline(0)",
+    "Bereken de top van de parabool via scalar exper_star = -_b[exper]/(2*_b[c.exper#c.exper])"
+   ]
+  }
+ ],
+ "production": {
+  "type": "explain",
+  "lang": "nl",
+  "minWords": 100,
+  "prompt": "**Empirische OLS-analyse op loondata (wage2.dta).**\n\nEen onderzoeker analyseert de determinanten van het maandloon aan de hand van `wage2.dta` ($N=935$). Zij schat het volgende loonmodel met OLS (Ordinary Least Squares):\n\n$$\\ln(\\text{wage}) = \\beta_0 + \\beta_1 \\text{educ} + \\beta_2 \\text{exper} + \\beta_3 \\text{exper}^2 + \\beta_4 \\text{married} + \\beta_5 \\text{black} + \\beta_6 (\\text{married} \\times \\text{black}) + \\mathbf{z}'\\boldsymbol{\\gamma} + u$$\n\nwaarbij $\\mathbf{z}$ controlevariabelen bevat voor anciënniteit (`tenure`), regio (`south`) en stedelijke omgeving (`urban`).\n\nDe geschatte coëfficiënten zijn:\n- $\\hat{\\beta}_2 = 0.03575$\n- $\\hat{\\beta}_3 = -0.000632$\n- $\\hat{\\beta}_4 = 0.1889$\n- $\\hat{\\beta}_5 = -0.2408$\n- $\\hat{\\beta}_6 = 0.0614$\n\nBeantwoord de volgende vier methodologische en empirische vragen:\n1. **Kwadratisch effect & keerpunt:** Bereken het marginale effect van ervaring bij 5 jaar werkervaring én bereken bij welk aantal jaren ervaring het looneffect zijn absolute maximum bereikt.\n2. **Dubbele dummy-interactie:** Bereken het geschatte relatieve loonverschil tussen gehuwde zwarte werknemers en gehuwde niet-zwarte werknemers. Toon exact welke coëfficiënten hierin meespelen.\n3. **Exacte semi-elasticiteit:** Bereken het exacte procentuele loonnadeel voor ongehuwde zwarte werknemers ten opzichte van ongehuwde niet-zwarte werknemers (gebaseerd op $\\hat{\\beta}_5$) en vergelijk dit met de lineaire benadering.\n4. **Stata-implementatie & inferentie:** Geef de exacte Stata-commando's om (a) dit model met factorvariabelen en robuuste standaardfouten te schatten, en (b) met `testparm` te toetsen of etniciteit (`black`) en burgerlijke staat (`married`) gezamenlijk geen enkel effect hebben op het loon.",
+  "model": "**1. Marginaal effect en keerpunt van werkervaring:**\nHet marginale effect is de partiële afgeleide van het logloon naar ervaring:\n$$\\frac{\\partial \\ln(\\text{wage})}{\\partial \\text{exper}} = \\hat{\\beta}_2 + 2\\hat{\\beta}_3 \\cdot \\text{exper} = 0.03575 + 2(-0.000632)(5) = 0.03575 - 0.00632 = 0.02943$$\nBij 5 jaar ervaring verhoogt één extra jaar ervaring het maandloon met ongeveer $2.94\\%$ (ceteris paribus).\nHet keerpunt (maximum van de parabool) volgt uit $\\frac{\\partial \\ln(\\text{wage})}{\\partial \\text{exper}} = 0$:\n$$\\text{exper}^* = -\\frac{\\hat{\\beta}_2}{2\\hat{\\beta}_3} = -\\frac{0.03575}{2(-0.000632)} = \\frac{0.03575}{0.001264} \\approx 28.28 \\text{ jaar}$$\nNa 28.28 jaar werkervaring bereikt het loon zijn top en begint een bijkomend ervaringsjaar het loon te verlagen.\n\n**2. Loonverschil tussen gehuwde zwarte en gehuwde niet-zwarte werknemers:**\nKijk naar de modelvergelijking voor beide groepen:\n- Gehuwd & niet-zwart (`married=1, black=0`): interceptbijdrage is $\\beta_4$.\n- Gehuwd & zwart (`married=1, black=1`): interceptbijdrage is $\\beta_4 + \\beta_5 + \\beta_6$.\nHet verschil tussen gehuwde zwarten en gehuwde niet-zwarten is:\n$$(\\beta_4 + \\beta_5 + \\beta_6) - \\beta_4 = \\hat{\\beta}_5 + \\hat{\\beta}_6 = -0.2408 + 0.0614 = -0.1794$$\nGehuwde zwarte werknemers verdienen naar schatting $17.94\\%$ minder dan gehuwde niet-zwarte werknemers (in Stata: `display _b[1.black] + _b[1.married#1.black]`).\n\n**3. Exacte semi-elasticiteit voor ongehuwde zwarte werknemers:**\nVoor ongehuwden (`married=0`) is het verschil in logloon tussen zwart en niet-zwart gelijk aan $\\hat{\\beta}_5 = -0.2408$.\n- Lineaire benadering: $100 \\cdot (-0.2408)\\% = -24.08\\%$.\n- Exacte formule: $100 \\cdot (\\exp(\\hat{\\beta}_5) - 1)\\% = 100 \\cdot (\\exp(-0.2408) - 1)\\% = 100 \\cdot (0.785998 - 1)\\% = -21.40\\%$.\nDe lineaire benadering overschat het feitelijke procentuele loonnadeel met bijna $2.7$ procentpunt ($24.08\\%$ vs $21.40\\%$).\n\n**4. Stata-commando's voor schatting en hypothesetoets:**\n(a) Schatting met factorvariabelen en robuuste standaardfouten:\n```stata\nregress lwage educ c.exper##c.exper i.married##i.black tenure south urban, robust\n```\n(b) Gezamenlijke F-toets dat huwelijk en etniciteit géén effect hebben ($H_0: \\beta_4 = \\beta_5 = \\beta_6 = 0$):\n```stata\ntestparm 1.married 1.black 1.married#1.black\n```",
+  "rubric": [
+   "Correcte berekening van het marginaal effect bij 5 jaar ervaring (inclusief factor 2, ~2.94%) en het keerpunt (exper* = 28.28 jaar)",
+   "Correcte isolatie en sommatie van de coëfficiënten voor gehuwde zwarten vs gehuwde niet-zwarten (_b[black] + _b[married#black] = -17.94%)",
+   "Correcte toepassing van de exacte procentuele formule 100*(exp(-0.2408)-1)% = -21.40% en confrontatie met de benadering (-24.08%)",
+   "Foutloze Stata factor-variable regressiesyntax (c.exper##c.exper, i.married##i.black, robust) en het bijhorende testparm commando"
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-testparm",
+   "front": "Welk Stata-commando toetst na een OLS-schatting of een set coëfficiënten of interactietermen gezamenlijk gelijk aan nul is?",
+   "back": "`testparm`",
+   "answers": [
+    "testparm"
+   ],
+   "lang": "code",
+   "skill": "joint-tests-chow"
+  },
+  {
+   "id": "c-base-category",
+   "front": "Hoe stel je in Stata via factorvariabele-notatie categorie 2 van variabele `educ_c` in als referentiegroep?",
+   "back": "`ib2.educ_c`",
+   "answers": [
+    "ib2.educ_c",
+    "ib2."
+   ],
+   "lang": "code",
+   "skill": "category-semi-elasticity"
+  },
+  {
+   "id": "c-hash-difference",
+   "front": "Wat is het verschil tussen `c.x#i.d` en `c.x##i.d` in Stata regressiesyntax?",
+   "back": "`#` voegt uitsluitend de interactieterm toe; `##` voegt zowel de hoofdeffecten van beide variabelen als hun interactieterm toe (full factorial).",
+   "skill": "interaction-nonlinear"
+  },
+  {
+   "id": "c-semi-elasticity-exact",
+   "front": "Wat is de exacte formule voor het procentuele effect van een dummy $D$ in een log-lineair model $\\ln(y) = \\beta_0 + \\beta_1 D$?",
+   "back": "$$\\% \\Delta y = 100 \\cdot (\\exp(\\beta_1) - 1)\\%$$",
+   "skill": "category-semi-elasticity"
+  },
+  {
+   "id": "c-turning-point",
+   "front": "Wat is de formule voor het keerpunt (top of dal) van de kwadratische specificatie $y = \\beta_0 + \\beta_1 x + \\beta_2 x^2$?",
+   "back": "$$x^* = -\\frac{\\beta_1}{2\\beta_2}$$",
+   "skill": "interaction-nonlinear"
+  },
+  {
+   "id": "c-chow-assumption",
+   "front": "Onder welke cruciale aanname is de klassieke Chow-toets op basis van kwadratensommen ($SSR$) enkel geldig?",
+   "back": "**Homoskedasticiteit** (gelijke foutvarianties $\\sigma_1^2 = \\sigma_2^2$ in beide deelpopulaties). Bij heteroskedasticiteit gebruik je een geïnteracteerd model met `vce(robust)`.",
+   "skill": "joint-tests-chow"
+  },
+  {
+   "id": "c-dummy-trap",
+   "front": "Waarom leidt het opnemen van $M$ dummy's voor $M$ categorieën én een constante tot de dummy variable trap?",
+   "back": "Omdat de dummy's samen optellen tot 1 voor elke waarneming, wat zorgt voor **perfecte multicollineariteit** met de constantevector. De matrix $X'X$ is singulier en niet inverteerbaar.",
+   "skill": "dummy-trap"
+  },
+  {
+   "id": "c-vce-robust",
+   "front": "Wat lost de optie `vce(robust)` op bij OLS-schatting onder heteroskedasticiteit?",
+   "back": "Het herstelt de geldigheid van de **standaardfouten**, $t$-toetsen en $F$-toetsen via de Huber-White sandwich-schatter. De coëfficiënten $\\hat{\\beta}$ zelf veranderen niet (die waren al zuiver en consistent).",
+   "skill": "joint-tests-chow"
+  }
+ ],
+ "sources": [
+  "Applied Econometrics Computer Class 2 - Dummy variables (UAntwerpen 2025-2026)",
+  "Wooldridge, J. M. (2020). Introductory Econometrics: A Modern Approach (7th ed.), Chapter 7: Multiple Regression Analysis with Qualitative Information",
+  "Halvorsen, R., & Palmquist, R. (1980). The Interpretation of Dummy Variables in Semilogarithmic Equations. American Economic Review, 70(3), 474-475"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-26",
+  "notes": "Les 02 van de track Toegepaste Econometrie: Dummy-variabelen, Interacties & OLS-verdieping gebaseerd op Computer Class 2 van UAntwerpen."
+ }
+}

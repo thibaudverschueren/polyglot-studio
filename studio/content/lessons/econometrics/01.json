@@ -1,0 +1,760 @@
+{
+ "schema": "polyglot.lesson/v2",
+ "track": "econometrics",
+ "id": 1,
+ "roadmap": "econometrics-01-stata-fundamentals",
+ "kind": "core",
+ "title": "Introductie Stata & Databewerking",
+ "subtitle": "Do-files, logbestanden, variabelen transformeren (generate, replace) en datasets combineren (merge, reshape)",
+ "level": "fundament",
+ "minutes": 45,
+ "summary": "In dit fundament leg je de basis voor empirische econometrie in Stata: van reproduceerbare do-files en logbestanden tot datamanagement met generate, replace, de missing value valkuil en geavanceerde merges en reshapes. Essentiële vaardigheden voor zowel de computerklassen als het AlephQ-examen aan de Universiteit Antwerpen.",
+ "objectives": [
+  {
+   "id": "stata-omgeving-logging",
+   "text": "Je kunt de Stata-werkomgeving configureren, do-files structureren en logbestanden (log using, .smcl en .txt) openen, beheren en sluiten voor reproduceerbaar empirisch onderzoek."
+  },
+  {
+   "id": "data-inspectie-statistieken",
+   "text": "Je kunt datasets systematisch exploreren en univariate en bivariate descriptieve statistieken berekenen met describe, summarize, detail, tabstat, tabulate en ttest."
+  },
+  {
+   "id": "variabelen-transformatie-missings",
+   "text": "Je kunt nieuwe variabelen construeren, transformeren en hercoderen met generate, replace, recode, egen en labels, en je herkent de missing value valkuil (. als oneindig groot getal)."
+  },
+  {
+   "id": "datasets-koppelen-reshape",
+   "text": "Je kunt datasets verticaal stapelen met append, horizontaal koppelen via merge 1:1 en merge m:1 (inclusief diagnose van _merge), en transformeren tussen breed en lang formaat met reshape."
+  }
+ ],
+ "diagnostic": {
+  "intro": "Deze diagnostische niveautest meet je parate basiskennis over datatypen, descriptieve statistiek, dummy-logica en de Stata-omgeving. Zo bepaalt Polyglot Studio meteen jouw instapniveau voor de computerklassen.",
+  "bands": [
+   "basis",
+   "gevorderd",
+   "expert"
+  ],
+  "items": [
+   {
+    "id": "d01",
+    "type": "mcq",
+    "skill": "stata-omgeving-logging",
+    "level": 1,
+    "prompt": "Welk Stata-commando gebruik je om een nieuw logbestand genaamd `analyse.smcl` te starten en een eventueel bestaand bestand met dezelfde naam direct te overschrijven?",
+    "explain": "`log using analyse, replace` opent een logbestand in het standaard Stata-formaat (`.smcl`) en overschrijft een eventueel bestaand logbestand dankzij de optie `replace`.",
+    "options": [
+     "log using analyse, replace",
+     "log open analyse, overwrite",
+     "log start analyse.smcl, clear",
+     "save log analyse, replace"
+    ],
+    "answer": 0,
+    "band": "basis"
+   },
+   {
+    "id": "d02",
+    "type": "mcq",
+    "skill": "data-inspectie-statistieken",
+    "level": 1,
+    "prompt": "Welke statistische maatstaf toont het basiscommando `summarize` NIET in de standaarduitvoer (zonder extra opties)?",
+    "explain": "`summarize` toont standaard alleen het aantal observaties ($N$), gemiddelde, standaardafwijking, minimum en maximum. Om de mediaan en andere percentielen te zien, moet je de optie `detail` toevoegen (`summarize, detail`).",
+    "options": [
+     "De mediaan (het 50e percentiel)",
+     "Het rekenkundig gemiddelde (Mean)",
+     "De standaardafwijking (Std. dev.)",
+     "Het minimum en maximum (Min, Max)"
+    ],
+    "answer": 0,
+    "band": "basis"
+   },
+   {
+    "id": "d03",
+    "type": "mcq",
+    "skill": "variabelen-transformatie-missings",
+    "level": 2,
+    "prompt": "Hoe behandelt Stata een numerieke missing value (`.`) bij logische evaluaties zoals `if wage > 50`?",
+    "explain": "In Stata worden missing values (`.`, `.a`, `.b`, etc.) intern opgeslagen als de allergrootste positieve getallen ($+ \\infty$). Een conditie zoals `if wage > 50` evalueert dus als WAAR voor observaties met een missing value. Dit is een beruchte examenvakkuil!",
+    "options": [
+     "Als een waarde groter dan elk denkbaar reëel getal, waardoor observaties met missing wage worden meegenomen.",
+     "Als de numerieke waarde 0, waardoor observaties met missing wage automatisch worden genegeerd.",
+     "Als een ongeldige rekenkundige operatie waardoor Stata met foutcode r(109) afbreekt.",
+     "Als min oneindig, waardoor missing values altijd onder elke positieve drempelwaarde vallen."
+    ],
+    "answer": 0,
+    "band": "gevorderd"
+   },
+   {
+    "id": "d04",
+    "type": "cloze",
+    "skill": "variabelen-transformatie-missings",
+    "level": 2,
+    "prompt": "Vul de Stata-functie in om te controleren of een variabele ontbreekt:",
+    "text": "Om te voorkomen dat missing values onbedoeld meegenomen worden in een selectie, filter je expliciet met `if !{{missing|mi}}(wage)` of `if wage != {{.}}`.",
+    "explain": "Met `!missing(wage)` of `wage != .` sluit je observaties met ontbrekende waarden veilig uit.",
+    "band": "gevorderd"
+   },
+   {
+    "id": "d05",
+    "type": "mcq",
+    "skill": "datasets-koppelen-reshape",
+    "level": 3,
+    "prompt": "Je voert na een `merge 1:1 id using dataset2` het commando `tab _merge` uit. Welke waarde van `_merge` geeft aan dat een observatie uitsluitend in de masterdataset (het al geopende werkgeheugen) voorkwam en geen match vond in `dataset2`?",
+    "explain": "`_merge == 1` betekent alleen in de masterdataset (`master only`), `_merge == 2` betekent alleen in de using dataset (`using only`), en `_merge == 3` betekent een succesvolle match (`matched`).",
+    "options": [
+     "_merge == 1 (uitsluitend aanwezig in de masterdataset)",
+     "_merge == 2 (uitsluitend aanwezig in de using-dataset)",
+     "_merge == 3 (succesvol gekoppeld in beide datasets)",
+     "_merge == 0 (geen geldige waarneming in beide datasets)"
+    ],
+    "answer": 0,
+    "band": "expert"
+   },
+   {
+    "id": "d06",
+    "type": "mcq",
+    "skill": "datasets-koppelen-reshape",
+    "level": 3,
+    "prompt": "Je beschikt over een paneldataset in breed formaat met kolommen `id`, `wage2020`, `wage2021` en `wage2022`. Welk commando converteert deze data naar het lange formaat dat vereist is voor paneldata-modellen (`xtreg`)?",
+    "explain": "`reshape long wage, i(id) j(year)` splitst het achtervoegsel van de variabelenamen (`2020`, `2021`, `2022`) af naar een nieuwe numerieke variabele `year` en stapelt de loonwaarden onder één variabele `wage` per `id`.",
+    "options": [
+     "reshape long wage, i(id) j(year)",
+     "reshape wide wage, i(id) j(year)",
+     "merge long wage, by(id year)",
+     "transpose wage, id(id) time(year)"
+    ],
+    "answer": 0,
+    "band": "expert"
+   }
+  ]
+ },
+ "sections": [
+  {
+   "id": "sec-stata-werkomgeving",
+   "title": "1. De Stata-Werkomgeving, Do-files & Reproduceerbaarheid",
+   "md": "In het vak Toegepaste Econometrie staat één gouden regel centraal: **elk resultaat moet 100% reproduceerbaar zijn**. Een empirische analyse die niet opnieuw kan worden gedraaid met één druk op de knop is wetenschappelijk waardeloos en leidt op het examen tot puntenverlies.\n\n### De Vier Vensters van de Stata-Interface\nWanneer je Stata opstart, zie je vier centrale componenten:\n1. **Results window**: Het grote centrale uitvoervenster waar Stata alle uitgevoerde commando's, foutmeldingen en statistische regressietabellen toont.\n2. **Command window**: De invoerregel onderaan voor snelle interactieve tests.\n3. **Variables window**: Rechtsboven, toont alle actieve variabelen met hun naam, type en label.\n4. **Review / History window**: Linksboven, houdt een chronologische geschiedenis bij van alle ingevoerde commando's.\n\n> [!rule] Werk Altijd via Do-files\n> Voer tijdens het examen of bij onderzoek **nooit** rechtstreeks commando's in via het Command-venster. Schrijf al je code in een **do-file** (tekstbestand met extensie `.do`). Hiermee bewaar je de volledige syntaxis, kun je fouten direct corrigeren en voer je analyses reproduceerbaar uit met `Ctrl+D` (Windows) of `Cmd+Shift+D` (Mac).\n\n### De Standaard Do-file Header\nElke professionele do-file start met een vaste reeks initiatiecommando's:\n\n```stata\n* 1. Werkgeheugen volledig leegmaken\nclear all\n\n* 2. Eventueel nog openstaande logbestanden foutloos sluiten\ncapture log close\n\n* 3. Automatisch doorscrollen van lange tabellen (geen '--more--' pauzes)\nset more off\n\n* 4. Werkdirectory instellen naar jouw projectmap\ncd \"H:\\AE_computer_classes\\Computer_class_1\"\n\n* 5. Logbestand starten en eventuele oude versie overschrijven\nlog using Computer_class_1, replace\n```\n\nHet commando `capture` voor `log close` zorgt ervoor dat Stata niet met een foutmelding (`r(601)`) stopt als er op dat moment nog geen log geopend was.\n\n### Logging: SMCL versus Tekstbestanden\nEen logbestand registreert elk commando en alle gegenereerde output:\n- **`SMCL` (Stata Markup and Control Language)**: Standaard extensie `.smcl`. Dit formaat behoudt de karakteristieke Stata-opmaak, hyperlinks en tabelkolommen in de ingebouwde Stata Viewer (`log using mijnlog, replace`).\n- **Platte tekst**: Met de optie `text` bewaar je de output als een standaard tekstbestand (`.txt` of `.log`), direct leesbaar in Notepad, VS Code of Word:\n\n```stata\nlog using Computer_class_1.txt, replace text\ndisplay 2 * 8\nlog close\n```\n\n### Stata als Rekenmachine & Booleaanse Logica\nMet het commando `display` (verkort `di`) gebruik je Stata als een volwaardige wiskundige en statistische rekenmachine. Stata evalueert rekenkundige operatoren (`+`, `-`, `*`, `/`, `^`) en booleaanse logica:\n- **Gelijkheid**: `==` (twee gelijkheidstekens!)\n- **Ongelijkheid**: `!=` of `~=`\n- **Logische EN**: `&`\n- **Logische OF**: `|`\n- **Negatie**: `!` of `~`\n\nIn Stata evalueert een ware uitspraak numeriek naar **1** en een onware uitspraak naar **0**:\n\n```stata\ndisplay (2 + 2 == 4) & (1 == 1)   // Geeft 1 (WAAR)\ndisplay (2 + 2 == 5) | (2 == 2)   // Geeft 1 (WAAR)\ndisplay (2 + 2 == 5) & (1 == 1)   // Geeft 0 (ONWAAR)\n```\n\nDaarnaast berekent `display` exacte verdelingskansen die cruciaal zijn voor hypothesetoetsen:\n- $P(Z \\le 1.96)$ onder de standaardnormale verdeling: `display normal(1.96)` $\\to 0.975$\n- Kritieke z-waarde voor 97.5%: `display invnormal(0.975)` $\\to 1.96$\n- Rechterstaartkans t-verdeling met 30 vrijheidsgraden: `display ttail(30, 1.697)` $\\to 0.05$\n- Rechterstaartkans F-verdeling: `display Ftail(3, 100, 2.70)` $\\to 0.049$\n\n### Het Examenprotocol in AlephQ aan UAntwerpen\nOp het examen aan de Universiteit Antwerpen werk je in de webomgeving **AlephQ**:\n- **Part A**: 5 meerkeuzevragen over econometrische concepten en outputinterpretatie.\n- **Part B**: Eén theoretische open vraag over identificatie en schattingsmethoden.\n- **Part C**: Empirische vragenreeks op een examen-dataset. In het enkele tekstvak van Part C moet je per deelvraag altijd **drie elementen** invoeren:\n  1. Het **exacte Stata-commando** (bv. `ttest lfp, by(largecity)`).\n  2. De **numerieke Stata-output** (t-statistiek, p-waarde, gemiddelden).\n  3. De **volledige economische én statistische interpretatie**: richting van het effect, omvang (magnitude), meeteenheid (bv. euro per uur, procentpunt), en statistische significantie ten opzichte van de drempelwaarde $\\alpha = 0.05$.\n  4. **Grafieken exporteren en opladen**: Exporteer grafieken in de do-file via `graph export \"figuur1.png\", replace` en upload ze in AlephQ via de corresponderende knop **Beeld opladen**.",
+   "checks": [
+    {
+     "id": "c1-01",
+     "type": "cloze",
+     "skill": "stata-omgeving-logging",
+     "level": 1,
+     "prompt": "Vul het juiste sleutelwoord in om een geopende log definitief af te sluiten:",
+     "text": "Om een actief logbestand netjes af te sluiten in Stata gebruik je het commando `log {{close}}`.",
+     "explain": "`log close` beëindigt de opname en slaat het bestand op de schijf op."
+    },
+    {
+     "id": "c1-02",
+     "type": "mcq",
+     "skill": "stata-omgeving-logging",
+     "level": 2,
+     "prompt": "Wat gebeurt er als je `log using mijnlog` typt zonder de optie `replace` terwijl `mijnlog.smcl` al bestaat in de werkdirectory?",
+     "explain": "Zonder de optie `replace` weigert Stata een bestaand bestand te overschrijven om dataverlies te voorkomen (foutcode r(602)). Op het examen gebruik je daarom altijd `log using bestandsnaam, replace`.",
+     "options": [
+      "Stata geeft een foutmelding (file already exists) en weigert het logbestand te openen.",
+      "Stata overschrijft automatisch het bestaande logbestand zonder waarschuwing.",
+      "Stata voegt de nieuwe uitvoer automatisch onderaan het bestaande bestand toe.",
+      "Stata hernoemt het oude bestand naar een back-upbestand met extensie .bak."
+     ],
+     "answer": 0
+    }
+   ]
+  },
+  {
+   "id": "sec-data-inspectie",
+   "title": "2. Data-Inspectie & Descriptieve Statistieken",
+   "md": "Voordat je ook maar één regressie schat, moet je de data grondig verkennen. Onopgemerkte typefouten, uitschieters of ontbrekende variabelen leiden onherroepelijk tot foutieve schattingen.\n\n### Bestanden Inladen\nStata ondersteunt meerdere bestandsformaten:\n- Eigen Stata-bestanden: `use wage, clear` of `use \"mroz.dta\", clear` (de optie `clear` wist de vorige dataset uit het geheugen).\n- Excel-bestanden: `import excel using wage.xls, firstrow sheet(\"Sheet1\") clear` (`firstrow` gebruikt de eerste rij als variabelennamen).\n- CSV-bestanden (CSV = comma-separated values): `import delimited using data.csv, varnames(1) clear`.\n\n### Data Beschrijven met describe en summarize\nDe eerste stap na het inladen is het controleren van de structuur:\n\n```stata\ndescribe\n```\n`describe` toont het aantal waarnemingen ($N$), het aantal variabelen ($k$), het opslagtype (`byte`, `int`, `long` voor gehele getallen; `float`, `double` voor reële getallen; `str#` voor tekststrings) en de labels.\n\nHet basisoverzicht van statistieken vraag je op met:\n```stata\nsummarize\n```\nDit rapporteert voor elke numerieke variabele: het aantal geldige waarnemingen ($N$), het rekenkundig gemiddelde (`Mean`), de standaardafwijking (`Std. dev.`), het minimum (`Min`) en het maximum (`Max`).\n\n### Verdelingskenmerken met summarize, detail\nVoor asymmetrische variabelen zoals lonen, vermogen of bedrijfsomzet volstaan het gemiddelde en de standaardafwijking niet. Met de optie `detail` genereert Stata een diepgaand verdelingsrapport:\n\n```stata\nsummarize wage, detail\n```\n\n| Percentiel | Waarde | Statistiek | Waarde |\n|:---|:---|:---|:---|\n| **1%** | 0.85 | **Aantal observaties (N)** | 753 |\n| **5%** | 1.45 | **Gemiddelde (Mean)** | 4.18 |\n| **25% (Q1)** | 2.25 | **Standaardafwijking (Std. dev.)** | 3.31 |\n| **50% (Mediaan)** | 3.48 | **Variantie (Variance)** | 10.97 |\n| **75% (Q3)** | 4.97 | **Scheefheid (Skewness)** | 2.15 |\n| **99%** | 18.52 | **Welving (Kurtosis)** | 11.23 |\n\n> [!tip] Gemiddelde versus Mediaan bij Asymmetrie\n> Omdat de loonverdeling sterk rechtsscheef is (Skewness = $2.15 > 0$), trekken enkele grootverdieners het gemiddelde op naar **$4.18**, terwijl de mediaan (het 50e percentiel) op **$3.48** ligt. De mediaan is ongevoelig voor extreme uitschieters en geeft een realistischer beeld van het typische loon.\n\n### Gestructureerde Tabellen met tabstat\nHet commando `tabstat` biedt superieure flexibiliteit voor publicatietabellen en examenantwoorden. Je bepaalt exact welke statistieken worden berekend en splitst ze uit per subgroep:\n\n```stata\ntabstat wage educ exper, s(n mean sd p50 min max) c(s) format(%9.2f) by(female) nototal\n```\n- `s(...)` of `stat(...)`: specificeert de statistieken (`n`, `mean`, `sd`, `p50`, `min`, `max`, `iqr`).\n- `c(s)` of `columns(statistics)`: plaatst de statistieken in de kolommen en variabelen in de rijen.\n- `by(female)`: splitst de resultaten uit voor mannen (`female == 0`) en vrouwen (`female == 1`).\n- `format(%9.2f)`: rondt alle waarden netjes af op 2 decimalen.\n- `nototal`: onderdrukt de overkoepelende totaalrij.\n\n### Frequentietabellen en Kruistabellen (tabulate)\nVoor categorische variabelen gebruik je `tabulate` (afgekort `tab`):\n- Univariabele frequentietabel: `tab largecity` toont aantallen, percentages en cumulatieve percentages.\n- Bivariate kruistabel: `tab largecity lfp` toont de verdeling van arbeidsparticipatie (`lfp`) naar woonplaats (`largecity`):\n\n```stata\n. tab largecity lfp\n\nDummy large | dummy variable = 1 if\ncity (SMSA) | woman worked in 1975\n            |         0          1 |     Total\n------------+----------------------+----------\n          0 |       115        154 |       269 \n          1 |       210        274 |       484 \n------------+----------------------+----------\n      Total |       325        428 |       753 \n```\n\nUit deze tabel bereken je conditionele kansen:\n$$P(\\text{lfp} = 1 \\mid \\text{largecity} = 1) = \\frac{274}{484} = 0.5661 \\quad (56.6\\%)$$\n\n$$P(\\text{lfp} = 1 \\mid \\text{largecity} = 0) = \\frac{154}{269} = 0.5725 \\quad (57.2\\%)$$ \n\n### Toets op Verschil in Gemiddelden (ttest)\nIs het verschil in arbeidsparticipatie tussen platteland (57.2%) en stad (56.6%) statistisch significant? Dit toetst Stata met een twee-steekproeven t-toets:\n\n```stata\nttest lfp, by(largecity)\n```\nStata toont de gemiddelden per groep, het verschil $\\text{diff} = \\mu_0 - \\mu_1 = 0.0064$, de standaardfout ($0.0377$), de t-statistiek ($t = 0.169$) en de tweezijdige p-waarde:\n$$P(|T| > |t|) = 0.8658$$\nOmdat $p = 0.866 > 0.05$, kunnen we de nulhypothese van gelijke participatiekansen ($H_0: \\mu_0 = \\mu_1$) **niet verwerpen**. Er is geen statistisch significant verschil tussen stedelijke en landelijke vrouwen. Met de optie `reverse` draait Stata de volgorde om zodat $\\text{diff} = \\mu_1 - \\mu_0$.53153\n\n53153",
+   "checks": [
+    {
+     "id": "c2-01",
+     "type": "mcq",
+     "skill": "data-inspectie-statistieken",
+     "level": 2,
+     "prompt": "Welk Stata-commando toont naast het gemiddelde en de standaardafwijking ook de mediaan (50e percentiel), de interkwartielafstand en de scheefheid van een variabele?",
+     "explain": "`summarize wage, detail` berekent alle percentielen inclusief mediaan (p50), kwartielen (p25 en p75), variantie, skewness en kurtosis.",
+     "options": [
+      "summarize wage, detail",
+      "describe wage, stats",
+      "tabulate wage",
+      "codebook wage, brief"
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c2-02",
+     "type": "cloze",
+     "skill": "data-inspectie-statistieken",
+     "level": 2,
+     "prompt": "Vul de optie in om de berekende statistieken in kolommen te plaatsen bij tabstat:",
+     "text": "Om in `tabstat` de berekende statistieken in de kolommen te plaatsen en de variabelen in de rijen, voeg je de optie `{{c(s)|columns(statistics)}}` toe.",
+     "explain": "`c(s)` staat voor `columns(statistics)` en zorgt voor een overzichtelijke tabelstructuur."
+    }
+   ]
+  },
+  {
+   "id": "sec-variabelen-transformaties",
+   "title": "3. Variabelen Genereren, Manipuleren & Missing Values",
+   "md": "In empirisch onderzoek stemmen de ruwe variabelen in een dataset zelden direct overeen met de econometrische specificatie. Je moet logaritmen nemen, dummyvariabelen construeren, categorieën bundelen en ontbrekende data opsporen.\n\n### Nieuwe Variabelen Creëren: generate en replace\n- `generate` (verkort `gen`): maakt een **nieuwe**, nog niet bestaande variabele aan.\n- `replace`: overschrijft de waarden van een **reeds bestaande** variabele.\n\n```stata\ngen lwage = ln(wage)              // Natuurlijk logaritme van het loon\ngen children = kidsl6 + kids618   // Totaal aantal kinderen onder 18\n```\n\nVoor dummyvariabelen (indicatorvariabelen met waarden 0 of 1) gebruiken we de krachtige **booleaanse evaluatie**:\n```stata\n* De omslachtige methode:\ngen lhs = 0\nreplace lhs = 1 if educ < 12\n\n* De elegante, professionele methode:\ngen lhs = (educ < 12)\ngen hs  = (educ >= 12 & educ < 16)\ngen uni = (educ >= 16)\n```\nStata evalueert de expressie tussen haakjes: is de voorwaarde waar, dan wordt de waarde 1; is ze onwaar, dan wordt de waarde 0.\n\n> [!pitfall] De Missing Value Valkuil in Stata\n> Dit is de **meest gemaakte fout op het examen**! In Stata worden numerieke missing values (`.`, `.a`, `.b`, ..., `.z`) intern gerepresenteerd als **oneindig grote positieve getallen** ($+ \\infty$).\n>\n> Voor Stata geldt dus letterlijk:\n> $$. > 1000 \\quad \\text{en} \\quad . > 1000000 \\quad (\\text{WAAR}!)$$\n>\n> Als je schrijft:\n> ```stata\n> * LEVENSGEVAARLIJKE FOUT:\n> gen high_wage = (wage > 20)\n> ```\n> dan krijgt **elke persoon met een ontbrekend loon** (`wage == .`) de waarde **1** toegewezen! Je definieert mensen zonder loongegevens per ongeluk als grootverdieners!\n>\n> **De veilige code**:\n> ```stata\n> gen high_wage = (wage > 20) if !missing(wage)\n> * Of equivalent:\n> gen high_wage = (wage > 20) if wage != .\n> ```\n> Hetzelfde geldt bij tellen: `count if exper > 1000` telt alle missing values mee. Gebruik altijd `count if exper > 1000 & exper != .`.\n\n### Labels Toekennen aan Variabelen en Waarden\nEen dataset zonder labels is onleesbaar voor derden. Stata kent twee types labels:\n1. **Variable label**: Een beschrijvende titel voor de variabele zelf:\n   ```stata\n   label variable wage \"Uurloon in dollars (1975)\"\n   label variable lfp \"Dummy = 1 indien vrouw werkt in 1975\"\n   ```\n2. **Value labels**: Betekenis toekennen aan numerieke codes van categorische variabelen:\n   ```stata\n   * Stap 1: Definieer het labelformaat\n   label define educ_lbl 1 \"Universitair\" 2 \"Secundair\" 3 \"Lager onderwijs\"\n   * Stap 2: Koppel het label aan de variabele\n   label values educlevel educ_lbl\n   ```\n\n### Categorieën Bundelen met recode\nMet `recode` transformeer je numerieke categorieën in nieuwe intervallen:\n```stata\ngen wage_cat = wage\nrecode wage_cat (0/5 = 0 \"Laag loon\") (5.01/10 = 1 \"Moderaal\") (10.01/max = 2 \"Hoog loon\")\n```\n\n### Geavanceerde Transformaties met egen\nHet commando `egen` (extensions to generate) biedt statistische functies die met het gewone `generate` onmogelijk zijn:\n- **Groepsgemiddelden**: `egen mean_wage_by_educ = mean(wage), by(educ)` berekent het gemiddelde loon per opleidingsjaar en kent dit toe aan elk individu.\n- **Unieke groepen construeren**: `egen educlevel = group(lhs hs uni)` maakt automatisch een geordende integer (1, 2, 3) voor elke unieke combinatie van de drie dummy's.\n- **Missing values tellen over kolommen**: `egen n_miss = rowmiss(wage educ exper tenure)` telt hoeveel variabelen ontbreken voor die observatie.\n\n### Datatypen Converteren: encode, decode en destring\n- `destring var, replace force`: zet getallen die als string zijn opgeslagen om naar echte numerieke waarden.\n- `tostring var, gen(var_str)`: zet numerieke waarden om naar tekst.\n- `encode stringvar, gen(numvar)`: kent aan elke unieke alfanumerieke tekst (bv. landnamen zoals \"België\", \"Duitsland\") een integer (1, 2, ...) toe en maakt automatisch bijbehorende waardelabels aan. **Onmisbaar voor paneldata**, omdat `xtset` uitsluitend numerieke identificatievariabelen accepteert!\n- `decode numvar, gen(stringvar)`: keert de transformatie van `encode` om.",
+   "checks": [
+    {
+     "id": "c3-01",
+     "type": "mcq",
+     "skill": "variabelen-transformatie-missings",
+     "level": 2,
+     "prompt": "Stel dat in een dataset van 100 personen voor 10 personen de variabele `exper` ontbreekt (`.`). Je voert uit: `count if exper > 10`. Wat rapporteert Stata?",
+     "explain": "Omdat Stata `.` beschouwt als $+ \\infty$, evalueert `. > 10` als WAAR. Stata telt de 10 ontbrekende waarden dus mee! Om dit te voorkomen moet je filteren met `count if exper > 10 & exper != .` of `& !missing(exper)`.",
+     "options": [
+      "Het aantal personen met exper > 10 plus de 10 personen met een ontbrekende waarde (.), omdat . groter is dan elk reëel getal.",
+      "Uitsluitend de personen met een numerieke ervaring groter dan 10; missing values worden automatisch uitgesloten.",
+      "Een foutmelding type mismatch omdat een punt niet rekenkundig vergeleken kan worden met een geheel getal.",
+      "Precies 10, omdat Stata de conditie alleen uitvoert op observaties met ontbrekende gegevens."
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c3-02",
+     "type": "cloze",
+     "skill": "variabelen-transformatie-missings",
+     "level": 2,
+     "prompt": "Vul het commando in om tekstuele variabelen om te zetten in gelabelde numerieke codes:",
+     "text": "Om een tekstvariabele met categorische namen (zoals landnamen) om te zetten in numerieke id-codes met automatische waardelabels gebruik je: `{{encode}} country, gen(country_id)`.",
+     "explain": "`encode` maakt een numerieke variabele aan op basis van de alfabetische volgorde van de stringwaarden en koppelt er direct waardelabels aan."
+    }
+   ]
+  },
+  {
+   "id": "sec-koppelen-reshapen",
+   "title": "4. Datasets Koppelen (Append, Merge) & Reshape (Wide vs Long)",
+   "md": "In de praktijk staat econometrische data zelden in één bestand. Je moet bestanden uit verschillende jaren samenvoegen, macro-economische indicatoren aan individuen koppelen, of de data herstructureren voor panelanalyse.\n\n### Verticaal Stapelen: append\nWanneer je meerdere datasets hebt met **dezelfde variabelen**, maar voor **verschillende tijdsperioden of steekproeven** (bv. `data1` voor het jaar 2000 en `data2` voor 2001), stapel je ze verticaal met `append`:\n\n```stata\nuse data1, clear      // Bevat observaties voor 2000\nappend using data2    // Voegt de rijen van 2001 onderaan toe\n```\n- Observaties (rijen) nemen toe ($N_{\\text{nieuw}} = N_1 + N_2$).\n- Variabelen die slechts in één van beide datasets bestaan, krijgen voor de observaties uit de andere dataset automatisch de waarde `.` (missing).\n\n### Horizontaal Koppelen: merge\nMet `merge` voeg je **nieuwe variabelen (kolommen)** toe aan de geopende dataset (*master*) vanuit een extern bestand (*using*) op basis van een of meerdere gemeenschappelijke identificatievariabelen (*key variables*).\n\nEr zijn drie hoofdtypen van `merge`:\n1. **Eén-op-één (`merge 1:1 keyvars using bestand`)**:\n   Elke observatie in de masterdataset komt maximaal één keer voor en koppelt met maximaal één unieke rij in het using-bestand (bv. `merge 1:1 city year using data3`).\n2. **Veel-op-één (`merge m:1 keyvars using bestand`)**:\n   Meerdere rijen in de masterdataset (bv. individuele werknemers) koppelen aan één unieke rij in de using-dataset (bv. werkloosheidsgraad per regio).\n3. **Één-op-veel (`merge 1:m keyvars using bestand`)**:\n   Eén rij in de master koppelt aan meerdere rijen in de using-dataset.\n\n### De Match-Variabele _merge\nNa elke `merge` maakt Stata automatisch de diagnostische variabele `_merge` aan:\n- `_merge == 1`: Waarneming zit **uitsluitend in de masterdataset** (geen match gevonden in using).\n- `_merge == 2`: Waarneming zit **uitsluitend in de using-dataset** (geen match gevonden in master).\n- `_merge == 3`: **Succesvol gekoppeld**; de waarneming komt in beide datasets voor.\n\n```stata\n. merge 1:1 city year using data3\n\n    Result                      Number of obs\n    -----------------------------------------\n    Not matched                             0\n    Matched                                 6  (_merge==3)\n    -----------------------------------------\n```\n\n> [!rule] Het Merge-Protocol op het Examen\n> Inspecteer na elke `merge` altijd de frequentietabel: `tab _merge`. Beslis vervolgens welke observaties je behoudt (meestal `keep if _merge == 3`) en verwijder `_merge` met `drop _merge` voordat je een volgende koppeling uitvoert.\n\n### Datastructuur Hervormen: reshape (Wide versus Long)\nEconometrische data kan in twee vormen voorkomen:\n- **Breed formaat (wide)**: Elke entiteit (individu, bedrijf, land) beslaat precies **één rij**. Variabelen die over de tijd veranderen staan in aparte kolommen, zoals `wage1975`, `wage1976`, `wage1977`.\n- **Lang formaat (long)**: Elke entiteit beslaat **meerdere rijen**, waarbij elke rij overeenkomt met een specifieke periode $t$. Er is één kolom voor de uitkomst `wage` en een aparte variabele `year` die de tijd indexeert.\n\n> [!important] Waarom Long Formaat Verplicht Is voor Paneldata\n> Alle geavanceerde schattingsmethoden voor paneldata (`xtreg, fe`, `xtreg, re`), pooled OLS (Ordinary Least Squares) met geclusterde standaardfouten (`vce(cluster id)`) en conditionele logit-modellen (`asclogit`) vereisen strikt het **lange formaat**!\n\nDe transformatie van breed naar lang voer je uit met `reshape long`:\n```stata\nreshape long wage, i(id) j(year)\n```\n- `wage`: De gemeenschappelijke stam van de variabelennamen (`wage1975`, `wage1976` $\\to$ `wage`).\n- `i(id)`: De variabele die de waarnemingseenheid uniek identificeert (de *entity identifier*).\n- `j(year)`: De nieuwe variabele die het achtervoegsel (de tijds- of subgroepindex) opneemt.\n\nOmgekeerd converteer je van lang naar breed met:\n```stata\nreshape wide wage, i(id) j(year)\n```",
+   "checks": [
+    {
+     "id": "c4-01",
+     "type": "mcq",
+     "skill": "datasets-koppelen-reshape",
+     "level": 2,
+     "prompt": "Wat is het fundamentele verschil tussen append en merge in Stata?",
+     "explain": "`append` stapelt datasets verticaal (voegt rijen/observaties toe met dezelfde variabelen); `merge` combineert datasets horizontaal (voegt kolommen/variabelen toe op basis van gemeenschappelijke identifier-variabelen).",
+     "options": [
+      "append voegt rijen (nieuwe observaties) toe onderaan de dataset; merge voegt kolommen (nieuwe variabelen) toe op basis van een sleutel.",
+      "append koppelt datasets horizontaal; merge stapelt datasets verticaal.",
+      "append vereist een unieke sleutelvariabele (i); merge werkt altijd zonder sleutelvariabelen.",
+      "append transformeert breed naar lang formaat; merge transformeert lang naar breed formaat."
+     ],
+     "answer": 0
+    },
+    {
+     "id": "c4-02",
+     "type": "cloze",
+     "skill": "datasets-koppelen-reshape",
+     "level": 2,
+     "prompt": "Vul de juiste optienaam in voor de entiteit-identifier bij reshape:",
+     "text": "In het commando `reshape long wage, {{i(id)|i( id )}} j(year)` identificeert de optie `i()` de waarnemingseenheid en `j()` de tijdsindex.",
+     "explain": "De optie `i()` specificeert de eenheid die over de rijen heen gelijk blijft (persoon, bedrijf), terwijl `j()` de variërende tijdsindex aangeeft."
+    }
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "id": "p01",
+   "type": "type",
+   "skill": "stata-omgeving-logging",
+   "level": 1,
+   "prompt": "Welk Stata-commando toont de huidige werkdirectory in het Results-venster?",
+   "explain": "`pwd` staat voor 'print working directory' en toont het actieve pad. Je kunt ook `cd` zonder argumenten typen.",
+   "answers": [
+    "pwd",
+    "cd"
+   ]
+  },
+  {
+   "id": "p02",
+   "type": "cloze",
+   "skill": "stata-omgeving-logging",
+   "level": 2,
+   "prompt": "Vul de ontbrekende optie in om een logbestand als platte tekst op te slaan:",
+   "text": "Om een logbestand te bewaren dat direct geopend kan worden in een teksteditor, typ je: `log using logfile.txt, replace {{text}}`.",
+   "explain": "De optie `text` zorgt ervoor dat Stata het logbestand opslaat als platte tekst (`.txt` of `.log`) in plaats van het binaire `.smcl`-formaat."
+  },
+  {
+   "id": "p03",
+   "type": "mcq",
+   "skill": "stata-omgeving-logging",
+   "level": 1,
+   "prompt": "Wat is het numerieke resultaat van het commando `display (2+2==4) & (5>10)` in Stata?",
+   "explain": "In Stata evalueert een ware logische uitspraak naar 1 en een onware naar 0. Hier is `(2+2==4)` gelijk aan 1, maar `(5>10)` is 0. De logische EN (`&`) van 1 en 0 is 0.",
+   "options": [
+    "0",
+    "1",
+    "true",
+    "false"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p04",
+   "type": "order",
+   "skill": "stata-omgeving-logging",
+   "level": 2,
+   "prompt": "Zet de standaardstappen aan het begin van een professionele do-file in de juiste chronologische volgorde:",
+   "explain": "Een reproduceerbare do-file wist eerst het geheugen, sluit oude logs af, navigeert naar de projectmap, start een schone log en laadt vervolgens de gewenste data in.",
+   "tiles": [
+    "Bestaand werkgeheugen wissen met clear all",
+    "Eventuele actieve logbestanden veilig afsluiten met capture log close",
+    "Werkmap instellen met cd \"pad\"",
+    "Nieuw logbestand openen met log using bestandsnaam, replace",
+    "Dataset inladen met use dataset.dta, clear"
+   ]
+  },
+  {
+   "id": "p05",
+   "type": "type",
+   "skill": "data-inspectie-statistieken",
+   "level": 1,
+   "prompt": "Welk beknopt commando toont uitsluitend de opslagtypen, display-formaten en labels van alle variabelen in het werkgeheugen?",
+   "explain": "`describe` (of afgekort `des`) toont de structuur en metadata van de actieve dataset zonder de numerieke waarden zelf samen te vatten.",
+   "answers": [
+    "describe",
+    "des"
+   ]
+  },
+  {
+   "id": "p06",
+   "type": "numeric",
+   "skill": "data-inspectie-statistieken",
+   "level": 2,
+   "prompt": "In de dataset mroz.dta met 753 vrouwen werken er 428 (lfp == 1). Wat is het steekproefgemiddelde van de dummyvariabele lfp (afgerond op 3 decimalen)?",
+   "explain": "Het gemiddelde van een dummyvariabele is gelijk aan het aandeel observaties met waarde 1: 428 / 753 = 0.56839 oftewel 56.8%.",
+   "value": 0.568,
+   "tolerance": 0.005
+  },
+  {
+   "id": "p07",
+   "type": "match",
+   "skill": "data-inspectie-statistieken",
+   "level": 2,
+   "prompt": "Koppel het Stata-commando aan de juiste statistische output:",
+   "explain": "summarize, detail berekent percentielen en momenten, tabstat ... by() berekent statistieken per subgroep, tabulate maakt kruistabellen en describe geeft metadata.",
+   "pairs": [
+    [
+     "summarize, detail",
+     "Percentielen (p1 tot p99), mediaan, skewness en kurtosis"
+    ],
+    [
+     "tabstat x, s(mean sd) by(g)",
+     "Gemiddelden en standaardafwijkingen per subgroep van g"
+    ],
+    [
+     "tabulate a b",
+     "Kruistabel met bivariate frequenties van twee discrete variabelen"
+    ],
+    [
+     "describe",
+     "Aantal observaties, opslagtypen en variabelelabels"
+    ]
+   ]
+  },
+  {
+   "id": "p08",
+   "type": "mcq",
+   "skill": "data-inspectie-statistieken",
+   "level": 2,
+   "prompt": "Welke optie voeg je toe aan `ttest lfp, by(largecity)` om de groepsvolgorde om te draaien zodat het gerapporteerde verschil gelijk is aan `mean(1) - mean(0)` in plaats van `mean(0) - mean(1)`?",
+   "explain": "De optie `reverse` bij `ttest` draait de volgorde van de twee groepen om, wat handig is als je het effect van de actieve categorie (1) ten opzichte van de referentiegroep (0) wilt evalueren.",
+   "options": [
+    "reverse",
+    "inverse",
+    "swap",
+    "order(1,0)"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p09",
+   "type": "cloze",
+   "skill": "variabelen-transformatie-missings",
+   "level": 2,
+   "prompt": "Vul de veilige voorwaarde in om een dummyvariabele voor hooggeschoolden aan te maken zonder missing values mee te nemen:",
+   "text": "Het commando luidt: `gen high_educ = (educ >= 16) if !{{missing|mi}}(educ)`.",
+   "explain": "Met `if !missing(educ)` of `if educ != .` zorg je ervoor dat observaties met ontbrekende opleiding niet onterecht als 1 worden gecodeerd."
+  },
+  {
+   "id": "p10",
+   "type": "type",
+   "skill": "variabelen-transformatie-missings",
+   "level": 2,
+   "prompt": "Welk commando berekent voor elke observatie het gemiddelde loon binnen zijn/haar opleidingsniveau (educ)?",
+   "explain": "`egen ... = mean(var), by(groupvar)` berekent groepsgemiddelden en kent deze toe aan elke individuele observatie.",
+   "answers": [
+    "egen avg_wage = mean(wage), by(educ)",
+    "egen avg_wage=mean(wage), by(educ)",
+    "egen avg_wage=mean(wage),by(educ)"
+   ]
+  },
+  {
+   "id": "p11",
+   "type": "mcq",
+   "skill": "variabelen-transformatie-missings",
+   "level": 2,
+   "prompt": "Je wilt een continue variabele `wage` hergroeperen in drie categorieën: 0 tot 5 wordt 1, 5.01 tot 10 wordt 2, en boven 10 wordt 3. Welk commando voert dit correct uit?",
+   "explain": "`recode var (bereik=waarde) ..., gen(nieuwevar)` is de beproefde Stata-syntaxis om continue waarden in discrete intervallen in te delen.",
+   "options": [
+    "recode wage (0/5=1) (5.01/10=2) (10.01/max=3), gen(wage_cat)",
+    "group wage (0/5=1) (5.01/10=2) (10.01/max=3), gen(wage_cat)",
+    "replace wage = 1 if wage <= 5 & wage = 2 if wage <= 10",
+    "recode wage (min-5=1) (5-10=2) (10-max=3)"
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p12",
+   "type": "order",
+   "skill": "variabelen-transformatie-missings",
+   "level": 2,
+   "prompt": "Zet de stappen in de juiste volgorde om een categorische variabele `educlevel` van labels te voorzien:",
+   "explain": "In Stata maak je eerst een mapping aan met `label define` en wijs je die vervolgens toe aan de variabele via `label values`.",
+   "tiles": [
+    "Definieer het labelformaat met label define edlbl 1 \"Uni\" 2 \"HS\" 3 \"LHS\"",
+    "Koppel het label aan de variabele met label values educlevel edlbl",
+    "Controleer de labels in de frequentietabel met tabulate educlevel"
+   ]
+  },
+  {
+   "id": "p13",
+   "type": "mcq",
+   "skill": "datasets-koppelen-reshape",
+   "level": 2,
+   "prompt": "Wat gebeurt er als je `append using data2` uitvoert en `data2` bevat een variabele `regio` die niet bestaat in de huidige geopende dataset?",
+   "explain": "`append` combineert kolommen flexibel: variabelen die slechts in één dataset bestaan, krijgen ontbrekende waarden (`.`) voor de observaties uit de andere dataset.",
+   "options": [
+    "De observaties uit de huidige dataset krijgen voor regio automatisch een ontbrekende waarde (.), terwijl de nieuwe observaties hun oorspronkelijke waarde behouden.",
+    "Stata breekt af met een foutmelding omdat beide datasets exact identieke variabelen moeten bevatten.",
+    "De variabele regio wordt genegeerd en niet overgenomen in de samengevoegde dataset.",
+    "Stata vult de ontbrekende waarden in de masterdataset aan met de waarde 0."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "p14",
+   "type": "cloze",
+   "skill": "datasets-koppelen-reshape",
+   "level": 2,
+   "prompt": "Vul het commando in om na een merge uitsluitend de gematchte waarnemingen te behouden:",
+   "text": "Na het uitvoeren van `merge 1:1 id year using dataset2` behoud je uitsluitend de succesvol gekoppelde rijen met het commando: `keep if _merge == {{3}}`.",
+   "explain": "`_merge == 3` representeert de waarnemingen die in beide datasets aanwezig waren."
+  },
+  {
+   "id": "p15",
+   "type": "match",
+   "skill": "datasets-koppelen-reshape",
+   "level": 2,
+   "prompt": "Koppel de waarde van de systeemvariabele `_merge` aan de juiste herkomst:",
+   "explain": "`_merge` geeft de matchstatus aan: 1 = master only, 2 = using only, 3 = matched in both.",
+   "pairs": [
+    [
+     "_merge == 1",
+     "Uitsluitend aanwezig in de masterdataset (geen match gevonden)"
+    ],
+    [
+     "_merge == 2",
+     "Uitsluitend aanwezig in de using-dataset (geen match gevonden)"
+    ],
+    [
+     "_merge == 3",
+     "Succesvol gekoppeld: aanwezig in zowel master- als using-dataset"
+    ]
+   ]
+  },
+  {
+   "id": "p16",
+   "type": "cloze",
+   "skill": "datasets-koppelen-reshape",
+   "level": 2,
+   "prompt": "Vul het commando in om een long dataset met id, year en wage terug te transformeren naar breed formaat:",
+   "text": "De inverse transformatie van `reshape long` naar breed formaat is: `reshape {{wide}} wage, i(id) j(year)`.",
+   "explain": "`reshape wide` creëert aparte kolommen per jaar (zoals `wage2000`, `wage2001`)."
+  }
+ ],
+ "mastery": [
+  {
+   "id": "m01",
+   "type": "type",
+   "skill": "stata-omgeving-logging",
+   "level": 2,
+   "prompt": "Welk Stata-commando onderdrukt de pauzemelding '--more--' bij lange schermuitvoer zodat do-files zonder onderbreking doorlopen?",
+   "explain": "`set more off` zorgt ervoor dat Stata lange tabellen en regressie-uitvoer direct doorscrolt zonder te wachten op een toetsaanslag van de gebruiker.",
+   "answers": [
+    "set more off",
+    "set more off, permanently"
+   ]
+  },
+  {
+   "id": "m02",
+   "type": "cloze",
+   "skill": "stata-omgeving-logging",
+   "level": 2,
+   "prompt": "Vul het commando in om de cumulatieve kans onder de standaardnormale verdeling op te vragen:",
+   "text": "Om de cumulatieve kans $P(Z \\le 1.96)$ onder de standaardnormale verdeling te berekenen in het Command-venster, typ je `display {{normal(1.96)|normal( 1.96 )}}`.",
+   "explain": "`normal(z)` berekent de cumulatieve verdelingsfunctie $\\Phi(z)$ van de standaardnormale verdeling."
+  },
+  {
+   "id": "m03",
+   "type": "mcq",
+   "skill": "stata-omgeving-logging",
+   "level": 1,
+   "prompt": "Waarom is het openen van een logbestand (`log using`) verplicht aan het begin van elke computerklas en het examen?",
+   "explain": "Een logbestand legt de volledige sessie vast: alle commando's en numerieke resultaten worden chronologisch geregistreerd, wat cruciaal is voor wetenschappelijke reproduceerbaarheid en evaluatie.",
+   "options": [
+    "Het bewaart alle ingevoerde commando's en gegenereerde tabellen integraal in een bestand voor reproduceerbaarheid en latere evaluatie.",
+    "Het versnelt de rekentijd van zware schatters zoals logit en probit aanzienlijk.",
+    "Het voorkomt dat datasets in het werkgeheugen per ongeluk worden overschreven.",
+    "Het activeert geavanceerde Stata-functies die standaard vergrendeld zijn."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m04",
+   "type": "match",
+   "skill": "stata-omgeving-logging",
+   "level": 2,
+   "prompt": "Koppel het venster in de Stata-gebruikersinterface aan zijn primaire taak:",
+   "explain": "Stata verdeelt zijn interface over vier hoofdvensters: invoer (Command), uitvoer (Results), datastructuur (Variables) en commandogeschiedenis (Review).",
+   "pairs": [
+    [
+     "Command window",
+     "Invoeren van interactieve Stata-commando's"
+    ],
+    [
+     "Results window",
+     "Weergeven van statistische output, tabellen en foutmeldingen"
+    ],
+    [
+     "Variables window",
+     "Overzicht van variabelennamen, typen, formaten en labels"
+    ],
+    [
+     "Review window",
+     "Chronologische geschiedenis van eerder uitgevoerde commando's"
+    ]
+   ]
+  },
+  {
+   "id": "m05",
+   "type": "numeric",
+   "skill": "data-inspectie-statistieken",
+   "level": 2,
+   "prompt": "In een steekproef van 753 vrouwen wonen er 484 in een grote stad (largecity == 1). Van deze 484 vrouwen werken er 274 (lfp == 1). Bereken de conditionele participatiegraad P(lfp=1 | largecity=1) in procenten (rond af op 1 decimaal, bv. 56.6):",
+   "explain": "De conditionele kans is 274 / 484 = 0.5661157, oftewel 56.6%.",
+   "value": 56.6,
+   "tolerance": 0.1,
+   "unit": "%"
+  },
+  {
+   "id": "m06",
+   "type": "cloze",
+   "skill": "data-inspectie-statistieken",
+   "level": 2,
+   "prompt": "Vul de optie in om in tabstat het overkoepelende steekproeftotaal te onderdrukken:",
+   "text": "Wanneer je `tabstat wage, by(female)` gebruikt en je wilt geen rij met het algemene steekproeftotaal zien, voeg je de optie `{{nototal}}` toe.",
+   "explain": "De optie `nototal` onderdrukt de overkoepelende Total-rij in `tabstat`."
+  },
+  {
+   "id": "m07",
+   "type": "mcq",
+   "skill": "data-inspectie-statistieken",
+   "level": 2,
+   "prompt": "Je voert `ttest educ, by(female)` uit en vindt een t-statistiek van 0.32 met een tweezijdige p-waarde van p = 0.749. Wat is de juiste statistische conclusie bij een significantieniveau van 5%?",
+   "explain": "Omdat de p-waarde (0.749) ruimschoots boven 0.05 ligt, kan de nulhypothese van gelijke gemiddelden niet worden verworpen. Het geobserveerde verschil berust op toeval.",
+   "options": [
+    "We kunnen de nulhypothese van gelijke gemiddelden niet verwerpen (p > 0.05); er is geen statistisch significant verschil in opleiding tussen mannen en vrouwen.",
+    "We verwerpen de nulhypothese (p > 0.05); mannen zijn statistisch significant hoger opgeleid dan vrouwen.",
+    "Het verschil in opleiding is statistisch significant op het 1%-niveau omdat de t-waarde kleiner is dan 1.96.",
+    "Er is sprake van perfecte multicollineariteit tussen geslacht en opleidingsniveau."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m08",
+   "type": "order",
+   "skill": "data-inspectie-statistieken",
+   "level": 2,
+   "prompt": "Plaats de commando's in de volgorde van toenemende detailgraad voor data-exploratie:",
+   "explain": "`describe` geeft alleen metadata, `summarize` toont elementaire momenten, en `summarize, detail` biedt een volledige verdelingsanalyse met alle percentielen.",
+   "tiles": [
+    "describe (toont alleen variabeletypen, display formats en labels)",
+    "summarize (toont het aantal observaties, gemiddelde, standaardafwijking, min en max)",
+    "summarize, detail (toont percentielen van p1 tot p99, mediaan, scheefheid en kurtosis)"
+   ]
+  },
+  {
+   "id": "m09",
+   "type": "type",
+   "skill": "variabelen-transformatie-missings",
+   "level": 2,
+   "prompt": "Welk beknopt commando telt het aantal observaties waarbij wage strikt groter is dan 25 én niet ontbreekt?",
+   "explain": "Zonder de expliciete uitsluiting `& wage != .` of `& !missing(wage)` telt Stata alle missing values mee als waarden groter dan 25.",
+   "answers": [
+    "count if wage > 25 & wage != .",
+    "count if wage>25 & wage!=.",
+    "count if wage > 25 & !missing(wage)",
+    "count if wage>25 & !missing(wage)"
+   ]
+  },
+  {
+   "id": "m10",
+   "type": "cloze",
+   "skill": "variabelen-transformatie-missings",
+   "level": 2,
+   "prompt": "Vul het commando in om een string-variabele met cijfers om te zetten in een numerieke variabele:",
+   "text": "Om de variabele `year_str` (opgeslagen als tekst) om te zetten naar een numerieke variabele `year_num`, gebruik je `{{destring}} year_str, gen(year_num)`.",
+   "explain": "`destring` parseert teksttekenreeksen naar numerieke datatypes. Met optie `replace` overschrijft hij de variabele, met `gen(...)` maakt hij een nieuwe aan."
+  },
+  {
+   "id": "m11",
+   "type": "numeric",
+   "skill": "variabelen-transformatie-missings",
+   "level": 2,
+   "prompt": "In een loonbestand definieer je de relatieve loongroei tussen 1975 en 1976 als: gen wagechange = (wage76 - wage) / wage. Een individu verdiende 5.00 dollar in 1975 en 6.25 dollar in 1976. Welke numerieke waarde krijgt wagechange voor dit individu?",
+   "explain": "wagechange = (6.25 - 5.00) / 5.00 = 1.25 / 5.00 = 0.25 (oftewel een loonstijging van 25%).",
+   "value": 0.25,
+   "tolerance": 0.001
+  },
+  {
+   "id": "m12",
+   "type": "mcq",
+   "skill": "variabelen-transformatie-missings",
+   "level": 2,
+   "prompt": "Wat is het functionele verschil tussen encode en destring in Stata?",
+   "explain": "`destring` verwacht dat de string uitsluitend cijfers bevat (zoals '2021'). `encode` kent categorische integers toe aan willekeurige strings (zoals 'België') en koppelt een waardelabel.",
+   "options": [
+    "destring converteert cijfers die als tekst zijn opgeslagen naar echte getallen; encode kent aan categorische tekstwaarden opeenvolgende gehele getallen toe met waardelabels.",
+    "destring maakt automatisch waardelabels aan voor tekststrings; encode wist juist alle bestaande labels uit het actieve werkgeheugen van Stata.",
+    "encode werkt uitsluitend op binaire dummy's (0 of 1); destring kan alleen gebruikt worden voor continue variabelen met decimalen.",
+    "Beide commando's zijn volkomen identieke synoniemen in Stata en leveren exact hetzelfde numerieke resultaat op in het werkgeheugen."
+   ],
+   "answer": 0
+  },
+  {
+   "id": "m13",
+   "type": "type",
+   "skill": "datasets-koppelen-reshape",
+   "level": 2,
+   "prompt": "Welk commando gebruik je om een extern databestand data2.dta verticaal onderaan de momenteel geopende dataset toe te voegen?",
+   "explain": "`append using bestandsnaam` stapelt observaties van een externe dataset onder de huidige dataset.",
+   "answers": [
+    "append using data2",
+    "append using data2.dta",
+    "append using \"data2\"",
+    "append using \"data2.dta\""
+   ]
+  },
+  {
+   "id": "m14",
+   "type": "cloze",
+   "skill": "datasets-koppelen-reshape",
+   "level": 2,
+   "prompt": "Vul het type koppeling in waarbij meerdere rijen in de masterdataset koppelen aan één unieke rij per regio in de using-dataset:",
+   "text": "Voor het koppelen van individuen aan regionale macro-indicatoren gebruik je een veel-op-één relatie: `merge {{m:1}} region using macro_data`.",
+   "explain": "`m:1` specificeert een many-to-one relatie: meerdere observaties in het werkgeheugen hebben dezelfde sleutelwaarde die uniek is in het using-bestand."
+  },
+  {
+   "id": "m15",
+   "type": "order",
+   "skill": "datasets-koppelen-reshape",
+   "level": 2,
+   "prompt": "Zet de vereiste stappen voor een schone merge-procedure in de juiste chronologische volgorde:",
+   "explain": "Een professionele merge controleert altijd de frequentie van `_merge` voordat observaties worden gefilterd en de variabele wordt gewist voor latere koppelingen.",
+   "tiles": [
+    "Open de masterdataset met use master.dta, clear",
+    "Voer de koppeling uit met merge 1:1 id using using_data.dta",
+    "Inspecteer het match-resultaat via tabulate _merge",
+    "Behoud de succesvolle koppelingen via keep if _merge == 3",
+    "Verwijder de systeemvariabele via drop _merge"
+   ]
+  },
+  {
+   "id": "m16",
+   "type": "mcq",
+   "skill": "datasets-koppelen-reshape",
+   "level": 2,
+   "prompt": "Waarom vereisen econometrische paneldata-modellen (xtreg) dat data in lang (long) formaat staan in plaats van breed (wide) formaat?",
+   "explain": "In econometrische panel-modellen luidt de vergelijking $y_{it} = \\alpha_i + x_{it}'\\beta + \\varepsilon_{it}$. Stata vereist dat alle waarnemingen van $y$ onder één kolom staan, waarbij elke rij een unieke entiteit-tijdcombinatie $(i,t)$ representeert.",
+   "options": [
+    "Omdat Stata panel-schatters baseert op een vaste structuur met één variabele voor de uitkomst en een expliciete tijdsindex per individu.",
+    "Omdat Stata in breed formaat weigert te rekenen met variabelen die meer dan 4 karakters lang zijn.",
+    "Omdat breed formaat altijd leidt tot perfecte multicollineariteit tussen de opeenvolgende jaren.",
+    "Omdat wide formaat alleen gebruikt kan worden voor tijdreeksen van één enkel land."
+   ],
+   "answer": 0
+  }
+ ],
+ "production": {
+  "type": "explain",
+  "prompt": "**Examenopdracht Part C — Data Preparation & Bivariate Analyse op mroz.dta**\n\nAls onderzoeksassistent Toegepaste Econometrie aan de Universiteit Antwerpen bereid je de dataset `mroz.dta` (753 getrouwde vrouwen) voor op een loon- en participatiestudie. Voer in de geest van het AlephQ-examen de volgende vier taken uit en formuleer je antwoord met commando's, numerieke output en economische interpretatie:\n\n1. **Setup & Logging**: Schrijf de do-file code om het geheugen te wissen, eventuele open logs af te sluiten, een logbestand `exam_cc1.smcl` te starten en `mroz.dta` in te laden.\n2. **Dummy-constructie & Missing Value Preventie**: Maak drie wederzijds uitsluitende opleidingsdummy's: `lhs` (minder dan 12 jaar opleiding), `hs` (12 tot en met 15 jaar), en `uni` (16 jaar of meer). Zorg ervoor dat ontbrekende waarden in `educ` NOOIT als 1 worden gecodeerd. Combineer deze drie variabelen tot één categorische variabele `educlevel` via `egen`, en koppel duidelijke waardelabels.\n3. **Hypothesetoets Groepsverschillen**: Toets of de arbeidsparticipatiegraad (`lfp`) statistisch significant verschilt tussen vrouwen in een grote stad (`largecity == 1`) en vrouwen op het platteland (`largecity == 0`). Geef het exacte commando, de resulterende t-statistiek en p-waarde, en interpreteer de uitkomst economisch en statistisch bij $\\alpha = 0.05$.\n4. **Data Koppelen & Reshape**: Stel dat een externe dataset `county_macro.dta` per county (`county_id`) de lokale werkloosheidsgraad bevat. Hoe koppel je deze variabele aan de individuele vrouwen in `mroz.dta`? En stel dat je beschikt over lonen in 1975 (`wage75`) en 1976 (`wage76`): welk `reshape`-commando transformeert deze brede loongegevens naar een lange paneldatastructuur geschikt voor `xtreg`?",
+  "model": "### 1. Setup & Logging\n```stata\nclear all\ncapture log close\nset more off\ncd \"H:\\AE_computer_classes\\Computer_class_1\"\nlog using exam_cc1.smcl, replace\nuse mroz.dta, clear\n```\n\n### 2. Veilige Dummy-constructie & Labeling\nOm de missing value valkuil (waarbij `.` als $+ \\infty$ evalueert) te vermijden, filteren we expliciet op geldige waarden:\n```stata\ngen lhs = (educ < 12) if !missing(educ)\ngen hs  = (educ >= 12 & educ < 16) if !missing(educ)\ngen uni = (educ >= 16) if !missing(educ)\n\n* Unieke categorieën aanmaken en labels toekennen:\negen educlevel = group(lhs hs uni)\nlabel define educ_lbl 1 \"Universitair\" 2 \"Middelbaar\" 3 \"Lager onderwijs\"\nlabel values educlevel educ_lbl\ntabulate educlevel\n```\n\n### 3. Hypothesetoets: Arbeidsparticipatie naar Woonplaats\n```stata\nttest lfp, by(largecity)\n```\n**Numerieke Stata-output:**\n- Gemiddelde platteland (`largecity == 0`, $N = 269$): $\\bar{y}_0 = 0.5725$ (57.25%)\n- Gemiddelde stad (`largecity == 1`, $N = 484$): $\\bar{y}_1 = 0.5661$ (56.61%)\n- Verschil $\\text{diff} = \\bar{y}_0 - \\bar{y}_1 = 0.0064$ (standaardfout = 0.0377)\n- Toetsingsgrootheid: $t = 0.1691$\n- Tweezijdige p-waarde: $P(|T| > |t|) = 0.8658$\n\n**Statistische en Economische Interpretatie:**\nDe arbeidsparticipatiegraad ligt op het platteland marginaal hoger (0.64 procentpunt) dan in grote steden. Omdat de tweezijdige p-waarde ($p = 0.866$) ruim groter is dan het gebruikelijke significantieniveau $\\alpha = 0.05$, kunnen we de nulhypothese van gelijke participatie ($H_0: \\mu_0 = \\mu_1$) niet verwerpen. Er is geen statistisch significant bewijs dat woonplaats samenhangt met de beslissing van vrouwen om toe te treden tot de arbeidsmarkt.\n\n### 4. Koppelen met Merge en Herstructureren met Reshape\n**A. Macro-variabelen koppelen (Many-to-One):**\nOmdat meerdere vrouwen in dezelfde county wonen, gebruiken we een `m:1` koppeling op sleutelvariabele `county_id`:\n```stata\nmerge m:1 county_id using county_macro.dta\ntabulate _merge\nkeep if _merge == 3\ndrop _merge\n```\n`_merge == 3` bevestigt dat zowel de persoons- als de countygegevens succesvol gekoppeld zijn.\n\n**B. Breed naar lang transformeren voor paneldata:**\n```stata\nreshape long wage, i(id) j(year)\n```\nHierbij identificeert `i(id)` het unieke persoonsnummer en creëert `j(year)` een nieuwe indicatorvariabele met de jaren (75 en 76), zodat elke vrouw over twee rijen beschikt met één consistente afhankelijke variabele `wage`.",
+  "rubric": [
+   "Correcte do-file initialisatie en logging (clear all, capture log close, log using ..., replace) en doordachte afsluiting.",
+   "Veilige constructie van dummyvariabelen met expliciete uitsluiting van missing values via if !missing(...) of if educ != ., inclusief groepering en waardelabels.",
+   "Volledige rapportage en interpretatie van de t-toets: noemt gemiddelden per subgroep, verschil, t-statistiek en p-waarde, en trekt de juiste conclusie (p > 0.05, niet verwerpen).",
+   "Correcte specificatie van merge m:1 inclusief inspectie van _merge == 3, en de juiste syntaxis voor reshape long wage, i(id) j(year)."
+  ]
+ },
+ "cards": [
+  {
+   "id": "c-01",
+   "skill": "stata-omgeving-logging",
+   "front": "Hoe open en sluit je een logbestand in Stata op een reproduceerbare manier?",
+   "back": "Openen en overschrijven: `log using bestandsnaam, replace`\nNetjes afsluiten: `log close`\nVeilige header: `capture log close`"
+  },
+  {
+   "id": "c-02",
+   "skill": "variabelen-transformatie-missings",
+   "front": "Hoe slaat Stata numerieke missing values (.) intern op en wat is het gevaar?",
+   "back": "Als het **allergrootste positieve getal** ($+ \\infty$).\nCondities zoals `if wage > 50` evalueren als WAAR voor missings!\nVeilige code: `if wage > 50 & !missing(wage)`"
+  },
+  {
+   "id": "c-03",
+   "skill": "data-inspectie-statistieken",
+   "front": "Wat is het verschil tussen summarize en summarize, detail?",
+   "back": "`summarize`: toont N, Mean, Std. dev., Min, Max.\n`summarize, detail`: toont percentielen (p1 tot p99), mediaan (p50), variantie, scheefheid (skewness) en welving (kurtosis)."
+  },
+  {
+   "id": "c-04",
+   "skill": "data-inspectie-statistieken",
+   "front": "Hoe genereer je met tabstat een compacte tabel met statistieken in kolommen uitgesplitst per groep?",
+   "back": "`tabstat wage educ, s(n mean sd p50) c(s) by(female) nototal`\n`c(s)` zet statistieken in kolommen; `nototal` onderdrukt de totaalrij."
+  },
+  {
+   "id": "c-05",
+   "skill": "variabelen-transformatie-missings",
+   "front": "Wat is het verschil tussen encode en destring in Stata?",
+   "back": "`destring`: converteert getallen opgeslagen als tekst naar echte numerieke waarden.\n`encode`: kent aan willekeurige categorische tekst integers (1, 2, ...) toe met gekoppelde waardelabels (essentieel voor `xtset`)."
+  },
+  {
+   "id": "c-06",
+   "skill": "datasets-koppelen-reshape",
+   "front": "Wat betekenen de waarden van de automatische variabele _merge na een koppeling?",
+   "back": "`_merge == 1`: alleen in masterdataset\n`_merge == 2`: alleen in using-dataset\n`_merge == 3`: succesvol gekoppeld in beide datasets"
+  },
+  {
+   "id": "c-07",
+   "skill": "datasets-koppelen-reshape",
+   "front": "Welk commando zet multi-jaar kolommen (wage75, wage76) om naar een panel-geschikte lange vorm?",
+   "back": "`reshape long wage, i(id) j(year)`\n`i()` = persoonsidentifier\n`j()` = nieuwe tijdsvariabele uit het achtervoegsel"
+  },
+  {
+   "id": "c-08",
+   "skill": "stata-omgeving-logging",
+   "front": "Welke vier elementen zijn verplicht bij elk empirisch antwoord in Part C op het examen (AlephQ)?",
+   "back": "1. Het **exacte Stata-commando**\n2. De **numerieke Stata-output**\n3. De **interpretatie**: richting, magnitude, significantie en meeteenheid\n4. Grafieken exporteren (`graph export`) en uploaden via 'Beeld opladen'"
+  }
+ ],
+ "sources": [
+  "Applied Econometrics (2128TEWECP) — Computer class 1: Introduction to Stata software (E. Kilic, S. Vujic, G. Milivojevic, Universiteit Antwerpen)",
+  "Wegwijzer clean do-files — Examenpakket Applied Econometrics (2025–2026)",
+  "Stata 18 Base Reference Manual: describe, summarize, tabstat, recode, merge, reshape"
+ ],
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-26"
+ }
+}
