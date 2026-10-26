@@ -1,683 +1,696 @@
 {
- "schema": "polyglot.lesson/v2",
- "track": "econometrics",
- "id": 6,
- "roadmap": "econometrics-06-limited-dependent-variables",
- "kind": "core",
- "title": "Beperkte Afhankelijke Variabelen: Tobit & Heckman Selectie",
- "subtitle": "Censurering vs. selectie-bias: Tobit met marginale effecten en Heckman twee-staps met de Inverse Mills Ratio (λ)",
- "level": "expert",
- "minutes": 45,
- "summary": "Wanneer afhankelijke variabelen een hoekoplossing met een stapeling op nul vertonen of lonen enkel voor werkenden worden waargenomen, faalt lineaire regressie. In deze les leer je waarom Ordinary Least Squares (OLS) vertekend raakt door censurering en selectie-bias, hoe het Tobit-model de latente index ontrafelt in drie marginale effecten, en hoe de Heckman-tweestapsmethode met de Inverse Mills Ratio controleert voor niet-willekeurige steekproefselectie.",
- "objectives": [
-  {
-   "id": "censoring-truncation",
-   "text": "Het conceptuele onderscheid tussen gecensureerde data (censoring) en getrunceerde data (truncation) toepassen en verklaren waarom OLS inconsistent is."
-  },
-  {
-   "id": "tobit-marginal-effects",
-   "text": "Het Tobit-model schatten en de drie verschillende marginale effecten (latente y*, waargenomen y, en P(y>0)) correct ontleden en berekenen in Stata."
-  },
-  {
-   "id": "sample-selection-bias",
-   "text": "Niet-willekeurige steekproefselectie (sample selection bias) herkennen als een weggelaten-variabeleprobleem en de rol van de fouttermcorrelatie rho formaliseren."
-  },
-  {
-   "id": "heckman-twostep",
-   "text": "Het Heckman-tweestapsmodel (Heckit) schatten, de Inverse Mills Ratio berekenen, selectiebias toetsen en de noodzaak van exclusierestricties verantwoorden."
-  }
- ],
- "sections": [
-  {
-   "id": "sec-censoring-truncation",
-   "title": "Censurering, Troncering en het Falen van OLS",
-   "md": "In empirisch economisch onderzoek komen we geregeld afhankelijke variabelen tegen die continu zijn over een positief bereik, maar een grote stapeling (cluster of *spike*) op nul vertonen. Klassieke voorbeelden zijn gewerkte arbeidsuren per jaar (`hours` in de befaamde Mroz-dataset, waar 325 van de 753 gehuwde vrouwen 0 uren werken), het aantal buitenechtelijke affaires (`naffairs` in `affairs.dta`, waar 77% van de respondenten nul invult), uitgaven aan luxegoederen, of donaties aan goede doelen. In de micro-economie noemen we dit **hoekoplossingen** (*corner solution outcomes*): consumenten maximaliseren hun nut op de rand van hun budgetverzameling.\n\n### Censurering versus Troncering: Het Cruciale Verschil\n\nOp het examen en in de praktijk is het essentieel om twee begrippen scherp uit elkaar te houden:\n\n1. **Censurering (*Censoring*)**:\n   Bij gecensureerde data zijn de verklarende variabelen $x_i$ bekend voor de **volledige steekproef** ($N$). Alleen de afhankelijke variabele $y_i$ is afgetopt op een bepaalde drempelwaarde $L$ (meestal links gecensureerd op $0$).\n   - *Voorbeeld*: In `mroz.dta` observeren we voor elke vrouw haar leeftijd, opleiding en kindertal. Vrouwen die niet werken hebben $\\text{hours} = 0$, terwijl werkende vrouwen hun werkelijke positieve aantal uren rapporteren. We beschikken over $N = 753$ complete rijen voor $x$, maar $y$ is linkse-censurering op nul.\n\n2. **Troncering (*Truncation*)**:\n   Bij getrunceerde data ontbreekt de **gehele observatie** buiten de drempelwaarde: noch de afhankelijke variabele $y_i$, noch de verklarende variabelen $x_i$ worden waargenomen. De steekproefpopulatie zelf is systematisch ingeperkt.\n   - *Voorbeeld*: Een loonenquête die uitsluitend is afgenomen onder werknemers op de werkvloer. Personen zonder betaalde baan zitten domweg niet in de dataset. We hebben nul informatie over hun opleidingsniveau of leeftijd.\n\n> [!IMPORTANT]\n> **Samenvattend**:\n> - *Censurering*: $x$ is altijd bekend; $y$ is afgetopt op een grenswaarde.\n> - *Troncering*: zowel $x$ als $y$ ontbreken volledig voor individuen buiten de grens.\n\n### Waarom Ordinary Least Squares (OLS) Faalt\n\nOnderzoekers die geconfronteerd worden met een hoekoplossing vallen vaak terug op twee naïeve OLS-specificaties. Beide zijn fundamenteel fout en leiden tot inconsistente schattingen:\n\n#### 1. Naïeve OLS op de volledige steekproef (inclusief nullen)\nAls we simpelweg `reg hours educ` uitvoeren op alle 753 observaties, trekt de massale stapeling van nullen de regressielijn plat naar beneden. Dit veroorzaakt een zware **afvlakking** (*attenuation bias*): de geschatte helling $\\hat{\\beta}_{OLS}$ onderschat het werkelijke causale effect aanzienlijk. Bovendien is de conditionele verwachtingswaarde $E(y|x)$ rond nul inherent niet-lineair, terwijl OLS een starre lineaire rechte forceert.\n\n#### 2. Naïeve OLS op uitsluitend de positieve waarnemingen\nEen verleidelijke 'oplossing' is het weggooien van de nullen: `reg hours educ if hours > 0`. Dit introduceert echter **selectiebias** (truncatiebias). Stel dat het ware model voor de latente arbeidsbereidheid $y_i^*$ luidt:\n$$y_i^* = x_i \\beta + u_i, \\quad u_i \\sim \\mathcal{N}(0, \\sigma^2)$$\nWe observeren $y_i > 0$ enkel wanneer $y_i^* > 0$, wat impliceert dat $u_i > -x_i \\beta$. De conditionele verwachting van de foutterm voor de positieve waarnemingen is daardoor niet gelijk aan nul:\n$$E(u_i \\mid y_i > 0, x_i) = E(u_i \\mid u_i > -x_i \\beta) = \\sigma \\frac{\\phi(x_i\\beta / \\sigma)}{\\Phi(x_i\\beta / \\sigma)} \\ne 0$$\nOmdat deze conditionele verwachting direct afhangt van de verklarende variabelen $x_i$, wordt de cruciale Gauss-Markov aanname van strikte exogeniteit ($E(u \\mid x) = 0$) geschonden! De residuen zijn negatief gecorreleerd met $x_i$, waardoor OLS inconsistent en scheef (*biased*) is.\n\n### Empirisch Bewijs uit Computerklas 6 (`tobit.dta`)\n\nIn oefening 5 van Computerklas 6 simuleren we een bekend datagenererend proces:\n$$y_i^* = -9 + 1 \\cdot x_i + \\varepsilon_i, \\quad \\varepsilon_i \\sim \\mathcal{N}(0, 4), \\quad y_i = \\max(0, y_i^*)$$\nDe ware parameters zijn $\\beta_0 = -9$ en $\\beta_1 = 1.00$. Laten we de schattingsresultaten vergelijken:\n\n```stata\n* OLS op de gehele steekproef (inclusief y = 0)\n. reg y x\n             y | Coefficient  Std. err.      t    P>|t|\n-------------+-----------------------------------------\n             x |   .5160625   .0325657    15.85   0.000\n         _cons |  -2.147694   .3705802    -5.80   0.000\n\n* OLS op uitsluitend positieve waarnemingen\n. reg y x if y > 0\n             y | Coefficient  Std. err.      t    P>|t|\n-------------+-----------------------------------------\n             x |   .6387869   .0827208     7.72   0.000\n         _cons |  -3.139881   1.205478    -2.60   0.011\n\n* Tobit maximum likelihood schatting\n. tobit y x, ll(0)\n             y | Coefficient  Std. err.      t    P>|t|\n-------------+-----------------------------------------\n             x |   1.048705   .0789862    13.28   0.000\n         _cons |   -10.2773    1.09701    -9.37   0.000\n```\n\nZie wat er gebeurt:\n- OLS op de gehele steekproef levert een helling van **0.516**: een onderschatting van bijna 50% door de aantrekkingskracht van de nullen!\n- OLS op $y > 0$ levert **0.639**: weliswaar hoger, maar nog steeds zwaar vertekend door de truncatiebias.\n- Enkel het Tobit-model herstelt de ware helling van **1.05** (statistisch niet te onderscheiden van 1.00).",
-   "checks": [
+  "schema": "polyglot.lesson/v2",
+  "track": "econometrics",
+  "id": 6,
+  "roadmap": "econometrics",
+  "kind": "core",
+  "title": "Beperkte Afhankelijke Variabelen: Tobit & Heckman Selectie",
+  "subtitle": "Censurering, Troncering, Marginale Effecten en Steekproefselectie gecorrigeerd via Heckit",
+  "level": "advanced",
+  "minutes": 45,
+  "summary": "Leer hoe begrensde afhankelijke variabelen en niet-willekeurige steekproefselectie OLS (Ordinary Least Squares) vertekenen. Beheers de wiskundige formalisering van het Tobit-model (two-part likelihood, drie marginale effecten, McDonald-Moffitt decompositie) en het Heckman-selectiemodel (reserveringsloon, bivariate normaliteit, Inverse Mills Ratio afleiding, tweestaps Heckit, generated regressor standaardfouten en de onmisbare rol van exclusierestricties).",
+  "objectives": [
     {
-     "id": "chk-c01",
-     "type": "mcq",
-     "skill": "censoring-truncation",
-     "prompt": "Wat is het fundamentele methodologische verschil tussen **censurering** (*censoring*) en **troncering** (*truncation*)?",
-     "options": [
-      "Bij censurering zijn de verklarende variabelen x voor iedereen geobserveerd maar is y afgetopt; bij troncering ontbreken zowel x als y buiten de drempelwaarde.",
-      "Bij censurering ontbreken alle waarnemingen buiten de drempel; bij troncering wordt y vervangen door nul.",
-      "Censurering treedt alleen op bij paneldata; troncering treedt uitsluitend op bij cross-sectie data.",
-      "Censurering vereist een logit-transformatie; troncering kan direct met OLS worden geschat."
-     ],
-     "answer": 0,
-     "explain": "Bij censurering kennen we de covariaten x voor de volledige steekproef (bv. leeftijd en opleiding van zowel werkenden als niet-werkenden), maar is de uitkomst y begrensd op een drempel (zoals 0 uren). Bij troncering is de gehele observatie (zowel y als x) afwezig buiten de drempel (bv. een enquête die enkel onder werkenden werd verspreid).",
-     "level": 1
+      "id": "censoring-truncation",
+      "text": "Het conceptuele en wiskundige onderscheid tussen censurering en troncering toepassen en formeel aantonen waarom OLS inconsistent is bij hoekoplossingen."
     },
     {
-     "id": "chk-c02",
-     "type": "mcq",
-     "skill": "censoring-truncation",
-     "prompt": "Waarom levert een OLS-regressie op enkel de positieve waarnemingen (`reg hours educ if hours > 0`) inconsistente schattingen op?",
-     "options": [
-      "Omdat de conditionele verwachting van de foutterm E(u|y>0, x) afhangt van x, wat leidt tot correlatie tussen x en de samengestelde foutterm.",
-      "Omdat het aantal vrijheidsgraden te klein wordt om een t-toets uit te voeren.",
-      "Omdat de afhankelijke variabele in dat geval altijd normaal verdeeld moet zijn met homogene variantie.",
-      "Omdat Stata automatisch robuuste standaardfouten uitschakelt bij if-condities."
-     ],
-     "answer": 0,
-     "explain": "Door de conditionering op y > 0 (wat impliceert dat u > -x*beta) is de verwachte waarde van de foutterm gelijk aan sigma * lambda(x*beta / sigma). Omdat deze term varieert met x, ontstaat er endogeniteit (correlatie tussen x en de error), wat OLS inconsistent maakt.",
-     "level": 1
-    }
-   ]
-  },
-  {
-   "id": "sec-tobit-marginal-effects",
-   "title": "Het Tobit-Model en de Drie Marginale Effecten",
-   "md": "Het Tobit-model (geïntroduceerd door James Tobin in 1958, ook wel het *Type I Tobit-model* genoemd) lost het probleem van hoekoplossingen en censurering op door een latente index te combineren met Maximum Likelihood Estimation (MLE).\n\n### Wiskundige Formulering en Log-Likelihood\n\nStel dat er een ongeobserveerde latente variabele $y_i^*$ bestaat die een lineaire relatie heeft met de verklarende variabelen:\n$$y_i^* = x_i \\beta + u_i, \\quad u_i \\sim \\mathcal{N}(0, \\sigma^2)$$\nWe observeren de werkelijke variabele $y_i$ via de linkfunctie met linkse censurering op nul:\n$$y_i = \\max(0, y_i^*) = \\begin{cases} y_i^* & \\text{als } y_i^* > 0 \\\\ 0 & \\text{als } y_i^* \\le 0 \\end{cases}$$\nDe kans op een nulwaarneming is:\n$$P(y_i = 0 \\mid x_i) = P(y_i^* \\le 0) = P(u_i \\le -x_i \\beta) = 1 - \\Phi\\left(\\frac{x_i \\beta}{\\sigma}\\right)$$\nVoor positieve waarnemingen ($y_i > 0$) is de bijdrage aan de aannemelijkheidsfunctie de continue dichtheid $\\frac{1}{\\sigma} \\phi\\left(\\frac{y_i - x_i\\beta}{\\sigma}\\right)$. De totale log-likelihoodfunctie $\\ln L$ combineert beide componenten:\n$$\\ln L = \\sum_{y_i = 0} \\ln\\left[1 - \\Phi\\left(\\frac{x_i \\beta}{\\sigma}\\right)\\right] + \\sum_{y_i > 0} \\left[ -\\frac{1}{2} \\ln(2\\pi\\sigma^2) - \\frac{(y_i - x_i \\beta)^2}{2\\sigma^2} \\right]$$\nIn Stata schatten we dit model met het commando:\n```stata\ntobit hours educ exper age kidsl6 kids618, ll(0)\n```\nDe optie `ll(0)` specificeert linkse censurering (*lower limit*) op 0. Zonder argument kiest `ll` de minimumwaarde in de data.\n\n### De Grote Examenval: Wat Betekent de Tobit-Coëfficiënt $\\beta$?\n\nIn de Stata-outputtabel rapporteert `tobit` de vector geschatte coëfficiënten $\\hat{\\beta}$ en de residuele variantie `var(e.hours)` ($=\\sigma^2$).\n\n> [!WARNING]\n> **De klassieke valkuil op het UAntwerpen examen**:\n> De gerapporteerde coëfficiënt $\\beta_k$ in de regressietabel is het marginale effect op de **latente variabele** $y^*$, en **NIET** op de waargenomen gewerkte uren $y$!\n> - $\\beta_{\\text{educ}} = 72.07$ betekent: Een extra jaar opleiding verhoogt de *latente werklust* of *arbeidsbereidheid* met 72 uur per jaar.\n> - Het effect op de *werkelijk waargenomen uren* is veel kleiner, omdat voor 43% van de vrouwen de werklust onder nul blijft en zij op 0 uren blijven steken!\n\n### De Drie Verwachte Waarden en Marginale Effecten\n\nDefinieer de genormaliseerde latente index $z_i = x_i \\beta$, de drempelwaarde $c^* = \\frac{z_i}{\\sigma} = \\frac{x_i \\beta}{\\sigma}$, en de Inverse Mills Ratio:\n$$\\lambda(c^*) = \\frac{\\phi(c^*)}{\\Phi(c^*)}$$\nWe kunnen drie afzonderlijke verwachtingswaarden en hun corresponderende marginale effecten onderscheiden:\n\n```\n                      ┌────────────────────────────────────────────────────────┐\n                      │                 Tobit Marginale Effecten               │\n                      └───────────────────────────┬────────────────────────────┘\n                                                  │\n            ┌─────────────────────────────────────┼────────────────────────────────────┐\n            ▼                                     ▼                                    ▼\n┌───────────────────────┐             ┌───────────────────────┐            ┌───────────────────────┐\n│  1. Latente Index y*  │             │ 2. Getrunceerd (y>0)  │            │ 3. Ongeconditioneerd  │\n│  ∂E(y*|x)/∂x_k = β_k  │             │   E(y|x, y>0)         │            │      E(y|x)           │\n│                       │             │  β_k * [1 - λ(c*+λ)]  │            │    β_k * Φ(c*)        │\n│ margins, dydx(*)      │             │ margins predict(e)    │            │ margins predict(ystar)│\n└───────────────────────┘             └───────────────────────┘            └───────────────────────┘\n```\n\n#### 1. Het effect op de latente index: $E(y^* \\mid x) = x\\beta$\n- **Formule**: $\\frac{\\partial E(y^* \\mid x)}{\\partial x_k} = \\beta_k$\n- **Stata**: `margins, dydx(*)` (of direct aflezen uit de `tobit`-tabel)\n- **Computerklas 6**: Voor opleiding is dit **72.07** uur.\n\n#### 2. Het effect op de getrunceerde uitkomst (voor werkenden): $E(y \\mid x, y > 0)$\n- **Verwachte waarde**: $E(y \\mid x, y > 0) = x\\beta + \\sigma \\lambda(c^*)$\n- **Marginaal effect**: $\\frac{\\partial E(y \\mid x, y > 0)}{\\partial x_k} = \\beta_k \\left[1 - \\lambda(c^*)(c^* + \\lambda(c^*))\\right]$\n- **Stata**: `margins, dydx(educ) atmeans predict(e(0,.))`\n- **Computerklas 6**: Dit bedraagt **30.70** uur.\n- **Economische interpretatie**: Voor een vrouw die al een baan heeft ($hours > 0$), leidt één extra jaar opleiding gemiddeld tot **30.7 gewerkte uren per jaar meer**. Omdat de factor tussen rechte haken strikt tussen 0 en 1 ligt, is dit effect altijd kleiner dan $\\beta_k$.\n\n#### 3. Het effect op de ongeconditioneerde waargenomen uitkomst: $E(y \\mid x)$\n- **Verwachte waarde**: $E(y \\mid x) = \\Phi(c^*) \\cdot E(y \\mid x, y > 0) = \\Phi(c^*) \\left[x\\beta + \\sigma \\lambda(c^*)\\right]$\n- **Marginaal effect**: $\\frac{\\partial E(y \\mid x)}{\\partial x_k} = \\beta_k \\cdot \\Phi(c^*)$\n- **Stata**: `margins, dydx(educ) atmeans predict(ystar(0,.))`\n- **Computerklas 6**: Dit bedraagt **43.66** uur (merk op dat $72.07 \\times 0.6058 \\approx 43.66$).\n- **Economische interpretatie**: Over de gehele vrouwelijke bevolking (inclusief niet-werkenden) verhoogt één extra schooljaar de verwachte arbeidsinzet gemiddeld met **43.7 uur per jaar**.\n\n#### 4. Het effect op de participatiekans: $P(y > 0 \\mid x)$\n- **Kans**: $P(y > 0 \\mid x) = \\Phi(c^*)$\n- **Marginaal effect**: $\\frac{\\partial P(y > 0 \\mid x)}{\\partial x_k} = \\frac{\\phi(c^*) \\beta_k}{\\sigma}$\n- **Stata**: `margins, dydx(educ) atmeans predict(pr(0,.))`\n- **Computerklas 6**: Dit bedraagt **+0.0245** (+2.45 procentpunt per extra jaar onderwijs).\n\n### De McDonald-Moffitt Decompositie en `dtobit2`\n\nIn een baanbrekend artikel toonden McDonald en Moffitt (1980) aan dat het totale marginale effect op waargenomen uren exact ontleed kan worden in twee economische mechanismen:\n$$\\frac{\\partial E(y \\mid x)}{\\partial x_k} = \\underbrace{\\Phi(c^*) \\cdot \\frac{\\partial E(y \\mid x, y>0)}{\\partial x_k}}_{\\text{Intensieve marge: reeds werkenden werken meer}} + \\underbrace{E(y \\mid x, y>0) \\cdot \\frac{\\partial P(y>0 \\mid x)}{\\partial x_k}}_{\\text{Extensieve marge: niet-werkenden treden toe}}$$\nIn Stata berekent het community commando `dtobit2` (beschikbaar via `ssc install dtobit2`) al deze effecten simultaan bij het geobserveerde censureringspercentage:\n```stata\ndtobit2 hours educ exper age kidsl6 kids618, ll(0)\n```",
-   "checks": [
-    {
-     "id": "chk-c03",
-     "type": "mcq",
-     "skill": "tobit-marginal-effects",
-     "prompt": "Een onderzoeker schat `tobit hours educ exper, ll(0)` en vindt voor educ een coëfficiënt van 72.07. Wat betekent dit getal?",
-     "options": [
-      "Een extra jaar opleiding verhoogt de latente arbeidsbereidheid y* met 72.07 uur; het effect op werkelijk gewerkte uren is kleiner.",
-      "Een extra jaar opleiding verhoogt het werkelijk aantal gewerkte uren voor alle vrouwen met gemiddeld 72.07 uur.",
-      "Werkende vrouwen gaan door één jaar extra opleiding precies 72.07 uur meer werken.",
-      "De kans dat een vrouw toetreedt tot de arbeidsmarkt stijgt met 72.07 procentpunt."
-     ],
-     "answer": 0,
-     "explain": "De directe outputcoëfficiënt van een Tobit-model is het marginale effect op de ongeobserveerde latente variabele y* (de latente index). Om het effect op daadwerkelijk gewerkte uren E(y) te kennen, moet deze coëfficiënt vermenigvuldigd worden met de kans op niet-censurering Phi(c*).",
-     "level": 1
+      "id": "tobit-marginal-effects",
+      "text": "Het Tobit-model schatten via Maximum Likelihood, de log-likelihood formaliseren, en de marginale effecten ontleden via McDonald-Moffitt en evalueren via AME (Average Marginal Effect), MEM (Marginal Effect at the Mean) en MER (Marginal Effect at Representative values)."
     },
     {
-     "id": "chk-c04",
-     "type": "mcq",
-     "skill": "tobit-marginal-effects",
-     "prompt": "Welk Stata-commando berekent na `tobit` het marginale effect van opleiding op het aantal gewerkte uren voor uitsluitend werkende vrouwen ($E(hours \\mid hours > 0)$)?",
-     "options": [
-      "margins, dydx(educ) atmeans predict(e(0,.))",
-      "margins, dydx(educ) atmeans predict(ystar(0,.))",
-      "margins, dydx(educ) atmeans predict(pr(0,.))",
-      "margins, dydx(educ) atmeans predict(xb)"
-     ],
-     "answer": 0,
-     "explain": "De optie `predict(e(0,.))` specificeert de getrunceerde verwachtingswaarde E(y|y>0), oftewel het verwachte aantal uren geconditioneerd op het feit dat de uitkomst strikt positief is. `predict(ystar(0,.))` geeft daarentegen het effect op de ongeconditioneerde gecensureerde variabele E(y).",
-     "level": 1
-    }
-   ]
-  },
-  {
-   "id": "sec-sample-selection-bias",
-   "title": "Niet-willekeurige Selectie en het Heckman Selectiemodel",
-   "md": "In veel economische vraagstukken is de afhankelijke variabele niet gecensureerd op nul, maar ontbreekt ze simpelweg voor een deel van de populatie. Het klassieke voorbeeld is de loonvergelijking (*wage equation*): we kunnen het loon ($w_i$) alleen waarnemen van individuen die participeren op de arbeidsmarkt (`particip.dta` en `mroz.dta`). \n\n### Het Economische Probleem van Zelfselectie\n\nWaarom kunnen we niet gewoon OLS schatten op de werkenden? Omdat wie werkt en wie niet werkt **geen toevallige trekking** uit een vaas is:\n- Een individu kiest ervoor om te werken als het aangeboden marktloon ($w_i$) hoger is dan haar persoonlijke **reserveringsloon** ($w_i^R$).\n- Het marktloon hangt af van geobserveerde productiviteitskenmerken (opleiding, ervaring) én ongeobserveerde talenten (ambitie, IQ, motivatie $u_i$).\n- Het reserveringsloon hangt af van niet-arbeidsinkomen, de aanwezigheid van jonge kinderen en ongeobserveerde voorkeuren voor vrije tijd ($v_i$).\n\nAls de niet-geobserveerde factoren die participatie bepalen gecorreleerd zijn met de niet-geobserveerde factoren die het loon bepalen, is er sprake van **niet-willekeurige steekproefselectie** (*sample selection bias*). Een OLS-regressie op enkel de werkenden lijdt dan aan endogeniteit.\n\n### De Formele Structuur van het Heckman (Type II) Model\n\nJames Heckman (Nobelprijs 2000) formaliseerde dit via een tweeledig stelsel:\n\n#### 1. De Selectievergelijking (Participatiebeslissing)\nLaat $d_i^*$ een latente index zijn voor het nut van participatie:\n$$d_i^* = z_i \\gamma + v_i, \\quad d_i = \\mathbf{1}[d_i^* > 0] = \\begin{cases} 1 & \\text{als individu } i \\text{ werkt} \\\\ 0 & \\text{als individu } i \\text{ niet werkt} \\end{cases}$$\nwaarbij $v_i \\sim \\mathcal{N}(0, 1)$ en $z_i$ de determinanten van arbeidsdeelname zijn.\n\n#### 2. De Uitkomstvergelijking (Loonvergelijking)\nHet potentiële logloon bedraagt:\n$$y_i = x_i \\beta + u_i, \\quad u_i \\sim \\mathcal{N}(0, \\sigma_u^2)$$\nWe observeren $y_i$ **uitsluitend wanneer** $d_i = 1$.\n\n#### 3. De Gezamenlijke Fouttermenverdeling\nDe fouttermen $(u_i, v_i)$ volgen een bivariate normale verdeling met verwachting nul en covariantiematrix:\n$$\\begin{pmatrix} u_i \\\\ v_i \\end{pmatrix} \\sim \\mathcal{N}\\left( \\begin{pmatrix} 0 \\\\ 0 \\end{pmatrix}, \\begin{pmatrix} \\sigma_u^2 & \\rho \\sigma_u \\\\ \\rho \\sigma_u & 1 \\end{pmatrix} \\right)$$\nwaarbij $\\rho = \\text{corr}(u_i, v_i)$ de correlatie is tussen de ongeobserveerde componenten van loon en participatie.\n\n### Wiskundige Afleiding van de Selectiebias\n\nWat gebeurt er als we de conditionele verwachting van het loon nemen voor de groep werkenden ($d_i = 1$, wat overeenkomt met $v_i > -z_i \\gamma$)?\n$$E(y_i \\mid x_i, z_i, d_i = 1) = x_i \\beta + E(u_i \\mid v_i > -z_i \\gamma)$$\nVolgens de wiskundige eigenschappen van de bivariate normale verdeling geldt:\n$$E(u_i \\mid v_i > -z_i \\gamma) = \\text{cov}(u_i, v_i) \\cdot \\frac{\\phi(-z_i \\gamma)}{1 - \\Phi(-z_i \\gamma)} = \\rho \\sigma_u \\frac{\\phi(z_i \\gamma)}{\\Phi(z_i \\gamma)}$$\nHieruit volgt de befaamde Heckman-vergelijking:\n$$E(y_i \\mid x_i, z_i, d_i = 1) = x_i \\beta + \\beta_\\lambda \\lambda_i(z_i \\gamma)$$\nwaarbij:\n- $\\lambda_i(z_i \\gamma) = \\frac{\\phi(z_i \\gamma)}{\\Phi(z_i \\gamma)}$ de **Inverse Mills Ratio (IMR)** is (de verhouding van de standaardnormale dichtheid tot de cumulatieve verdelingsfunctie).\n- $\\beta_\\lambda = \\rho \\sigma_u$ de coëfficiënt van de Inverse Mills Ratio is.\n\n> [!IMPORTANT]\n> **De kernconclusie van Heckman**:\n> Als we OLS schatten op werkenden (`reg lwage educ exper if hours > 0`), laten we in feite de variabele $\\lambda_i$ weg!\n> - Als $\\rho \\ne 0$, is er sprake van klassieke **weggelaten-variabelefout** (*omitted variable bias*). Omdat $\\lambda_i$ correleert met $x_i$, is OLS inconsistent.\n> - Als $\\rho = 0$, is $\\beta_\\lambda = 0$. Dan ontbreekt er geen relevante variabele en is OLS op de werkenden consistent en zelfs efficiënter dan Heckman!",
-   "checks": [
-    {
-     "id": "chk-c05",
-     "type": "mcq",
-     "skill": "sample-selection-bias",
-     "prompt": "Onder welke voorwaarde levert een gewone OLS-regressie op de werkende populatie consistente schattingen van de loonvergelijking op?",
-     "options": [
-      "Wanneer de correlatie tussen de fouttermen van de selectie- en uitkomstvergelijking nul is (rho = 0).",
-      "Wanneer de Inverse Mills Ratio precies gelijk is aan 1 voor alle respondenten.",
-      "Wanneer minstens de helft van de steekproef een baan heeft.",
-      "Wanneer de lonen logaritmisch getransformeerd zijn."
-     ],
-     "answer": 0,
-     "explain": "De coëfficiënt van de Inverse Mills Ratio is beta_lambda = rho * sigma_u. Aangezien sigma_u > 0, verdwijnt de weggelaten-variabelefout in OLS uitsluitend wanneer rho = corr(u, v) = 0. Dan is de selectie zuiver willekeurig ten aanzien van de loonfoutterm.",
-     "level": 1
+      "id": "sample-selection-bias",
+      "text": "Niet-willekeurige steekproefselectie (incidental truncation) economisch en wiskundig modelleren vanuit reserveringslonen en de bivariate normale verdeling, en de selectiebias afleiden als omitted variable bias via de Inverse Mills Ratio."
     },
     {
-     "id": "chk-c06",
-     "type": "mcq",
-     "skill": "sample-selection-bias",
-     "prompt": "Wat stelt de Inverse Mills Ratio (IMR, lambda) intuïtief voor in het Heckman-model?",
-     "options": [
-      "Een controlevariabele die de verwachte waarde van de niet-geobserveerde factoren van geselecteerde individuen modelleert.",
-      "Het instrument dat endogeniteit van opleiding rechtstreeks oplost via tweetraps-kleinste-kwadraten.",
-      "De kans dat een niet-werkende vrouw volgend jaar toetreedt tot de arbeidsmarkt.",
-      "De verhouding tussen de verklaarde variantie en de residuele variantie in de uitkomstregressie."
-     ],
-     "answer": 0,
-     "explain": "De Inverse Mills Ratio lambda(z*gamma) vat de conditionele verwachting E(v|v > -z*gamma) samen. Door deze term toe te voegen aan de regressie, controleren we expliciet voor het niet-geobserveerde selectie-effect, waardoor de overblijvende foutterm een conditionele verwachting van nul krijgt.",
-     "level": 1
+      "id": "heckman-twostep",
+      "text": "De Heckman-tweestapsmethode (Heckit) en Full Information Maximum Likelihood (FIML) schatten in Stata, selectiebias toetsen, ongeldige handmatige standaardfouten verklaren en de noodzaak van exclusierestricties aantonen."
     }
-   ]
-  },
-  {
-   "id": "sec-heckman-estimation",
-   "title": "Heckman Schatting in Stata, Toetsing en Exclusierestricties",
-   "md": "Om te controleren voor selectiebias introduceerde James Heckman de elegante **tweestapsschatting** (*Heckit*), naast de Full Information Maximum Likelihood (`mle`).\n\n### De Twee Stappen van de Heckit-Procedure\n\nIn Computerklas 6 voeren we de tweestapsprocedure zowel handmatig als met het ingebouwde Stata-commando uit:\n\n#### Stap 1: De Selectievergelijking via Probit\nSchat op de **volledige steekproef** (werkenden én niet-werkenden, $N=753$ in `mroz.dta`) een Probit-model voor participatie ($lfp$):\n```stata\nprobit lfp age educ kids mtr\npredict w, xb\ngen imr = normalden(w) / normal(w)\n```\n- `w` is de geschatte index $\\hat{w}_i = z_i \\hat{\\gamma}$.\n- `imr` berekent $\\hat{\\lambda}_i = \\frac{\\phi(z_i \\hat{\\gamma})}{\\Phi(z_i \\hat{\\gamma})}$ met de Stata-functies `normalden()` (kansdichtheidsfunctie PDF (kansdichtheidsfunctie (probability density function))) en `normal()` (cumulatieve verdelingsfunctie CDF (cumulatieve verdelingsfunctie (cumulative distribution function))).\n\n#### Stap 2: OLS met de geschatte Inverse Mills Ratio\nSchat met OLS de loonvergelijking op de **geselecteerde steekproef** ($d_i = 1$), met de berekende `imr` als extra verklarende variabele:\n```stata\nreg lwage educ exper imr\n```\nHet resultaat:\n```stata\n       lwage | Coefficient  Std. err.      t    P>|t|\n-------------+-----------------------------------------\n        educ |   .0584579   .0238495     2.45   0.015\n       exper |   .0163202   .0039984     4.08   0.000\n         imr |  -.8664386   .3269855    -2.65   0.008\n       _cons |   .8105417   .4944723     1.64   0.102\n```\n\n> [!CAUTION]\n> **De Tweede Examenval: Ongeldige Standaardfouten in de Handmatige Tweede Stap**\n> Net zoals bij een handmatige Two-Stage Least Squares (2SLS) zijn de standaardfouten van OLS in stap 2 **onjuist** (te klein). Waarom?\n> 1. *Generated regressor problem*: `imr` is geen vaste variabele, maar een schatting uit stap 1 met inherente steekproefruis.\n> 2. *Heteroskedasticiteit*: De theoretische variantie van de foutterm in de tweede stap hangt af van $z_i \\gamma$.\n> Voer daarom op het examen **altijd** het officiële Stata-commando uit:\n> ```stata\n> heckman lwage educ exper, select(lfp = age educ kids mtr) twostep\n> ```\n> Stata past dan automatisch de Heckman-asymptotische covariantiematrix toe!\n\n### De Officiële Stata Output en de Toets op Selectiebias\n\n```stata\n. heckman lwage educ exper, select(lfp = age educ kids mtr) twostep\nHeckman selection model -- two-step estimates   Number of obs     =        753\n(regression model with sample selection)       Selected          =        428\n                                               Nonselected       =        325\n                                               Wald chi2(2)      =      19.53\n                                               Prob > chi2       =     0.0001\n------------------------------------------------------------------------------\n             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]\n-------------+----------------------------------------------------------------\nlwage        |\n        educ |   .0584579   .0296354     1.97   0.049     .0003737    .1165422\n       exper |   .0163202   .0042022     3.88   0.000     .0080842    .0245563\n       _cons |   .8105418   .6107985     1.33   0.185    -.3866012    2.007685\n-------------+----------------------------------------------------------------\nlfp          |\n         age |  -.0206155   .0070447    -2.93   0.003    -.0344229   -.0068082\n        educ |   .0837753    .023205     3.61   0.000     .0382943    .1292563\n        kids |  -.3138848   .1237108    -2.54   0.011    -.5563535   -.0714162\n         mtr |  -1.393853   .6165751    -2.26   0.024    -2.602318   -.1853878\n       _cons |   1.192296   .7205439     1.65   0.098    -.2199443    2.604536\n-------------+----------------------------------------------------------------\n/mills       |\n      lambda |  -.8664387   .3992843    -2.17   0.030    -1.649022   -.0838559\n-------------+----------------------------------------------------------------\n         rho |   -0.92910\n       sigma |   .93255927\n------------------------------------------------------------------------------\n```\n\nKijk naar de cruciale componenten onderaan:\n1. **Toets op selectiebias**:\n   In het paneel `/mills` toont Stata `lambda` met een coëfficiënt van **-0.866**, gecorrigeerde standaardfout **0.399**, $z = -2.17$ en $p = 0.030$.\n   - Aangezien $\\lambda = \\rho \\cdot \\sigma_u$ en $\\sigma_u > 0$, toetst de $z$-toets op $\\lambda = 0$ direct de hypothese $H_0: \\rho = 0$.\n   - Omdat $p = 0.030 < 0.05$, **verwerpen we de nulhypothese** op het 5%-niveau. Er is statistisch significant bewijs voor selectiebias! OLS is vertekend; Heckman is methodologisch vereist.\n2. **De correlatie $\\rho = -0.929$**:\n   Een negatieve $\\rho$ betekent dat vrouwen met een lagere ongeobserveerde looncomponent (lagere $u$) een hogere participatiedrang hebben (hogere $v$). In economische termen: vrouwen die financieel genoodzaakt zijn te werken ondanks slechte loonaanbiedingen hebben een hoge participatiekans, wat de waargenomen OLS-lonen vertekent.\n\n### De Cruciale Exclusierestrictie (Identification Restriction)\n\nWaarom mogen we in de selectievergelijking niet precies dezelfde variabelen opnemen als in de uitkomstvergelijking ($z = x$)?\n\n> [!IMPORTANT]\n> **De Exclusierestrictie**:\n> De vector $z$ MOET minstens één variabele bevatten die **wél de selectie** (participatie) beïnvloedt, maar **géén direct effect** heeft op de uitkomst (loon).\n> - *Voorbeelden*: `kids` (aanwezigheid jonge kinderen), `otherinc` (inkomen echtgenoot / ander gezinsinkomen in `particip.dta`), en `mtr` (marginaal belastingtarief). Deze variabelen bepalen het reserveringsloon, maar niet de marktproductiviteit.\n\nIn Computerklas 6 (Oefening 2.d) onderzoeken we de relatie tussen $\\hat{\\lambda}$ (`mills`) en de lineaire index $\\hat{z}\\gamma$ (`gammahat`):\n```stata\n. corr mills gammahat\n             |    mills gammahat\n-------------+------------------\n       mills |   1.0000\n    gammahat |  -0.9944   1.0000\n```\nDe correlatie is **-0.9944**! De Inverse Mills Ratio is over een breed bereik **vrijwel perfect lineair** in $z\\gamma$.\nAls we geen exclusierestrictie opleggen ($z = x$), is $\\lambda(x\\gamma)$ nagenoeg een lineaire combinatie van de regressoren $x$ in de tweede stap. Dit leidt tot **catastrofale multicollineariteit**: de standaardfouten ontploffen en de schattingen worden volstrekt onbetrouwbaar! De enige identificatiekracht zou dan leunen op de zeer milde kromming van de staart van de normale verdeling.",
-   "checks": [
+  ],
+  "sections": [
     {
-     "id": "chk-c07",
-     "type": "mcq",
-     "skill": "heckman-twostep",
-     "prompt": "Waarom mag je de standaardfouten van een handmatige OLS-regressie met de berekende `imr` (`reg lwage educ exper imr`) niet rapporteren op het examen?",
-     "options": [
-      "Omdat de IMR een geschatte variabele is (generated regressor) en de storingsterm in stap 2 heteroskedastisch is, waardoor OLS-standaardfouten ongeldig zijn.",
-      "Omdat OLS in de tweede stap altijd een R² van precies 1 oplevert.",
-      "Omdat Stata weigert een regressie uit te voeren als een variabele de naam 'imr' draagt.",
-      "Omdat handmatige OLS de coëfficiënten van educ en exper met een factor 100 overschat."
-     ],
-     "answer": 0,
-     "explain": "De geschatte IMR brengt schattingsfout mee uit de eerste stap (generated regressor problem) en introduceert conditionele heteroskedasticiteit in de tweede stap. Daarom levert gewone OLS onjuiste standaardfouten op; het commando `heckman ..., twostep` past de vereiste covariantiematrixcorrectie toe.",
-     "level": 1
+      "id": "sec-censoring-truncation",
+      "title": "Censurering, Troncering en het Falen van OLS",
+      "md": "In micro-econometrisch onderzoek stuiten we voortdurend op data waarbij de afhankelijke variabele niet zuiver continu verdeeld is over de reële rechte, maar begrensd is. Denk aan het aantal gewerkte uren per week, uitgaven aan duurzame consumptiegoederen, of giften aan goede doelen. In al deze situaties kiest een aanzienlijk deel van de populatie voor een nulwaarde (een hoekoplossing of *corner solution*).\n\nHet toepassen van gewone kleinste-kwadratenmethode (OLS (Ordinary Least Squares)) op dergelijke begrensde data leidt tot fundamentele statistische problemen. Om deze methodologische valkuilen te begrijpen en op te lossen, moeten we eerst een scherp conceptueel en wiskundig onderscheid maken tussen twee vormen van onvolledige dataverzameling: **censurering** (*censoring*) en **troncering** (*truncation*).\n\n### Conceptueel en Wiskundig Onderscheid: Censurering versus Troncering\n\nHet fundamentele onderscheid tussen censurering en troncering schuilt in de informatie die de onderzoeker heeft over de verklarende variabelen $x$ voor de observaties die buiten de grenswaarde vallen.\n\n```\n┌─────────────────────────────────────────────────────────────────────────────┐\n│                          INFORMATIESTRUCTUUR                                │\n├──────────────────────────────────────┬──────────────────────────────────────┤\n│       CENSURERING (Censoring)        │        TRONCERING (Truncation)       │\n├──────────────────────────────────────┼──────────────────────────────────────┤\n│ • Steekproef is representatief voor  │ • Steekproef is NIET representatief; │\n│   de VOLLEDIGE populatie (N = 100%). │   beperkt tot een deelpopulatie.     │\n│ • Verklarende variabelen (x) zijn    │ • Verklarende variabelen (x) én      │\n│   BEKEND voor ALLE observaties.      │   afhankelijke variabele (y)         │\n│ • Afhankelijke variabele (y) is      │   ONTBREKEN VOLLEDIG buiten          │\n│   afgetopt op drempel c.             │   de drempelwaarde c.                │\n│ • Voorbeeld: Arbeidsaanbod           │ • Voorbeeld: GPA van uitsluitend     │\n│   (uren = 0 bekend, x bekend).       │   toegelaten studenten.              │\n└──────────────────────────────────────┴──────────────────────────────────────┘\n```\n\n#### 1. Data Censurering (Censoring)\nBij censurering beschikken we over een aselecte steekproef van omvang $N$ uit de populatie. Voor ieder individu $i$ in de steekproef zijn alle verklarende variabelen $x_i$ geobserveerd. De afhankelijke variabele $y_i^*$ is een continue latente (ongeobserveerde) variabele, maar we observeren slechts een afgetopte versie $y_i$:\n$$y_i = \\begin{cases} y_i^* & \\text{als } y_i^* > c \\\\ c & \\text{als } y_i^* \\le c \\end{cases}$$\n(in het geval van linkse censurering op drempel $c$, zoals $c = 0$).\n\n> [!NOTE]\n> **Typische voorbeelden van censurering in economisch onderzoek:**\n> - **Arbeidsaanbod (gewerkte uren)**: Voor werklozen of niet-beroepsactieven geldt $hours_i = 0$. We kennen echter wel hun leeftijd, opleidingsniveau, huwelijkse staat en kindertal.\n> - **Giften aan goede doelen (Brooks, 2008)**: Een groot percentage van de huishoudens doneert €0. Niettemin zijn hun inkomens- en gezinssituatie bekend uit het survey.\n> - **Vraag naar stadiontickets of concertkaartjes**: De feitelijke verkoop is naar boven toe gecensureerd door de maximale zaalcapaciteit $C$ (*right-censoring*).\n> - **Top-coded inkomens of vermogens**: In vermogensonderzoeken worden waarden boven €1.000.000 vaak geregistreerd als exact €1.000.000 ter bescherming van privacy.\n\n#### 2. Data Troncering (Truncation)\nBij troncering is het steekproefkader (*sampling frame*) zélf systematisch beperkt. Observaties waarbij $y_i^* \\le c$ komen **volstrekt niet voor** in de dataset. Zowel de afhankelijke variabele $y_i$ als de bijbehorende vector verklarende variabelen $x_i$ ontbreken voor deze individuen. De onderliggende populatieverdeling is zelf afgekapt.\n\nWiskundig wordt de getrunceerde kansdichtheidsfunctie (PDF (kansdichtheidsfunctie (probability density function))) verkregen door de oorspronkelijke continue verdeling te schalen met de kans dat een waarneming de drempel overschrijdt:\n$$f(y \\mid y > c) = \\frac{f(y)}{P(y > c)} = \\frac{\\frac{1}{\\sigma}\\phi\\left(\\frac{y - \\mu}{\\sigma}\\right)}{1 - \\Phi\\left(\\frac{c - \\mu}{\\sigma}\\right)}$$\nwaarbij $\\phi(\\cdot)$ de standaardnormale dichtheidsfunctie is en $\\Phi(\\cdot)$ de cumulatieve verdelingsfunctie (CDF (cumulatieve verdelingsfunctie (cumulative distribution function))).\n\n> [!NOTE]\n> **Typische voorbeelden van troncering in economisch onderzoek:**\n> - **Academisch succes (studieresultaten (Grade Point Average, GPA))**: Een onderzoek naar studieresultaten aan een universiteit omvat enkel studenten die daadwerkelijk zijn toegelaten (toelatingsscore $> c$). Aanvragers die zijn afgewezen ontbreken volledig in het databestand.\n> - **Doelgroepgerichte armoede-interventies**: Een evaluatie van een sociaal bijstandsprogramma waarbij enkel gezinnen met een inkomen onder de armoedegrens worden geënquêteerd. Rijkere huishoudens zijn nergens in de data te bekennen.\n> - **Bedrijfsperformantie (survivorship bias)**: Financiële databases bevatten dikwijls uitsluitend actieve, overlevende bedrijven. Failliete ondernemingen zijn verdwenen.\n\n---\n\n### Wiskundige Bewijsvoering: Waarom Faalt OLS bij Hoekoplossingen?\n\nWaarom kunnen we niet simpelweg een lineaire regressie schatten met Ordinary Least Squares (OLS)? We onderscheiden twee naïeve OLS-benaderingen die beide wiskundig falen.\n\n#### Benadering A: OLS op de gehele steekproef (inclusief nullen)\nStel dat het ware model voor de latente uitkomst lineair is:\n$$y_i^* = x_i'\\beta + u_i, \\quad u_i \\sim \\mathcal{N}(0, \\sigma^2)$$\nDe waargenomen variabele volgt de hoekoplossingsregel: $y_i = \\max(0, y_i^*)$.\nDe theoretische conditionele verwachtingswaarde van de waargenomen uitkomst is:\n$$E(y_i \\mid x_i) = P(y_i > 0 \\mid x_i) \\cdot E(y_i \\mid x_i, y_i > 0) + P(y_i = 0 \\mid x_i) \\cdot 0$$\nZoals we dadelijk afleiden, leidt dit tot:\n$$E(y_i \\mid x_i) = \\Phi\\left(\\frac{x_i'\\beta}{\\sigma}\\right) x_i'\\beta + \\sigma \\phi\\left(\\frac{x_i'\\beta}{\\sigma}\\right)$$\nDeze functie is **strikt niet-lineair** in $x_i$ en $\\beta$! Voor zeer lage waarden van $x_i'\\beta$ nadert $E(y_i \\mid x_i)$ asymptotisch naar 0, terwijl de functie voor zeer hoge waarden nadert naar de lineaire rechte $x_i'\\beta$.\n\nAls we desondanks een rechte lijn $y_i = x_i'\\beta_{OLS} + e_i$ door de puntenwolk trekken:\n1. **Attenuation Bias (Afvlakkingsbias)**: De opeenhoping van nulwaarden aan de linkerzijde trekt de regressielijn omhoog bij lage $x$-waarden, terwijl bij hoge $x$-waarden de helling juist wordt afgevlakt. De geschatte OLS-coëfficiënt $\\hat{\\beta}_{OLS}$ onderschat systematisch de werkelijke latente helling $\\beta$ in absolute waarde:\n   $$|\\text{plim} \\, \\hat{\\beta}_{OLS}| < |\\beta|$$\n2. **Onzinnige voorspellingen**: Een lineaire regressielijn kan voor lage $x$-waarden negatieve waarden voorspellen voor variabelen die per definitie niet-negatief zijn (zoals gewerkte uren of aantal affaires).\n\n#### Benadering B: OLS op uitsluitend positieve waarnemingen ($y_i > 0$)\nEen veelgemaakte denkfout onder studenten is: *\"Als de nullen de lijn verstoren, gooien we alle observaties met $y_i = 0$ toch gewoon weg en schatten we OLS op $y_i > 0$?\"*\n\nLaten we formeel aantonen waarom dit leidt tot **inconsistentie en selectie/truncatiebias**.\nWanneer we selecteren op $y_i > 0$, conditioneren we op $y_i^* > 0 \\iff x_i'\\beta + u_i > 0 \\iff u_i > -x_i'\\beta$.\nDe conditionele verwachting van de storingsterm is dan niet langer gelijk aan nul:\n$$E(u_i \\mid x_i, y_i > 0) = E(u_i \\mid u_i > -x_i'\\beta)$$\nVolgens de wiskundige eigenschappen van de getrunceerde normale verdeling (zie Greene, 2012; Verbeek, 2017) geldt:\n$$E(u_i \\mid u_i > -x_i'\\beta) = \\sigma \\frac{\\phi(-x_i'\\beta/\\sigma)}{1 - \\Phi(-x_i'\\beta/\\sigma)} = \\sigma \\frac{\\phi(x_i'\\beta/\\sigma)}{\\Phi(x_i'\\beta/\\sigma)} = \\sigma \\lambda\\left(\\frac{x_i'\\beta}{\\sigma}\\right) \\ne 0$$\nwaarbij $\\lambda(c^*) \\equiv \\frac{\\phi(c^*)}{\\Phi(c^*)}$ de **Inverse Mills Ratio (IMR (Inverse Mills Ratio))** is.\n\nOmdat de dichtheid $\\phi(\\cdot) > 0$ en de cumulatieve kans $\\Phi(\\cdot) > 0$, is $\\lambda(c^*) > 0$ voor elke waarde van $c^*$.\nDe conditionele verwachtingswaarde van de getrunceerde uitkomst luidt bijgevolg:\n$$E(y_i \\mid x_i, y_i > 0) = x_i'\\beta + \\sigma \\lambda\\left(\\frac{x_i'\\beta}{\\sigma}\\right)$$\n\n> [!IMPORTANT]\n> **Wiskundig bewijs van de vertekening bij OLS op $y > 0$**:\n> De eerste afgeleide van de Inverse Mills Ratio is strikt negatief:\n> $$\\frac{d\\lambda(c^*)}{dc^*} = -\\lambda(c^*)\\left[c^* + \\lambda(c^*)\\right] < 0$$\n> Dit betekent dat naarmate de verklarende index $x_i'\\beta$ **toeneemt**, de correctieterm $\\sigma \\lambda(x_i'\\beta/\\sigma)$ **afneemt**!\n> Als we OLS uitvoeren van $y_i$ op $x_i$ op de substeekproef $y_i > 0$, laten we in feite de variabele $\\sigma \\lambda_i$ weg. Omdat $\\sigma \\lambda_i$ een strikt negatieve correlatie vertoont met $x_i'\\beta$, ontstaat er klassieke **weggelaten-variabele-vertekening (omitted variable bias)**:\n> $$\\text{plim} \\, \\hat{\\beta}_{OLS, y>0} = \\beta + \\sigma \\frac{\\text{cov}(x_i, \\lambda_i)}{\\text{var}(x_i)} < \\beta$$\n> De intuïtie: Een individu met een lage $x_i$ kan alleen een positieve $y_i > 0$ bereiken als haar ongeobserveerde foutterm $u_i$ toevallig zeer groot en positief is. Een individu met een hoge $x_i$ haalt de drempel vrijwel altijd, zelfs met een negatieve $u_i$. Dit creëert een kunstmatige negatieve correlatie tussen $x_i$ en $u_i$ in de geselecteerde groep, waardoor de OLS-regressielijn opnieuw naar beneden wordt afgevlakt!\n\n---\n\n### Empirische Demonstratie: De Gesimuleerde Hoekoplossing (`tobit.dta`)\n\nIn Computerklas 6 (Oefening 5) demonstreren we dit mechanisme aan de hand van een gesimuleerd Data Generating Process (datagenererend proces (Data Generating Process, DGP)):\n$$y_i^* = -9 + 1 \\cdot x_i + \\varepsilon_i, \\quad \\varepsilon_i \\sim \\mathcal{N}(0, 4) \\implies \\sigma = 2$$\nDe waargenomen variabele wordt van onderaf gecensureerd op nul: $y_i = \\max(0, y_i^*)$. De steekproef telt $N = 200$ observaties, waarvan exact $100$ individuen een nulwaarde hebben ($50\\%$ linkse censurering).\n\nWe vergelijken in Stata de drie regressies:\n```stata\n* 1. OLS op de gehele steekproef (N = 200)\nreg y x\n\n* 2. OLS op uitsluitend positieve waarden (N = 100)\nreg y x if y > 0\n\n* 3. Tobit Maximum Likelihood schatting (N = 200)\ntobit y x, ll(0)\n```\n\nLaten we de Stata-resultaten zij aan zij bekijken:\n\n```stata\n------------------------------------------------------------------------------\nModel              | Coeff x (Std. Err.)   Constante (Std. Err.)   N\n-------------------+----------------------------------------------------------\nWare DGP           |  1.0000               -9.0000                 200\n1. OLS (volledig)  |   .5161 (.0326)***    -2.1477 (.3706)***      200\n2. OLS (y > 0)     |   .6388 (.0827)***    -3.1399 (1.2055)**      100\n3. Tobit ML        |  1.0487 (.0790)***   -10.2773 (1.0970)***     200\n------------------------------------------------------------------------------\n```\n\nDe empirische lessen uit deze tabel zijn glashelder:\n1. **OLS op de hele steekproef** schat $\\hat{\\beta}_1 = 0.516$: een spectaculaire onderschatting van bijna $50\\%$ van de ware helling ($1.00$) als gevolg van attenuation bias!\n2. **OLS op de positieve waarnemingen** schat $\\hat{\\beta}_1 = 0.639$: weliswaar hoger, maar nog steeds $36\\%$ onder de ware parameter ten gevolge van de truncatiebias.\n3. **Tobit Maximum Likelihood** schat $\\hat{\\beta}_1 = 1.049$ en $\\hat{\\beta}_0 = -10.28$: de schattingen liggen statistisch pal op de ware parameters van de populatie ($\\beta_1 = 1, \\beta_0 = -9$).",
+      "checks": [
+        {
+          "id": "chk-c01",
+          "type": "mcq",
+          "skill": "censoring-truncation",
+          "prompt": "Wat is het fundamentele methodologische verschil tussen **censurering** (*censoring*) en **troncering** (*truncation*)?",
+          "options": [
+            "Bij censurering zijn de regressoren x voor de gehele steekproef bekend en is alleen y begrensd; bij troncering ontbreken zowel y als x voor observaties buiten de drempelwaarde.",
+            "Bij troncering zijn alle data geobserveerd maar gegroepeerd; bij censurering ontbreken alleen de verklarende variabelen x.",
+            "Censurering treedt alleen op bij paneldata; troncering treedt uitsluitend op bij cross-sectiedata.",
+            "Bij censurering is OLS zuiver en consistent; bij troncering is enkel Tobit inconsistent."
+          ],
+          "answer": 0,
+          "explain": "Bij censurering beschikken we over een aselecte steekproef waarbij x voor iedereen bekend is en y is afgetopt (bv. uren = 0). Bij troncering is de gehele steekproef beperkt tot een deelpopulatie (bv. alleen studenten met GPA > 3.0), waardoor waarnemingen buiten de drempel compleet ontbreken.",
+          "level": 1
+        },
+        {
+          "id": "chk-c02",
+          "type": "mcq",
+          "skill": "censoring-truncation",
+          "prompt": "Waarom levert een OLS-regressie op enkel de positieve waarnemingen (`reg hours educ if hours > 0`) inconsistente schattingen op?",
+          "options": [
+            "Omdat de conditionele verwachting van de storingsterm E(u | y > 0, x) = sigma * lambda(x'beta/sigma) niet gelijk is aan nul en negatief correleert met x, wat leidt tot omitted variable bias.",
+            "Omdat het weggooien van nulwaarden leidt tot perfecte multicollineariteit tussen de verklarende variabelen in de geselecteerde steekproef.",
+            "Omdat OLS op een deelsteekproef per definitie niet geconverteerd kan worden naar een geldige F-toets of Wald-toets.",
+            "Omdat de residuele variantie bij positieve waarden automatisch naar oneindig nadert."
+          ],
+          "answer": 0,
+          "explain": "Conditioneren op y > 0 impliceert u > -x'beta. Hierdoor is de conditionele verwachting van de foutterm sigma * lambda(x'beta/sigma) > 0. Omdat lambda daalt als x'beta stijgt, ontstaat er omitted variable bias die de OLS-helling naar beneden vertekent.",
+          "level": 1
+        }
+      ]
     },
     {
-     "id": "chk-c08",
-     "type": "mcq",
-     "skill": "heckman-twostep",
-     "prompt": "Waarom is een **exclusierestrictie** (minstens één variabele in de selectievergelijking die niet in de uitkomstvergelijking staat) praktisch onmisbaar bij het Heckman-model?",
-     "options": [
-      "Omdat de Inverse Mills Ratio sterk correleert met de index, wat leidt tot extreme multicollineariteit.",
-      "Omdat het Probit-model in de eerste stap van de regressie mathematisch anders niet kan convergeren naar een maximum.",
-      "Omdat het Heckman-selectiemodel anders automatisch overgaat in een Two-Way Fixed Effects panelmodel.",
-      "Omdat de theoretische fouttermcorrelatie rho tussen beide vergelijkingen anders per definitie gelijk wordt aan 1."
-     ],
-     "answer": 0,
-     "explain": "In Computerklas 6 werd aangetoond dat corr(mills, gammahat) = -0.9944. Zonder exclusievariabele is de IMR nagenoeg een lineaire combinatie van de regressoren x in de loonregressie, wat leidt tot ernstige multicollineariteit en opgeblazen standaardfouten.",
-     "level": 1
+      "id": "sec-tobit-marginal-effects",
+      "title": "Het Tobit-Model en de Drie Marginale Effecten",
+      "md": "Het Tobit-model (geïntroduceerd door James Tobin in 1958, ook wel het *Type I Tobit-model* genoemd) lost het probleem van hoekoplossingen en censurering op door een latente index te combineren met Maximum Likelihood Estimation (MLE (Maximum Likelihood Estimation)).\n\n### Wiskundige Formulering en Two-Part Log-Likelihood\n\nStel dat er een ongeobserveerde latente variabele $y_i^*$ bestaat die een lineaire relatie heeft met de verklarende variabelen:\n$$y_i^* = x_i'\\beta + u_i, \\quad u_i \\sim \\text{i.i.d.} \\ \\mathcal{N}(0, \\sigma^2)$$\nWe observeren de werkelijke variabele $y_i$ via de linkfunctie met linkse censurering op nul:\n$$y_i = \\max(0, y_i^*) = \\begin{cases} y_i^* & \\text{als } y_i^* > 0 \\\\ 0 & \\text{als } y_i^* \\le 0 \\end{cases}$$\nDe aannemelijkheidsfunctie (likelihood) bestaat uit twee afzonderlijke delen (*two-part likelihood*):\n1. **Voor nulwaarnemingen ($y_i = 0$)**: Dit is de discrete kans dat de latente variabele onder de drempelwaarde valt:\n   $$P(y_i = 0 \\mid x_i) = P(y_i^* \\le 0) = P(u_i \\le -x_i'\\beta) = \\Phi\\left(\\frac{-x_i'\\beta}{\\sigma}\\right) = 1 - \\Phi\\left(\\frac{x_i'\\beta}{\\sigma}\\right)$$\n2. **Voor positieve waarnemingen ($y_i > 0$)**: Voor continue waarden boven nul levert de dichtheid van de normale verdeling de waarschijnlijkheidsbijdrage:\n   $$f(y_i \\mid x_i, y_i > 0) = \\frac{1}{\\sigma} \\phi\\left(\\frac{y_i - x_i'\\beta}{\\sigma}\\right) = \\frac{1}{\\sqrt{2\\pi\\sigma^2}} \\exp\\left(-\\frac{(y_i - x_i'\\beta)^2}{2\\sigma^2}\\right)$$\n\nDe totale aannemelijkheidsfunctie over $N$ onafhankelijke observaties luidt:\n$$L(\\beta, \\sigma) = \\prod_{y_i = 0} \\left[1 - \\Phi\\left(\\frac{x_i'\\beta}{\\sigma}\\right)\\right] \\times \\prod_{y_i > 0} \\frac{1}{\\sigma}\\phi\\left(\\frac{y_i - x_i'\\beta}{\\sigma}\\right)$$\nDoor de natuurlijke logaritme te nemen verkrijgen we de **two-part log-likelihoodfunctie**:\n$$\\ln L(\\beta, \\sigma) = \\sum_{y_i = 0} \\ln\\left[1 - \\Phi\\left(\\frac{x_i'\\beta}{\\sigma}\\right)\\right] + \\sum_{y_i > 0} \\left[ -\\frac{1}{2}\\ln(2\\pi) - \\ln(\\sigma) - \\frac{(y_i - x_i'\\beta)^2}{2\\sigma^2} \\right]$$\nIn Stata schatten we dit model met het commando:\n```stata\ntobit hours educ exper age kidsl6 kids618, ll(0)\n```\nDe optie `ll(0)` specificeert linkse censurering (*lower limit*) op 0.\n\n#### Goodness-of-Fit in het Tobit-Model\nOmdat Tobit geschat wordt via Maximum Likelihood, rapporteert Stata standaard de Likelihood Ratio (LR (Likelihood Ratio)) chi2-toets op gezamenlijke verklaringskracht en de Pseudo-$R^2$ (McFadden, 1974):\n$$\\text{Pseudo-}R^2 = 1 - \\frac{\\ln L_{\\text{full}}}{\\ln L_{\\text{null}}}$$\nEen alternatieve, intuïtieve maat voor de modelpassing is het **gekwadrateerde correlatiecoëfficiënt** tussen de geobserveerde $y_i$ en de voorspelde verwachtingswaarde $\\hat{y}_i = E(y_i \\mid x_i)$:\n$$r^2(y, \\hat{y}) = \\left[\\text{corr}(y_i, \\hat{y}_i)\\right]^2$$\nIn `mroz.dta` bedraagt dit correlatiekwadraat **0.274** voor Tobit tegenover **0.266** voor OLS. Het Tobit-model biedt dus een superieure passing op de data!\n\n---\n\n### De Grote Examenval: Wat Betekent de Tobit-Coëfficiënt $\\beta$?\n\nIn de Stata-outputtabel rapporteert `tobit` de vector geschatte coëfficiënten $\\hat{\\beta}$ en de residuele variantie `var(e.hours)` ($=\\sigma^2$).\n\n> [!WARNING]\n> **De klassieke valkuil op het UAntwerpen examen**:\n> De gerapporteerde coëfficiënt $\\beta_k$ in de regressietabel is het marginale effect op de **latente variabele** $y^*$, en **NIET** op de waargenomen gewerkte uren $y$!\n> - $\\beta_{\\text{educ}} = 72.07$ betekent: Een extra jaar opleiding verhoogt de *latente werklust* of *arbeidsbereidheid* met 72 uur per jaar.\n> - Het effect op de *werkelijk waargenomen uren* is veel kleiner, omdat voor 43% van de vrouwen de werklust onder nul blijft en zij op 0 uren blijven steken!\n\n---\n\n### De Drie Verwachte Waarden en Marginale Effecten\n\nDefinieer de genormaliseerde latente index $z_i = x_i'\\beta$, de drempelwaarde $c^* = \\frac{z_i}{\\sigma} = \\frac{x_i'\\beta}{\\sigma}$, en de Inverse Mills Ratio:\n$$\\lambda(c^*) = \\frac{\\phi(c^*)}{\\Phi(c^*)}$$\nWe kunnen vier afzonderlijke verwachtingswaarden en hun corresponderende marginale effecten onderscheiden:\n\n```\n                      ┌────────────────────────────────────────────────────────┐\n                      │                 Tobit Marginale Effecten               │\n                      └───────────────────────────┬────────────────────────────┘\n                                                  │\n            ┌─────────────────────────────────────┼────────────────────────────────────┐\n            ▼                                     ▼                                    ▼\n┌───────────────────────┐             ┌───────────────────────┐            ┌───────────────────────┐\n│  1. Latente Index y*  │             │ 2. Getrunceerd (y>0)  │            │ 3. Ongeconditioneerd  │\n│  ∂E(y*|x)/∂x_k = β_k  │             │   E(y|x, y>0)         │            │      E(y|x)           │\n│                       │             │  β_k * [1 - λ(c*+λ)]  │            │    β_k * Φ(c*)        │\n│ margins, dydx(*)      │             │ margins predict(e)    │            │ margins predict(ystar)│\n└───────────────────────┘             └───────────────────────┘            └───────────────────────┘\n```\n\n#### 1. Het effect op de latente index: $E(y^* \\mid x) = x'\\beta$\n- **Formule**: $\\frac{\\partial E(y^* \\mid x)}{\\partial x_k} = \\beta_k$\n- **Stata**: `margins, dydx(*)` (of direct aflezen uit de `tobit`-tabel)\n- **Computerklas 6 (`mroz.dta`)**: Voor opleiding is dit **72.07** uur.\n\n#### 2. Het effect op de getrunceerde uitkomst (voor werkenden): $E(y \\mid x, y > 0)$\n- **Verwachte waarde**: $E(y \\mid x, y > 0) = x'\\beta + \\sigma \\lambda(c^*)$\n- **Marginaal effect (intensieve marge)**: $\\frac{\\partial E(y \\mid x, y > 0)}{\\partial x_k} = \\beta_k \\left[1 - \\lambda(c^*)(c^* + \\lambda(c^*))\\right]$\n- **Stata**: `margins, dydx(educ) atmeans predict(e(0,.))`\n- **Computerklas 6**: Dit bedraagt **30.70** uur.\n- **Economische interpretatie**: Voor een vrouw die al een baan heeft ($hours > 0$), leidt één extra jaar opleiding gemiddeld tot **30.7 gewerkte uren per jaar meer**. Omdat de factor tussen rechte haken strikt tussen 0 en 1 ligt, is dit effect altijd kleiner dan $\\beta_k$.\n\n#### 3. Het effect op de ongeconditioneerde waargenomen uitkomst: $E(y \\mid x)$\n- **Verwachte waarde**: $E(y \\mid x) = \\Phi(c^*) \\cdot E(y \\mid x, y > 0) = \\Phi(c^*) \\left[x'\\beta + \\sigma \\lambda(c^*)\\right]$\n- **Marginaal effect (totale effect)**: $\\frac{\\partial E(y \\mid x)}{\\partial x_k} = \\beta_k \\cdot \\Phi(c^*)$\n- **Stata**: `margins, dydx(educ) atmeans predict(ystar(0,.))`\n- **Computerklas 6**: Dit bedraagt **43.66** uur (merk op dat $72.07 \\times 0.6058 \\approx 43.66$).\n- **Economische interpretatie**: Over de gehele vrouwelijke bevolking (inclusief niet-werkenden) verhoogt één extra schooljaar de verwachte arbeidsinzet gemiddeld met **43.7 uur per jaar**.\n\n#### 4. Het effect op de participatiekans: $P(y > 0 \\mid x)$\n- **Kans**: $P(y > 0 \\mid x) = \\Phi(c^*)$\n- **Marginaal effect**: $\\frac{\\partial P(y > 0 \\mid x)}{\\partial x_k} = \\frac{\\phi(c^*) \\beta_k}{\\sigma}$\n- **Stata**: `margins, dydx(educ) atmeans predict(pr(0,.))`\n- **Computerklas 6**: Dit bedraagt **+0.0245** (+2.45 procentpunt per extra jaar onderwijs).\n\n---\n\n### De McDonald-Moffitt Decompositie (1980)\n\nIn een baanbrekend artikel toonden McDonald en Moffitt (1980) aan dat het totale marginale effect op waargenomen uren exact ontleed kan worden in twee economische mechanismen via de productregel van differentiatie:\n$$E(y \\mid x) = P(y > 0 \\mid x) \\cdot E(y \\mid x, y > 0)$$\nDifferentiëren naar $x_k$ levert:\n$$\\frac{\\partial E(y \\mid x)}{\\partial x_k} = \\underbrace{\\Phi(c^*) \\cdot \\frac{\\partial E(y \\mid x, y>0)}{\\partial x_k}}_{\\text{Intensieve marge: reeds werkenden werken meer}} + \\underbrace{E(y \\mid x, y>0) \\cdot \\frac{\\partial P(y>0 \\mid x)}{\\partial x_k}}_{\\text{Extensieve marge: niet-werkenden treden toe}}$$\n\n> [!rule]\n> **De twee marges van de McDonald-Moffitt decompositie**:\n> 1. **Intensieve marge**: Reeds actieve individuen ($y > 0$) passen hun intensiteit aan (bv. werknemers maken meer overuren of donateurs verhogen hun gift).\n> 2. **Extensieve marge**: Inactieve individuen ($y = 0$) passeren de drempel en treden toe tot de markt (bv. niet-werkende vrouwen vinden een baan of niet-donateurs doen een eerste gift).\n\n---\n\n### De Drie Evaluatiemethoden voor Marginale Effecten (Review Questions #5)\n\nOmdat de marginale effecten afhangen van de waarden van $x_i$, moeten we kiezen waar we ze evalueren:\n1. **Average Marginal Effect (AME (Average Marginal Effect))**:\n   Bereken het marginale effect voor ieder individu $i$ op basis van haar specifieke $x_i$, en neem het rekenkundig gemiddelde over de steekproef:\n   $$\\text{AME} = \\frac{1}{N}\\sum_{i=1}^N \\Phi\\left(\\frac{x_i'\\hat{\\beta}}{\\hat{\\sigma}}\\right) \\hat{\\beta}_k$$\n   In Stata: `margins, dydx(*) predict(...)`. Dit is de aanbevolen standaard in moderne econometrie.\n2. **Marginal Effect at the Mean (MEM (Marginal Effect at the Mean))**:\n   Bereken eerst het gemiddelde van alle verklarende variabelen over de steekproef ($\\bar{x}$), en evalueer de formule in dat éne 'gemiddelde individu':\n   $$\\text{MEM} = \\Phi\\left(\\frac{\\bar{x}'\\hat{\\beta}}{\\hat{\\sigma}}\\right) \\hat{\\beta}_k$$\n   In Stata: `margins, dydx(*) atmeans predict(...)`.\n3. **Marginal Effect at Representative values (MER (Marginal Effect at Representative values))**:\n   Evalueer het effect voor specifieke, beleidsrelevante subpopulaties (bv. laagopgeleide moeders met jonge kinderen):\n   In Stata: `margins, dydx(*) at(educ=10 kidsl6=2) predict(...)`.\n\n---\n\n### Empirische Toepassingen uit Computerklas 6\n\n#### Case 1: Arbeidsaanbod in `mroz.dta`\nIn Computerklas 6 (Oefening 1.c-1.d) controleren we de Stata `margins`-output met handmatige berekeningen via scalars:\n```stata\nscalar sigma = sqrt(1282813)\nscalar z = 1463.737 + 72.073*12.287 + 79.707*10.631 - 62.095*42.538 - 925.535*0.238 - 23.079*1.353\nscalar cstar = z / sigma\nscalar lambda_cstar = normalden(cstar) / normal(cstar)\nscalar b_educ = 72.07354\n\n* Marginaal effect op positieve gewerkte uren (intensieve marge)\ndisplay b_educ * (1 - lambda_cstar * (cstar + lambda_cstar))\n* Geeft: 30.698 (exact gelijk aan margins predict(e(0,.)))\n\n* Marginaal effect op ongeconditioneerde uren (totale effect)\ndisplay b_educ * normal(cstar)\n* Geeft: 43.657 (exact gelijk aan margins predict(ystar(0,.)))\n\n* Marginaal effect op de participatiekans\ndisplay normalden(cstar) * b_educ / sigma\n* Geeft: .0245 (exact gelijk aan margins predict(pr(0,.)))\n```\nMet het community-commando `dtobit2` verkrijgen we de decompositie bij het geobserveerde censureringspercentage ($428 / 753 = 56.8\\%$):\n```stata\ndtobit2 hours educ exper age kidsl6 kids618, ll(0)\ndisplay 72.07354 * (428 / 753)\n* Geeft: 40.966\n```\n\n#### Case 2: Buitenechtelijke Relaties in `affairs.dta`\nIn Oefening 3 analyseren we de dataset van Fair (1978) over het aantal buitenechtelijke affaires (`naffairs`, $N = 601$). Voor $75\\%$ van de steekproef (en $77.1\\%$ van de vrouwen) is het aantal affaires gelijk aan nul (hoekoplossing).\n\nWe vergelijken OLS en Tobit voor de variabele huwelijksduur (`yrsmarr`, $SD = 5.57$ jaar):\n- OLS helling: $\\hat{\\beta}_{OLS} = 0.1695$. Een toename van 1 standaarddeviatie in huwelijksduur verhoogt het aantal affaires met $0.1695 \\times 5.57 = 0.94$.\n- Tobit helling: $\\hat{\\beta}_{Tobit} = 0.5332$. Een toename van 1 standaarddeviatie verhoogt de *latente index* met $0.5332 \\times 5.57 = 2.97$ affaires!\n- Via scalaire berekening in Oefening 3.f vinden we voor een gemiddeld individu:\n  * Latente effect: $0.5332$\n  * Getrunceerd effect op actieven: $0.5332 \\times [1 - \\lambda(c^* + \\lambda)] = 0.1245$\n  * Ongeconditioneerd effect: $0.5332 \\times \\Phi(c^*) = 0.1238$\n  * Kans op ontrouw ($P(affairs > 0)$): $\\Phi(c^*) = 23.2\\%$\n  * Toename in kans op ontrouw per huwelijksjaar: $+1.97$ procentpunt.",
+      "checks": [
+        {
+          "id": "chk-c03",
+          "type": "mcq",
+          "skill": "tobit-marginal-effects",
+          "prompt": "Een onderzoeker schat `tobit hours educ exper, ll(0)` en vindt voor educ een coëfficiënt van 72.07. Wat betekent dit getal?",
+          "options": [
+            "Eén extra jaar opleiding verhoogt de ongeobserveerde latente arbeidsbereidheid (y*) met 72.07 uur per jaar; het effect op waargenomen uren is kleiner.",
+            "Eén extra jaar opleiding verhoogt de feitelijk gewerkte uren over de gehele populatie met exact 72.07 uur per jaar.",
+            "Vrouwen die werken werken exact 72.07 uur meer dan vrouwen die niet werken.",
+            "De kans dat een vrouw toetreedt tot de arbeidsmarkt stijgt met 72.07 procentpunt per jaar opleiding."
+          ],
+          "answer": 0,
+          "explain": "De Tobit-coëfficiënt beta_k meet de partiële afgeleide op de latente index y*. Om het effect op waargenomen uren te kennen moet beta vermenigvuldigd worden met de kans op een positieve uitkomst Phi(c*).",
+          "level": 1
+        },
+        {
+          "id": "chk-c04",
+          "type": "mcq",
+          "skill": "tobit-marginal-effects",
+          "prompt": "Welk Stata-commando berekent na `tobit` het marginale effect van opleiding op het aantal gewerkte uren voor uitsluitend werkende vrouwen ($E(hours \\mid hours > 0)$)?",
+          "options": [
+            "`margins, dydx(educ) atmeans predict(e(0,.))`",
+            "`margins, dydx(educ) atmeans predict(ystar(0,.))`",
+            "`margins, dydx(educ) atmeans predict(pr(0,.))`",
+            "`margins, dydx(educ) atmeans predict(xb)`"
+          ],
+          "answer": 0,
+          "explain": "`predict(e(0,.))` berekent de conditionele verwachting E(y | y > 0). `predict(ystar(0,.))` berekent de ongeconditioneerde verwachting E(y), en `predict(pr(0,.))` de kans Pr(y > 0).",
+          "level": 1
+        }
+      ]
+    },
+    {
+      "id": "sec-sample-selection-bias",
+      "title": "Niet-willekeurige Selectie en het Heckman Selectiemodel",
+      "md": "In veel sociaaleconomische vraagstukken is de afhankelijke variabele niet gecensureerd op een vaste drempel zoals nul, maar ontbreekt ze simpelweg voor een deel van de populatie. Het klassieke voorbeeld is de loonvergelijking: we kunnen het marktuurloon van een individu alleen observeren als die persoon besluit toe te treden tot de arbeidsmarkt en een baan heeft ($hours > 0$).\n\nAls we de loonvergelijking enkel schatten op de groep werkenden met Ordinary Least Squares (OLS), lopen we tegen **niet-willekeurige steekproefselectie** (*sample selection bias*) aan. Dit probleem werd fundamenteel geformaliseerd door James Heckman (1979; bekroond met de Nobelprijs in 2000).\n\n### Economische Grondslag: Reserveringsloon versus Marktaanbodloon\n\nWaarom ontbreken loongegevens voor niet-werkenden niet toevallig?\nHet neoklassieke arbeidsaanbodmodel postuleert twee onderliggende economische loonconcepten voor elk individu $i$:\n1. **Het Marktaanbodloon ($w_i^*$)**:\n   Het loon dat werkgevers op de arbeidsmarkt bereid zijn te betalen voor de productieve eigenschappen en het menselijk kapitaal van het individu:\n   $$\\ln(w_i^*) = x_i'\\beta + e_i$$\n   waarbij $x_i$ variabelen bevat zoals opleiding, werkervaring en demografie, en $e_i$ niet-geobserveerde productiviteitskenmerken (aangeboren talent, werklust, intelligentie) representeert.\n2. **Het Reserveringsloon ($w_i^r$)**:\n   Het minimale uurloon waarvoor het individu bereid is haar vrije tijd of huishoudelijke taken op te geven om te gaan werken:\n   $$\\ln(w_i^r) = z_{r,i}'\\gamma_r + \\eta_i$$\n   waarbij $z_{r,i}$ variabelen omvat die de opportuniteitskost van arbeid bepalen (zoals het inkomen van de echtgenoot, de aanwezigheid van jonge kinderen en vermogen), en $\\eta_i$ de ongeobserveerde voorkeur voor vrije tijd en gezinszorg voorstelt.\n\n#### De Participatiebeslissing en Incidental Truncation\nEen rationeel individu kiest ervoor om toe te treden tot de arbeidsmarkt ($h_i = 1$) als en slechts als het marktaanbodloon haar persoonlijke reserveringsloon overstijgt:\n$$h_i = 1 \\iff \\ln(w_i^*) > \\ln(w_i^r) \\iff x_i'\\beta - z_{r,i}'\\gamma_r + (e_i - \\eta_i) > 0$$\nDit leidt rechtstreeks tot de gereduceerde-vorm selectievergelijking:\n$$h_i^* = z_i'\\gamma + u_i, \\quad h_i = \\mathbf{1}(h_i^* > 0)$$\nwaarbij $z_i$ alle variabelen uit $x_i$ en $z_{r,i}$ bevat, en $u_i = e_i - \\eta_i$.\n\n> [!rule]\n> **Definitie: Incidental Truncation (Toevallige Troncering)**:\n> We observeren het marktaanbodloon $y_i = \\ln(w_i^*)$ **enkel** wanneer $h_i = 1$. Voor niet-werkenden ($h_i = 0$) is het potentiële loon onbekend.\n> Dit heet *incidental truncation*: data ontbreken niet door toevallige administratieve ruis, maar als direct gevolg van een doelbewuste economische beslissing van het individu zélf!\n\n---\n\n### Bivariate Normale Verdeling en Formele Wiskundige Afleiding\n\nHet formele econometrische selectiemodel bestaat uit twee vergelijkingen:\n1. **Uitkomstvergelijking van primair belang** (bv. loon):\n   $$y_i^* = x_i'\\beta + e_i, \\quad E(e_i \\mid x_i) = 0$$\n2. **Selectievergelijking** (bv. arbeidsmarktparticipatie):\n   $$h_i^* = z_i'\\gamma + u_i, \\quad h_i = \\mathbf{1}(h_i^* > 0)$$\n\nDe observatieregel luidt:\n$$y_i = \\begin{cases} y_i^* & \\text{als } h_i = 1 \\ (h_i^* > 0) \\\\ \\text{niet geobserveerd (missing)} & \\text{als } h_i = 0 \\ (h_i^* \\le 0) \\end{cases}$$\n\nWe veronderstellen dat de ongeobserveerde fouttermen gezamenlijk **bivariaat normaal verdeeld** zijn met correlatie $\\rho$:\n$$\\begin{pmatrix} e_i \\\\ u_i \\end{pmatrix} \\sim \\mathcal{N}\\left(\\begin{pmatrix} 0 \\\\ 0 \\end{pmatrix}, \\begin{pmatrix} \\sigma_e^2 & \\sigma_{eu} \\\\ \\sigma_{eu} & 1 \\end{pmatrix}\\right), \\quad \\text{waarbij } \\rho = \\text{corr}(e_i, u_i) = \\frac{\\sigma_{eu}}{\\sigma_e}$$\n(Hierbij is $\\sigma_u^2 = 1$ genormaliseerd ter wille van de Probit-identificatie).\n\n#### Wiskundige Afleiding van de Conditionele Verwachting\nWat gebeurt er als we de conditionele verwachting van het loon nemen voor de groep werkenden ($h_i = 1 \\iff u_i > -z_i'\\gamma$)?\n$$E(y_i \\mid x_i, z_i, h_i = 1) = x_i'\\beta + E(e_i \\mid h_i = 1) = x_i'\\beta + E(e_i \\mid u_i > -z_i'\\gamma)$$\nVoor twee bivariate normale variabelen geldt de lineaire projectie:\n$$e_i = \\frac{\\sigma_{eu}}{\\sigma_u^2} u_i + \\nu_i = \\rho \\sigma_e u_i + \\nu_i, \\quad \\text{waarbij } \\nu_i \\perp u_i, \\ E(\\nu_i) = 0$$\nHieruit volgt:\n$$E(e_i \\mid u_i > -z_i'\\gamma) = \\rho \\sigma_e E(u_i \\mid u_i > -z_i'\\gamma)$$\nMet behulp van de eigenschap van de getrunceerde standaardnormale verdeling:\n$$E(u_i \\mid u_i > -z_i'\\gamma) = \\frac{\\phi(-z_i'\\gamma)}{1 - \\Phi(-z_i'\\gamma)} = \\frac{\\phi(z_i'\\gamma)}{\\Phi(z_i'\\gamma)} \\equiv \\lambda(z_i'\\gamma)$$\nSubstitutie geeft de beroemde **Heckman-vergelijking**:\n$$E(y_i \\mid x_i, z_i, h_i = 1) = x_i'\\beta + \\rho \\sigma_e \\lambda(z_i'\\gamma) = x_i'\\beta + \\beta_\\lambda \\lambda(z_i'\\gamma)$$\nwaarbij:\n- $\\lambda(z_i'\\gamma) = \\frac{\\phi(z_i'\\gamma)}{\\Phi(z_i'\\gamma)}$ de **Inverse Mills Ratio (IMR)** is.\n- $\\beta_\\lambda = \\rho \\sigma_e = \\sigma_{eu}$ de regressiecoëfficiënt van de Inverse Mills Ratio is.\n\n---\n\n### Bewijs: Selectiebias als Omitted Variable Bias\n\nSchrijven we het regressiemodel voor de waargenomen geselecteerde steekproef:\n$$y_i = x_i'\\beta + \\beta_\\lambda \\lambda(z_i'\\gamma) + v_i, \\quad \\text{met } E(v_i \\mid x_i, z_i, h_i=1) = 0$$\nAls een onderzoeker nu naïef OLS uitvoert op uitsluitend de werkenden (`reg lwage educ exper if hours > 0`), laat hij in feite de term $\\beta_\\lambda \\lambda(z_i'\\gamma)$ **weg** uit de vergelijking!\n\n> [!IMPORTANT]\n> **De kernconclusie van Heckman**:\n> Sample selection bias is identiek aan een **weggelaten-variabelefout (omitted variable bias)**!\n> - Omdat de verklarende variabelen in $x_i$ (zoals opleiding en ervaring) tevens deel uitmaken van de selectievector $z_i$, is $x_i$ gecorreleerd met $\\lambda(z_i'\\gamma)$.\n> - Zolang $\\rho \\ne 0$ (en dus $\\beta_\\lambda \\ne 0$), leidt het weglaten van $\\lambda$ tot correlatie tussen de regressoren en de samengestelde storingsterm in de OLS-regressie ($E(e_i \\mid x_i, h_i=1) \\ne 0$). Hierdoor is OLS vertekend en inconsistent!\n> - **Wanneer is OLS wél consistent?** Als $\\rho = 0 \\iff \\sigma_{eu} = 0$, dan is $\\beta_\\lambda = 0$. In dat geval verdwijnt de selectiecorrectieterm en is OLS op de werkende groep zuiver, consistent en zelfs efficiënter dan Heckman.\n\n---\n\n### Waarom Verwachten We Correlatie Tussen de Fouttermen ($\\rho \\ne 0$)?\n\nIn de economische praktijk is $\\rho$ zelden gelijk aan nul:\n1. **Positieve selectie ($\\rho > 0$)**:\n   Ongeobserveerde capaciteiten zoals doorzettingsvermogen, intelligentie of netwerkvaardigheden verhogen zowel de kans dat iemand werkt ($u_i > 0$) als het potentiële marktuurloon ($e_i > 0$). De werkende groep is 'positief geselecteerd': zij hebben gemiddeld gunstigere ongeobserveerde kwaliteiten dan de niet-werkenden.\n2. **Negatieve selectie ($\\rho < 0$)**:\n   Treedt op bij sterke reserveringslooneffecten of overlevingsarbeid. Bijvoorbeeld: vrouwen met een lage ongeobserveerde looncomponent ($e_i < 0$) zijn desondanks genoodzaakt te werken ($u_i > 0$) vanwege financiële precariteit in het gezin (zeer laag reserveringsloon). Omgekeerd treden vrouwen met welvarende partners enkel toe als het loonbod uitzonderlijk hoog is. In `mroz.dta` vinden we $\\rho = -0.929$, wat wijst op een selectiegedreven oververtegenwoordiging van financieel precaire vrouwen onder de werkenden.",
+      "checks": [
+        {
+          "id": "chk-c05",
+          "type": "mcq",
+          "skill": "sample-selection-bias",
+          "prompt": "Onder welke voorwaarde levert een gewone OLS-regressie op de werkende populatie consistente schattingen van de loonvergelijking op?",
+          "options": [
+            "Wanneer de correlatie tussen de selectiefoutterm en de uitkomstfoutterm nul is (rho = 0).",
+            "Wanneer het aantal werkenden groter is dan het aantal niet-werkenden in de steekproef.",
+            "Wanneer de afhankelijke variabele in logaritmen is getransformeerd.",
+            "Wanneer er geen exclusievariabelen in het model zijn opgenomen."
+          ],
+          "answer": 0,
+          "explain": "Als rho = 0 (en dus beta_lambda = rho * sigma_e = 0), valt de Inverse Mills Ratio weg uit de vergelijking. OLS op de werkenden heeft dan geen last van weggelaten variabelen en is zuiver en consistent.",
+          "level": 1
+        },
+        {
+          "id": "chk-c06",
+          "type": "mcq",
+          "skill": "sample-selection-bias",
+          "prompt": "Wat stelt de Inverse Mills Ratio (IMR, lambda) intuïtief voor in het Heckman-model?",
+          "options": [
+            "De verhouding van de normale kansdichtheid tot de cumulatieve verdelingsfunctie, phi(z'gamma)/Phi(z'gamma), die de selectiebias corrigeert als een weggelaten variabele.",
+            "De inverse van de variantie-covariantiematrix van de verklarende variabelen, berekend om multicollineariteit te corrigeren.",
+            "De verhouding tussen de residuele varianties van OLS en 2SLS.",
+            "De puntschatting van het marktaanbodloon voor een individu met nul ervaring."
+          ],
+          "answer": 0,
+          "explain": "De Inverse Mills Ratio lambda(c) is gedefinieerd als phi(c)/Phi(c). Het representeert de verwachte waarde van de gestandaardiseerde Probit-foutterm conditioneel op het feit dat de persoon werkt (u > -z'gamma).",
+          "level": 1
+        }
+      ]
+    },
+    {
+      "id": "sec-heckman-estimation",
+      "title": "Heckman Schatting in Stata, Toetsing en Exclusierestricties",
+      "md": "Om te controleren voor selectiebias introduceerde James Heckman de elegante **tweestapsschatting** (*Heckit*), naast de Full Information Maximum Likelihood (`mle`).\n\n### De Twee Stappen van de Heckit-Procedure\n\nIn Computerklas 6 voeren we de tweestapsprocedure zowel handmatig als met het ingebouwde Stata-commando uit:\n\n#### Stap 1: De Selectievergelijking via Probit\nSchat op de **volledige steekproef** (werkenden én niet-werkenden, $N=753$ in `mroz.dta`) een Probit-model voor participatie ($lfp$):\n```stata\nprobit lfp age educ kids mtr\npredict w, xb\ngen imr = normalden(w) / normal(w)\n```\n- `w` is de geschatte index $\\hat{w}_i = z_i'\\hat{\\gamma}$.\n- `imr` berekent $\\hat{\\lambda}_i = \\frac{\\phi(z_i'\\hat{\\gamma})}{\\Phi(z_i'\\hat{\\gamma})}$ met de Stata-functies `normalden()` (PDF) en `normal()` (CDF).\n\n#### Stap 2: OLS met de geschatte Inverse Mills Ratio\nSchat met OLS de loonvergelijking op de **geselecteerde steekproef** ($h_i = 1$), met de berekende `imr` als extra verklarende variabele:\n```stata\nreg lwage educ exper imr\n```\nHet Stata-resultaat:\n```stata\n       lwage | Coefficient  Std. err.      t    P>|t|\n-------------+-----------------------------------------\n        educ |   .0584579   .0238495     2.45   0.015\n       exper |   .0163202   .0039984     4.08   0.000\n         imr |  -.8664386   .3269855    -2.65   0.008\n       _cons |   .8105417   .4944723     1.64   0.102\n```\n\n---\n\n### Waarom Zijn Handmatige Standaardfouten Ongeldig in Stap 2?\n\nNet zoals bij een handmatige Two-Stage Least Squares (2SLS (Two-Stage Least Squares)) zijn de gerapporteerde standaardfouten van OLS in stap 2 **onjuist** (meestal substantieel te klein).\n\n> [!CAUTION]\n> **De Twee Redenen Waarom Handmatige OLS Standaardfouten Falen**:\n> 1. **Generated Regressor Problem**: $\\hat{\\lambda}_i$ is geen echte waargenomen variabele, maar een schatting gebaseerd op $\\hat{\\gamma}$ uit stap 1. Handmatige OLS behandelt $\\hat{\\lambda}_i$ alsof het een vaste, foutloze variabele is en negeert de steekproefvariantie van $\\hat{\\gamma}$.\n> 2. **Heteroskedasticiteit**: De storingsterm in de tweede stap, $v_i = e_i - E(e_i \\mid h_i=1)$, is inherent heteroskedastisch:\n>    $$\\text{Var}(v_i \\mid x_i, z_i, h_i = 1) = \\sigma_e^2 \\left[1 - \\rho^2 \\delta(z_i'\\gamma)\\right], \\quad \\text{waarbij } \\delta(c) = \\lambda(c)\\left[c + \\lambda(c)\\right]$$\n>    Omdat $\\delta(z_i'\\gamma)$ varieert per individu, is de fouttermvariantie niet constant!\n>\n> Voer daarom op het examen **altijd** het officiële Stata-commando uit:\n> ```stata\n> heckman lwage educ exper, select(lfp = age educ kids mtr) twostep\n> ```\n> Stata berekent dan automatisch de exacte Heckman-asymptotische covariantiematrix!\n\n---\n\n### De Officiële Stata Output en Toetsing op Selectiebias\n\n```stata\n. heckman lwage educ exper, select(lfp = age educ kids mtr) twostep\nHeckman selection model -- two-step estimates   Number of obs     =        753\n(regression model with sample selection)       Selected          =        428\n                                               Nonselected       =        325\n                                               Wald chi2(2)      =      19.53\n                                               Prob > chi2       =     0.0001\n------------------------------------------------------------------------------\n             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]\n-------------+----------------------------------------------------------------\nlwage        |\n        educ |   .0584579   .0296354     1.97   0.049     .0003737    .1165422\n       exper |   .0163202   .0042022     3.88   0.000     .0080842    .0245563\n       _cons |   .8105418   .6107985     1.33   0.185    -.3866012    2.007685\n-------------+----------------------------------------------------------------\nlfp          |\n         age |  -.0206155   .0070447    -2.93   0.003    -.0344229   -.0068082\n        educ |   .0837753    .023205     3.61   0.000     .0382943    .1292563\n        kids |  -.3138848   .1237108    -2.54   0.011    -.5563535   -.0714162\n         mtr |  -1.393853   .6165751    -2.26   0.024    -2.602318   -.1853878\n       _cons |   1.192296   .7205439     1.65   0.098    -.2199443    2.604536\n-------------+----------------------------------------------------------------\n/mills       |\n      lambda |  -.8664387   .3992843    -2.17   0.030    -1.649022   -.0838559\n-------------+----------------------------------------------------------------\n         rho |   -0.92910\n       sigma |   .93255927\n------------------------------------------------------------------------------\n```\n\nKijk naar de cruciale componenten onderaan:\n1. **Vergelijking van standaardfouten**: De gecorrigeerde standaardfout voor `educ` is **0.0296** (in plaats van **0.0238** bij handmatige OLS) en voor `lambda` **0.3993** (in plaats van **0.3270**).\n2. **Toets op selectiebias**:\n   In het paneel `/mills` toont Stata `lambda` met een coëfficiënt van **-0.866**, gecorrigeerde standaardfout **0.399**, $z = -2.17$ en $p = 0.030$.\n   - Aangezien $\\lambda = \\rho \\cdot \\sigma_e$ en $\\sigma_e > 0$, toetst de $z$-toets op $\\lambda = 0$ direct de hypothese $H_0: \\rho = 0$.\n   - Omdat $p = 0.030 < 0.05$, **verwerpen we de nulhypothese** op het 5%-niveau. Er is statistisch significant bewijs voor selectiebias! OLS is vertekend; Heckman is methodologisch vereist.\n\n#### Full Information Maximum Likelihood (FIML) versus Two-Step\nNaast de tweestapsprocedure kan het model ook geschat worden via FIML:\n```stata\nheckman lwage educ exper, select(lfp = age educ kids mtr)\n```\nFIML schat alle parameters simultaan. Onder zuivere bivariate normaliteit is FIML asymptotisch efficiënter dan Two-Step. Echter, FIML is uitermate gevoelig voor misspecificatie: als de fouttermen niet zuiver bivariaat normaal zijn, zijn álle schatters inconsistent. Two-Step is robuuster en numeriek stabieler.\n\n---\n\n### De Cruciale Exclusierestrictie (Identification Restriction)\n\nWaarom mogen we in de selectievergelijking niet precies dezelfde variabelen opnemen als in de uitkomstvergelijking ($z = x$)?\n\n> [!IMPORTANT]\n> **De Exclusierestrictie**:\n> De vector $z$ MOET minstens één variabele bevatten die **wél de selectie** (participatie) beïnvloedt, maar **géén direct effect** heeft op de uitkomst (loon).\n> - *Voorbeelden*: `kids` (aanwezigheid jonge kinderen), `otherinc` (inkomen echtgenoot / ander gezinsinkomen in `particip.dta`), en `mtr` (marginaal belastingtarief). Deze variabelen bepalen het reserveringsloon, maar niet de marktproductiviteit.\n\n#### Wat Gebeurt er Zonder Exclusierestrictie ($z = x$)?\nAls $z = x$, is het model formeel enkel wiskundig geïdentificeerd door de niet-lineariteit van de Inverse Mills Ratio functie $\\lambda(x'\\gamma)$. Echter, over een breed economisch bereik is $\\lambda(c)$ **nagenoeg perfect lineair**!\n\nIn Computerklas 6 (Oefening 2.d op `particip.dta`) onderzoeken we de relatie tussen $\\hat{\\lambda}$ (`mills`) en de lineaire index $\\hat{z}'\\gamma$ (`gammahat`):\n```stata\n. corr mills gammahat\n             |    mills gammahat\n-------------+------------------\n       mills |   1.0000\n    gammahat |  -0.9944   1.0000\n```\nDe correlatie bedraagt maar liefst **-0.9944**!\nVoeren we vervolgens een regressie uit van `mills` op de $x$-variabelen (`reg mills c.age##c.age c.edyrs##c.edyrs`), dan vinden we een $R^2$ van **0.6347** en $t$-statistieken boven 120!\n\nZonder exclusievariabele is $\\hat{\\lambda}_i$ een bijna perfecte lineaire combinatie van de regressoren $x_i$ in stap 2. Dit leidt tot **catastrofale multicollineariteit**: de variantie-inflatiefactoren (VIF (Variance Inflation Factor)) exploderen, de standaardfouten zwellen gigantisch op en de coëfficiënten worden volstrekt onbetrouwbaar.\n\n---\n\n### Volledige Stata Walkthrough: `particip.dta` (Zuid-Afrikaanse Lonen)\n\nIn Oefening 2 analyseren we Zuid-Afrikaanse verdiensten (`logwphy`, $N = 9.930$).\nVoor $7.175$ respondenten ($72.3\\%$) ontbreekt het loon omdat zij niet werken:\n```stata\nuse particip.dta, clear\nmdesc logwphy\n* Missing: 7,175 / Total: 9,930 (72.26%)\n\n* Heckman tweestapsschatting met exclusievariabelen otherinc en married:\nheckman logwphy c.age##c.age c.edyrs##c.edyrs, ///\n    select(c.age##c.age c.edyrs##c.edyrs otherinc married) twostep\n```\nOnder `/mills` vinden we:\n- $\\lambda = -0.2693$ met $SE = 0.0652$, $z = -4.13$ en $p < 0.001$.\n- $\\rho = -0.3201$, $\\sigma = 0.8411$.\nSelectiebias is overtuigend significant aanwezig ($p < 0.001$). Gewone OLS onderschatte het rendement op opleiding en leeftijd door het negeren van de selectiecorrectie.",
+      "checks": [
+        {
+          "id": "chk-c07",
+          "type": "mcq",
+          "skill": "heckman-twostep",
+          "prompt": "Waarom mag je de standaardfouten van een handmatige OLS-regressie met de berekende `imr` (`reg lwage educ exper imr`) niet rapporteren op het examen?",
+          "options": [
+            "Omdat imr een geschatte regressor is (generated regressor) en de storingsterm in stap 2 heteroskedastisch is, waardoor OLS-standaardfouten te klein zijn.",
+            "Omdat handmatige OLS de coëfficiënten van educ en exper verkeerd berekent ten opzichte van heckman.",
+            "Omdat Stata handmatige regressies automatisch blokkeert bij meer dan twee verklarende variabelen.",
+            "Omdat een t-toets in OLS niet gedefinieerd is voor continue afhankelijke variabelen."
+          ],
+          "answer": 0,
+          "explain": "De puntschattingen van handmatige OLS en `heckman, twostep` zijn identiek, maar handmatige OLS negeert de steekproefonzekerheid van gamma uit stap 1 en de inherente heteroskedasticiteit in stap 2. De standaardfouten zijn daardoor onjuist (te klein).",
+          "level": 1
+        },
+        {
+          "id": "chk-c08",
+          "type": "mcq",
+          "skill": "heckman-twostep",
+          "prompt": "Waarom is een **exclusierestrictie** (minstens één variabele in de selectievergelijking die niet in de uitkomstvergelijking staat) praktisch onmisbaar bij het Heckman-model?",
+          "options": [
+            "Omdat de Inverse Mills Ratio nagenoeg perfect lineair gecorreleerd is met de lineaire index (corr = -0.9944), waardoor z = x leidt tot extreme multicollineariteit.",
+            "Omdat het Heckman-model zonder exclusierestrictie wiskundig niet gedefinieerd is en Stata een foutmelding geeft.",
+            "Omdat exclusierestricties ervoor zorgen dat rho altijd exact gelijk wordt aan nul.",
+            "Omdat de F-toets van de eerste stap anders altijd een p-waarde van 1.0 oplevert."
+          ],
+          "answer": 0,
+          "explain": "Over een breed bereik is lambda(z'gamma) vrijwel perfect lineair gecorreleerd met z'gamma (r = -0.9944 in particip.dta). Zonder exclusierestrictie (z = x) ontstaat er zware multicollineariteit tussen lambda en de regressoren x in stap 2, met exploderende standaardfouten tot gevolg.",
+          "level": 1
+        }
+      ]
     }
-   ]
-  }
- ],
- "practice": [
-  {
-   "id": "pra-c01",
-   "type": "mcq",
-   "skill": "censoring-truncation",
-   "prompt": "Een arbeidsmarktonderzoeker beschikt over een steekproef van 1.000 afgestudeerden. Voor iedereen zijn leeftijd, vooropleiding en geslacht geregistreerd. Voor de 300 werklozen staat het brutoloon genoteerd als 0 euro. Om welk type data gaat het hier?",
-   "options": [
-    "Gecensureerde data (censoring): de covariaten x zijn voor iedereen bekend, maar de uitkomst y is linkse-afgetopt op 0.",
-    "Getrunceerde data (truncation): werklozen ontbreken volledig in het databestand.",
-    "Interval-gecensureerde data: we kennen enkel een onder- en bovengrens voor de lonen.",
-    "Attrition bias: respondenten zijn uit een panelonderzoek gestapt."
-   ],
-   "answer": 0,
-   "explain": "Omdat de verklarende variabelen x voor alle 1.000 individuen beschikbaar zijn en de afhankelijke variabele y afgetopt is op een drempelwaarde (0), is er sprake van (linkse) censurering. Bij troncering zouden de 300 werklozen in het geheel niet in het bestand zijn opgenomen.",
-   "level": 1
-  },
-  {
-   "id": "pra-c02",
-   "type": "mcq",
-   "skill": "censoring-truncation",
-   "prompt": "Wat gebeurt er met de geschatte hellingscoëfficiënt als je Ordinary Least Squares (OLS) toepast op data met een aanzienlijke stapeling op nul (hoekoplossing)?",
-   "options": [
-    "De OLS-hellingscoëfficiënt vlakt af naar nul (attenuation bias) en onderschat het werkelijke causale effect.",
-    "De OLS-hellingscoëfficiënt overschat altijd het werkelijke effect met een factor 2.",
-    "De OLS-schatter blijft zuiver en consistent, maar verliest alleen asymptotische efficiëntie.",
-    "De OLS-coëfficiënt verandert van teken vergeleken met de werkelijke populatieparameter."
-   ],
-   "answer": 0,
-   "explain": "De clustering van nullen trekt de lineaire regressielijn omlaag en vlakt de helling af. In `tobit.dta` daalde de werkelijke helling van 1.00 naar 0.516 bij OLS op de gehele steekproef.",
-   "level": 2
-  },
-  {
-   "id": "pra-c03",
-   "type": "mcq",
-   "skill": "censoring-truncation",
-   "prompt": "In een studie naar donaties aan goede doelen doneert 60% van de ondervraagden 0 euro. De onderzoeker besluit alle personen met gift = 0 weg te gooien en OLS te schatten op de overblijvende 40%. Waarom is dit problematisch?",
-   "options": [
-    "Het weggooien van de nullen creëert truncatiebias: de foutterm is niet langer onafhankelijk van inkomen, waardoor OLS inconsistent is.",
-    "De standaardfouten worden te klein doordat het aantal observaties daalt.",
-    "Donaties mogen nooit logaritmisch getransformeerd worden als ze groter zijn dan nul.",
-    "Het weggooien van nullen maakt van de overgebleven donaties automatisch een Poisson-verdeling."
-   ],
-   "answer": 0,
-   "explain": "Conditioneren op gift > 0 impliceert conditioneren op u > -x*beta. De verwachte foutterm E(u|gift > 0, x) hangt dan af van x (inkomen), wat leidt tot een schending van exogeniteit en inconsistente OLS-coëfficiënten.",
-   "level": 1
-  },
-  {
-   "id": "pra-c04",
-   "type": "mcq",
-   "skill": "censoring-truncation",
-   "prompt": "Welke Stata-code plot de gefitte OLS-waarden en de voorspelde Tobit-waarden voor gewerkte uren tegenover opleiding in één grafiek (zoals in Computerklas 6 oefening 1.b)?",
-   "options": [
-    "twoway (line y_ols educ) (line y_tobit educ)",
-    "scatter y_ols y_tobit educ, overlay",
-    "graph twoway tobit ols, by(educ)",
-    "regress hours educ | tobit hours educ, plot"
-   ],
-   "answer": 0,
-   "explain": "In Computerklas 6 genereren we na OLS `predict y_ols` en na Tobit `predict y_tobit, ystar(0,.)`. Vervolgens sorteren we op educ (`sort educ`) en combineren we beide lijnen via `twoway (line y_ols educ) (line y_tobit educ)`.",
-   "level": 2
-  },
-  {
-   "id": "pra-c05",
-   "type": "mcq",
-   "skill": "tobit-marginal-effects",
-   "prompt": "Je schat het model `tobit hours educ exper age kidsl6 kids618, ll(0)` in Stata. De gerapporteerde coëfficiënt voor `kidsl6` is -925.53. Wat is de exacte interpretatie?",
-   "options": [
-    "Het hebben van een extra kind onder 6 jaar verlaagt de latente arbeidsbereidheid y* met 925.53 uur per jaar.",
-    "Elk extra kind onder 6 jaar doet het werkelijk waargenomen aantal gewerkte uren van alle vrouwen met 925.53 uur dalen.",
-    "Vrouwen met jonge kinderen werken per definitie 925.53 uur minder dan vrouwen zonder kinderen.",
-    "De kans op arbeidsparticipatie daalt met exact 92.55 procentpunt."
-   ],
-   "answer": 0,
-   "explain": "In een Tobit-regressietabel is de coëfficiënt beta het marginale effect op de latente index y*. Het effect op de werkelijk geobserveerde gewerkte uren is kleiner en moet berekend worden via `margins, dydx(kidsl6) predict(ystar(0,.))`.",
-   "level": 1
-  },
-  {
-   "id": "pra-c06",
-   "type": "mcq",
-   "skill": "tobit-marginal-effects",
-   "prompt": "Hoe bereken je in Stata het marginale effect van opleiding op de **ongeconditioneerde verwachtingswaarde** van gewerkte uren ($E(hours)$) na een Tobit-regressie?",
-   "options": [
-    "margins, dydx(educ) atmeans predict(ystar(0,.))",
-    "margins, dydx(educ) atmeans predict(e(0,.))",
-    "margins, dydx(educ) atmeans predict(pr(0,.))",
-    "margins, dydx(educ) atmeans predict(xb)"
-   ],
-   "answer": 0,
-   "explain": "De voorspellingsoptie `ystar(0,.)` berekent de verwachtingswaarde van de gecensureerde uitkomst E(y) inclusief de nullen. Het commando `margins, dydx(educ) atmeans predict(ystar(0,.))` levert het bijbehorende marginale effect.",
-   "level": 2
-  },
-  {
-   "id": "pra-c07",
-   "type": "mcq",
-   "skill": "tobit-marginal-effects",
-   "prompt": "Als voor een steekproef geldt dat $P(y > 0 \\mid x) = 0.60$ en de Tobit-coëfficiënt $\\beta_{\\text{educ}} = 70$, wat is dan bij benadering het marginale effect van opleiding op de ongeconditioneerde uitkomst $E(y)$?",
-   "options": [
-    "42 (namelijk 70 vermenigvuldigd met 0.60)",
-    "70 (het effect is identiek aan de Tobit-coëfficiënt)",
-    "116.7 (namelijk 70 gedeeld door 0.60)",
-    "0.60 (de participatiekans domineert het effect volledig)"
-   ],
-   "answer": 0,
-   "explain": "Het marginale effect op de ongeconditioneerde verwachtingswaarde E(y) is gelijk aan beta * Phi(c*) = beta * P(y > 0|x). Hier is dat 70 * 0.60 = 42.",
-   "level": 1
-  },
-  {
-   "id": "pra-c08",
-   "type": "mcq",
-   "skill": "tobit-marginal-effects",
-   "prompt": "Wat houdt de McDonald-Moffitt decompositie van het Tobit marginale effect in?",
-   "options": [
-    "Het totale effect op E(y) splitst zich in een intensieve marge (meer uren door werkenden) en een extensieve marge (toetreding van niet-werkenden).",
-    "Het model wordt gesplitst in een lineair regressiemodel en een Poisson-telmodel.",
-    "De residuele variantie wordt opgedeeld in binnen-groep en tussen-groep heterogeniteit.",
-    "De likelihood ratio-toets wordt ontleed in een Wald-toets en een Lagrange Multiplier-toets."
-   ],
-   "answer": 0,
-   "explain": "McDonald en Moffitt (1980) bewezen dat dE(y)/dx = P(y>0)*[dE(y|y>0)/dx] + E(y|y>0)*[dP(y>0)/dx]. Dit ontleedt de totale respons in de intensieve marge en de extensieve marge.",
-   "level": 2
-  },
-  {
-   "id": "pra-c09",
-   "type": "mcq",
-   "skill": "sample-selection-bias",
-   "prompt": "In het Heckman selectiemodel is de correlatie tussen de selectiefoutterm $v$ en de uitkomstfoutterm $u$ gelijk aan $\\rho$. Wat betekent $\\rho > 0$ economisch in een loonstudie?",
-   "options": [
-    "Individuen met een hogere niet-geobserveerde werkmotivatie of aanleg hebben tevens een hoger marktloon.",
-    "Individuen die werken hebben gemiddeld een lager loon dan niet-werkenden.",
-    "Er is geen enkel selectieprobleem aanwezig in de data.",
-    "De uitkomstvergelijking lijdt aan perfecte multicollineariteit."
-   ],
-   "answer": 0,
-   "explain": "Een positieve rho geeft aan dat positieve schokken in de participatievergelijking (hoge v, bv. ambitie of doorzettingsvermogen) gepaard gaan met positieve schokken in de loonvergelijking (hoge u, hoger loon).",
-   "level": 1
-  },
-  {
-   "id": "pra-c10",
-   "type": "mcq",
-   "skill": "sample-selection-bias",
-   "prompt": "Waarom kan sample selection bias formeel worden opgevat als een weggelaten-variabeleprobleem (*omitted variable bias*)?",
-   "options": [
-    "Omdat conditioneren op deelname (d = 1) leidt tot een extra term beta_lambda * lambda(z*gamma) in de regressie die door OLS wordt genegeerd.",
-    "Omdat OLS altijd de constante term weglaat bij selectiemodellen.",
-    "Omdat het weglaten van niet-werkenden het aantal vrijheidsgraden reduceert tot onder de honderd.",
-    "Omdat het residu in de tweede stap niet meer gemiddeld gelijk is aan 1."
-   ],
-   "answer": 0,
-   "explain": "De conditionele verwachting van het loon voor werkenden bevat de term rho * sigma_u * lambda(z*gamma). Door OLS te schatten zonder deze Inverse Mills Ratio (lambda), laat men een relevante variabele weg die correleert met de overige regressoren.",
-   "level": 2
-  },
-  {
-   "id": "pra-c11",
-   "type": "mcq",
-   "skill": "sample-selection-bias",
-   "prompt": "Wat is de definitie van de Inverse Mills Ratio $\\lambda(c)$ voor een standaardnormale verdeling?",
-   "options": [
-    "lambda(c) = phi(c) / Phi(c), de verhouding van de kansdichtheid tot de cumulatieve verdelingsfunctie.",
-    "lambda(c) = Phi(c) / phi(c), de cumulatieve kans gedeeld door de dichtheid.",
-    "lambda(c) = 1 - Phi(c), de overlevingsfunctie.",
-    "lambda(c) = phi(c) * Phi(c), het product van dichtheid en cumulatieve kans."
-   ],
-   "answer": 0,
-   "explain": "De Inverse Mills Ratio voor truncatie van onderen is gedefinieerd als het quotiënt van de standaardnormale dichtheidsfunctie phi(c) en de cumulatieve verdelingsfunctie Phi(c).",
-   "level": 1
-  },
-  {
-   "id": "pra-c12",
-   "type": "mcq",
-   "skill": "sample-selection-bias",
-   "prompt": "Als na het schatten van een Heckman-model blijkt dat de coëfficiënt van $\\lambda$ niet statistisch significant verschilt van nul ($p = 0.65$), wat concludeer je dan?",
-   "options": [
-    "Er is geen statistisch bewijs voor selectiebias (rho = 0); OLS op de werkende populatie is consistent en efficiënter.",
-    "Het model is fundamenteel misgespecificeerd en moet opnieuw geschat worden met Poisson.",
-    "De steekproefgrootte moet worden verdubbeld voordat conclusies mogelijk zijn.",
-    "De exclusierestricties zijn ongeldig en moeten worden verwijderd."
-   ],
-   "answer": 0,
-   "explain": "Omdat beta_lambda = rho * sigma_u en sigma_u > 0, toetst de z-toets op lambda direct H0: rho = 0. Een niet-significante lambda betekent dat er geen bewijs is voor fouttermcorrelatie; OLS levert dan zuivere en efficiëntere schattingen op.",
-   "level": 2
-  },
-  {
-   "id": "pra-c13",
-   "type": "mcq",
-   "skill": "heckman-twostep",
-   "prompt": "Welke Stata-code schat een Heckman-tweestapsmodel met logloon (`lwage`) verklaard door `educ` en `exper`, waarbij participatie (`lfp`) afhangt van `age`, `educ`, `kids` en `mtr`?",
-   "options": [
-    "heckman lwage educ exper, select(lfp = age educ kids mtr) twostep",
-    "heckman lwage educ exper age kids mtr, twostep",
-    "heckit lwage = educ exper | lfp = age educ kids mtr",
-    "tobit lwage educ exper, select(lfp = age educ kids mtr) twostep"
-   ],
-   "answer": 0,
-   "explain": "De correcte Stata-syntaxis is `heckman depvar indepvars, select(selectvar = select_vars) twostep`. Zonder de optie `twostep` schat Stata het model via Full Information Maximum Likelihood (mle).",
-   "level": 1
-  },
-  {
-   "id": "pra-c14",
-   "type": "mcq",
-   "skill": "heckman-twostep",
-   "prompt": "Welke van de volgende variabelen is een klassiek voorbeeld van een theoretisch verantwoorde **exclusierestrictie** in een loonvergelijking voor gehuwde vrouwen?",
-   "options": [
-    "Aanwezigheid van jonge kinderen (kidsl6) of inkomen van de partner (otherinc).",
-    "Het aantal jaren voltooide universitaire opleiding van de vrouw.",
-    "Het aantal jaren potentiële werkervaring op de arbeidsmarkt.",
-    "De sector waarin de vrouw voltijds werkzaam is."
-   ],
-   "answer": 0,
-   "explain": "Jonge kinderen en het inkomen van de partner bepalen het reserveringsloon en daarmee de keuze om al dan niet te werken (selectie), maar hebben geen direct effect op het aangeboden marktuurloon (productiviteit) van de vrouw.",
-   "level": 2
-  },
-  {
-   "id": "pra-c15",
-   "type": "mcq",
-   "skill": "heckman-twostep",
-   "prompt": "Wat toonde Computerklas 6 (Oefening 2.d) aan met het commando `corr mills gammahat`?",
-   "options": [
-    "Dat de IMR en selectie-index sterk correleren (-0.9944), waardoor exclusierestricties multicollineariteit vermijden.",
-    "Dat de berekende Inverse Mills Ratio statistisch volledig orthogonaal staat ten opzichte van de selectie-index.",
-    "Dat de bivariate correlatie tussen loon en opleidingsniveau negatief omslaat bij respondenten van hogere leeftijd.",
-    "Dat Probit en Logit schattingen per definitie volkomen identieke residuele varianties en log-likelihoods opleveren."
-   ],
-   "answer": 0,
-   "explain": "De correlatie tussen mills en gammahat was -0.9944. Dit bewijst empirisch dat lambda nagenoeg lineair is over een groot bereik. Zonder exclusievariabelen in de eerste stap ontstaat in de tweede stap bijna perfecte multicollineariteit tussen de regressoren en lambda.",
-   "level": 1
-  },
-  {
-   "id": "pra-c16",
-   "type": "mcq",
-   "skill": "heckman-twostep",
-   "prompt": "In de Stata-output van `heckman ..., twostep` staat onder `/mills` de schatting `lambda = -0.866` met $P > |z| = 0.030$. Wat is het besluit bij een significantieniveau van 5%?",
-   "options": [
-    "Verwerp H0: rho = 0; er is statistisch significante steekproefselectie en OLS is vertekend.",
-    "Behoud H0: rho = 0; er is geen indicatie van selectiebias en OLS mag gebruikt worden.",
-    "Het model kan niet geïnterpreteerd worden omdat lambda negatief is.",
-    "De regressoren in de uitkomstvergelijking zijn gezamenlijk insignificant."
-   ],
-   "answer": 0,
-   "explain": "Omdat p = 0.030 < 0.05, verwerpen we de nulhypothese dat rho = 0. Er is sprake van statistisch significante selectiebias, wat aantoont dat de Heckman-correctie noodzakelijk was.",
-   "level": 2
-  }
- ],
- "mastery": [
-  {
-   "id": "mas-c01",
-   "type": "type",
-   "skill": "censoring-truncation",
-   "prompt": "Typ de econometrische term voor data waarbij de verklarende variabelen $x$ voor de gehele steekproef bekend zijn, maar de afhankelijke variabele $y$ is afgetopt op een bepaalde grenswaarde (zoals 0):",
-   "answers": [
-    "censurering",
-    "censoring",
-    "gecensureerde data",
-    "gecensureerd"
-   ],
-   "explain": "Bij censurering (censoring) kennen we x voor iedereen, maar is y begrensd (bv. afgetopt op nul). Bij troncering daarentegen ontbreekt de gehele waarneming (zowel y als x) buiten de drempelwaarde.",
-   "level": 2
-  },
-  {
-   "id": "mas-c02",
-   "type": "cloze",
-   "skill": "censoring-truncation",
-   "prompt": "Vul de ontbrekende termen in over data-afkapping en OLS-eigenschappen:",
-   "text": "Wanneer niet alleen de uitkomst $y$ maar ook de covariaten $x$ volledig ontbreken buiten een drempelwaarde, spreken we van {{troncering|truncation}}. Een OLS-regressie op uitsluitend de positieve waarnemingen leidt tot {{selectiebias|truncatiebias}} omdat de conditionele verwachting van de foutterm afhankelijk wordt van $x$.",
-   "explain": "Troncering (truncation) betekent dat observaties buiten de drempel compleet uit de steekproef verdwijnen. Selectiebias of truncatiebias ontstaat doordat E(u|y>0, x) = sigma * lambda(x*beta/sigma) varieert met x.",
-   "level": 3
-  },
-  {
-   "id": "mas-c03",
-   "type": "mcq",
-   "skill": "censoring-truncation",
-   "prompt": "Waarom onderschat een gewone OLS-regressie op de gehele steekproef (`reg hours educ`) het effect van opleiding bij hoekoplossingen?",
-   "options": [
-    "Omdat de massale ophoping van nullen de regressielijn afvlakt richting nul (attenuation bias).",
-    "Omdat de standaardfouten van OLS altijd met een factor 10 worden overschat.",
-    "Omdat OLS geen rekening kan houden met negatieve residuen.",
-    "Omdat het aantal werkende vrouwen groter is dan het aantal niet-werkenden."
-   ],
-   "answer": 0,
-   "explain": "De vele nullen trekken de regressielijn plat naar de horizontale as. Dit leidt tot een aanzienlijke onderschatting (attenuation bias) van de werkelijke causale helling van de latente index.",
-   "level": 2
-  },
-  {
-   "id": "mas-c04",
-   "type": "match",
-   "skill": "censoring-truncation",
-   "prompt": "Koppel elke regressiebenadering bij hoekoplossingen aan het methodologische gevolg:",
-   "pairs": [
-    [
-     "OLS op alle observaties (inclusief nullen)",
-     "Afvlakking van de helling naar nul (attenuation bias)"
-    ],
-    [
-     "OLS op uitsluitend positieve observaties (y > 0)",
-     "Truncatiebias door correlatie tussen x en de conditionele foutterm"
-    ],
-    [
-     "Tobit Maximum Likelihood schatting",
-     "Consistente schatting van de latente parameterindex"
+  ],
+  "practice": [
+    {
+      "id": "pra-c01",
+      "type": "mcq",
+      "skill": "censoring-truncation",
+      "prompt": "Een arbeidsmarktonderzoeker beschikt over een steekproef van 1.000 afgestudeerden. Voor iedereen zijn leeftijd, vooropleiding en geslacht geregistreerd. Voor de 300 werklozen staat het brutoloon genoteerd als 0 euro. Om welk type data gaat het hier?",
+      "options": [
+        "Gecensureerde data (censoring), want de verklarende variabelen zijn voor iedereen bekend, maar het loon is afgetopt op nul.",
+        "Getrunceerde data (truncation), want werklozen hebben geen reëel marktloon.",
+        "Volledig continue data, want 70% van de waarnemingen heeft een positief loon.",
+        "Endogene selectiedata die niet met Tobit geanalyseerd mogen worden."
+      ],
+      "answer": 0,
+      "explain": "Omdat alle verklarende kenmerken x voor de gehele steekproef (werkenden én werklozen) geobserveerd zijn en enkel de uitkomst y op een vaste grens (0) is afgetopt, is dit het schoolvoorbeeld van data censurering.",
+      "level": 1
+    },
+    {
+      "id": "pra-c02",
+      "type": "mcq",
+      "skill": "censoring-truncation",
+      "prompt": "Wat gebeurt er met de geschatte hellingscoëfficiënt als je Ordinary Least Squares (OLS) toepast op data met een aanzienlijke stapeling op nul (hoekoplossing)?",
+      "options": [
+        "De OLS-hellingscoëfficiënt vlakt af naar nul (attenuation bias), waardoor het effect van de regressoren systematisch wordt onderschat.",
+        "De OLS-helling wordt steiler en overschat het effect van de regressoren aanzienlijk.",
+        "De OLS-schatter blijft zuiver en BLUE, maar de standaardfouten zijn licht verhoogd.",
+        "OLS convergeert automatisch naar de Maximum Likelihood schatter van Tobit."
+      ],
+      "answer": 0,
+      "explain": "De grote hoeveelheid nullen trekt de lineaire regressielijn aan de linkerzijde omhoog, waardoor de geschatte helling afvlakt. Dit leidt tot een systematische onderschatting van de hellingscoëfficiënt (attenuation bias).",
+      "level": 1
+    },
+    {
+      "id": "pra-c03",
+      "type": "mcq",
+      "skill": "censoring-truncation",
+      "prompt": "In een studie naar donaties aan goede doelen doneert 60% van de ondervraagden 0 euro. De onderzoeker besluit alle personen met gift = 0 weg te gooien en OLS te schatten op de overblijvende 40%. Waarom is dit problematisch?",
+      "options": [
+        "Dit veroorzaakt truncatiebias omdat E(u | gift > 0, x) = sigma * lambda(x'beta/sigma) != 0, waardoor OLS inconsistent en naar beneden vertekend is.",
+        "Dit leidt uitsluitend tot een verlies aan vrijheidsgraden, maar de OLS-schatter blijft zuiver.",
+        "Het weggooien van nullen maakt van de afhankelijke variabele een binaire dummy variabele.",
+        "De F-toets wordt hierdoor ongeldig omdat donaties altijd Poisson-verdeeld zijn."
+      ],
+      "answer": 0,
+      "explain": "Selecteren op gift > 0 conditioneert op u > -x'beta. De conditionele storingsterm is sigma * lambda != 0. Omdat lambda negatief correleert met x, leidt het weglaten van de IMR tot ernstige omitted variable bias.",
+      "level": 1
+    },
+    {
+      "id": "pra-c04",
+      "type": "mcq",
+      "skill": "censoring-truncation",
+      "prompt": "Welke Stata-code plot de gefitte OLS-waarden en de voorspelde Tobit-waarden voor gewerkte uren tegenover opleiding in één grafiek (zoals in Computerklas 6 oefening 1.b)?",
+      "options": [
+        "`reg hours educ` gevolgd door `predict y_ols` en `tobit hours educ, ll(0)` gevolgd door `predict y_tobit, ystar(0,.)` en `twoway (line y_ols educ) (line y_tobit educ)`",
+        "`tobit hours educ, ll(0)` gevolgd door `margins, dydx(educ)` en `scatter hours educ` om de lineaire regressielijn van OLS te plotten.",
+        "`heckman hours educ, select(hours > 0) twostep` gevolgd door `line hours educ`",
+        "`reg hours educ if hours > 0` gevolgd door `marginsplot`"
+      ],
+      "answer": 0,
+      "explain": "In Stata gebruiken we `predict y_ols` voor de lineaire OLS-voorspelling en `predict y_tobit, ystar(0,.)` voor de ongeconditioneerde Tobit-verwachting E(y), waarna `twoway (line ...)` beide lijnen visualiseert.",
+      "level": 1
+    },
+    {
+      "id": "pra-c05",
+      "type": "mcq",
+      "skill": "tobit-marginal-effects",
+      "prompt": "Je schat het model `tobit hours educ exper age kidsl6 kids618, ll(0)` in Stata. De gerapporteerde coëfficiënt voor `kidsl6` is -925.53. Wat is de exacte interpretatie?",
+      "options": [
+        "Een extra kind onder de 6 jaar verlaagt de ongeobserveerde latente arbeidsbereidheid (y*) met 925.53 uur per jaar.",
+        "Elk jong kind verlaagt de feitelijk gewerkte uren over de gehele vrouwelijke bevolking met exact 925.53 uur.",
+        "Werkende moeders met een jong kind werken gemiddeld 925.53 uur minder dan niet-werkende moeders.",
+        "De kans om te werken daalt met exact 92.55 procentpunt per jong kind."
+      ],
+      "answer": 0,
+      "explain": "De Tobit-coëfficiënt beta meet het partiële effect op de latente variabele y*. Het effect op waargenomen uren is kleiner en moet geschaald worden met de kans op een positieve uitkomst Phi(c*).",
+      "level": 1
+    },
+    {
+      "id": "pra-c06",
+      "type": "mcq",
+      "skill": "tobit-marginal-effects",
+      "prompt": "Hoe bereken je in Stata het marginale effect van opleiding op de **ongeconditioneerde verwachtingswaarde** van gewerkte uren ($E(hours)$) na een Tobit-regressie?",
+      "options": [
+        "`margins, dydx(educ) atmeans predict(ystar(0,.))`",
+        "`margins, dydx(educ) atmeans predict(e(0,.))`",
+        "`margins, dydx(educ) atmeans predict(pr(0,.))`",
+        "`margins, dydx(educ) atmeans predict(xb)`"
+      ],
+      "answer": 0,
+      "explain": "`predict(ystar(0,.))` specificeert de ongeconditioneerde verwachting E(y) voor de gecensureerde variabele. `predict(e(0,.))` is voor E(y | y > 0) en `predict(pr(0,.))` voor Pr(y > 0).",
+      "level": 1
+    },
+    {
+      "id": "pra-c07",
+      "type": "mcq",
+      "skill": "tobit-marginal-effects",
+      "prompt": "Als voor een steekproef geldt dat $P(y > 0 \\mid x) = 0.60$ en de Tobit-coëfficiënt $\\beta_{\\text{educ}} = 70$, wat is dan bij benadering het marginale effect van opleiding op de ongeconditioneerde uitkomst $E(y)$?",
+      "options": [
+        "Ongeveer 42 uur (namelijk 70 vermenigvuldigd met 0.60).",
+        "Exact 70 uur, want beta is het marginale effect op y.",
+        "Ongeveer 116.7 uur (namelijk 70 gedeeld door 0.60).",
+        "Ongeveer 28 uur (namelijk 70 vermenigvuldigd met 0.40)."
+      ],
+      "answer": 0,
+      "explain": "Het marginale effect op de ongeconditioneerde waargenomen variabele E(y) is gelijk aan beta_k vermenigvuldigd met Phi(c*). Hier is 70 * 0.60 = 42 uur.",
+      "level": 1
+    },
+    {
+      "id": "pra-c08",
+      "type": "mcq",
+      "skill": "tobit-marginal-effects",
+      "prompt": "Wat is het fundamentele verschil tussen het Average Marginal Effect (AME) en het Marginal Effect at the Mean (MEM) bij niet-lineaire modellen zoals Tobit?",
+      "options": [
+        "AME berekent het marginale effect voor ieder individu afzonderlijk en neemt het gemiddelde over de steekproef; MEM evalueert het effect in het gemiddelde van alle regressoren.",
+        "MEM is altijd zuiverder dan AME omdat gemiddelden de steekproefvariantie elimineren.",
+        "AME kan uitsluitend berekend worden voor binaire variabelen; MEM uitsluitend voor continue variabelen.",
+        "In Stata berekent het commando `margins, dydx(*)` standaard MEM en berekent `margins, atmeans` AME."
+      ],
+      "answer": 0,
+      "explain": "AME (Average Marginal Effect) evalueert het marginale effect voor elke observatie op basis van haar individuele regressoren en middelt dit over de steekproef. MEM (Marginal Effect at the Mean) berekent het effect in het hypothetische 'gemiddelde individu' x_bar.",
+      "level": 1
+    },
+    {
+      "id": "pra-c09",
+      "type": "mcq",
+      "skill": "sample-selection-bias",
+      "prompt": "In het economische arbeidsaanbodmodel van Heckman treedt een persoon toe tot de arbeidsmarkt als en slechts als:",
+      "options": [
+        "Het marktaanbodloon haar persoonlijke reserveringsloon overstijgt (w* > w_r).",
+        "Haar reserveringsloon strikt negatief is.",
+        "Het aantal gewerkte uren de 40 uur per week overschrijdt.",
+        "De fouttermen e en u een correlatie rho hebben die exact gelijk is aan 1."
+      ],
+      "answer": 0,
+      "explain": "Een individu kiest ervoor om te werken als het aangeboden marktloon w* groter is dan het minimumloon waarvoor zij bereid is te werken, het reserveringsloon w_r.",
+      "level": 1
+    },
+    {
+      "id": "pra-c10",
+      "type": "mcq",
+      "skill": "sample-selection-bias",
+      "prompt": "Waarom kan sample selection bias formeel worden opgevat als een weggelaten-variabeleprobleem (*omitted variable bias*)?",
+      "options": [
+        "Omdat de verwachtingswaarde van het loon conditioneel op werken een extra term beta_lambda * lambda(z'gamma) bevat; laat OLS deze IMR weg, dan ontstaat correlatie tussen de regressoren en de foutterm.",
+        "Omdat de constante term in de loonvergelijking gelijk is aan de som van alle residuen en OLS de hellingscoëfficiënt daardoor overschat.",
+        "Omdat werkende individuen altijd een hogere opleidingsgraad hebben dan niet-werkenden.",
+        "Omdat Heckman de afhankelijke variabele vervangt door een instrumentele variabele."
+      ],
+      "answer": 0,
+      "explain": "In de populatie van werkenden geldt E(y | h=1, x, z) = x'beta + beta_lambda * lambda(z'gamma). Schat men OLS zonder lambda, dan ontbreekt deze term. Omdat x gecorreleerd is met z'gamma en dus met lambda, ontstaat klassieke omitted variable bias.",
+      "level": 1
+    },
+    {
+      "id": "pra-c11",
+      "type": "mcq",
+      "skill": "sample-selection-bias",
+      "prompt": "Wat is de wiskundige definitie van de Inverse Mills Ratio $\\lambda(c)$ voor een standaardnormale verdeling?",
+      "options": [
+        "De verhouding van de kansdichtheidsfunctie tot de cumulatieve verdelingsfunctie: phi(c) / Phi(c).",
+        "De verhouding van de cumulatieve kans tot de kansdichtheid: Phi(c) / phi(c).",
+        "De natuurlijke logaritme van de cumulatieve verdelingsfunctie: ln(Phi(c)).",
+        "De afgeleide van de inverse van de verdelingsfunctie: 1 / Phi'(c)."
+      ],
+      "answer": 0,
+      "explain": "De Inverse Mills Ratio lambda(c) is gedefinieerd als het quotiënt van de standaardnormale kansdichtheid phi(c) en de cumulatieve kans Phi(c).",
+      "level": 1
+    },
+    {
+      "id": "pra-c12",
+      "type": "mcq",
+      "skill": "sample-selection-bias",
+      "prompt": "Als na het schatten van een Heckman-model blijkt dat de coëfficiënt van $\\lambda$ niet statistisch significant verschilt van nul ($p = 0.65$), wat concludeer je dan?",
+      "options": [
+        "Er is geen bewijs voor selectiebias (rho = 0 niet verworpen); gewone OLS op de werkenden is consistent en heeft de voorkeur boven Heckman.",
+        "Het model is volstrekt ongeldig en moet opnieuw geschat worden met 2SLS.",
+        "De exclusierestricties zijn ondeugdelijk en moeten worden verwijderd.",
+        "Het marktaanbodloon is identiek gelijk aan het reserveringsloon voor alle individuen."
+      ],
+      "answer": 0,
+      "explain": "Omdat beta_lambda = rho * sigma_e, betekent een niet-significante lambda dat H0: rho = 0 niet verworpen kan worden. Er is geen selectieprobleem en OLS op werkenden is consistent en efficiënter.",
+      "level": 1
+    },
+    {
+      "id": "pra-c13",
+      "type": "mcq",
+      "skill": "heckman-twostep",
+      "prompt": "Welke Stata-code schat een Heckman-tweestapsmodel met logloon (`lwage`) verklaard door `educ` en `exper`, waarbij participatie (`lfp`) afhangt van `age`, `educ`, `kids` en `mtr`?",
+      "options": [
+        "`heckman lwage educ exper, select(lfp = age educ kids mtr) twostep`",
+        "`heckman lwage educ exper age kids mtr, twostep`",
+        "`heckit lwage educ exper, over(lfp) robust`",
+        "`tobit lwage educ exper, select(lfp) twostep`"
+      ],
+      "answer": 0,
+      "explain": "De juiste syntax in Stata is `heckman depvar indepvars, select(selvar = vars) twostep`. De optie `twostep` forceert de tweestapsschatting van Heckman.",
+      "level": 1
+    },
+    {
+      "id": "pra-c14",
+      "type": "mcq",
+      "skill": "heckman-twostep",
+      "prompt": "Welke van de volgende variabelen is een klassiek voorbeeld van een theoretisch verantwoorde **exclusierestrictie** in een loonvergelijking voor gehuwde vrouwen?",
+      "options": [
+        "Het aantal jonge kinderen (`kidslt6`) of het niet-arbeidsinkomen van de partner (`nwifeinc`).",
+        "Het aantal jaren voltooide universitaire opleiding (`educ`).",
+        "Het aantal jaren eerdere werkervaring op de arbeidsmarkt (`exper`).",
+        "De leeftijd van de vrouw (`age`)."
+      ],
+      "answer": 0,
+      "explain": "Jonge kinderen en partnerinkomen bepalen de gezinszorg en het reserveringsloon (wel invloed op participatie), maar hebben bij gelijke opleiding en ervaring geen direct effect op de marktproductiviteit bij de werkgever.",
+      "level": 1
+    },
+    {
+      "id": "pra-c15",
+      "type": "mcq",
+      "skill": "heckman-twostep",
+      "prompt": "Wat toonde Computerklas 6 (Oefening 2.d) aan met het commando `corr mills gammahat` in de Zuid-Afrikaanse verdienstendata?",
+      "options": [
+        "De correlatie bedroeg -0.9944, wat aantoont dat de IMR nagenoeg perfect lineair is en exclusievariabelen vereist zijn om extreme multicollineariteit te vermijden.",
+        "De correlatie was exact 0.0000, wat bewees dat selectiebias afwezig was en de fouttermen van selectie en loon onafhankelijk waren.",
+        "De correlatie was positief (+0.85), wat bewees dat lonen altijd stijgen met leeftijd.",
+        "De correlatie toonde aan dat Maximum Likelihood identiek is aan OLS."
+      ],
+      "answer": 0,
+      "explain": "De correlatie tussen mills en gammahat was -0.9944. Dit bewijst dat over het empirische bereik van de data lambda(z'gamma) vrijwel lineair is in z'gamma. Zonder exclusierestricties leidt dit tot catastrofale multicollineariteit in stap 2.",
+      "level": 1
+    },
+    {
+      "id": "pra-c16",
+      "type": "mcq",
+      "skill": "heckman-twostep",
+      "prompt": "In de Stata-output van `heckman ..., twostep` staat onder `/mills` de schatting `lambda = -0.866` met $P > |z| = 0.030$. Wat is het besluit bij een significantieniveau van 5%?",
+      "options": [
+        "Verwerp H0: rho = 0 (p = 0.030 < 0.05); er is statistisch significante selectiebias aanwezig en OLS is vertekend.",
+        "Aanvaard H0: rho = 0; de selectiebias is afwezig en OLS is de voorkeursmethode.",
+        "Verwerp H0 dat lambda gelijk is aan sigma; het model heeft heteroskedastische storingstermen.",
+        "Het model kan niet geïnterpreteerd worden omdat lambda negatief is."
+      ],
+      "answer": 0,
+      "explain": "De z-toets op lambda toetst H0: rho = 0. Omdat p = 0.030 kleiner is dan 0.05, verwerpen we de nulhypothese. Er is significante selectiebias en Heckman-correctie is noodzakelijk.",
+      "level": 1
+    }
+  ],
+  "mastery": [
+    {
+      "id": "mas-c01",
+      "type": "type",
+      "skill": "censoring-truncation",
+      "prompt": "Typ de econometrische term voor data waarbij de verklarende variabelen $x$ voor de gehele steekproef bekend zijn, maar de afhankelijke variabele $y$ is afgetopt op een bepaalde grenswaarde (zoals 0):",
+      "answers": [
+        "censurering",
+        "censoring",
+        "data censurering",
+        "data censoring"
+      ],
+      "explain": "Bij censurering (censoring) is x voor iedereen geobserveerd, maar is y begrensd. Bij troncering (truncation) ontbreken zowel x als y buiten de drempelwaarde.",
+      "level": 2
+    },
+    {
+      "id": "mas-c02",
+      "type": "cloze",
+      "skill": "censoring-truncation",
+      "text": "Wanneer data een sterke cluster op nul vertonen noemen we dit een {{hoekoplossing|corner solution}}. Het schatten van OLS op de volledige steekproef leidt tot {{afvlakkingsbias|attenuation bias}} naar nul. Het weggooien van de nullen en schatten op positieve waarden veroorzaakt {{truncatiebias|selectiebias}}.",
+      "explain": "Een cluster op 0 heet een hoekoplossing (corner solution). OLS op alle data leidt tot attenuation bias (afvlakking naar 0). OLS op enkel y > 0 veroorzaakt truncatiebias of selectiebias.",
+      "level": 2,
+      "prompt": "Vul de ontbrekende begrippen in over data-afkapping en OLS-eigenschappen:"
+    },
+    {
+      "id": "mas-c03",
+      "type": "mcq",
+      "skill": "censoring-truncation",
+      "prompt": "Waarom onderschat een gewone OLS-regressie op de gehele steekproef (`reg hours educ`) het effect van opleiding bij hoekoplossingen?",
+      "options": [
+        "Omdat de cluster van niet-werkende vrouwen met 0 uren de regressielijn aan de linkerkant omhoog trekt en de helling afvlakt.",
+        "Omdat opleiding negatief gecorreleerd is met leeftijd.",
+        "Omdat OLS geen rekening kan houden met heteroskedastische standaardfouten.",
+        "Omdat de variantie van opleiding gelijk is aan de residuele variantie."
+      ],
+      "answer": 0,
+      "explain": "De massa nullen bij lage waarden van educ trekt de lijn omhoog aan de linkerzijde, waardoor de OLS-helling veel vlakker wordt dan de werkelijke latente relatie (attenuation bias).",
+      "level": 2
+    },
+    {
+      "id": "mas-c04",
+      "type": "match",
+      "skill": "censoring-truncation",
+      "prompt": "Koppel elke regressiebenadering uit de simulatie met `tobit.dta` (ware helling = 1.00) aan het empirische resultaat:",
+      "pairs": [
+        [
+          "OLS op de gehele steekproef",
+          "Hellingscoëfficiënt van 0.516 door ernstige afvlakkingsbias"
+        ],
+        [
+          "OLS op positieve waarden (y > 0)",
+          "Hellingscoëfficiënt van 0.639 door truncatiebias"
+        ],
+        [
+          "Tobit Maximum Likelihood",
+          "Hellingscoëfficiënt van 1.049 die de ware helling van 1.00 herstelt"
+        ]
+      ],
+      "explain": "In Computerklas 6 Oefening 5 gaf OLS op alles b = 0.516 (afvlakking), OLS op y > 0 gaf b = 0.639 (truncatiebias), en Tobit ML (machine learning) leverde b = 1.049 (zuiver).",
+      "level": 2
+    },
+    {
+      "id": "mas-c05",
+      "type": "type",
+      "skill": "tobit-marginal-effects",
+      "prompt": "Welke Stata predict-optie gebruik je in `margins` om het marginale effect op de getrunceerde verwachtingswaarde $E(y \\mid y > 0)$ te berekenen? Typ de exacte optienaam inclusief haakjes (bv. `predict(...)`):",
+      "answers": [
+        "predict(e(0,.))",
+        "predict(e(0,.))"
+      ],
+      "explain": "In Stata Tobit specificeert `predict(e(0,.))` de conditionele verwachting E(y | y in (0, .)), oftewel de getrunceerde verwachtingswaarde voor positieve uitkomsten.",
+      "level": 2
+    },
+    {
+      "id": "mas-c06",
+      "type": "cloze",
+      "skill": "tobit-marginal-effects",
+      "text": "De coëfficiënt in de Stata Tobit-tabel representeert het marginale effect op de {{latente}} variabele. Volgens de McDonald-Moffitt decompositie wordt het totale effect op waargenomen uren gesplitst in de {{intensieve}} marge (reeds werkenden werken meer) en de {{extensieve}} marge (niet-werkenden treden toe).",
+      "explain": "De Tobit-coëfficiënt meet het effect op de latente index y*. De McDonald-Moffitt decompositie splitst het totale effect in de intensieve marge en de extensieve marge.",
+      "level": 2,
+      "prompt": "Vul de ontbrekende termen in over de interpretatie van Tobit-coëfficiënten en de marges:"
+    },
+    {
+      "id": "mas-c07",
+      "type": "numeric",
+      "skill": "tobit-marginal-effects",
+      "prompt": "In een Tobit-arbeidsmodel is de geschatte coëfficiënt voor opleiding $\\beta_{\\text{educ}} = 80.0$. De geschatte kans dat een willekeurige vrouw werkt is $P(hours > 0 \\mid x) = 0.55$. Bereken het marginale effect van opleiding op het verwachte aantal gewerkte uren over de gehele populatie ($E(hours)$):",
+      "tolerance": 0.5,
+      "explain": "Het marginale effect op de ongeconditioneerde waargenomen uitkomst E(y) is gelijk aan beta_k * Phi(c*) = 80.0 * 0.55 = 44.0 uur.",
+      "level": 2,
+      "value": 44.0
+    },
+    {
+      "id": "mas-c08",
+      "type": "mcq",
+      "skill": "tobit-marginal-effects",
+      "prompt": "Hoe verhoudt het marginale effect van een verklarende variabele op de getrunceerde uitkomst $E(y \\mid y > 0)$ zich tot de latente Tobit-coëfficiënt $\\beta$?",
+      "options": [
+        "Het getrunceerde effect is altijd kleiner dan beta, omdat de schalingsfactor [1 - lambda(c*)(c* + lambda(c*))] strikt tussen 0 en 1 ligt.",
+        "Het getrunceerde effect is altijd groter dan beta, omdat positieve uren uitsluitend voorkomen bij individuen met een hoge productiviteit.",
+        "Het getrunceerde effect is exact gelijk aan beta.",
+        "Het getrunceerde effect is altijd negatief ongeacht het teken van beta."
+      ],
+      "answer": 0,
+      "explain": "De schalingsfactor [1 - lambda(c*)(c* + lambda(c*))] is de variantie van de getrunceerde standaardnormale verdeling, die strikt tussen 0 en 1 ligt. Daardoor is het effect op actieven altijd kleiner dan beta.",
+      "level": 2
+    },
+    {
+      "id": "mas-c09",
+      "type": "type",
+      "skill": "sample-selection-bias",
+      "prompt": "Typ de volledige Engelse naam van de term $\\lambda = \\frac{\\phi(z'\\gamma)}{\\Phi(z'\\gamma)}$ die Heckman toevoegt om te corrigeren voor selectiebias:",
+      "answers": [
+        "Inverse Mills Ratio",
+        "inverse mills ratio",
+        "Inverse Mills ratio",
+        "Heckman's lambda",
+        "Heckmans lambda"
+      ],
+      "explain": "De correctieterm lambda(z'gamma) = phi(z'gamma)/Phi(z'gamma) staat universeel bekend als de Inverse Mills Ratio (IMR) of Heckman's lambda.",
+      "level": 2
+    },
+    {
+      "id": "mas-c10",
+      "type": "cloze",
+      "skill": "sample-selection-bias",
+      "text": "In het Heckman-selectiemodel wordt aangenomen dat de fouttermen van selectie en uitkomst gezamenlijk {{bivariaat normaal|normaal}} verdeeld zijn. De coëfficiënt van de Inverse Mills Ratio in de uitkomstvergelijking is gelijk aan het product van de correlatie {{rho}} en de residuele standaardafwijking {{sigma}}.",
+      "explain": "Het Heckman-model veronderstelt bivariate normaliteit. De coëfficiënt van lambda is beta_lambda = rho * sigma_e.",
+      "level": 2,
+      "prompt": "Vul de statistische veronderstellingen en parameters aan van het Heckman-selectiemodel:"
+    },
+    {
+      "id": "mas-c11",
+      "type": "order",
+      "skill": "sample-selection-bias",
+      "prompt": "Plaats de stappen van de Heckman-tweestapsmethode (Heckit) in de juiste chronologische volgorde:",
+      "explain": "Eerst schat men Probit op alle observaties, voorspelt de index w, genereert de Inverse Mills Ratio via phi/Phi, en voert vervolgens OLS uit op de geselecteerde werkenden met de IMR als extra regressor.",
+      "level": 2,
+      "tiles": [
+        "Schat een Probit-model voor participatie op de volledige steekproef (N observaties)",
+        "Bereken de lineaire index w = z'gamma_hat voor elk individu",
+        "Genereer de Inverse Mills Ratio lambda_hat = normalden(w) / normal(w)",
+        "Schat met OLS de uitkomstvergelijking inclusief lambda_hat op de geselecteerde steekproef (n observaties)"
+      ]
+    },
+    {
+      "id": "mas-c12",
+      "type": "mcq",
+      "skill": "sample-selection-bias",
+      "prompt": "In een loonstudie blijkt na Heckman-schatting dat $\\rho = -0.93$ met $p = 0.03$. Wat is de methodologische consequentie voor de loonrendementen geschat met OLS?",
+      "options": [
+        "OLS op werkenden overschat het effect van onderwijs door negatieve selectie; Heckman-correctie is noodzakelijk en toont een lager reëel onderwijsrendement.",
+        "OLS is consistent omdat een negatieve correlatie rho aangeeft dat werkenden gemiddeld minder productief zijn dan niet-werkenden.",
+        "Het model moet verworpen worden omdat correlaties niet kleiner dan -0.5 mogen zijn.",
+        "De Inverse Mills Ratio kan niet berekend worden bij een negatieve rho."
+      ],
+      "answer": 0,
+      "explain": "Omdat rho significant verschilt van nul (p = 0.03 < 0.05), leidt OLS op werkenden tot omitted variable bias. In mroz.dta daalde het onderwijsrendement van 10.8% in OLS naar 5.85% in Heckman.",
+      "level": 2
+    },
+    {
+      "id": "mas-c13",
+      "type": "type",
+      "skill": "heckman-twostep",
+      "prompt": "Welke optie moet je toevoegen aan het Stata-commando `heckman` om de tweestapsschatting te forceren in plaats van Full Information Maximum Likelihood? Typ uitsluitend de optienaam:",
+      "answers": [
+        "twostep",
+        "two-step"
+      ],
+      "explain": "De optie `twostep` forceert de Heckman 2-step procedure en berekent de asymptotisch gecorrigeerde standaardfouten.",
+      "level": 2
+    },
+    {
+      "id": "mas-c14",
+      "type": "cloze",
+      "skill": "heckman-twostep",
+      "text": "Het probleem dat de Inverse Mills Ratio in stap 2 een schatting met steekproefruis is heet het {{generated regressor}} probleem. Zonder exclusierestricties ontstaat in stap 2 ernstige {{multicollineariteit|collineariteit}} omdat lambda nagenoeg lineair is in de index.",
+      "explain": "Omdat lambda geschat is, ontstaat het generated regressor problem. Zonder exclusievariabele leidt de sterke lineariteit van lambda (corr = -0.9944) tot extreme multicollineariteit.",
+      "level": 2,
+      "prompt": "Vul de econometrische termen aan over de identificatie en standaardfouten in het Heckman-model:"
+    },
+    {
+      "id": "mas-c15",
+      "type": "numeric",
+      "skill": "heckman-twostep",
+      "prompt": "In de Heckman-output van Stata vinden we voor `/mills lambda` een coëfficiënt $\\beta_\\lambda = -0.8664$ en een standaardfout van $0.3993$. Bereken de bijbehorende toetsingsgrootheid $z$ (rond af op twee decimalen):",
+      "tolerance": 0.05,
+      "explain": "De toetsingsgrootheid z = beta_lambda / SE = -0.8664 / 0.3993 = -2.17. Omdat |z| > 1.96 (p = 0.030 < 0.05) verwerpen we H0: rho = 0.",
+      "level": 2,
+      "value": -2.17
+    },
+    {
+      "id": "mas-c16",
+      "type": "mcq",
+      "skill": "heckman-twostep",
+      "prompt": "Waarom is identificatie van het Heckman-model 'uitsluitend op functionele vorm' (zonder exclusievariabelen) in de empirische praktijk ten zeerste af te raden?",
+      "options": [
+        "Omdat de Inverse Mills Ratio over het relevante bereik vrijwel lineair gecorreleerd is met de index (corr = -0.9944), waardoor extreme multicollineariteit de standaardfouten opblaast.",
+        "Omdat Stata automatisch weigert een Heckman-model te schatten zonder exclusievariabelen en een syntax error retourneert.",
+        "Omdat de geschatte correlatie rho dan wiskundig gedwongen wordt om exact 0 te zijn.",
+        "Omdat de likelihood-functie dan meerdere globale maxima heeft die niet convergeren."
+      ],
+      "answer": 0,
+      "explain": "Zonder exclusievariabelen steunt identificatie enkel op de lichte kromming van de staart van de normale verdeling. Omdat lambda vrijwel perfect lineair is (r = -0.9944), ontstaat catastrofale multicollineariteit tussen lambda en de regressoren x in stap 2.",
+      "level": 2
+    }
+  ],
+  "production": {
+    "type": "explain",
+    "lang": "nl",
+    "minWords": 100,
+    "prompt": "**Empirische Case: Vrouwelijke Loonvorming en Arbeidsaanbod (`mroz.dta`)**\n\nJe treedt op als econometrisch adviseur voor het Ministerie van Werkgelegenheid. Je onderzoekt de loonopbrengst van onderwijs voor gehuwde vrouwen aan de hand van de Mroz-dataset ($N = 753$). Van de 753 vrouwen werken er 428 ($hours > 0$) en zijn er 325 niet-actief ($hours = 0$).\n\nEen junior analist voert een gewone OLS-regressie uit op de 428 werkende vrouwen: `reg lwage educ exper if hours > 0`. Hieruit blijkt dat elk extra schooljaar het loon met **10.8%** doet stijgen ($p < 0.001$). Vervolgens schat jij het Heckman-tweestapsmodel:\n```stata\nheckman lwage educ exper, select(lfp = age educ kids mtr) twostep\n```\nDe gecorrigeerde coëfficiënt voor `educ` daalt naar **0.0585** ($p = 0.049$). In het `/mills` paneel staat `lambda = -0.8664` ($z = -2.17, p = 0.030$), met $\\rho = -0.9291$ en $\\sigma = 0.9326$.\n\nBeantwoord de volgende vier vragen gestructureerd in academisch Nederlands:\n1. **Selectieprobleem**: Waarom is de naïeve OLS-schatting van 10.8% vertekend en inconsistent?\n2. **Toetsing**: Interpreteer de hypothesetoets op `lambda` en concludeer of de selectiebias statistisch significant is bij $\\alpha = 0.05$.\n3. **Economische betekenis van $\\rho$**: Wat verklaart de negatieve correlatie $\\rho = -0.9291$ tussen participatie- en loonfouttermen in deze context?\n4. **Exclusierestrictie**: Waarom zijn `kids` en `mtr` geschikte exclusievariabelen en waarom is het weglaten van dergelijke variabelen fataal voor de schatting?",
+    "model": "**1. Waarom de naïeve OLS-schatting vertekend is (Sample Selection Bias):**\nDe groep werkende vrouwen is geen toevallige steekproef uit de vrouwelijke bevolking. Vrouwen participeren alleen als het marktaanbodloon hun persoonlijke reserveringsloon overstijgt. Als ongeobserveerde factoren (zoals werkmotivatie, niet-arbeidsinkomen of gezinssituatie) zowel de participatiebeslissing als het potentiële loon beïnvloeden, ontstaat correlatie tussen de verklarende variabelen en de foutterm in de geselecteerde substeekproef ($E(u \\mid x, hours > 0) \\ne 0$). OLS lijdt dan aan een weggelaten-variabelefout (omitted variable bias) door het weglaten van de Inverse Mills Ratio (lambda). Hierdoor werd het werkelijke effect van opleiding in de naïeve OLS overschat (10.8% versus 5.85% na correctie).\n\n**2. Hypothesetoets op selectiebias:**\nIn het Heckman-model geldt $\\beta_\\lambda = \\rho \\cdot \\sigma_e$. Omdat de residuele standaardafwijking $\\sigma_e = 0.9326 > 0$, toetst de $z$-toets op $\\beta_\\lambda = 0$ rechtstreeks de nulhypothese $H_0: \\rho = 0$ (geen correlatie tussen selectie- en uitkomstfoutterm). We vinden $z = -2.17$ met $p = 0.030$. Aangezien $p = 0.030 < 0.05$, verwerpen we de nulhypothese op het 5%-significantieniveau. Er is statistisch significant bewijs voor selectiebias, wat bewijst dat de Heckman-correctie methodologisch vereist is.\n\n**3. Economische interpretatie van $\\rho = -0.9291$:**\nDe correlatie $\\rho = \\text{corr}(u, v) = -0.9291$ is sterk negatief. Dit duidt erop dat ongeobserveerde factoren die de participatiekans verhogen (hoge $v$), gepaard gaan met een lagere ongeobserveerde looncomponent (lage $u$). Economisch weerspiegelt dit een noodzaak-gedreven arbeidsaanbod: vrouwen die vanuit hun gezinssituatie of financieel precaire positie gedwongen zijn te werken, accepteren ook lagere loonaanbiedingen. Een selectie op werkenden bevat daardoor relatief veel personen met ongunstige ongeobserveerde loonkenmerken.\n\n**4. De exclusierestricties (`kids` en `mtr`):**\nVoor een betrouwbare identificatie van het Heckman-model moet de selectievector $z$ minstens één variabele bevatten die wel de participatie beïnvloedt, maar géén direct effect heeft op het marktuurloon. De aanwezigheid van jonge kinderen (`kids`) en het marginaal belastingtarief van het huishouden (`mtr`) bepalen de opportuniteitskost van arbeid en het reserveringsloon van de vrouw, maar zijn geen determinanten van haar productiviteit bij een werkgever. Zonder dergelijke exclusievariabelen is de Inverse Mills Ratio over een breed bereik vrijwel perfect gecorreleerd met de loonregressoren (in Computerklas 6 vonden we $\\text{corr}(\\lambda, z'\\gamma) = -0.9944$). Zonder exclusie ontstaat catastrofale multicollineariteit in de tweede stap, wat leidt tot opgeblazen standaardfouten en volstrekt onstabiele coëfficiënten.",
+    "rubric": [
+      "Uitleg dat niet-werkenden niet toevallig ontbreken (reserveringsloon overstijgt marktloon) en dat OLS leidt tot weggelaten-variabelefout (omitted variable bias)",
+      "Correcte statistische hypothesetoetsing op lambda / rho met p = 0.030 < 0.05 en formele verwerping van H0",
+      "Onderbouwde economische verklaring voor de negatieve correlatie rho (arbeidsaanbod gedreven door financiële nood / reserveringsloondynamiek)",
+      "Verantwoording van kids en mtr als valide exclusierestricties en vermelding van het ernstige multicollineariteitsrisico bij ontbreken van exclusie"
     ]
-   ],
-   "explain": "OLS op de gehele steekproef vlakt af door de nullen; OLS op y > 0 schendt exogeniteit door truncatiebias; Tobit modelleert de censurering via MLE en herstelt de werkelijke helling.",
-   "level": 3
   },
-  {
-   "id": "mas-c05",
-   "type": "type",
-   "skill": "tobit-marginal-effects",
-   "prompt": "Welke Stata predict-optie gebruik je in `margins` om het marginale effect op de getrunceerde verwachtingswaarde $E(y \\mid y > 0)$ te berekenen? Typ de exacte optienaam inclusief haakjes (bv. `predict(...)`):",
-   "answers": [
-    "predict(e(0,.))",
-    "predict(e(0,.))",
-    "e(0,.)"
-   ],
-   "explain": "De optie `predict(e(0,.))` berekent de getrunceerde conditionele verwachting E(y|y > 0). Voor de ongeconditioneerde gecensureerde verwachting gebruikt men `predict(ystar(0,.))`.",
-   "level": 2
-  },
-  {
-   "id": "mas-c06",
-   "type": "cloze",
-   "skill": "tobit-marginal-effects",
-   "prompt": "Vul de ontbrekende begrippen in over de Tobit-coëfficiënten:",
-   "text": "De gerapporteerde coëfficiënt $\\beta$ in de Tobit-outputtabel is het marginale effect op de {{latente|ongeobserveerde}} variabele $y^*$. Het marginale effect op de ongeconditioneerde waargenomen uitkomst $E(y)$ is gelijk aan $\\beta$ vermenigvuldigd met de kans op {{deelname|participatie|niet-censurering}}.",
-   "explain": "In het Tobit-model geldt dE(y*)/dx = beta (het effect op de latente index). Voor de werkelijk waargenomen uitkomst geldt dE(y)/dx = beta * Phi(c*), waarbij Phi(c*) de kans is dat de observatie niet gecensureerd is (P(y > 0)).",
-   "level": 3
-  },
-  {
-   "id": "mas-c07",
-   "type": "numeric",
-   "skill": "tobit-marginal-effects",
-   "prompt": "In een Tobit-arbeidsmodel is de geschatte coëfficiënt voor opleiding $\\beta_{\\text{educ}} = 80.0$. De geschatte kans dat een willekeurige vrouw werkt is $P(hours > 0 \\mid x) = 0.55$. Bereken het marginale effect van opleiding op het verwachte aantal gewerkte uren over de gehele populatie ($E(hours)$):",
-   "value": 44.0,
-   "tolerance": 0.5,
-   "explain": "Het ongeconditioneerde marginale effect is dE(y)/dx = beta * Phi(c*) = beta * P(y > 0|x) = 80.0 * 0.55 = 44.0 uren per extra jaar opleiding.",
-   "level": 2
-  },
-  {
-   "id": "mas-c08",
-   "type": "mcq",
-   "skill": "tobit-marginal-effects",
-   "prompt": "Hoe verhoudt het marginale effect van een verklarende variabele op de getrunceerde uitkomst $E(y \\mid y > 0)$ zich tot de latente Tobit-coëfficiënt $\\beta$?",
-   "options": [
-    "Het getrunceerde marginale effect is altijd kleiner in absolute waarde dan beta.",
-    "Het getrunceerde marginale effect is altijd groter in absolute waarde dan beta.",
-    "Het getrunceerde marginale effect is exact gelijk aan beta.",
-    "Het getrunceerde marginale effect heeft altijd het omgekeerde teken van beta."
-   ],
-   "answer": 0,
-   "explain": "De formule luidt dE(y|y>0)/dx = beta * [1 - lambda(c*)(c* + lambda(c*))]. Omdat de term tussen rechte haken strikt tussen 0 en 1 ligt voor alle reële waarden van c*, is het effect op werkenden altijd kleiner dan het effect op de latente variabele.",
-   "level": 3
-  },
-  {
-   "id": "mas-c09",
-   "type": "type",
-   "skill": "sample-selection-bias",
-   "prompt": "Typ de volledige Engelse naam van de term $\\lambda = \\frac{\\phi(z\\gamma)}{\\Phi(z\\gamma)}$ die Heckman toevoegt om te corrigeren voor selectiebias:",
-   "answers": [
-    "Inverse Mills Ratio",
-    "inverse mills ratio",
-    "Inverse Mills ratio",
-    "inverse Mills ratio"
-   ],
-   "explain": "De Inverse Mills Ratio (IMR), aangeduid met lambda, is de verhouding van de standaardnormale kansdichtheidsfunctie (PDF) tot de cumulatieve verdelingsfunctie (CDF) op de geschatte lineaire index.",
-   "level": 2
-  },
-  {
-   "id": "mas-c10",
-   "type": "cloze",
-   "skill": "sample-selection-bias",
-   "prompt": "Vul de ontbrekende statistische parameters in van het Heckman-selectiemodel:",
-   "text": "De coëfficiënt van de Inverse Mills Ratio in de loonregressie is gelijk aan het product van $\\sigma_u$ en de fouttermcorrelatie {{rho|ρ}}. Wanneer deze correlatie gelijk is aan {{nul|0}}, is er geen sprake van selectiebias en is gewone OLS consistent.",
-   "explain": "In de Heckman-vergelijking geldt beta_lambda = rho * sigma_u. Omdat de standaardafwijking sigma_u strikt positief is, is beta_lambda uitsluitend nul wanneer rho = corr(u, v) = 0.",
-   "level": 3
-  },
-  {
-   "id": "mas-c11",
-   "type": "order",
-   "skill": "sample-selection-bias",
-   "prompt": "Plaats de stappen van de Heckman-twee-stapsmethode in de juiste chronologische volgorde:",
-   "tiles": [
-    "Schat een Probit-model voor participatie op de volledige steekproef",
-    "Voorspel de lineaire index z*gamma en bereken de Inverse Mills Ratio lambda",
-    "Schat de uitkomstvergelijking met OLS op de werkenden met lambda als extra regressor"
-   ],
-   "explain": "De chronologie van Heckit is: 1) Probit op iedereen om de participatiekans te modelleren; 2) berekening van de IMR lambda; 3) OLS op enkel de werkenden met lambda als correctieterm voor de selectiebias.",
-   "level": 2
-  },
-  {
-   "id": "mas-c12",
-   "type": "mcq",
-   "skill": "sample-selection-bias",
-   "prompt": "In een loonstudie blijkt na Heckman-schatting dat $\\rho = -0.93$ met $p = 0.03$. Wat is de methodologische consequentie voor de loonrendementen geschat met OLS?",
-   "options": [
-    "OLS-coëfficiënten zijn inconsistent door weggelaten-variabelefout (omitted variable bias) en mogen niet causaal geïnterpreteerd worden.",
-    "OLS-schattingen zijn volkomen zuiver omdat rho kleiner is dan nul.",
-    "Het Heckman-model moet verworpen worden ten gunste van een Tobit-model.",
-    "De standaardfouten van OLS waren te conservatief en moeten verkleind worden."
-   ],
-   "answer": 0,
-   "explain": "Omdat rho statistisch significant verschilt van nul (p = 0.03 < 0.05), is er sprake van een weggelaten variabele in OLS. OLS op de werkende vrouwen levert vertekende en inconsistente schattingen van de loonrendementen op.",
-   "level": 3
-  },
-  {
-   "id": "mas-c13",
-   "type": "type",
-   "skill": "heckman-twostep",
-   "prompt": "Welke optie moet je toevoegen aan het Stata-commando `heckman` om de tweestapsschatting te forceren in plaats van Full Information Maximum Likelihood? Typ uitsluitend de optienaam:",
-   "answers": [
-    "twostep",
-    "twostep"
-   ],
-   "explain": "Stata schat `heckman` standaard via Maximum Likelihood Estimation (mle). Door de optie `, twostep` toe te voegen, voert Stata de klassieke Heckman tweestapsprocedure uit.",
-   "level": 2
-  },
-  {
-   "id": "mas-c14",
-   "type": "cloze",
-   "skill": "heckman-twostep",
-   "prompt": "Vul de termen aan over de identificatie van het Heckman-model:",
-   "text": "Om extreme multicollineariteit tussen de Inverse Mills Ratio en de loonregressoren te vermijden, vereist het Heckman-model een {{exclusierestrictie|exclusie-restrictie|identificatierestrictie}}. Dit betekent dat de selectievergelijking minstens één variabele moet bevatten die wel de {{participatie|selectie|arbeidsdeelname}} beïnvloedt, maar geen direct effect heeft op het {{loon|marktloon}}.",
-   "explain": "De exclusierestrictie (exclusion restriction) stelt dat minstens één variabele (zoals jonge kinderen of inkomen partner) wel participatie verklaart maar niet rechtstreeks in de loonvergelijking thuishoort.",
-   "level": 3
-  },
-  {
-   "id": "mas-c15",
-   "type": "numeric",
-   "skill": "heckman-twostep",
-   "prompt": "In de Heckman-output van Stata vinden we voor `/mills lambda` een coëfficiënt $\\beta_\\lambda = -0.8664$ en een standaardfout van $0.3993$. Bereken de bijbehorende toetsingsgrootheid $z$ (rond af op twee decimalen):",
-   "value": -2.17,
-   "tolerance": 0.03,
-   "explain": "De z-score is z = beta_lambda / SE = -0.8664 / 0.3993 = -2.1698 (afgerond -2.17). Aangezien |z| > 1.96, is de selectiebias statistisch significant op het 5%-niveau.",
-   "level": 2
-  },
-  {
-   "id": "mas-c16",
-   "type": "mcq",
-   "skill": "heckman-twostep",
-   "prompt": "Waarom is identificatie van het Heckman-model 'uitsluitend op functionele vorm' (zonder exclusievariabelen) in de empirische praktijk ten zeerste af te raden?",
-   "options": [
-    "Omdat de IMR over het reële bereik nagenoeg lineair is, waardoor zonder exclusievariabele ernstige multicollineariteit en onstabiele schattingen ontstaan.",
-    "Omdat Stata een syntaxisfout geeft wanneer selectie- en uitkomstvergelijking dezelfde variabelen bevatten.",
-    "Omdat de Likelihood Ratio-toets in dat geval altijd negatief uitvalt.",
-    "Omdat het model dan mathematisch identiek wordt aan een lineair kansmodel (LPM)."
-   ],
-   "answer": 0,
-   "explain": "Zonder exclusievariabele berust de identificatie uitsluitend op de zwakke niet-lineariteit van lambda(z*gamma). Omdat corr(mills, gammahat) nagenoeg -1 is, leidt dit tot extreme collineariteit met x, wat resulteert in torenhoge standaardfouten en onbruikbare schattingen.",
-   "level": 3
+  "cards": [
+    {
+      "id": "crd-c01",
+      "front": "Wat is het methodologische verschil tussen censurering en troncering?",
+      "back": "Bij **censurering** zijn de verklarende variabelen $x$ voor de gehele steekproef bekend en is uitsluitend $y$ afgetopt op een drempel (bv. gewerkte uren = 0).\n\nBij **troncering** ontbreken zowel $y$ als $x$ buiten de drempelwaarde en is de gehele steekproef ingeperkt tot een deelpopulatie (bv. enkel toegelaten studenten).",
+      "skill": "censoring-truncation"
+    },
+    {
+      "id": "crd-c02",
+      "front": "Waarom faalt OLS bij begrensde afhankelijke variabelen (hoekoplossingen)?",
+      "back": "1. **OLS op de hele steekproef**: Opeenhoping van nullen vlakt de hellingscoëfficiënt af naar 0 (*attenuation bias*).\n2. **OLS op positieve waarden ($y > 0$)**: Conditioneren op $y > 0$ leidt tot $E(u \\mid y>0, x) = \\sigma \\lambda(x'\\beta/\\sigma) \\ne 0$. Het weglaten van $\\sigma \\lambda$ veroorzaakt *omitted variable bias*.",
+      "skill": "censoring-truncation"
+    },
+    {
+      "id": "crd-c03",
+      "front": "Wat is de grote examenvalkuil bij het interpreteren van de Tobit-coëfficiënt $\\beta$?",
+      "back": "De coëfficiënt $\\beta_k$ is het marginale effect op de **latente variabele** $y^*$, NIET op de werkelijk waargenomen uitkomst $y$!\n\nVoor het totale effect op de waargenomen uitkomst $E(y)$ moet $\\beta_k$ geschaald worden met de kans op een positieve uitkomst: $\\frac{\\partial E(y \\mid x)}{\\partial x_k} = \\beta_k \\Phi(c^*)$.",
+      "skill": "tobit-marginal-effects"
+    },
+    {
+      "id": "crd-c04",
+      "front": "Welke Stata predict-opties horen bij de drie Tobit marginale effecten in `margins`?",
+      "back": "- `predict(e(0,.))`: Getrunceerd effect op positieve observaties $E(y \\mid y > 0)$\n- `predict(ystar(0,.))`: Ongeconditioneerd effect op waargenomen uitkomst $E(y)$\n- `predict(pr(0,.))`: Marginaal effect op de participatiekans $P(y > 0)$",
+      "skill": "tobit-marginal-effects"
+    },
+    {
+      "id": "crd-c05",
+      "front": "Wat houdt de McDonald-Moffitt decompositie van het Tobit-model in?",
+      "back": "Het totale marginale effect op $E(y)$ wordt opgesplitst in twee economische mechanismen:\n$$\\frac{\\partial E(y \\mid x)}{\\partial x_k} = \\underbrace{\\Phi(c^*) \\frac{\\partial E(y \\mid x, y>0)}{\\partial x_k}}_{\\text{Intensieve marge: reeds actieven}} + \\underbrace{E(y \\mid x, y>0) \\frac{\\partial P(y>0 \\mid x)}{\\partial x_k}}_{\\text{Extensieve marge: nieuwe toetreders}}$$",
+      "skill": "tobit-marginal-effects"
+    },
+    {
+      "id": "crd-c06",
+      "front": "Wat is de Inverse Mills Ratio (IMR) en waarom voegt Heckman deze toe?",
+      "back": "$$\\lambda(c) = \\frac{\\phi(c)}{\\Phi(c)}$$\n\nBij selectie op $h = 1$ geldt $E(e \\mid h=1) = \\rho \\sigma_e \\lambda(z'\\gamma)$. De IMR fungeert als de 'weggelaten variabele' die controleert voor niet-willekeurige steekproefselectie.",
+      "skill": "sample-selection-bias"
+    },
+    {
+      "id": "crd-c07",
+      "front": "Waarom zijn standaardfouten van handmatige OLS in stap 2 van Heckman ongeldig?",
+      "back": "1. **Generated regressor problem**: $\\hat{\\lambda}$ is een geschatte variabele; OLS negeert de steekproefvariantie van $\\hat{\\gamma}$ uit stap 1.\n2. **Heteroskedasticiteit**: De residuele variantie in stap 2 hangt af van $z_i'\\gamma$.\n\nGebruik daarom altijd `heckman ..., twostep` in Stata.",
+      "skill": "heckman-twostep"
+    },
+    {
+      "id": "crd-c08",
+      "front": "Waarom is een exclusierestrictie onmisbaar bij het Heckman-model?",
+      "back": "De Inverse Mills Ratio $\\lambda(z'\\gamma)$ is nagenoeg perfect lineair gecorreleerd met de index $z'\\gamma$ ($r = -0.9944$).\n\nZonder exclusievariabele ($z = x$) ontstaat extreme **multicollineariteit** tussen $\\lambda$ en $x$ in stap 2, waardoor de standaardfouten ontploffen.",
+      "skill": "heckman-twostep"
+    }
+  ],
+  "meta": {
+    "author": "antigravity",
+    "created": "2026-10-26"
   }
- ],
- "production": {
-  "type": "explain",
-  "lang": "nl",
-  "minWords": 100,
-  "prompt": "**Empirische Case: Vrouwelijke Loonvorming en Arbeidsaanbod (`mroz.dta`)**\n\nJe treedt op als econometrisch adviseur voor het Ministerie van Werkgelegenheid. Je onderzoekt de loonopbrengst van onderwijs voor gehuwde vrouwen aan de hand van de Mroz-dataset ($N = 753$). Van de 753 vrouwen werken er 428 ($hours > 0$) en zijn er 325 niet-actief ($hours = 0$).\n\nEen junior analist voert een gewone OLS-regressie uit op de 428 werkende vrouwen: `reg lwage educ exper if hours > 0`. Hieruit blijkt dat elk extra schooljaar het loon met **10.8%** doet stijgen ($p < 0.001$). Vervolgens schat jij het Heckman-tweestapsmodel:\n```stata\nheckman lwage educ exper, select(lfp = age educ kids mtr) twostep\n```\nDe gecorrigeerde coëfficiënt voor `educ` daalt naar **0.0585** ($p = 0.049$). In het `/mills` paneel staat `lambda = -0.8664` ($z = -2.17, p = 0.030$), met $\\rho = -0.9291$ en $\\sigma = 0.9326$.\n\nBeantwoord de volgende vier vragen gestructureerd in academisch Nederlands:\n1. **Selectieprobleem**: Waarom is de naïeve OLS-schatting van 10.8% vertekend en inconsistent?\n2. **Toetsing**: Interpreteer de hypothesetoets op `lambda` en concludeer of de selectiebias statistisch significant is bij $\\alpha = 0.05$.\n3. **Economische betekenis van $\\rho$**: Wat verklaart de negatieve correlatie $\\rho = -0.9291$ tussen participatie- en loonfouttermen in deze context?\n4. **Exclusierestrictie**: Waarom zijn `kids` en `mtr` geschikte exclusievariabelen en waarom is het weglaten van dergelijke variabelen fataal voor de schatting?",
-  "model": "**1. Waarom de naïeve OLS-schatting vertekend is (Sample Selection Bias):**\nDe groep werkende vrouwen is geen toevallige steekproef uit de vrouwelijke bevolking. Vrouwen participeren alleen als het marktaanbodloon hun persoonlijke reserveringsloon overstijgt. Als ongeobserveerde factoren (zoals werkmotivatie, niet-arbeidsinkomen of gezinssituatie) zowel de participatiebeslissing als het potentiële loon beïnvloeden, ontstaat correlatie tussen de verklarende variabelen en de foutterm in de geselecteerde substeekproef ($E(u \\mid x, hours > 0) \\ne 0$). OLS lijdt dan aan een weggelaten-variabelefout (omitted variable bias) door het weglaten van de Inverse Mills Ratio (lambda). Hierdoor werd het werkelijke effect van opleiding in de naïeve OLS overschat (10.8% versus 5.85% na correctie).\n\n**2. Hypothesetoets op selectiebias:**\nIn het Heckman-model geldt $\\beta_\\lambda = \\rho \\cdot \\sigma_u$. Omdat de residuele standaardafwijking $\\sigma_u = 0.9326 > 0$, toetst de $z$-toets op $\\beta_\\lambda = 0$ rechtstreeks de nulhypothese $H_0: \\rho = 0$ (geen correlatie tussen selectie- en uitkomstfoutterm). We vinden $z = -2.17$ met $p = 0.030$. Aangezien $p = 0.030 < 0.05$, verwerpen we de nulhypothese op het 5%-significantieniveau. Er is statistisch significant bewijs voor selectiebias, wat bewijst dat de Heckman-correctie methodologisch vereist is.\n\n**3. Economische interpretatie van $\\rho = -0.9291$:**\nDe correlatie $\\rho = \\text{corr}(u, v) = -0.9291$ is sterk negatief. Dit duidt erop dat ongeobserveerde factoren die de participatiekans verhogen (hoge $v$), gepaard gaan met een lagere ongeobserveerde looncomponent (lage $u$). Economisch weerspiegelt dit een noodzaak-gedreven arbeidsaanbod: vrouwen die vanuit hun gezinssituatie of financieel precaire positie gedwongen zijn te werken, accepteren ook lagere loonaanbiedingen. Een selectie op werkenden bevat daardoor relatief veel personen met ongunstige ongeobserveerde loonkenmerken.\n\n**4. De exclusierestricties (`kids` en `mtr`):**\nVoor een betrouwbare identificatie van het Heckman-model moet de selectievector $z$ minstens één variabele bevatten die wel de participatie beïnvloedt, maar géén direct effect heeft op het marktuurloon. De aanwezigheid van jonge kinderen (`kids`) en het marginaal belastingtarief van het huishouden (`mtr`) bepalen de opportuniteitskost van arbeid en het reserveringsloon van de vrouw, maar zijn geen determinanten van haar productiviteit bij een werkgever. Zonder dergelijke exclusievariabelen is de Inverse Mills Ratio over een breed bereik vrijwel perfect gecorreleerd met de loonregressoren (in Computerklas 6 vonden we $\\text{corr}(\\lambda, z\\gamma) = -0.9944$). Zonder exclusie ontstaat catastrofale multicollineariteit in de tweede stap, wat leidt tot opgeblazen standaardfouten en volstrekt onstabiele coëfficiënten.",
-  "rubric": [
-   "Uitleg dat niet-werkenden niet toevallig ontbreken (reserveringsloon overstijgt marktloon) en dat OLS leidt tot weggelaten-variabelefout (omitted variable bias)",
-   "Correcte statistische hypothesetoetsing op lambda / rho met p = 0.030 < 0.05 en formele verwerping van H0",
-   "Onderbouwde economische verklaring voor de negatieve correlatie rho (arbeidsaanbod gedreven door financiële nood / reserveringsloondynamiek)",
-   "Verantwoording van kids en mtr als valide exclusierestricties en vermelding van het ernstige multicollineariteitsrisico bij ontbreken van exclusie"
-  ]
- },
- "cards": [
-  {
-   "id": "crd-c01",
-   "front": "Hoe schat je in Stata een Tobit-model voor gewerkte uren met linkse censurering op nul?",
-   "back": "`tobit hours educ exper age kidsl6, ll(0)`\n\nDe optie `ll(0)` specificeert *left-censoring* op de drempelwaarde 0.",
-   "skill": "tobit-marginal-effects"
-  },
-  {
-   "id": "crd-c02",
-   "front": "Wat is de grote examenvalkuil bij het interpreteren van de Tobit-coëfficiënt $\\beta$?",
-   "back": "De coëfficiënt $\\beta$ is het marginale effect op de *latente* variabele $y^*$, NIET op de werkelijk waargenomen uitkomst $y$!\n\nVoor het effect op waargenomen uren moet $\\beta$ vermenigvuldigd worden met $\\Phi(c^*)$ (via `margins, predict(ystar(0,.))`).",
-   "skill": "tobit-marginal-effects"
-  },
-  {
-   "id": "crd-c03",
-   "front": "Welk Stata margins-commando berekent het effect van opleiding op het aantal uren voor uitsluitend werkende vrouwen ($E(y \\mid y > 0)$)?",
-   "back": "`margins, dydx(educ) atmeans predict(e(0,.))`\n\nDe optie `predict(e(0,.))` conditioneert de verwachtingswaarde op strikt positieve waarnemingen.",
-   "skill": "tobit-marginal-effects"
-  },
-  {
-   "id": "crd-c04",
-   "front": "Wat is de wiskundige formule van de Inverse Mills Ratio $\\lambda(c)$ en welke Stata-functies genereren deze?",
-   "back": "$$\\lambda(c) = \\frac{\\phi(c)}{\\Phi(c)}$$\n\nIn Stata: `gen imr = normalden(w) / normal(w)`, waarbij `w` de lineaire index $z\\hat{\\gamma}$ uit een Probit-model is.",
-   "skill": "sample-selection-bias"
-  },
-  {
-   "id": "crd-c05",
-   "front": "Met welk Stata-commando schat je het Heckman-selectiemodel in twee stappen met gecorrigeerde standaardfouten?",
-   "back": "`heckman lwage educ exper, select(lfp = age educ kids mtr) twostep`\n\nDe optie `twostep` past automatisch de Heckman-covariantiematrixcorrectie toe voor de generated regressor.",
-   "skill": "heckman-twostep"
-  },
-  {
-   "id": "crd-c06",
-   "front": "Waarom is een exclusierestrictie (minstens één variabele in $z$ die niet in $x$ staat) cruciaal bij Heckman?",
-   "back": "Omdat de Inverse Mills Ratio $\\lambda(z\\gamma)$ nagenoeg perfect lineair gecorreleerd is met de lineaire index ($r \\approx -0.99$). Zonder exclusievariabele ontstaat zware multicollineariteit tussen $\\lambda$ en de regressoren $x$ in stap 2.",
-   "skill": "heckman-twostep"
-  }
- ],
- "meta": {
-  "author": "antigravity",
-  "created": "2026-10-26"
- }
 }

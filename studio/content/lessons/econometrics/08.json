@@ -8,30 +8,30 @@
  "subtitle": "Difference-in-Differences (parallel trends), Event Studies, Synthetic Control (synth) en Regression Discontinuity (Sharp & Fuzzy RDD)",
  "level": "expert",
  "minutes": 45,
- "summary": "Beleidsevaluatie beantwoordt de causale vraag: wat zou er met de behandelde groep gebeurd zijn zónder beleidsingreep? In deze les beheers je de drie gouden quasi-experimentele methoden uit Computerklas 8: Difference-in-Differences (DiD) met parallel trends en event studies, de Synthetic Control Method (SCM) voor geaggregeerde casestudy's, en Regression Discontinuity Designs (Sharp en Fuzzy RDD) rond beleidsdrempels.",
+ "summary": "Beleidsevaluatie beantwoordt de causale vraag: wat zou er met de behandelde groep gebeurd zijn zónder beleidsingreep? In deze les beheers je de toonaangevende quasi-experimentele methoden uit Hoorcolleges 8-9 en Computerklas 8: het Potential Outcomes Framework, Difference-in-Differences (DiD) met parallel trends en event studies, de Synthetic Control Method (SCM) voor geaggregeerde casestudy's, en Regression Discontinuity Designs (Sharp en Fuzzy RDD) rond beleidsdrempels.",
  "objectives": [
   {
    "id": "potential-outcomes",
-   "text": "Je formaliseert het Potential Outcomes Framework, definieert ATE (Average Treatment Effect) en ATT (Average Treatment Effect on the Treated), en verklaart waarom een naïeve vergelijking tussen behandelden en onbehandelden faalt door selectiebias."
+   "text": "Je formaliseert het Potential Outcomes Framework, definieert ATE (Average Treatment Effect), ATT (Average Treatment Effect on the Treated), ITT (Intention-to-Treat) en LATE (Local Average Treatment Effect), ontleedt het naïeve groepsverschil in ATT en selectiebias, en evalueert beleidsexperimenten zoals Tennessee Project STAR (Student/Teacher Achievement Ratio (Project STAR))."
   },
   {
    "id": "did-parallel-trends",
-   "text": "Je specificeert Difference-in-Differences en Event Study regressiemodellen in Stata (xtreg), interpreteert interactietermen en toetst de parallel trends aanname via pre-treatment placebo's."
+   "text": "Je specificeert Difference-in-Differences en dynamische Event Study modellen in Stata (xtreg), interpreteert interactietermen, toetst de parallel trends aanname via pre-treatment placebo's en lead-lag interacties, en analyseert minimumloonstudies (Card & Krueger 1994) en de Duitse hereniging."
   },
   {
    "id": "synthetic-control",
-   "text": "Je construeert een synthetische controlegroep met synth en voert statistische inferentie en validatie uit via in-space en in-time placebotoetsen met synth_runner."
+   "text": "Je motiveert en construeert een synthetische controlegroep met synth (convex omhulsel met w_j >= 0 en sum w_j = 1, minimalisatie van RMSPE (Root Mean Squared Prediction Error)) en voert statistische inferentie uit via in-space en in-time placebotoetsen met synth_runner."
   },
   {
    "id": "rdd-sharp-fuzzy",
-   "text": "Je onderscheidt Sharp van Fuzzy Regression Discontinuity Designs, toetst op datamanipulatie (bunching), en schat causale effecten (LATE) via lokale lineaire regressie en 2SLS (Two-Stage Least Squares via ivreg2)."
+   "text": "Je onderscheidt Sharp van Fuzzy Regression Discontinuity Designs rond een toewijzingsdrempel, toetst de aanname van lokale continuïteit en datamanipulatie via de McCrary dichtheidstest, en schat causale effecten (LATE) via lokale lineaire regressie en 2SLS (Two-Stage Least Squares via ivreg2)."
   }
  ],
  "sections": [
   {
    "id": "potential-outcomes",
-   "title": "Het Potential Outcomes Framework & Causale Inferentie",
-   "md": "Causale inferentie vormt de kern van empirisch economisch onderzoek. We willen niet louter weten of een beleidsmaatregel gecorreleerd is met een uitkomst, maar wat het **causale effect** is: hoe verandert de uitkomst van een eenheid *omwille van* het beleid?\n\nHet wiskundige fundament hiervoor is het **Potential Outcomes Framework** (ook bekend als het Rubin Causal Model, ontwikkeld door Donald Rubin en Paul Holland). Stel dat we de impact van een binaire behandeling $D_i \\in \\{0, 1\\}$ willen evalueren (bijvoorbeeld een herscholingsprogramma, een belastingwijziging of de Duitse hereniging). Voor elk individu of elke regio $i$ definiëren we twee potentiële uitkomsten:\n- $Y_{1i}$: de uitkomst wanneer eenheid $i$ behandeld wordt ($D_i = 1$).\n- $Y_{0i}$: de uitkomst wanneer eenheid $i$ niet behandeld wordt ($D_i = 0$).\n\nHet individuele causale effect is het verschil tussen deze twee toestanden:\n$$\\tau_i = Y_{1i} - Y_{0i}$$\n\n### Het fundamentele probleem van causale inferentie\nIn de praktijk observeren we voor elke eenheid $i$ slechts één van beide werelden. De feitelijk waargenomen uitkomst $Y_i$ is immers:\n$$Y_i = D_i Y_{1i} + (1 - D_i) Y_{0i}$$\nAls iemand deelneemt aan het programma ($D_i = 1$), zien we $Y_{1i}$, maar blijft $Y_{0i}$ principieel onwaarneembaar. Deze ontbrekende toestand noemen we het **counterfactual** (het contrafeitelijke scenario): *wat zou er met de deelnemer gebeurd zijn zónder deelname?* Omdat we nooit tegelijkertijd $Y_{1i}$ en $Y_{0i}$ voor dezelfde eenheid kunnen observeren, kunnen we het individuele causale effect $\\tau_i$ nooit direct berekenen.\n\nDaarom richten econometristen zich op populatiegemiddelden:\n1. **Average Treatment Effect (ATE)**: Het gemiddelde effect over de gehele populatie:\n   $$\\text{ATE} = \\mathbb{E}[Y_{1i} - Y_{0i}]$$\n2. **Average Treatment Effect on the Treated (ATT)**: Het gemiddelde effect voor de groep die effectief behandeld is:\n   $$\\text{ATT} = \\mathbb{E}[Y_{1i} - Y_{0i} \\mid D_i = 1]$$\n\n### Waarom simpelweg vergelijken faalt: De Selectiebias\nWat gebeurt er als een onderzoeker simpelweg het gemiddelde van de behandelden vergelijkt met het gemiddelde van de onbehandelden? We ontleden dit verschil wiskundig:\n$$\\begin{aligned}\n\\mathbb{E}[Y_i \\mid D_i = 1] - \\mathbb{E}[Y_i \\mid D_i = 0] &= \\mathbb{E}[Y_{1i} \\mid D_i = 1] - \\mathbb{E}[Y_{0i} \\mid D_i = 0] \\&= \\underbrace{\\mathbb{E}[Y_{1i} - Y_{0i} \\mid D_i = 1]}_{\\text{ATT}} + \\underbrace{\\left( \\mathbb{E}[Y_{0i} \\mid D_i = 1] - \\mathbb{E}[Y_{0i} \\mid D_i = 0] \\right)}_{\\text{Selectiebias}}\n\\end{aligned}$$\n\nDe naïeve vergelijking meet dus de zuivere ATT **plus een vertekening: de selectiebias**. Deze selectiebias ontstaat zodra de behandelde groep in afwezigheid van het programma systematisch verschilt van de controlegroep:\n- Kiezen werknemers met een hogere intrinsieke motivatie vaker voor een vrijwillige opleiding? Dan is $\\mathbb{E}[Y_{0i} \\mid D_i=1] > \\mathbb{E}[Y_{0i} \\mid D_i=0]$, waardoor de naïeve OLS-schatting (OLS = Ordinary Least Squares) het opleidingseffect overschat (positieve selectiebias).\n- Nemen werklozen met de slechtste arbeidsmarktkansen deel aan een verplicht re-integratietraject? Dan is er sprake van negatieve selectiebias.\n\n> [!pitfall] De naïeve vergelijking is zelden causaal\n> Een simpel verschil tussen deelnemers en niet-deelnemers in cross-sectionele data toont enkel een associatie. Alleen wanneer toewijzing zuiver gerandomiseerd is (zoals in een Randomized Controlled Trial (RCT)), geldt dat $\\mathbb{E}[Y_{0i} \\mid D_i=1] = \\mathbb{E}[Y_{0i} \\mid D_i=0]$, waardoor de selectiebias verdwijnt.\n\n### Quasi-experimentele methoden als redding\nOmdat gerandomiseerde experimenten bij macro-economisch en sociaal beleid vaak onethisch, onmogelijk of onbetaalbaar zijn, benutten econometristen **quasi-experimentele designs**:\n1. **Difference-in-Differences (DiD)**: Vergelijkt de temporele verandering vóór en na de beleidsingreep tussen een behandelde en een controlegroep. Hierdoor worden alle tijdsinvariante verschillen tussen de groepen (vaste selectiebias) en macro-trends weggefilterd.\n2. **Synthetic Control Method (SCM)**: Wanneer er slechts één behandelde eenheid is (bv. West-Duitsland in 1990) en een simpel gemiddelde van controlelanden faalt, construeert SCM een gewogen combinatie van donorlanden die de behandelde eenheid in de pre-behandelingsperiode perfect nabootst.\n3. **Regression Discontinuity Design (RDD)**: Wanneer toewijzing aan behandeling scherp verspringt bij een vooraf vastgelegde drempelwaarde van een continue toewijzingsvariabele (forcing variable), benadert de vergelijking net links en net rechts van de drempel een lokaal experiment.",
+   "title": "Het Potential Outcomes Framework, Selectiebias & Het Verschil-Schattingsmodel",
+   "md": "Causale inferentie vormt de kern van modern econometrisch beleidsonderzoek. We willen niet louter weten of een beleidsmaatregel statistisch gecorreleerd is met een uitkomst, maar wat het **causale effect** is: hoe verandert de uitkomst van een eenheid *omwille van* het beleid?\n\n### 1. Het Potential Outcomes Framework (Rubin Causal Model)\nHet formele fundament voor causale analyse is het **Potential Outcomes Framework** (ontwikkeld door Donald Rubin en Paul Holland). Beschouw de evaluatie van een binaire beleidsmaatregel of behandeling $D_i \\in \\{0, 1\\}$ voor eenheid $i$ (bijvoorbeeld deelname aan een opleiding, een minimumloonverhoging of een belastingkrediet). Voor elk individu definiëren we twee potentiële uitkomsten:\n- $Y_{1i}$: de potentiële uitkomst wanneer individu $i$ de behandeling ontvangt ($D_i = 1$).\n- $Y_{0i}$: de potentiële uitkomst wanneer individu $i$ de behandeling niet ontvangt ($D_i = 0$).\n\nHet individuele causale behandelingseffect is het verschil tussen deze twee toestanden:\n$$\n\\tau_i = Y_{1i} - Y_{0i}\n$$\n\n### Het fundamentele probleem van causale inferentie\nIn de werkelijkheid observeren we voor elk individu slechts één van beide werelden. De feitelijk waargenomen uitkomst $Y_i$ is immers:\n$$\nY_i = D_i Y_{1i} + (1 - D_i) Y_{0i}\n$$\nAls individu $i$ deelneemt aan het programma ($D_i = 1$), zien we $Y_{1i}$, maar blijft $Y_{0i}$ principieel onwaarneembaar. Deze ontbrekende toestand noemen we het **counterfactual** (het contrafeitelijke scenario): *wat zou er met de deelnemer gebeurd zijn indien hij niet had deelgenomen?* Omdat we nooit tegelijkertijd $Y_{1i}$ en $Y_{0i}$ voor dezelfde eenheid kunnen observeren, kan het individuele causale effect $\\tau_i$ nooit direct berekend worden.\n\n### De vier centrale causale parameters\nEconometristen richten zich daarom op populatiegemiddelden:\n1. **Average Treatment Effect (ATE)**: Het verwachte behandelingseffect over de gehele populatie:\n$$\n\\text{ATE} = \\mathbb{E}[Y_{1i} - Y_{0i}]\n$$\n2. **Average Treatment Effect on the Treated (ATT)**: Het verwachte behandelingseffect specifiek voor de subpopulatie die daadwerkelijk behandeld is:\n$$\n\\text{ATT} = \\mathbb{E}[Y_{1i} - Y_{0i} \\mid D_i = 1]\n$$\n3. **Intention-to-Treat (ITT)**: Het gemiddelde effect van het *aanbieden* of *toewijzen* van de behandeling, ongeacht of het individu de behandeling feitelijk heeft nageleefd (cruciaal bij beleidsexperimenten met imperfecte naleving).\n4. **Local Average Treatment Effect (LATE)**: Het causale effect voor de subpopulatie van 'compliers' (individuen die uitsluitend behandeld worden omdát ze daartoe aangezet worden door een instrument of beleidsdrempel).\n\n### Waarom simpelweg vergelijken faalt: De Selectiebias\nWat gebeurt er als een onderzoeker simpelweg het steekproefgemiddelde van de behandelden vergelijkt met het gemiddelde van de niet-behandelden? We ontleden dit verschil wiskundig:\n$$\n\\mathbb{E}[Y_i \\mid D_i = 1] - \\mathbb{E}[Y_i \\mid D_i = 0] = \\underbrace{\\mathbb{E}[Y_{1i} - Y_{0i} \\mid D_i = 1]}_{\\text{ATT}} + \\underbrace{\\left( \\mathbb{E}[Y_{0i} \\mid D_i = 1] - \\mathbb{E}[Y_{0i} \\mid D_i = 0] \\right)}_{\\text{Selectiebias}}\n$$\n\nDe naïeve vergelijking levert de zuivere ATT **plus een verstorende component: de selectiebias**. Deze selectiebias ontstaat zodra de behandelde groep in afwezigheid van het programma systematisch verschilt van de controlegroep:\n- **Positieve selectiebias**: Kiezen werknemers met een hogere intrinsieke motivatie of cognitieve vaardigheden vaker voor een vrijwillige opleiding? Dan is $\\mathbb{E}[Y_{0i} \\mid D_i=1] > \\mathbb{E}[Y_{0i} \\mid D_i=0]$. De naïeve vergelijking overschat het effect van de opleiding.\n- **Negatieve selectiebias**: Patiënten die in het ziekenhuis worden opgenomen ($D_i = 1$) hebben een slechtere basisgezondheid dan mensen die thuisblijven ($D_i = 0$). Omdat $\\mathbb{E}[Y_{0i} \\mid D_i=1] < \\mathbb{E}[Y_{0i} \\mid D_i=0]$, leidt een naïeve vergelijking tot de absurde conclusie dat ziekenhuizen mensen ongezonder maken (Angrist en Pischke 2009).\n\n### 2. Het gerandomiseerde experiment (RCT) & Het Verschil-Schattingsmodel\nIn een **Randomized Controlled Trial (RCT)** wordt de behandeling $D_i$ zuiver gerandomiseerd toegewezen (bijvoorbeeld door een computer). Hierdoor is toewijzing statistisch onafhankelijk van de potentiële uitkomsten:\n$$\nD_i \\perp (Y_{0i}, Y_{1i}) \\implies \\mathbb{E}[Y_{0i} \\mid D_i = 1] = \\mathbb{E}[Y_{0i} \\mid D_i = 0]\n$$\nOnder zuivere randomisatie verdwijnt de selectiebias exact! Het verschil in steekproefgemiddelden tussen behandelden en onbehandelden is dan een zuivere en consistente schatter voor zowel ATE als ATT:\n$$\n\\hat{\\beta}_2 = \\bar{Y}_T - \\bar{Y}_C = \\mathbb{E}[Y_i \\mid D_i = 1] - \\mathbb{E}[Y_i \\mid D_i = 0] = \\text{ATE} = \\text{ATT}\n$$\n\nIn regressievorm schatten we dit met het **Verschil-Schattingsmodel (Difference Estimator)**:\n$$\nY_i = \\beta_1 + \\beta_2 D_i + e_i\n$$\nHierbij is $\\hat{\\beta}_2$ identiek aan het verschil in steekproefgemiddelden $\\bar{Y}_T - \\bar{Y}_C$.\n\n#### Waarom extra verklarende variabelen toevoegen aan een experiment?\nOnderzoekers breiden het model vaak uit met controle-variabelen: $Y_i = \\beta_1 + \\beta_2 D_i + X_i'\\gamma + e_i$. Er zijn twee doorslaggevende redenen om dit te doen:\n1. **Efficiëntiewinst (kleinere standaardfouten)**: Omdat $D_i$ gerandomiseerd is, is $D_i$ ongecorreleerd met $X_i$. Het weglaten van $X_i$ veroorzaakt dus geen weggelaten-variabele-vertekening (omitted variable bias). Maar het opnemen van $X_i$ verklaart een deel van de residuele variantie in $Y_i$, waardoor de variantie van de storingsterm daalt en $\\text{SE}(\\hat{\\beta}_2)$ kleiner wordt. Dit verhoogt de statistische power van de hypothesetoets.\n2. **Conditionele randomisatie**: Wanneer toewijzing slechts gerandomiseerd is *gegeven* bepaalde observeerbare strata $X_i$ (bijvoorbeeld randomisatie binnen scholen of binnen leeftijdsklassen), elimineert het controleren voor $X_i$ potentiële selectiebias.\n\n### 3. Empirische Toepassing: Tennessee Project STAR (Krueger 1999)\nEen baanbrekend voorbeeld van het verschil-schattingsmodel is **Tennessee's Project STAR** (Student/Teacher Achievement Ratio, geanalyseerd door Alan Krueger in 1999, `star.dta`). \n\n#### De opzet van het experiment\nDe wetgevende macht van Tennessee financierde een grootschalig longitudinaal onderwijsexperiment (kostprijs circa $12 miljoen, 1985–1989). In totaal namen 11.600 leerlingen en leerkrachten van 80 scholen deel van de kleuterklas (kindergarten) tot het 3e leerjaar. Binnen elke deelnemende school werden leerlingen en leerkrachten gerandomiseerd toegewezen aan één van drie klassentypes:\n1. **Kleine klassen** (`SMALL = 1`): 13–17 leerlingen per leerkracht.\n2. **Reguliere klassen** (`REGULAR = 1`): 22–25 leerlingen per leerkracht.\n3. **Reguliere klassen met fulltime onderwijsassistent** (`AIDE = 1`): 22–25 leerlingen.\n\nDe primaire uitkomstvariabele $Y_i$ is de gestandaardiseerde score op lees- en wiskundetoetsen (`TOTALSCORE`).\n\n#### Schatten van het klassengrootte-effect\nWe vergelijken kleine klassen (`SMALL = 1`) met reguliere klassen zonder assistent (`SMALL = 0`):\n$$\n\\text{TOTALSCORE}_i = \\beta_1 + \\beta_2 \\text{SMALL}_i + e_i\n$$\nHet verschil in gemiddelde toetsscore bedraagt $\\hat{\\beta}_2 = 13{,}899$ punten ($p < 0{,}001$). Om de economische omvang te interpreteren, drukken we dit uit in standaarddeviaties van de testscore ($\\text{SD} = 73{,}7$ punten):\n$$\n\\text{Effect in SD} = \\frac{13{,}899}{73{,}7} \\approx 0{,}19 \\text{ SD} \\quad (\\text{met } \\text{SE} = 0{,}03)\n$$\nEen reductie in klassengrootte verhoogt de prestaties dus met bijna één vijfde standaarddeviatie — een substantiële onderwijswinst!\n\n#### Controleren voor School Fixed Effects\nOmdat de randomisatie plaatsvond *binnen* scholen (en niet tussen scholen), moeten we controleren voor school-specifieke heterogeniteit via 78 dummyvariabelen (`SCHOOL_j`):\n$$\n\\text{TOTALSCORE}_i = \\beta_1 + \\beta_2 \\text{SMALL}_i + \\beta_3 \\text{TCHEXPER}_i + \\sum_{j=2}^{79} \\delta_j \\text{SCHOOL}_{ji} + e_i\n$$\nDe gezamenlijke F-toets op de school-dummy's verwerpt de nulhypothese krachtig: $F(78, 3663) = 14{,}12$ ($p < 0{,}0001$). Dit toont aan dat schoolkwaliteit sterk verschilt, maar de puntschatting van $\\hat{\\beta}_2$ blijft robuust rond $+13$ à $+14$ punten.\n\n#### Balanceringstoets via het Lineair Kansmodel (LPM)\nOm empirisch te verifiëren of de randomisatie geslaagd is, schat Krueger een **balanceringstoets** via een Lineair Kansmodel (LPM). We regresseren de behandelingsindicator `small` op leerling- en leerkrachtkenmerken:\n```stata\nreg small boy white_asian tchexper freelunch if aide==0\n```\nDe regressieresultaten uit de colleges tonen:\n- Coëfficiënt `boy`: $0{,}0014$ ($p = 0{,}931$)\n- Coëfficiënt `white_asian`: $0{,}0044$ ($p = 0{,}822$)\n- Coëfficiënt `tchexper`: $-0{,}0006$ ($p = 0{,}675$)\n- Coëfficiënt `freelunch`: $-0{,}0009$ ($p = 0{,}961$)\n- Model F-statistiek: $F(4, 3738) = 0{,}06$ ($p = 0{,}9936$), $R^2 = 0{,}0001$\n\nGeen enkele individuele variabele is statistisch significant en de gezamenlijke $F$-toets heeft een p-waarde van $0{,}9936$. Dit bewijst dat de toewijzing aan kleine klassen volkomen orthogonaal is aan de achtergrondkenmerken van de leerlingen!\n\n> [!pitfall] Was Project STAR een 100% ideaal beleidsexperiment?\n> Hoewel Project STAR geldt als een van de meest invloedrijke experimenten in de sociale wetenschappen, kende het reële imperfecties die de interne en externe validiteit bedreigen:\n> 1. **Non-compliance en Crossovers**: Sommige ouders protesteerden hevig tegen plaatsing in een reguliere klas en wisten hun kind over te plaatsen naar een kleine klas. Ook herplaatsten schooldirecteuren storende leerlingen.\n> 2. **Selectieve uitval (Attrition)**: Leerlingen verhuisden of stapten over naar privéscholen, waarbij uitval gecorreleerd kon zijn met gezinsachtergrond.\n> 3. **Hawthorne- en John Henry-effecten**: Leerkrachten in kleine klassen wisten dat ze onderzocht werden en leverden extra inspanningen (Hawthorne-effect). Omgekeerd probeerden sommige leerkrachten in reguliere klassen te bewijzen dat grote klassen net zo goed presteerden (John Henry-effect).\n> 4. **ITT versus ATT**: Door crossovers meet de initiële toewijzing slechts het Intention-to-Treat (ITT) effect; voor de ATT is Two-Stage Least Squares (2SLS) vereist.",
    "checks": [
     {
      "id": "c01",
@@ -43,8 +43,8 @@
      "options": [
       "De selectiebias",
       "Het Average Treatment Effect on the Treated (ATT)",
-      "De Average Treatment Effect (ATE)",
-      "Het toevallige steekproefresidu"
+      "Het Average Treatment Effect over de populatie (ATE)",
+      "De steekproeffout door heteroskedastische storingstermen"
      ],
      "answer": 0
     },
@@ -53,7 +53,7 @@
      "type": "type",
      "skill": "potential-outcomes",
      "level": 2,
-     "prompt": "Hoe noemen we in het Potential Outcomes Framework de ontbrekende toestand $Y_{0i}$ voor een individu dat effectief behandeld is ($D_i = 1$)? Typ de term in het Nederlands of Engels.",
+     "prompt": "Hoe noemen we in het Potential Outcomes Framework de ontbrekende toestand $Y_{0i}$ voor een individu dat effectief behandeld is ($D_i = 1$)? Typ de Nederlandse of Engelse term.",
      "explain": "De hypothetische uitkomst die een behandelde eenheid zou hebben gehad indien zij niet behandeld was, heet het counterfactual of de contrafeitelijke toestand.",
      "answers": [
       "counterfactual",
@@ -67,8 +67,8 @@
   },
   {
    "id": "did-parallel-trends",
-   "title": "Difference-in-Differences (DiD) & Event Studies",
-   "md": "Difference-in-Differences (DiD) is een van de meest gebruikte econometrische technieken voor beleidsevaluatie op paneldata of herhaalde cross-secties. \n\n### Het klassieke 2x2 DiD-model\nStel dat we twee groepen (behandeld $T$ en controle $C$) observeren in twee tijdsperioden: vóór de invoering van het beleid ($t=\\text{pre}$) en erna ($t=\\text{post}$). De DiD-schatter berekent letterlijk het *verschil in de temporele verschillen*:\n$$\\hat{\\tau}_{\\text{DiD}} = \\left( \\bar{Y}_{T, \\text{post}} - \\bar{Y}_{T, \\text{pre}} \\right) - \\left( \\bar{Y}_{C, \\text{post}} - \\bar{Y}_{C, \\text{pre}} \\right)$$\n- Het eerste verschil $(\\bar{Y}_{T, \\text{post}} - \\bar{Y}_{T, \\text{pre}})$ vangt zowel het ware beleidseffect als algemene tijdstrends op.\n- Het tweede verschil $(\\bar{Y}_{C, \\text{post}} - \\bar{Y}_{C, \\text{pre}})$ meet de zuivere tijdstrend in afwezigheid van behandeling.\n- Door het tweede van het eerste af te trekken, verdwijnt de macro-tijdstrend én worden alle permanente niveauverschillen tussen behandelden en controle-eenheden geëlimineerd!\n\n### Regressiespecificatie in Stata\nIn een regressiekader schatten we DiD via interactietermen. Met paneldata en Random Effects (RE) of Fixed Effects (FE) luidt het standaardmodel:\n$$Y_{it} = \\beta_0 + \\beta_1 \\text{Post}_t + \\beta_2 \\text{Treat}_i + \\beta_3 (\\text{Post}_t \\times \\text{Treat}_i) + X_{it}'\\gamma + u_i + \\varepsilon_{it}$$\n\nIn Stata (Computerklas 8, Oefening 1.d) programmeren we dit elegant met de factor-variabele interactie-operator `##`:\n```stata\nxtreg gdp i.post##i.treat inf_rate trade educ, re vce(cluster country_e)\n```\nStata expandeert `i.post##i.treat` automatisch in:\n- `1.post`: het hoofdeffect $\\beta_1$ (de tijdstrend voor de controlegroep).\n- `1.treat`: het hoofdeffect $\\beta_2$ (het basisniveauverschil tussen behandelde en controlegroep vóór 1990).\n- `1.post#1.treat`: de interactieterm $\\beta_3$ — **dit is de causale DiD-schatter van het behandelingseffect (ATT)**!\n\n### Oplopende specificaties en controles\nIn Computerklas 8 analyseren we de economische impact van de Duitse hereniging in 1990 op het bbp per hoofd (`gdp`) van voormalig West-Duitsland (`treat = 1`, landcode 17) ten opzichte van 16 andere OECD-landen (OECD = Organisatie voor Economische Samenwerking en Ontwikkeling) over de periode 1960–1997. We schatten 5 oplopende modellen:\n1. `model_i`: Geen trends of fixed effects: `xtreg gdp i.post##i.treat inf_rate trade educ, re vce(cluster country_e)`\n2. `model_ii`: Lineaire gemeenschappelijke tijdstrend: `... educ year, re vce(cluster country_e)`\n3. `model_iii`: Tijd fixed effects voor elk jaar: `... educ i.year, re vce(cluster country_e)`\n4. `model_iv`: Two-Way Fixed Effects (land dummy's én jaar dummy's): `... educ i.year i.country_e, re vce(cluster country_e)`\n5. `model_v`: Land-specifieke lineaire tijdstrends: `... educ c.year##i.country_e, re vce(cluster country_e)`\n\nIn `model_v` schatten we $\\hat{\\beta}_3 = 738{,}07$ ($p = 0{,}014$). Een onderzoeker zou hieruit naïef kunnen concluderen dat de hereniging het West-Duitse bbp per hoofd significant deed stijgen met 738 dollar. Maar klopt deze causale claim wel?\n\n### De identificatie-aanname: Parallel Trends\nDe DiD-schatter identificeert het causale effect **als en slechts als de Common/Parallel Trends aanname opgaat**:\n$$\\mathbb{E}[Y_{0, \\text{post}} - Y_{0, \\text{pre}} \\mid \\text{Treat}=1] = \\mathbb{E}[Y_{0, \\text{post}} - Y_{0, \\text{pre}} \\mid \\text{Treat}=0]$$\n*In afwezigheid van het beleid zou de gemiddelde uitkomst van de behandelde groep parallel zijn geëvolueerd aan die van de controlegroep.* De groepen hoeven vóór de ingreep dus géén identiek niveau te hebben, maar hun groeipad (trend) moet parallel lopen!\n\n### Hoe toets je parallel trends? Twee cruciale testen\n\n#### 1. Placebotoets in de tijd (Placebo timing)\nAls de methode deugt, mag een 'fictieve' behandeling in het verleden géén significant effect hebben. We genereren een placebo-behandeling in 1987 en beperken de steekproef strikt tot de jaren vóór de echte hereniging (`year < 1990`):\n```stata\ngen post1 = (year >= 1987)\nxtreg gdp i.post1##i.treat inf_rate trade educ c.year##i.country_e if year < 1990, re vce(cluster country_e)\n```\nAls de placebo-interactieterm `1.post1#1.treat` statistisch significant blijkt ($p < 0{,}05$), wijst dit op een differentiële pre-trend en faalt de parallel trends aanname!\n\n#### 2. Het Event Study Model (Dynamische effecten)\nDe ultieme test is het schatten van een **Event Study**. Hierin vervangen we de enkele `post`-dummy door relatieve tijdsdummy's ten opzichte van het behandelingsjaar:\n```stata\ngen event = year - 1985\nreplace event = 1 if year < 1986\nreplace event = 10 if year >= 1995\n```\nWe kiezen het jaar direct vóór de hereniging (1989, corresponderend met `event = 1989 - 1985 = 4`) als referentiecategorie (`ib4.`):\n```stata\nxtreg gdp ib4.event##i.treat inf_rate educ c.year##i.country_e, re vce(cluster country_e)\n```\nDe interacties `event#treat` leveren de cruciale diagnostiek:\n- **Pre-treatment dummies** (`1.event#1.treat` t/m `3.event#1.treat` voor $t < 4$): Deze meten de verschillen in trends vóór de hereniging ten opzichte van basisjaar 1989. **Deze coëfficiënten moeten gezamenlijk en individueel gelijk zijn aan nul!**\n- In Computerklas 8 vinden we:\n  - `1.event#1.treat` ($\\le 1985$): coëfficiënt $-1238{,}43$ ($p = 0{,}000$)\n  - `2.event#1.treat` (1987): coëfficiënt $-404{,}82$ ($p = 0{,}019$)\n  - `3.event#1.treat` (1988): coëfficiënt $-184{,}79$ ($p = 0{,}014$)\n\n> [!important] Harde conclusie over DiD bij de Duitse hereniging\n> Omdat álle pre-treatment interacties sterk significant zijn ($p < 0{,}05$), is de aanname van parallelle trends onweerlegbaar **geschonden**. De eerdere positieve DiD-schatting van $+738$ dollar is volkomen vertekend en misleidend. Een simpel OECD-gemiddelde volstaat niet als controlegroep. We moeten overstappen naar de Synthetic Control Method!",
+   "title": "Difference-in-Differences (DiD) & Dynamische Event Studies",
+   "md": "Wanneer zuivere randomisatie niet mogelijk is, benutten econometristen observationele data met een longitudinale of panelstructuur. De **Difference-in-Differences (DiD)** methode is het belangrijkste werkpaard voor quasi-experimentele beleidsevaluatie.\n\n### 1. Van Difference Estimator naar Difference-in-Differences\nWaarom faalt de eenvoudige verschil-schatter bij niet-gerandomiseerde data?\n- De **Difference Estimator** ($\\bar{Y}_T - \\bar{Y}_C$) vergelijkt behandelden en niet-behandelden op een enkel tijdstip na de ingreep. Als beide groepen vóór de beleidswijziging al een verschillend basisniveau hadden, meet de verschil-schatter simpelweg die historische selectiebias mee als een beleidseffect.\n- De **Difference-in-Differences Estimator** vergelijkt de temporele verandering (vóór versus na) van de behandelde groep met de temporele verandering van de controlegroep. Hierdoor worden alle permanente, tijdsinvariante verschillen tussen de groepen én alle macro-economische tijdstrends weggefilterd!\n\n### 2. Het klassieke 2x2 DiD-kader\nStel dat we een behandelde groep ($T$) en een controlegroep ($C$) observeren in twee perioden: vóór de ingreep ($t = \\text{pre}$) en erna ($t = \\text{post}$). De DiD-schatter berekent letterlijk het *verschil in de temporele verschillen*:\n$$\n\\hat{\\delta}_{\\text{DiD}} = \\left( \\bar{Y}_{T, \\text{post}} - \\bar{Y}_{T, \\text{pre}} \\right) - \\left( \\bar{Y}_{C, \\text{post}} - \\bar{Y}_{C, \\text{pre}} \\right)\n$$\n- Het eerste verschil $(\\bar{Y}_{T, \\text{post}} - \\bar{Y}_{T, \\text{pre}})$ vangt zowel de tijdsevolutie als het reële beleidseffect op.\n- Het tweede verschil $(\\bar{Y}_{C, \\text{post}} - \\bar{Y}_{C, \\text{pre}})$ meet de zuivere tijdstrend in afwezigheid van de behandeling.\n- Door het tweede verschil van het eerste af te trekken, neutraliseren we de algemene tijdstrend en blijft het causale effect over!\n\n### 3. Regressiespecificatie in Stata\nIn een regressiekader schatten we het 2x2 DiD-model via Ordinary Least Squares (OLS) of panel Random Effects (RE):\n$$\nY_{it} = \\beta_1 + \\beta_2 \\text{Treat}_i + \\beta_3 \\text{Post}_t + \\delta (\\text{Treat}_i \\times \\text{Post}_t) + X_{it}'\\gamma + e_{it}\n$$\nDe vier verwachte celwaarden zijn:\n- Controle vóór: $\\mathbb{E}[Y_{it} \\mid \\text{Treat}=0, \\text{Post}=0] = \\beta_1$\n- Behandeld vóór: $\\mathbb{E}[Y_{it} \\mid \\text{Treat}=1, \\text{Post}=0] = \\beta_1 + \\beta_2$ (basisverschil $\\beta_2$)\n- Controle na: $\\mathbb{E}[Y_{it} \\mid \\text{Treat}=0, \\text{Post}=1] = \\beta_1 + \\beta_3$ (macro-tijdseffect $\\beta_3$)\n- Behandeld na: $\\mathbb{E}[Y_{it} \\mid \\text{Treat}=1, \\text{Post}=1] = \\beta_1 + \\beta_2 + \\beta_3 + \\delta$\n\nHet causale effect $\\delta$ is de dubbele differentie:\n$$\n\\delta = [(\\beta_1 + \\beta_2 + \\beta_3 + \\delta) - (\\beta_1 + \\beta_3)] - [(\\beta_1 + \\beta_2) - \\beta_1]\n$$\n\nIn Stata programmeren we dit direct met de factor-variabele interactie-operator `##`:\n```stata\nxtreg y i.post##i.treat controls, re vce(cluster group_id)\n```\n- `1.post`: $\\beta_3$ (tijdstrend van de controlegroep).\n- `1.treat`: $\\beta_2$ (pre-treatment niveauverschil tussen behandelde en controlegroep).\n- `1.post#1.treat`: **$\\delta$ — de causale DiD-schatter van de ATT**!\n\n#### Eerste-verschillen paneelregressie (First Differences)\nWanneer dezelfde eenheden over beide perioden geobserveerd worden ($T=2$), kunnen we het model in eerste verschillen herschrijven door periode 1 van periode 2 af te trekken:\n$$\n\\Delta Y_i = Y_{i2} - Y_{i1} = \\beta_3 + \\delta \\text{Treat}_i + \\Delta e_i\n$$\nHierbij vallen alle tijdsinvariante ongeobserveerde individuele effecten $c_i$ mathematisch weg. Voor $T=2$ is deze eerste-verschillenschatter identiek aan de Fixed Effects (FE) en Least Squares Dummy Variable (LSDV) schatter.\n\n### 4. Wiskundige decompositie van DiD (Jonathan James)\nOnder welke voorwaarden identificeert $\\hat{\\delta}_{2\\times 2}$ exact de ATT? Volgens de formele decompositie van Jonathan James luidt het geobserveerde DiD-effect:\n$$\n\\hat{\\delta}_{2\\times 2} = \\text{ATT} + \\text{PT bias} + \\text{NA bias}\n$$\nwaarbij:\n- **ATT (Average Treatment Effect on the Treated)**: $\\mathbb{E}[Y_{1T} \\mid \\text{Post}] - \\mathbb{E}[Y_{0T} \\mid \\text{Post}]$\n- **PT bias (Parallel Trends Bias)**:\n$$\n\\text{PT bias} = \\left( \\mathbb{E}[Y_{0T} \\mid \\text{Post}] - \\mathbb{E}[Y_{0T} \\mid \\text{Pre}] \\right) - \\left( \\mathbb{E}[Y_{0C} \\mid \\text{Post}] - \\mathbb{E}[Y_{0C} \\mid \\text{Pre}] \\right)\n$$\n- **NA bias (No Anticipation Bias)**: $\\mathbb{E}[Y_{0T} \\mid \\text{Pre}] - \\mathbb{E}[Y_{1T} \\mid \\text{Pre}]$. Als actoren vóór de hervorming al anticiperen en hun gedrag wijzigen, is $Y_{1T} \\ne Y_{0T}$ in de pre-periode en ontstaat er anticipatiebias!\n\n### 5. De identificatie-aanname: Parallel Trends\nDe DiD-schatter identificeert de zuivere ATT **als en slechts als de Parallel Trends aanname geldt en er geen anticipatie is**:\n$$\n\\mathbb{E}[Y_{0T} \\mid \\text{Post}] - \\mathbb{E}[Y_{0T} \\mid \\text{Pre}] = \\mathbb{E}[Y_{0C} \\mid \\text{Post}] - \\mathbb{E}[Y_{0C} \\mid \\text{Pre}]\n$$\n*In afwezigheid van het beleid zou de gemiddelde uitkomst van de behandelde groep parallel geëvolueerd zijn aan die van de controlegroep.* De groepen hoeven vóór de ingreep dus géén identiek niveau te hebben, maar hun groeipad (trend) moet parallel lopen!\nOmdat $\\mathbb{E}[Y_{0T} \\mid \\text{Post}]$ een onwaarneembaar counterfactual is, kan deze aanname na de interventie nooit direct bewezen worden.\n\n### 6. Card & Krueger (1994): Minimumloon en Tewerkstelling\nEen klassieke toepassing van DiD is de studie van David Card en Alan Krueger (1994, Nobelprijs 2021, `njmin.dta`).\n\n#### De beleidshervorming\nOp 1 april 1992 verhoogde de staat New Jersey het wettelijk minimumloon van $4{,}25 naar $5{,}05 per uur. De naburige staat Pennsylvania hield het minimumloon ongewijzigd op $4{,}25. Card & Krueger verzamelden paneldata over 410 fastfoodrestaurants (Burger King, KFC, Wendy's, Roy Rogers) in New Jersey (behandelde groep) en Oost-Pennsylvania (controlegroep) in februari 1992 (vóór) en november 1992 (erna). De uitkomst is tewerkstelling in voltijdsequivalenten (FTE (voltijdsequivalenten (Full-Time Equivalent)) = Full-Time Equivalent).\n\n#### De empirische 2x2 tabel\n- **New Jersey**: FTE steeg van $20{,}44$ naar $21{,}03$ ($\\Delta = +0{,}59$)\n- **Pennsylvania**: FTE daalde van $23{,}33$ naar $21{,}17$ ($\\Delta = -2{,}16$)\n- **DiD-schatting**:\n$$\n\\hat{\\delta}_{\\text{DiD}} = (+0{,}59) - (-2{,}16) = +2{,}75 \\text{ FTE} \\quad (p < 0{,}05)\n$$\nIn de panel-differenced regressie vinden we: $\\Delta \\text{FTE}_i = -2{,}28 + 2{,}75 \\cdot \\text{NJ}_i$ (met $\\text{SE} = 1{,}15$, $t = 2{,}38$). \n\n#### Waarom deed een minimumloonstijging de tewerkstelling niet dalen?\nDit resultaat sprak de standaard neoklassieke theorie van volkomen concurrentie tegen. Economen verklaren dit via vier mechanismen:\n1. **Monopsoniemacht op de arbeidsmarkt**: Fastfoodwerkgevers hebben loonzettingsmacht en worden geconfronteerd met een opwaarts hellende arbeidsaanbodcurve. Bij een gematigde minimumloonstijging daalt de marginale kost van arbeid voor vacaturevervulling, waardoor vacatures sneller gevuld raken, personeelsverloop daalt en de tewerkstelling kan stijgen richting het competitieve niveau!\n2. **Efficiëntielonen en productiviteit**: Hogere lonen verhogen werknemersmoraal en inspanning en verlagen kostbare aanwervings- en opleidingskosten.\n3. **Doorberekening in prijzen (Price pass-through)**: Fastfoodrestaurants verhoogden licht hun prijzen voor menu's om de loonkosten te dekken.\n4. **Aanpassing van secundaire voorwaarden**: Compensatie via reductie van gratis maaltijden of overuren.\n\n### 7. Hoe toets je parallel trends formeel? Twee cruciale testen\n\n#### A. Placebotoets in de tijd (Placebo timing)\nAls de controlegroep een valide trend weergeeft, mag een fictieve behandeling in het verleden géén effect sorteren. We definiëren een placebo-hervorming in 1987 en beperken de steekproef strikt tot de jaren vóór de echte hervorming van 1990 (`if year < 1990`):\n```stata\ngen post1 = (year >= 1987)\nxtreg gdp i.post1##i.treat inf_rate trade educ c.year##i.country_e if year < 1990, re vce(cluster country_e)\n```\nAls de interactie `1.post1#1.treat` statistisch significant blijkt ($p < 0{,}05$), bewijst dit dat de groepen al vóór de ingreep uit elkaar liepen en faalt parallel trends!\n\n#### B. Het dynamische Event Study model (Miller 2023)\nDe gouden standaard voor het evalueren van dynamische effecten en pre-trends is het **Event Study** model (Douglas Miller 2023):\n$$\nY_{it} = \\sum_{j \\in \\{-m, \\dots, 0, \\dots, n\\}} \\gamma_j \\cdot D_{i,t-j} + \\alpha_i + \\delta_t + X_{it}'\\beta + \\varepsilon_{it}\n$$\n- De index $j$ meet de 'event time' relatief ten opzichte van de behandeling ($j = 0$ is het behandelingsjaar).\n- **Keuze van de basisperiode**: We laten verplicht één periode weg om de dummy variable trap (perfecte multicollineariteit met unit fixed effects $\\alpha_i$ en time fixed effects $\\delta_t$) te vermijden. De conventie is om de periode direct voorafgaand aan de ingreep ($t = -1$) als referentiecategorie te kiezen.\n- **Cruciale aanname bij de basisperiode**: Er is **géén anticipatie-effect** in periode $t = -1$.\n- **Diagnostische pre-trend toets**: De coëfficiënten vóór de ingreep (leads $\\gamma_j$ voor $j < 0$) vormen een formele falsificatietoets. Als parallel trends standhoudt, moeten alle pre-treatment interacties statistisch niet-significant zijn: $H_0: \\gamma_{-m} = \\dots = \\gamma_{-1} = 0$.\n\n### 8. Empirische analyse in Computerklas 8: De Duitse hereniging\nIn Oefening 1 en 2 van Computerklas 8 onderzoeken we de impact van de Duitse hereniging in 1990 op het bbp per hoofd (`gdp`) van West-Duitsland (`country_e == 17`, `treat = 1`) ten opzichte van 16 OECD-controlelanden (OECD = Organisatie voor Economische Samenwerking en Ontwikkeling (OECD)) over 1960–1997 (`german_reunification.dta`).\n\nWe schatten 5 oplopende specificaties (`model_i` t/m `model_v`):\n- `model_i`: Zonder tijdstrends: `xtreg gdp i.post##i.treat inf_rate trade educ, re vce(cluster country_e)`\n- `model_v`: Met land-specifieke lineaire tijdstrends (`c.year##i.country_e`): levert een interactiecoëfficiënt van $\\hat{\\beta}_3 = +738{,}07$ ($p = 0{,}014$). Een onderzoeker zou hieruit naïef concluderen dat de hereniging het bbp per hoofd deed stijgen met 738 dollar.\n\n#### Maar de Event Study onthult de valkuil!\nWe definiëren de eventtijd relatief ten opzichte van 1985 (`gen event = year - 1985`) en stellen het jaar 1989 (`event = 4`) in als referentiecategorie (`ib4.`):\n```stata\nxtreg gdp ib4.event##i.treat inf_rate educ c.year##i.country_e, re vce(cluster country_e)\n```\nDe interacties met de behandelingsindicator leveren:\n- `1.event#1.treat` (jaar $\\le 1985$): coëfficiënt $-1238{,}43$ ($p = 0{,}000$)\n- `2.event#1.treat` (jaar 1987): coëfficiënt $-404{,}82$ ($p = 0{,}019$)\n- `3.event#1.treat` (jaar 1988): coëfficiënt $-184{,}79$ ($p = 0{,}014$)\n\n> [!important] Hard econometrisch oordeel over DiD bij West-Duitsland\n> Omdat álle pre-treatment interacties sterk statistisch significant zijn ($p < 0{,}05$), is de parallel trends aanname **onweerlegbaar geschonden**. De positieve DiD-schatting van $+738$ dollar is volkomen vertekend. Een simpel ongewogen gemiddelde van heterogene OECD-landen volstaat niet als controlegroep. We moeten overstappen naar de Synthetic Control Method!\n\n### 9. Data-eisen en Validiteit\n- **Datavereisten**: DiD vereist minstens 2 tijdsperioden en 2 groepen (werkt met herhaalde cross-secties of micro-paneldata). Event studies vereisen een panel met meerdere pre- en post-perioden.\n- **Bedreigingen interne validiteit**: Schending van parallelle trends, anticipatie-effecten, gelijktijdige macro-economische schokken die slechts één groep raken (concomitant events), selectieve compositieveranderingen over de tijd, en spillovers tussen groepen (schending van SUTVA: Stable Unit Treatment Value Assumption, bv. werknemers die migreren van PA naar NJ).",
    "checks": [
     {
      "id": "c03",
@@ -100,7 +100,7 @@
   {
    "id": "synthetic-control",
    "title": "De Synthetic Control Method (SCM) & Placebo Inferentie",
-   "md": "Wanneer beleid wordt ingevoerd op geaggregeerd niveau (zoals een land, deelstaat of regio) en er slechts **één behandelde eenheid** ($N_1 = 1$) beschikbaar is, loopt standaard regressieanalyse tegen grote beperkingen aan. Geen enkel ander individueel land vertoont exact dezelfde economische structuur en groeitrend als het behandelde land.\n\nDe **Synthetic Control Method (SCM)**, gepionierd door Alberto Abadie, Alexis Diamond en Jens Hainmueller (2010, 2015), lost dit probleem op door een **synthetische controlegroep** te construeren: een datagestuurde, optimale gewogen combinatie van onbehandelde regio's uit een zogenaamde 'donor pool'.\n\n### Wiskundige structuur van Synthetic Control\nStel dat we eenheid $j=1$ behandelen in periode $T_0$, en we beschikken over $J$ potentiële controle-eenheden (de donor pool $j = 2, \\dots, J+1$). SCM zoekt een vector van gewichten $W = (w_2, \\dots, w_{J+1})'$ die aan twee strikte voorwaarden voldoet:\n1. **Niet-negativiteit**: $w_j \\ge 0$ voor alle $j$.\n2. **Optelsom tot 1**: $\\sum_{j=2}^{J+1} w_j = 1$.\n\nDeze restricties voorkomen dat de onderzoeker buiten het data-ondersteunde domein extrapoleert (geen negatieve gewichten of gewichten groter dan 1; de synthetische eenheid ligt binnen het convex omhulsel van de donoren).\n\n### De minimalisatie en predictorbalans\nHet algoritme kiest gewichten $W^*$ die het verschil in pre-treatment eigenschappen en uitkomsten minimaliseren:\n$$\\min_{W} (X_1 - X_0 W)' V (X_1 - X_0 W)$$\nwaarbij:\n- $X_1$ de vector van pre-treatment predictoren en eerdere uitkomsten van de behandelde eenheid is.\n- $X_0$ de matrix van dezelfde predictoren voor de donorlanden is.\n- $V$ een positief semi-definiete diagonaalmatrix is van predictor-gewichten. $V$ weerspiegelt het relatieve voorspellende belang van elke predictor om de Root Mean Squared Prediction Error (RMSPE) vóór de behandeling te minimaliseren.\n\n### Stata syntax: `synth`\nIn Stata (Computerklas 8, Oefening 3.a) schatten we het synthetische West-Duitsland met:\n```stata\nsynth gdp gdp schooling infrate industry trade invest60 invest70 invest80, ///\n    trunit(17) trperiod(1990)\n```\n- `gdp`: afhankelijke uitkomstvariabele.\n- `gdp schooling ... invest80`: de pre-treatment matching-predictoren. We nemen `gdp` tweemaal op zodat het model zowel op structurele variabelen als op historische bbp-trajecten matcht.\n- `trunit(17)`: de numerieke code voor West-Duitsland (`country_e == 17`).\n- `trperiod(1990)`: het behandelingsjaar van de hereniging.\n\n#### Output interpretatie in Computerklas 8\n1. **Donor Weights ($W$)**:\n   - Oostenrijk (`Austria`): $0{,}765$ ($76{,}5\\%$)\n   - Zwitserland (`Switzerland`): $0{,}235$ ($23{,}5\\%$)\n   - Alle andere 14 donorlanden (VS, Japan, Frankrijk, etc.): $0{,}000$ ($0\\%$)\n   Synthetisch West-Duitsland is dus een gewogen mix van circa driekwart Oostenrijk en één kwart Zwitserland!\n2. **Predictor Balance**:\n   - Werkelijk West-Duitsland pre-bbp: $8169{,}83$ vs Synthetisch: $8177{,}08$ (vrijwel perfecte match!).\n   - Industrie-aandeel: $39{,}69\\%$ vs $36{,}94\\%$.\n   - Pre-treatment RMSPE: $145{,}63$ (zeer lage voorspellingsfout).\n\n### Statistische inferentie: Permutatie- & Placebotoetsen\nOmdat er slechts $N=1$ behandelde eenheid is, zijn standaard $t$-statistieken of $p$-waarden ongeldig. SCM gebruikt daarom **placebotoetsen** (inferentie door randomisatie):\n\n#### 1. In-space placebotoetsen\nPas het synthetische controle-algoritme opeenvolgend toe op **élk van de 16 onbehandelde donorlanden**, alsof zij in 1990 herenigd werden met Oost-Duitsland. Als de economische kloof (het gat tussen werkelijkheid en synthetische controle) bij het echte behandelde land véél groter is dan bij de donorlanden, is het effect statistisch significant!\nWe berekenen per land de ratio van de post-treatment RMSPE tot de pre-treatment RMSPE:\n$$r_j = \\frac{\\text{RMSPE}_{j, \\text{post}}}{\\text{RMSPE}_{j, \\text{pre}}}$$\nDe empirische $p$-waarde is het percentage donorlanden dat een grotere ratio behaalt dan West-Duitsland.\n\n#### 2. In-time placebotoetsen (Placebo timing)\nVerschuif de behandelingsdatum naar een fictief verleden (bv. 1985 i.p.v. 1990, met matchingsperiode 1973–1984):\n```stata\nsynth_runner gdp gdp schooling infrate industry trade invest60 invest70 invest80, ///\n    trunit(17) trperiod(1985) ci gen_vars max_lead(25) xperiod(1973(1)1984)\n```\nDe geschatte effecten in de pre-interventiejaren 1985–1989 ($c_1$ t/m $c_5$) **moeten statistisch niet-significant zijn** ($p > 0{,}05$) om te bevestigen dat het model niet reageert op valse breuken.\n\n### Volledige automatisering: `synth_runner`\nHet community-pakket `synth_runner` automatiseert alle placeboruns en berekent gestandaardiseerde $p$-waarden (`pvals_std`):\n```stata\nsynth_runner gdp gdp schooling infrate industry trade invest60 invest70 invest80, ///\n    trunit(17) trperiod(1990) ci gen_vars max_lead(25)\neffect_graphs, trlinediff(-1)\nsingle_treatment_graphs, trlinediff(-1) do_color(orange%15)\n```\n\n> [!rule] Empirische les uit Computerklas 8\n> Terwijl het ondeugdelijke DiD-model een misleidend positief effect suggereerde, onthult de Synthetic Control Method dat de hereniging op de middellange en lange termijn leidde tot een **aanzienlijk lager bbp per hoofd voor West-Duitsland** ten opzichte van zijn synthetische counterfactual (een cumulatief verlies tot meer dan 2000 dollar per inwoner in de jaren 2000, statistisch significant met $p_{\\text{std}} = 0{,}000$). De enorme overdrachten naar Oost-Duitsland en loondruk remden de West-Duitse groei af.",
+   "md": "Wanneer een beleidshervorming plaatsvindt op een geaggregeerd niveau (zoals een land, deelstaat of gemeente) en er slechts **één behandelde eenheid** ($N_1 = 1$) beschikbaar is, loopt standaard regressieanalyse tegen fundamentele grenzen aan. Geen enkel ander individueel land vertoont exact dezelfde economische structuur als het behandelde land, en een ongewogen controlegemiddelde faalt door schending van parallelle trends.\n\nDe **Synthetic Control Method (SCM)**, gepionierd door Alberto Abadie, Alexis Diamond en Jens Hainmueller (2010, 2015; zie ook Nick Deschacht), lost dit op door een **synthetische controlegroep** te construeren: een datagestuurde, optimale gewogen combinatie van onbehandelde regio's uit een zogenaamde 'donor pool'.\n\n### 1. Wiskundige constructie van Synthetic Control\nStel dat we eenheid $j=1$ observeren die in periode $T_0$ behandeld wordt, te midden van $J$ potentiële controle-eenheden (de donor pool $j = 2, \\dots, J+1$) over perioden $t = 1, \\dots, T$.\nSCM zoekt een vector van donor-gewichten $W = (w_2, \\dots, w_{J+1})'$ die aan twee strikte voorwaarden voldoet:\n1. **Niet-negativiteit**: $w_j \\ge 0$ voor alle $j \\in \\{2, \\dots, J+1\\}$.\n2. **Optelsom tot 1**: $\\sum_{j=2}^{J+1} w_j = 1$.\n\n#### Waarom zijn deze restricties cruciaal?\nIn tegenstelling tot gewone OLS-regressie (waarbij coëfficiënten negatief kunnen zijn of naar oneindig kunnen neigen):\n- Dwingen deze restricties af dat de synthetische eenheid binnen het **convex omhulsel (convex hull)** van de donorlanden ligt. Dit voorkomt gevaarlijke extrapolatie buiten de ondersteuning van de data (we kunnen immers geen counterfactual bouwen met negatief bbp of negatieve scholing!).\n- Levert de niet-negativiteit een **spaarzame (sparse)** oplossing op: veel gewichten worden exact 0, waardoor slechts een handvol relevante donorlanden een positief gewicht krijgt. Dit maakt de samenstelling van de counterfactual volkomen transparant.\n\n### 2. Het optimalisatieprobleem en RMSPE\nHet algoritme kiest de gewichtenvector $W^*$ die de gewogen afstand in pre-treatment karakteristieken tussen de behandelde eenheid en de synthetische controle minimaliseert:\n$$\n\\min_{W} (X_1 - X_0 W)' V (X_1 - X_0 W)\n$$\nwaarbij:\n- $X_1$ de vector is van pre-treatment predictoren en historische uitkomsten van de behandelde eenheid.\n- $X_0$ de matrix is van dezelfde predictoren voor alle donorlanden.\n- $V$ een positief semi-definiete diagonaalmatrix is van predictor-gewichten. De matrix $V$ weerspiegelt het relatieve voorspellende belang van elke predictor om de **Root Mean Squared Prediction Error (RMSPE)** over de pre-behandelingsperiode te minimaliseren:\n$$\n\\text{RMSPE} = \\sqrt{\\frac{1}{T_0} \\sum_{t=1}^{T_0} \\left( Y_{1t} - \\sum_{j=2}^{J+1} w_j Y_{jt} \\right)^2}\n$$\nMatching op pre-treatment waarden van de uitkomstvariabele zelf (bv. het bbp in meerdere pre-jaren) is essentieel: omdat de uitkomstfunctie afhangt van zowel geobserveerde als niet-geobserveerde factoren, vangt het nabootsen van het historische traject ook tijdsinvariante en geleidelijk evoluerende ongeobserveerde confounders op.\n\n### 3. Stata-toepassing in Computerklas 8 (`synth`)\nIn Oefening 3 van Computerklas 8 passen we SCM toe op de Duitse hereniging (`german_reunification.dta`):\n```stata\nsynth gdp gdp schooling infrate industry trade invest60 invest70 invest80, ///\n    trunit(17) trperiod(1990)\n```\n- `gdp`: de te verklaren uitkomstvariabele.\n- `gdp schooling ... invest80`: de pre-treatment matching predictoren (door `gdp` op te nemen matchen we zowel op economische structuur als op bbp-niveaus).\n- `trunit(17)`: identificatie van West-Duitsland (`country_e == 17`).\n- `trperiod(1990)`: het jaar van de interventie.\n\n#### Uitvoer en interpretatie\n1. **Samenstelling van Synthetisch West-Duitsland ($W$)**:\n   - Oostenrijk (`Austria`): $0{,}765$ ($76{,}5\\%$)\n   - Zwitserland (`Switzerland`): $0{,}235$ ($23{,}5\\%$)\n   - Alle andere 14 donorlanden (VS, Japan, VK, Frankrijk, etc.): $0{,}000$ ($0\\%$)\n   Synthetisch West-Duitsland is dus een gewogen combinatie van circa driekwart Oostenrijk en één kwart Zwitserland!\n2. **Predictor Balans**:\n   - Werkelijk bbp West-Duitsland vóór 1990: $8169{,}83$ dollar vs Synthetisch bbp: $8177{,}08$ dollar (een afwijking van minder dan $0{,}1\\%$!).\n   - Aandeel industrie: $39{,}69\\%$ vs $36{,}94\\%$.\n   - Pre-treatment RMSPE: $145{,}63$ — een uitstekende pre-intervention fit.\n\n### 4. Statistische inferentie: Randomisatie- en Placebotoetsen\nOmdat er slechts $N_1 = 1$ behandelde eenheid is, zijn standaard asymptotische $t$-toetsen en $p$-waarden ongeldig. SCM lost dit op via **inferentie door permutatie** (Abadie et al. 2010):\n\n#### A. In-space placebotoetsen (Placebo's over eenheden)\nWe passen het SCM-algoritme opeenvolgend toe op **élk van de 16 onbehandelde donorlanden**, alsof zij in 1990 de hereniging meemaakten. We berekenen voor elk land de ratio van de post-treatment RMSPE tot de pre-treatment RMSPE:\n$$\nr_j = \\frac{\\text{RMSPE}_{j, \\text{post}}}{\\text{RMSPE}_{j, \\text{pre}}}\n$$\nEen land waarbij de synthetische controle na 1990 plots sterk afwijkt van de realiteit (ten opzichte van hoe goed het vóór 1990 paste), krijgt een hoge ratio $r_j$. Als West-Duitsland de allerhoogste ratio heeft ($r_{17} > r_j$ voor alle donoren), bedraagt de empirische p-waarde exact:\n$$\np = \\frac{1}{J + 1} = \\frac{1}{17} \\approx 0{,}0588\n$$\n\n#### B. In-time placebotoetsen (Placebo timing)\nVervroeg de behandelingsdatum naar een fictief verleden vóór de echte hereniging (bv. 1985 in plaats van 1990, met matching op 1973–1984):\n```stata\nsynth_runner gdp gdp schooling infrate industry trade invest60 invest70 invest80, ///\n    trunit(17) trperiod(1985) ci gen_vars max_lead(25) xperiod(1973(1)1984)\n```\nDe geschatte effecten in de pre-periode 1985–1989 ($c_1$ t/m $c_5$) **moeten statistisch niet-significant zijn** ($p > 0{,}05$). Als er vóór de echte hervorming al een 'effect' gevonden wordt, is de specificatie niet betrouwbaar.\n\n#### C. Leave-one-out robuustheidstest (`loo`)\nHerhaal de analyse waarbij telkens één donorland met een positief gewicht (Oostenrijk of Zwitserland) uit de donorpool wordt weggelaten. Dit toetst of het geschatte effect niet uitsluitend gedreven wordt door idiosyncratische schokken in één specifiek donorland.\n\n### 5. Volledige automatisering: `synth_runner`\nHet Stata-commando `synth_runner` automatiseert alle placeboruns en berekent gestandaardiseerde p-waarden (`pvals_std`):\n```stata\nsynth_runner gdp gdp schooling infrate industry trade invest60 invest70 invest80, ///\n    trunit(17) trperiod(1990) ci gen_vars max_lead(25)\nsingle_treatment_graphs, trlinediff(-1) do_color(orange%15)\n```\n\n> [!rule] Empirisch inzicht over de hereniging\n> Terwijl de ongeldige DiD-schatting een positief effect van $+738$ dollar suggereerde, toont de Synthetic Control Method dat de hereniging op de middellange en lange termijn leidde tot een **aanzienlijk en statistisch significant lager bbp per hoofd voor West-Duitsland** ten opzichte van zijn synthetische counterfactual (een inkomensverlies oplopend tot meer dan 2000 dollar per inwoner, $p_{\\text{std}} = 0{,}000$). De enorme begrotingsoverdrachten en loonharmonisatie met Oost-Duitsland remden de West-Duitse economische expansie af.\n\n### 6. Andere iconische toepassingen in de literatuur\n- **California Proposition 99 (Abadie et al. 2010)**: Tabaksontmoedigingsprogramma in Californië (1988). Een synthetisch Californië werd samengesteld uit 5 donorstaten: Utah ($33\\%$), Nevada ($24\\%$), Montana ($20\\%$), Colorado ($16\\%$) en Connecticut ($7\\%$). Toonde een sterke en significante daling in de sigarettenverkoop per inwoner.\n- **De sluiting van Ford Genk (Nick Deschacht, 2014)**: Sluiting van een grote autofabriek met 4000 ontslagen werknemers. Met een maandelijks panel over 300 Vlaamse gemeenten (VDAB-data (VDAB = Vlaamse Dienst voor Arbeidsbemiddeling en Beroepsopleiding) 2012–2020) toonde synthetisch Genk een acute opstoot in de werkloosheid, die na 1 à 2 jaar weer terugkeerde naar het pre-shock niveau.\n- **Mariel Boatlift (David Card 1990)**: Plotse immigratie van 125.000 Cubanen naar Miami in 1980. Card selecteerde handmatig vier vergelijkbare steden (Atlanta, Los Angeles, Houston en Tampa) als voorloper van de synthetische controlegroep, en vond geen negatief effect op de lonen of werkgelegenheid van lokale werknemers.",
    "checks": [
     {
      "id": "c05",
@@ -134,7 +134,7 @@
   {
    "id": "rdd-sharp-fuzzy",
    "title": "Regression Discontinuity Design: Sharp vs Fuzzy RDD",
-   "md": "Het **Regression Discontinuity Design (RDD)** is een van de krachtigste quasi-experimentele methoden omdat het onder milde aannames een zuiver gerandomiseerd experiment benadert.\n\n### Het basisprincipe van RDD\nRDD wordt toegepast wanneer toewijzing aan een behandeling $D$ afhangt van een continue toewijzingsvariabele (de **forcing** of **running variable** $W$) ten opzichte van een vaste drempelwaarde $c$:\n- Studenten met een toelatingstoets score $W \\ge 50$ krijgen een studiebeurs.\n- Bedrijven met een omzet onder een drempel krijgen een kmo-subsidie.\n- Politici winnen een parlementszetel als hun stemmendeel $W > 50\\%$.\n\nDe fundamentele identificatie-aanname is **lokale willekeur (local continuity)**: actoren kunnen hun positie ten opzichte van de drempel $c$ niet perfect manipuleren. Een kandidaat die wint met $50{,}01\\%$ van de stemmen verschilt in verwachting niet van een kandidaat die verliest met $49{,}99\\%$. Rond de drempel is toewijzing aan behandeling feitelijk zo goed als willekeurig!\n\n---\n\n### 1. Sharp RDD: Volledige Compliance\nBij een **Sharp Regression Discontinuity (SRD)** bepaalt de drempel de behandeling deterministisch. De kans op behandeling springt bij de drempel $c$ scherp van 0 naar 1:\n$$D_i = \\mathbb{1}(W_i \\ge c) \\implies \\lim_{w \\downarrow c} \\mathbb{P}(D_i = 1 \\mid W_i = w) - \\lim_{w \\uparrow c} \\mathbb{P}(D_i = 1 \\mid W_i = w) = 1$$\n\n#### Empirische toepassing: Incumbency Advantage (`senate.dta`)\nIn Computerklas 8, Oefening 4 onderzoeken we of het feit dat een Democratische partij de vorige senaatsverkiezing won (incumbent is, $D_i = 1$) een causaal voordeel oplevert bij de volgende verkiezing (`vote`). De forcing variabele is de winstmarge in de vorige verkiezing (`margin`), met drempelwaarde $c = 0$.\n\nWe specificeren een regressiemodel met interactieterm zodat de helling links en rechts van de drempel mag verschillen:\n```stata\ngen x = (margin > 0)\nreg vote c.margin##i.x, robust\n```\nStata schat:\n$$\\text{vote}_i = 44{,}90 + 0{,}216 \\cdot \\text{margin}_i + 6{,}044 \\cdot x_i + 0{,}170 \\cdot (\\text{margin}_i \\times x_i)$$\n- De constante $44{,}90\\%$ is de verwachte stemscore net links van de drempel ($margin \\uparrow 0$).\n- De coëfficiënt op `1.x` ($+6{,}044$, $p = 0{,}000$) is de **discontinue sprong bij de drempel**: het causale 'incumbency advantage'. Zittend senator zijn levert direct $6{,}04$ procentpunt extra stemmen op!\n- De interactie `1.x#c.margin` ($+0{,}170$) toont dat de helling rechts van de drempel steiler is: onder eerdere winnaars vertaalt een grotere marge zich nog sterker in toekomstig stemmenaandeel.\n\n#### Bandbreedtebeperking rond de drempel\nWereldwijd ver weg van de drempel kan de relatie niet-lineair zijn. Daarom beperken we de steekproef tot spannende verkiezingen binnen een smalle bandbreedte $h = 10$ procentpunt (`if abs(margin) <= 10`):\n```stata\nreg vote c.margin##i.x population i.year if margin >= -10 & margin <= 10, robust\n```\nHet effect blijft robuust overeind op $+4{,}91$ procentpunt ($p = 0{,}001$).\n\n---\n\n### 2. Fuzzy RDD: Onvolledige Compliance via 2SLS\nBij een **Fuzzy Regression Discontinuity (FRD)** forceert de drempel de behandeling niet, maar veroorzaakt hij een discontinue toename in de kans op behandeling:\n$$0 < \\lim_{w \\downarrow c} \\mathbb{P}(D_i = 1 \\mid W_i = w) - \\lim_{w \\uparrow c} \\mathbb{P}(D_i = 1 \\mid W_i = w) < 1$$\n\n#### Empirische toepassing: Pensioen en consumptie (`retirement.dta`)\nIn Oefening 5 onderzoeken we of pensionering (`pen`) leidt tot een val in consumptie (`mc`). \n- **Waarom is pensionering endogeen?** Individuen kiezen deels zelf wanneer ze stoppen met werken op basis van onobserveerbare factoren zoals gezondheid, rijkdom of vrijetijdsvoorkeur (selectiebias).\n- **De drempel**: De tijd tot/vanaf de wettelijke pensioengerechtigde leeftijd is `esse_m` ($c = 0$). Bereiken van deze leeftijd creëert formele pensioengerechtigdheid:\n  ```stata\n  gen elig = (esse_m >= 0)\n  ```\nNiet iedereen stopt exact op de dag van pensioengerechtigdheid. Er is dus onvolledige compliance!\n\n#### Schatting via 2SLS (`ivreg2`)\nWe gebruiken pensioengerechtigdheid `elig` als een **instrumentele variabele** voor de endogene behandelingsvariabele `pen`:\n```stata\nivreg2 mc (pen = elig) c.esse_m##c.esse_m if esse_m >= -10 & esse_m <= 10, first robust\n```\n1. **First-stage regressie**:\n   $$\\widehat{\\text{pen}} = \\pi_0 + \\pi_1 \\text{elig} + \\pi_2 \\text{esse\\_m} + \\pi_3 \\text{esse\\_m}^2$$\n   - De drempel `elig` verhoogt de kans op feitelijk pensioen met $31{,}5$ procentpunt ($\\pi_1 = 0{,}315$, $t = 5{,}66$, $p = 0{,}000$).\n   - De first-stage $F$-statistiek is **$32{,}05$** (ruim boven de Stock-Yogo vuistregel van 10), wat bewijst dat `elig` een krachtig instrument is.\n2. **Second-stage regressie (LATE)**:\n   - De 2SLS-schatting identificeert het **Local Average Treatment Effect (LATE)**: het causale effect voor de groep 'compliers' (mensen die uitsluitend met pensioen gaan omdát ze de wettelijke leeftijd bereikten).\n   - De coëfficiënt op `pen` voor totale consumptie is negatief maar niet-significant ($-8{,}17\\%$, $p = 0{,}264$). Voor voedselconsumptie (`mf`) vinden we wel een significante daling van $-15{,}07\\%$ ($p = 0{,}047$).\n\n---\n\n### Diagnostische toetsen in RDD\n1. **McCrary Density / Bunching Test**: Toetst of individuen de toewijzingsvariabele kunnen manipuleren. Plot een histogram van de forcing variabele (`hist margin`). Een plotse sprong of 'ophoping' (bunching) vlak aan één kant van de drempel wijst op manipulatie en maakt RDD ongeldig.\n2. **Placebo-drempeltesten**: Verplaats de drempel kunstmatig naar een plek waar geen beleidssprong bestaat (bv. $c = 1$ in `senate.dta` via `gen x1 = (margin > 1)`). Hier mag **geen** significante discontinue sprong gevonden worden ($p > 0{,}05$).",
+   "md": "Het **Regression Discontinuity Design (RDD)** (geïntroduceerd door Donald Thistlethwaite en Donald Campbell in 1960) geldt als een van de meest geloofwaardige quasi-experimentele methoden omdat het onder milde aannames een gerandomiseerd experiment benadert.\n\n### 1. Het basisprincipe van RDD\nRDD wordt toegepast wanneer toewijzing aan een behandeling $D$ afhangt van een continue toewijzingsvariabele (de **forcing** of **running variable** $W$) ten opzichte van een scherpe administratieve drempelwaarde $c$:\n- Studenten met een toetsscore $W \\ge 50$ slagen voor een examen of krijgen een studiebeurs.\n- Bedrijven met minder dan 50 werknemers zijn vrijgesteld van bepaalde arbeidsverplichtingen.\n- Werkzoekenden ouder dan 30 jaar ontvangen verplichte activeringsbegeleiding (Cockx & Dejemeppe 2012).\n- Een politicus wint een parlementszetel als zijn stemmendeel $W > 50\\%$.\n\n#### De fundamentele identificatie-aanname: Lokale Continuïteit (Local Continuity)\nDe kern van RDD is dat actoren hun running variable rond de drempelwaarde $c$ niet perfect kunnen manipuleren. Een student die $50{,}1\\%$ scoort verschilt in aanleg, motivatie en achtergrond niet systematisch van een student die $49{,}9\\%$ behaalt. Formeel veronderstelt RDD dat de conditionele verwachting van de potentiële uitkomsten **continu is bij de drempelwaarde $c$**:\n$$\n\\lim_{w \\downarrow c} \\mathbb{E}[Y_{0i} \\mid W_i = w] = \\lim_{w \\uparrow c} \\mathbb{E}[Y_{0i} \\mid W_i = w] \\quad \\text{en} \\quad \\lim_{w \\downarrow c} \\mathbb{E}[Y_{1i} \\mid W_i = w] = \\lim_{w \\uparrow c} \\mathbb{E}[Y_{1i} \\mid W_i = w]\n$$\n*Alle niet-geobserveerde determinanten van de uitkomst evolueren vloeiend rond de drempel.* De enige factor die bij $c$ een discontinue sprong maakt, is de behandeling zelf!\n\n> [!important] RDD versus DiD: Het fundamentele onderscheid\n> Terwijl Difference-in-Differences steunt op de aanname van **parallelle trends doorheen de tijd** (en verplicht vóór- en nametingen vereist), steunt RDD op **lokale continuïteit over een continue forcing variabele bij een drempel**. RDD vereist géén tijdspanne en kan zuiver geschat worden op een **enkele cross-sectie**!\n\n---\n\n### 2. Sharp RDD: Volledige Naleving (Deterministic Assignment)\nBij een **Sharp Regression Discontinuity (SRD)** bepaalt de drempel de behandeling deterministisch. De kans op behandeling springt bij drempel $c$ scherp van 0 naar 1:\n$$\nD_i = \\mathbb{1}(W_i \\ge c) \\implies \\lim_{w \\downarrow c} \\mathbb{P}(D_i = 1 \\mid W_i = w) - \\lim_{w \\uparrow c} \\mathbb{P}(D_i = 1 \\mid W_i = w) = 1\n$$\n\n#### Empirische regressie met verschillende hellingen\nOm toe te laten dat de relatie tussen de forcing variabele en de uitkomst links en rechts van de drempel een verschillende helling heeft, centreren we de forcing variabele rond $c$ en nemen we een interactieterm op:\n$$\nY_i = \\beta_0 + \\beta_1 D_i + \\beta_2 (W_i - c) + \\beta_3 D_i (W_i - c) + \\varepsilon_i\n$$\n- $\\beta_0$: de limietwaarde van $Y$ net links van de drempel ($W \\uparrow c$).\n- **$\\beta_1$**: de discontinue sprong bij de drempel — **dit is het causale behandelingseffect**!\n- $\\beta_2$: de helling links van de drempel.\n- $\\beta_3$: het verschil in helling rechts ten opzichte van links van de drempel.\n\n#### Empirische toepassing in Computerklas 8: Senaatsverkiezingen (`senate.dta`)\nIn Oefening 4 onderzoeken we het causale 'incumbency advantage': levert het winnen van de vorige senaatsverkiezing door een Democratische kandidaat ($x = 1$) een electoraal voordeel op bij de volgende verkiezing (`vote`)? De forcing variabele is de winstmarge in de vorige verkiezing (`margin`), met drempelwaarde $c = 0$.\n```stata\ngen x = (margin > 0)\nreg vote c.margin##i.x, robust\n```\nStata schat:\n- Constante: $44{,}90$ (het verwachte stemmenpercentage bij een nipt verlies van $0{,}001\\%$).\n- **Sprong op `1.x`**: $+6{,}044$ ($p = 0{,}000$).\n- Interactie `1.x#c.margin`: $+0{,}170$ ($p = 0{,}000$).\n*Interpretatie*: Zittend senator zijn levert een direct causaal voordeel op van **$6{,}04$ procentpunt** extra stemmen bij de volgende verkiezing!\n\n#### Bandbreedtebeperking (Local Linear Regression)\nWereldwijd ver weg van de drempel kan de relatie niet-lineair zijn. Daarom beperken we de steekproef tot spannende verkiezingen binnen een smalle bandbreedte $h = 10$ procentpunt (`if abs(margin) <= 10`) en voegen we covariaten toe:\n```stata\nreg vote c.margin##i.x population i.year if margin >= -10 & margin <= 10, robust\n```\nHet causale effect blijft robuust overeind op $+4{,}91$ procentpunt ($p = 0{,}001$).\n\n---\n\n### 3. Fuzzy RDD: Onvolledige Naleving via 2SLS\nBij een **Fuzzy Regression Discontinuity (FRD)** forceert het overschrijden van de drempel de behandeling niet, maar veroorzaakt het een discontinue toename in de kans op behandeling:\n$$\n0 < \\lim_{w \\downarrow c} \\mathbb{P}(D_i = 1 \\mid W_i = w) - \\lim_{w \\uparrow c} \\mathbb{P}(D_i = 1 \\mid W_i = w) < 1\n$$\nOmdat individuen deels zelf beslissen over deelname (imperfect compliance), is de feitelijke behandeling $D_i$ endogeen. We lossen dit op via **Two-Stage Least Squares (2SLS)**, waarbij de drempelindicator $Z_i = \\mathbb{1}(W_i \\ge c)$ fungeert als instrumentele variabele voor de daadwerkelijke behandeling $D_i$:\n1. **First-stage regressie**:\n$$\nD_i = \\pi_0 + \\pi_1 Z_i + f(W_i - c) + u_i\n$$\nwaarbij $\\pi_1$ de discontinue toename in de behandelingskans bij de drempel meet.\n2. **Reduced-form regressie**:\n$$\nY_i = \\delta_0 + \\delta_1 Z_i + g(W_i - c) + v_i\n$$\nwaarbij $\\delta_1$ de discontinue sprong in de uiteindelijke uitkomst meet.\n3. **De causale 2SLS/IV-schatter** (IV = Instrumentele Variabelen):\n$$\n\\tau_{\\text{FRD}} = \\frac{\\delta_1}{\\pi_1} = \\frac{\\text{Sprong in uitkomst } Y}{\\text{Sprong in behandelingskans } D}\n$$\nDeze 2SLS-schatter identificeert het **Local Average Treatment Effect (LATE)**: het causale effect voor de subpopulatie van 'compliers' (individuen die uitsluitend behandeld worden omdát zij de drempel overschrijden).\n\n#### Empirische toepassing in Computerklas 8: Pensioen en Consumptie (`retirement.dta`)\nIn Oefening 5 onderzoeken we of pensionering (`pen`) leidt tot een daling in consumptie (`mc`). \n- **Endogeniteit**: Individuen kiezen deels zelf wanneer ze stoppen met werken op basis van gezondheid of vermogen.\n- **De drempel**: De variabele `esse_m` meet de afstand in maanden tot de wettelijke pensioengerechtigde leeftijd ($c = 0$). We creëren de formele pensioengerechtigdheid: `gen elig = (esse_m >= 0)`.\n- **2SLS-schatting in Stata via `ivreg2`**:\n```stata\nivreg2 mc (pen = elig) c.esse_m##c.esse_m if esse_m >= -10 & esse_m <= 10, first robust\n```\n- **First stage**: `elig` verhoogt de kans op feitelijk pensioen met $31{,}5$ procentpunt ($\\pi_1 = 0{,}315$, $t = 5{,}66$, First-stage $F = 32{,}05$). Het instrument is zeer krachtig ($F > 10$).\n- **Second stage**: De 2SLS-puntschatting toont een niet-significante daling in totale consumptie ($-8{,}17\\%$, $p = 0{,}264$). Voor voedselconsumptie (`mf`) vinden we wel een significante daling van $-15{,}07$ procentpunt ($p = 0{,}047$).\n\n#### Andere bekende Fuzzy RDD studies\n- **Dobkin et al. (2010)**: Verplichte college-aanwezigheid voor studenten die onder de mediaan scoorden op het tussentijds examen. Aanwezigheid steeg met 36 procentpunt; een toename van 10 procentpunt in aanwezigheid verhoogde de eindexamenscore met $0{,}17$ standaarddeviaties.\n- **Angrist & Lavy (1999)**: Maimonides' regel in Israël: klassen moeten gesplitst worden zodra er meer dan 40 leerlingen zijn. De discontinuïteit bij 41, 81 en 121 leerlingen toonde significante leerwinsten bij kleinere klassen.\n- **Cockx & Dejemeppe (2012)**: Verplichte activeringsgesprekken van de VDAB voor werkzoekenden jonger dan 30 jaar verhoogden de werkhervatting na 8 maanden met $7{,}8$ procentpunt.\n\n---\n\n### 4. Methodologische aspecten en Diagnostiek in RDD\n\n#### A. Bandbreedte $h$ en de Bias-Variance Trade-off\nBij het kiezen van de bandbreedte $h$ rond de drempel ($[c - h, c + h]$) staat de onderzoeker voor een fundamentele afweging:\n- **Kleine bandbreedte $h$**: Lage bias (eenheden vlak bij $c$ zijn extreem vergelijkbaar), maar hoge variantie (weinig observaties, grote standaardfouten).\n- **Grote bandbreedte $h$**: Hoge precisie en lage variantie (veel observaties), maar hoge bias (kans op functionele vorm misspecificatie door niet-lineariteiten ver weg van de drempel).\nData-gedreven algoritmes (zoals Imbens-Kalyanaraman of Calonico-Cattaneo-Titiunik / `rdrobust`) kiezen de optimale bandbreedte die de Mean Squared Error (MSE = $\\text{Bias}^2 + \\text{Variantie}$) minimaliseert.\n\n#### B. Lokale Lineaire Regressie versus Globale Polynomen\nGelman en Imbens (2019) tonen aan dat het gebruik van hogere-orde globale polynomen (bv. 3e of 4e graads polynomen over het hele bereik) ernstig afgeraden moet worden: ze vertonen randinstabiliteit (Runge-fenomeen), kennen een onevenredig zwaar gewicht toe aan uitbijters ver van de drempel, en kunnen valse sprongen genereren. **Lokale lineaire regressie binnen een smalle bandbreedte $h$ geniet altijd de absolute voorkeur.**\n\n#### C. Waarom gewichten opnemen (Kernel Weighting)?\nIn plaats van een rechthoekige bandbreedte (waarbij alle punten binnen $h$ gelijk tellen en punten daarbuiten 0), gebruikt men vaak een driehoekige kernel (triangular kernel: $K(u) = 1 - |u|$ voor $|u| \\le 1$). Dit geeft het hoogste gewicht aan observaties pal bij de drempel en lineair afnemend gewicht naarmate men verder van $c$ raakt.\n\n#### D. Geaugmenteerde lineaire regressie met covariaten (Augmented Regression)\nWaarom predetermined covariaten $X_i$ toevoegen aan de RDD-vergelijking?\n1. **Verhoogt de precisie**: $X_i$ verklaart residuele variantie, wat resulteert in kleinere standaardfouten van de sprongparameter $\\hat{\\beta}_1$.\n2. **Corrigeert voor kleine toevallige steekproefimperfecties**: Als predetermined kenmerken (zoals leeftijd of geslacht) door toeval lichtjes verschillen net links en rechts van de drempel, zuivert het toevoegen van $X_i$ de puntschatting.\n\n#### E. De McCrary (2008) Dichtheidstoets (Density / Bunching Test)\nAls actoren hun toewijzingsscore manipuleren om net aan de gunstige kant van de drempel te geraken, ontstaat er **bunching** (een ophoping van waarnemingen). Dit schendt de continuïteitsaanname!\n- Inspecteer een histogram van de forcing variabele (`hist margin`).\n- Voer de formele McCrary test uit: toetst of de dichtheidsfunctie $f(W)$ continu is bij $W = c$. Een statistisch significante discontinuïteit in de dichtheid wijst op manipulatie en maakt RDD ongeldig.\n\n#### F. Placebo-drempeltesten\nSchat het model op een fictieve drempelwaarde waar geen enkel beleid veranderde (bijvoorbeeld $c = 1$ in `senate.dta` via `gen x1 = (margin > 1)`). Hier mag **geen** statistisch significante sprong optreden ($p > 0{,}05$).\n\n#### G. Interne versus Externe Validiteit van RDD\n- **Interne validiteit**: Uitzonderlijk hoog! Rond de drempel benadert RDD een zuiver gerandomiseerd experiment (gouden standaard).\n- **Externe validiteit**: Zeer beperkt! RDD identificeert uitsluitend een **Local Average Treatment Effect (LATE)** voor eenheden met een score pal bij de drempelwaarde ($W_i \\approx c$). De conclusies mogen niet zonder meer geëxtrapoleerd worden naar eenheden met scores ver boven of onder de drempel.",
    "checks": [
     {
      "id": "c07",
@@ -174,12 +174,12 @@
    "skill": "potential-outcomes",
    "level": 2,
    "prompt": "Waarom levert een eenvoudig verschil in gemiddelden tussen deelnemers en niet-deelnemers aan een opleidingsprogramma $\\bar{Y}_{D=1} - \\bar{Y}_{D=0}$ in de regel geen causale schatting op?",
-   "explain": "Door zelfselectie in het opleidingsprogramma verschillen deelnemers en niet-deelnemers vaak al in niet-geobserveerde factoren zoals motivatie en cognitieve vaardigheden. Dit resulteert in selectiebias: $\\mathbb{E}[Y_{0i} \\mid D_i=1] \\ne \\mathbb{E}[Y_{0i} \\mid D_i=0]$.",
+   "explain": "In observationele data kiezen individuen zelf om deel te nemen (zelfselectie). Daardoor verschilt hun contrafeitelijke toestand E[Y_0|D=1] van de uitkomst van de controlegroep E[Y_0|D=0]. Dit leidt tot selectiebias, waardoor het waargenomen verschil geen zuiver causaal effect meet.",
    "options": [
-    "Omdat er selectiebias optreedt: behandelden zouden zónder opleiding al een andere uitkomst hebben behaald dan niet-behandelden",
-    "Omdat de steekproefgrootte in quasi-experimenten altijd te klein is voor de centrale limietstelling",
-    "Omdat het lineair regressiemodel verboden is voor continue uitkomstvariabelen",
-    "Omdat deelnemers altijd exact dezelfde uitkomst behalen als niet-deelnemers"
+    "Omdat er selectiebias optreedt: deelnemers zouden zónder opleiding al een andere potentiële uitkomst behalen dan niet-deelnemers",
+    "Omdat de centrale limietstelling niet geldt voor binaire behandelingsindicatoren",
+    "Omdat het lineair regressiemodel wiskundig niet toepasbaar is op surveydata",
+    "Omdat deelnemers in de praktijk altijd identiek presteren aan niet-deelnemers"
    ],
    "answer": 0
   },
@@ -188,8 +188,8 @@
    "type": "type",
    "skill": "potential-outcomes",
    "level": 1,
-   "prompt": "Wat is de Nederlandse of Engelse term voor de hypothetische toestand die beschrijft wat er met een behandelde eenheid zou zijn gebeurd indien de interventie niet had plaatsgevonden?",
-   "explain": "Het counterfactual (of de contrafeitelijke toestand) is de onwaarneembare toestand in het Potential Outcomes Framework.",
+   "prompt": "Hoe noemen we in het Potential Outcomes Framework de hypothetische toestand die beschrijft wat er met een behandelde eenheid zou zijn gebeurd indien zij niet was behandeld? Typ de Nederlandse of Engelse term.",
+   "explain": "Het counterfactual (de contrafeitelijke toestand) is de fundamenteel onwaarneembare potentiële uitkomst Y_0 voor een eenheid die behandeld is (D = 1).",
    "answers": [
     "counterfactual",
     "contrafactisch",
@@ -203,10 +203,10 @@
    "type": "numeric",
    "skill": "potential-outcomes",
    "level": 2,
-   "prompt": "Stel dat voor deelnemers aan een subsidieprogramma geldt dat $\\mathbb{E}[Y_{1i} \\mid D_i = 1] = 50$ en hun onwaargenomen counterfactual $\\mathbb{E}[Y_{0i} \\mid D_i = 1] = 42$. Voor niet-deelnemers observeren we $\\mathbb{E}[Y_{0i} \\mid D_i = 0] = 35$. Hoe groot is de selectiebias?",
-   "explain": "Selectiebias = $\\mathbb{E}[Y_{0i} \\mid D_i = 1] - \\mathbb{E}[Y_{0i} \\mid D_i = 0] = 42 - 35 = 7$. Het naïeve verschil is $50 - 35 = 15$, wat bestaat uit de zuivere ATT ($50 - 42 = 8$) plus de selectiebias ($7$).",
-   "value": 7,
-   "abs": 0.01
+   "prompt": "In een evaluatiestudie verdienen deelnemers na afloop gemiddeld € 3200 ($\\mathbb{E}[Y_{1i} \\mid D_i = 1]$). Uit een experimentele audit blijkt dat deze deelnemers zónder programma gemiddeld € 2800 zouden hebben verdiend ($\\mathbb{E}[Y_{0i} \\mid D_i = 1]$). De niet-deelnemers verdienen gemiddeld € 2500 ($\\mathbb{E}[Y_{0i} \\mid D_i = 0]$). Bereken de selectiebias in euro's.",
+   "explain": "Selectiebias = E[Y_0|D=1] - E[Y_0|D=0] = 2800 - 2500 = 300 euro. Het naïeve verschil van € 700 (3200 - 2500) bestaat voor € 400 uit het werkelijke behandelingseffect (ATT = 3200 - 2800) en voor € 300 uit positieve selectiebias.",
+   "value": 300,
+   "tolerance": 0.01
   },
   {
    "id": "p04",
@@ -214,14 +214,14 @@
    "skill": "potential-outcomes",
    "level": 2,
    "prompt": "Koppel elk concept uit het Potential Outcomes Framework aan de juiste wiskundige formulering.",
-   "explain": "ATE is het populatiegemiddelde van individuele effecten; ATT conditioneert op $D=1$; Selectiebias is het verschil in $Y_0$ tussen beide groepen; en de geobserveerde $Y$ combineert beide toestanden.",
+   "explain": "ATE meet het gemiddelde causale effect over de gehele populatie; ATT conditioneert specifiek op de behandelde groep (D=1); Selectiebias is het verschil in onbehandelde potentiële uitkomst Y_0 tussen beide groepen; en de waargenomen uitkomst Y combineert Y_1 en Y_0 via toewijzingsindicator D.",
    "pairs": [
     [
      "Average Treatment Effect (ATE)",
      "E[Y_1 - Y_0]"
     ],
     [
-     "Average Treatment Effect on Treated (ATT)",
+     "Average Treatment Effect on the Treated (ATT)",
      "E[Y_1 - Y_0 | D=1]"
     ],
     [
@@ -239,8 +239,8 @@
    "type": "mcq",
    "skill": "did-parallel-trends",
    "level": 2,
-   "prompt": "In de regressie `xtreg gdp i.post##i.treat controls, re vce(cluster country_e)` meet welke coëfficiënt het causale Difference-in-Differences behandelingseffect?",
-   "explain": "De factor variable interactieterm `1.post#1.treat` (de productterm $\\text{Post} \\times \\text{Treat}$) meet de differentiële temporele verandering van de behandelde groep ten opzichte van de controlegroep, wat onder parallel trends gelijk is aan de ATT.",
+   "prompt": "In de DiD-regressie `xtreg gdp i.post##i.treat controls, re vce(cluster country_e)` meet welke coëfficiënt het causale behandelingseffect (ATT)?",
+   "explain": "De factor-variabele interactieterm 1.post#1.treat (de productterm Post * Treat) meet de differentiële verandering van de behandelde groep ten opzichte van de controlegroep over de tijd. Onder de aanname van parallelle trends identificeert deze parameter de ATT.",
    "options": [
     "De interactieterm `1.post#1.treat`",
     "Het hoofdeffect van de tijd `1.post`",
@@ -254,8 +254,8 @@
    "type": "cloze",
    "skill": "did-parallel-trends",
    "level": 2,
-   "prompt": "Vul het Stata-commando aan om een panel Random Effects DiD-model te schatten met geclusterde standaardfouten op landniveau (`country_e`).",
-   "explain": "De optie vce(cluster varname) specificeert cluster-robuuste standaardfouten die rekening houden met willekeurige seriële correlatie en heteroskedasticiteit binnen elk land.",
+   "prompt": "Vul het Stata-commando aan om cluster-robuuste standaardfouten op landniveau (`country_e`) te schatten in een panel Random Effects DiD-model.",
+   "explain": "De optie vce(cluster varname) berekent cluster-robuuste standaardfouten die bestand zijn tegen willekeurige heteroskedasticiteit en binnen-eenheid seriële correlatie over de tijd.",
    "text": "xtreg gdp i.post##i.treat inf_rate trade educ, re vce({{cluster country_e}})",
    "lang": "code"
   },
@@ -264,13 +264,13 @@
    "type": "mcq",
    "skill": "did-parallel-trends",
    "level": 3,
-   "prompt": "In een event study model voor de Duitse hereniging met basisjaar 1989 blijken de interactietermen `1.event#1.treat` (jaar $\\le 1985$) en `2.event#1.treat` (jaar 1987) statistisch significant met $p < 0{,}05$. Wat betekent dit voor de DiD-analyse?",
-   "explain": "Statistisch significante pre-treatment interacties impliceren dat het bbp per hoofd in West-Duitsland en de controlelanden al vóór de hereniging op verschillende trends bewoog. Dit schendt de parallel trends aanname en maakt gewone DiD ongeschikt voor causale uitspraken.",
+   "prompt": "In een event study model voor de Duitse hereniging met basisjaar 1989 blijken de interactietermen `1.event#1.treat` (<= 1985) en `2.event#1.treat` (1987) sterk significant met $p < 0{,}05$. Wat betekent dit econometrisch?",
+   "explain": "Wanneer pre-treatment interacties in een event study significant afwijken van nul, bewijst dit dat de behandelde eenheid en controle-eenheden reeds vóór de ingreep op verschillende groeitrajecten zaten. De identificatie-aanname van parallelle trends is daardoor verworpen, waardoor DiD geen causale interpretatie toelaat.",
    "options": [
-    "De aanname van parallelle trends is geschonden, waardoor de DiD-schatter vertekend en ongeldig is",
-    "Het bewijst dat de Duitse hereniging al anticipatie-effecten had die het bbp deden stijgen",
-    "Het bevestigt dat het panel Random Effects model superieur is aan Fixed Effects",
-    "De controlegroep is perfect gekozen en kan zonder verdere aanpassingen gebruikt worden"
+    "De aanname van parallelle trends is geschonden, waardoor de standaard DiD-schatting vertekend en econometrisch ongeldig is",
+    "De aanname van parallelle trends is bevestigd omdat de pre-treatment trends parallel bewogen",
+    "Het toont aan dat West-Duitsland direct profiteerde van anticipatie-effecten vóór de val van de Berlijnse Muur",
+    "Het Random Effects model is inconsistent en moet vervangen worden door Pooled OLS zonder land-dummy's"
    ],
    "answer": 0
   },
@@ -280,7 +280,7 @@
    "skill": "did-parallel-trends",
    "level": 2,
    "prompt": "Welke Stata 'if'-voorwaarde voegen we toe in `xtreg` om een placebo-timingtoets uit te voeren die de steekproef strikt beperkt tot waarnemingen vóór het herenigingsjaar 1990?",
-   "explain": "Met `if year < 1990` sluiten we alle post-treatment perioden uit, zodat we uitsluitend testen of een fictieve behandelingsdummy in het verleden (bv. 1987) een vals effect vertoont.",
+   "explain": "Met `if year < 1990` sluiten we alle post-treatment perioden uit, zodat we uitsluitend op pre-interventiedata testen of een fictieve hervorming in het verleden (bv. 1987) een vals significant effect vertoont.",
    "answers": [
     "if year < 1990",
     "if year<1990",
@@ -294,13 +294,13 @@
    "type": "mcq",
    "skill": "synthetic-control",
    "level": 2,
-   "prompt": "Waarom eist de Synthetic Control Method (SCM) dat de gewichten van de donor-eenheden niet-negatief zijn ($w_j \\ge 0$) en sommeren tot 1?",
-   "explain": "De restricties $w_j \\ge 0$ en $\\sum w_j = 1$ dwingen af dat de synthetische controle een convex gewogen gemiddelde vormt. Dit voorkomt extrapolatie buiten de ondersteuning van de data (zoals een controlegroep met negatieve bbp-gewichten).",
+   "prompt": "Waarom eist de Synthetic Control Method (SCM) dat de gewichten van de donorlanden niet-negatief zijn ($w_j \\ge 0$) en sommeren tot 1 ($\\sum w_j = 1$)?",
+   "explain": "De restricties w_j >= 0 en sum w_j = 1 dwingen af dat de synthetische eenheid binnen het convex omhulsel van de donoren ligt. Dit voorkomt dat men extrapoleert buiten de feitelijke data (zoals een controlegroep met negatieve bbp-waarden of extreme hefboomwerking).",
    "options": [
-    "Om te voorkomen dat men extrapoleert buiten het convex omhulsel van de donor pool",
-    "Om ervoor te zorgen dat de OLS-regressie geen multicollineariteit vertoont",
-    "Omdat negatieve gewichten wiskundig verboden zijn in matrixalgebra",
-    "Om te garanderen dat elk land in de wereld een even groot gewicht krijgt"
+    "Om te garanderen dat de synthetische controle een convex gewogen gemiddelde vormt en extrapolatie buiten de donor pool voorkomt",
+    "Om multicollineariteit tussen de verklarende variabelen in de OLS-regressie te elimineren",
+    "Omdat negatieve gewichten mathematisch niet gedefinieerd zijn in matrixalgebra",
+    "Om ervoor te zorgen dat elk donorland verplicht exact hetzelfde gewicht krijgt toebedeeld"
    ],
    "answer": 0
   },
@@ -309,8 +309,8 @@
    "type": "cloze",
    "skill": "synthetic-control",
    "level": 2,
-   "prompt": "Vul de Stata optie aan in het commando `synth` om aan te geven dat landcode 17 de behandelde eenheid is.",
-   "explain": "De optie `trunit(17)` geeft aan Stata door welke numerieke eenheid (treatment unit) de interventie heeft ondergaan.",
+   "prompt": "Vul de Stata-optie aan in het commando `synth` om aan te geven dat landcode 17 de behandelde eenheid is.",
+   "explain": "De optie trunit(#) specificeert het identificatienummer van de behandelde eenheid (treatment unit) in de SCM-analyse.",
    "text": "synth gdp gdp schooling infrate industry trade, {{trunit(17)}} trperiod(1990)",
    "lang": "code"
   },
@@ -319,13 +319,13 @@
    "type": "mcq",
    "skill": "synthetic-control",
    "level": 3,
-   "prompt": "Hoe bepaalt `synth_runner` de statistische significantie van het behandelingseffect wanneer er slechts $N=1$ behandelde eenheid is?",
-   "explain": "Via een permutatietest (in-space placebotoetsen): het algoritme berekent de post/pre RMSPE-ratio voor elk onbehandeld donorland alsof het behandeld werd. De p-waarde is het aandeel donorlanden met een effect dat minstens even extreem is als dat van de behandelde eenheid.",
+   "prompt": "Hoe berekent `synth_runner` de statistische significantie van een geschat behandelingseffect wanneer er slechts $N_1 = 1$ behandelde eenheid beschikbaar is?",
+   "explain": "Omdat er slechts één behandelde eenheid is, zijn standaard asymptotische t-toetsen ongeldig. SCM gebruikt permutatie-inferentie (randomization inference): het model wordt geschat voor elk onbehandeld donorland als 'placebo'. De empirische p-waarde is de fractie donorlanden met een post/pre RMSPE-ratio die minstens zo extreem is als die van de behandelde eenheid.",
    "options": [
-    "Via permutatietoetsen waarbij de SCM-procedure herhaald wordt voor elk donorland als placebo",
-    "Via een standaard Student-t toets op de gemiddelde residuen",
-    "Door de Hausman specificatietoets tussen Fixed Effects en Random Effects",
-    "Via de klassieke F-toets op de R² van de donor pool"
+    "Via permutatietoetsen (in-space placebotoetsen) waarbij SCM herhaald wordt voor elk donorland en de post/pre RMSPE-ratio's vergeleken worden",
+    "Via een standaard Student-t toets op het gemiddelde verschil van de residuen na behandeling",
+    "Door de F-toets op gezamenlijke significantie van de fixed effects parameters in het panelmodel",
+    "Via een Breusch-Pagan Lagrange Multiplier test op de variantie van de unieke storingscomponent"
    ],
    "answer": 0
   },
@@ -335,22 +335,22 @@
    "skill": "synthetic-control",
    "level": 2,
    "prompt": "In Computerklas 8 construeert `synth` het synthetische West-Duitsland met Oostenrijk (gewicht 0.765) en Zwitserland (gewicht 0.235). Welk gewicht kregen de overige 14 donorlanden samen?",
-   "explain": "Omdat de gewichten sommeren tot 1 ($0{,}765 + 0{,}235 = 1{,}000$), kregen alle andere 14 donorlanden samen een gewicht van exact 0.",
+   "explain": "Omdat de gewichten niet-negatief zijn en sommeren tot exact 1 (0,765 + 0,235 = 1,000), kregen alle overige 14 donorlanden in de donorpool een gewicht van exact 0. SCM levert van nature een spaarzame (sparse) oplossing op.",
    "value": 0,
-   "abs": 0.001
+   "tolerance": 0.001
   },
   {
    "id": "p13",
    "type": "mcq",
    "skill": "rdd-sharp-fuzzy",
    "level": 2,
-   "prompt": "In welk van de volgende empirische scenario's is er sprake van een **Sharp** Regression Discontinuity Design?",
-   "explain": "In een Sharp RDD bepaalt de drempel de behandeling deterministisch (compliance = 100%). Bij Senaatsverkiezingen wordt een kandidaat zittend senator als en slechts als zijn stemmenaandeel strikt groter is dan die van zijn rivaal (marge > 0). Bij pensioen en beurzen weigeren sommige gerechtigden of stoppen mensen later (fuzzy).",
+   "prompt": "Wat is de fundamentele identificatie-aanname van het Regression Discontinuity Design (RDD) die de methode onderscheidt van Difference-in-Differences (DiD)?",
+   "explain": "RDD steunt op lokale continuïteit (Local Continuity): alle niet-geobserveerde determinanten van de uitkomst variëren vloeiend rond de drempel c. De enige discontinue sprong bij c is de behandeling. RDD kan daarom worden geschat op een enkele cross-sectie, terwijl DiD afhankelijk is van parallelle trends doorheen de tijd.",
    "options": [
-    "Een politicus wint een Senaatszetel als en slechts als zijn stemmenmarge strikt positief is (> 0)",
-    "Werknemers bereiken de pensioengerechtigde leeftijd, maar sommigen kiezen ervoor langer door te werken",
-    "Studenten met een toetsscore boven 60 komen in aanmerking voor een beurs, maar niet iedereen vraagt hem aan",
-    "Patiënten krijgen een doktersvoorschrift bij hoge bloeddruk, maar niet iedereen neemt de medicatie in"
+    "Lokale continuïteit van de potentiële uitkomsten bij de drempelwaarde over een continue forcing variabele (zonder dat een tijdsdimensie vereist is)",
+    "Parallelle trends tussen behandelde en controlegroepen over minstens twee tijdsperioden",
+    "Homoskedasticiteit van de storingstermen over het gehele domein van de toewijzingsvariabele",
+    "Dat de toewijzingsvariabele exact normaal verdeeld moet zijn rond de beleidsdrempel"
    ],
    "answer": 0
   },
@@ -359,8 +359,8 @@
    "type": "type",
    "skill": "rdd-sharp-fuzzy",
    "level": 2,
-   "prompt": "Welke instrumentele variabelen schattingsmethode (typ de 4 tekens tellende afkorting) lost de endogeniteit en imperfecte compliance op in een Fuzzy RDD?",
-   "explain": "Two-Stage Least Squares (2SLS of TSLS) schat het causale Local Average Treatment Effect (LATE) in Fuzzy RDD door de drempel als instrument te gebruiken.",
+   "prompt": "Welke instrumentele-variabelen schattingsmethode (typ de 4 tekens tellende afkorting) lost de endogeniteit en imperfecte naleving op in een Fuzzy RDD?",
+   "explain": "Two-Stage Least Squares (2SLS of TSLS) schat het causale Local Average Treatment Effect (LATE) in Fuzzy RDD door de drempelindicator Z_i = 1(W_i >= c) te gebruiken als instrument voor feitelijke deelname D_i.",
    "answers": [
     "2SLS",
     "TSLS",
@@ -373,8 +373,8 @@
    "type": "cloze",
    "skill": "rdd-sharp-fuzzy",
    "level": 2,
-   "prompt": "Vul de dummyvariabele aan in het regressiemodel van Computerklas 8 om het causale incumbency advantage te schatten binnen een bandbreedte van 10 procentpunt.",
-   "explain": "De dummy x (gegenereerd als `margin > 0`) geeft aan of de Democraat de vorige verkiezing won. De interactie `c.margin##i.x` schat verschillende hellingen en een sprong bij 0.",
+   "prompt": "Vul de dummyvariabele aan in het regressiemodel van Computerklas 8 om het causale incumbency advantage te schatten binnen een bandbreedte van 10 procentpunt rond de drempel.",
+   "explain": "De dummy x (aangemaakt als margin > 0) geeft aan of de Democraat de vorige senaatsverkiezing won. De interactie c.margin##i.x schat aparte hellingen links en rechts van de drempel, waarbij het hoofdeffect 1.x de discontinue sprong meet.",
    "text": "reg vote c.margin##i.{{x}} population i.year if margin>=-10 & margin<=10, robust",
    "lang": "code"
   },
@@ -383,13 +383,13 @@
    "type": "order",
    "skill": "rdd-sharp-fuzzy",
    "level": 2,
-   "prompt": "Plaats de stappen van een gedegen Regression Discontinuity analyse in de juiste logische en empirische volgorde.",
-   "explain": "Eerst inspecteer je de verdeling en bunching (McCrary), vervolgens visualiseer je de sprong, schat je de lokale regressie rond de drempel, en ten slotte valideer je via placebotoetsen.",
+   "prompt": "Plaats de empirische stappen van een gedegen Regression Discontinuity analyse in de juiste logische en methodologische volgorde.",
+   "explain": "Een RDD-onderzoeker toetst eerst de basisvoorwaarde van géén datamanipulatie via de McCrary test, visualiseert de data rond de cutoff, schat vervolgens de lokale regressie rond de drempel, en voert ten slotte robuustheids- en placebotoetsen uit.",
    "tiles": [
-    "Inspecteer het histogram van de forcing variabele op bunching (McCrary test)",
-    "Visualiseer de scatterplot en aparte regressielijnen links en rechts van de drempel",
-    "Schat de lokale regressie (met interactie) binnen een afgebakende bandbreedte",
-    "Voer een placebotoets uit met een verschoven drempelwaarde"
+    "Inspecteer de dichtheid van de forcing variabele op manipulatie/bunching (McCrary test)",
+    "Visualiseer de scatterplot en aparte regressielijnen links en rechts van de drempelwaarde",
+    "Schat een lokale lineaire regressie met interactie binnen een afgebakende bandbreedte",
+    "Voer placebotoetsen uit met verschoven drempelwaarden en predetermined covariaten"
    ],
    "lang": "nl"
   }
@@ -400,19 +400,18 @@
    "type": "numeric",
    "skill": "potential-outcomes",
    "level": 2,
-   "prompt": "Een arbeidsmarktonderzoeker meet dat afgestudeerden van een traineeship gemiddeld € 3200 verdienen ($\\mathbb{E}[Y_{1i} \\mid D_i=1]$), terwijl niet-deelnemers gemiddeld € 2600 verdienen ($\\mathbb{E}[Y_{0i} \\mid D_i=0]$). Uit een experimentele audit blijkt dat de deelnemers zónder het traineeship gemiddeld € 2900 zouden hebben verdiend ($\\mathbb{E}[Y_{0i} \\mid D_i=1]$). Bereken de selectiebias in euro's.",
-   "explain": "Selectiebias = $\\mathbb{E}[Y_{0i} \\mid D_i = 1] - \\mathbb{E}[Y_{0i} \\mid D_i = 0] = 2900 - 2600 = 300$. Het waargenomen loonverschil van € 600 bestaat dus voor € 300 uit het werkelijke traineeshipeffect (ATT = $3200 - 2900 = 300$) en voor € 300 uit positieve selectiebias.",
-   "value": 300,
-   "tolerance": 0.01,
-   "unit": "€"
+   "prompt": "Een subsidieprogramma voor start-ups wordt geëvalueerd. Voor deelnemers geldt $\\mathbb{E}[Y_{1i} \\mid D_i = 1] = 85$ en het contrafeitelijke gemiddelde is $\\mathbb{E}[Y_{0i} \\mid D_i = 1] = 65$. Voor niet-deelnemers observeren we $\\mathbb{E}[Y_{0i} \\mid D_i = 0] = 50$. Bereken de omvang van de selectiebias.",
+   "explain": "Selectiebias = E[Y_0|D=1] - E[Y_0|D=0] = 65 - 50 = 15. Het naïeve groepsverschil is 85 - 50 = 35, wat bestaat uit de zuivere ATT (85 - 65 = 20) plus de selectiebias (15).",
+   "value": 15,
+   "tolerance": 0.01
   },
   {
    "id": "m02",
    "type": "type",
    "skill": "potential-outcomes",
    "level": 2,
-   "prompt": "Welke afkorting (3 letters) duidt het gemiddelde behandelingseffect over de **gehele** populatie aan (inclusief behandelden en niet-behandelden)?",
-   "explain": "ATE staat voor Average Treatment Effect: $\\mathbb{E}[Y_{1i} - Y_{0i}]$.",
+   "prompt": "Welke afkorting (3 letters) duidt het gemiddelde causale behandelingseffect over de gehele populatie aan in het Potential Outcomes Framework?",
+   "explain": "ATE staat voor Average Treatment Effect: E[Y_1 - Y_0].",
    "answers": [
     "ATE"
    ],
@@ -423,13 +422,13 @@
    "type": "mcq",
    "skill": "potential-outcomes",
    "level": 2,
-   "prompt": "Onder welke fundamentele voorwaarde is het eenvoudige verschil in steekproefgemiddelden tussen behandelden en onbehandelden een zuivere, consistente schatter voor de ATT?",
-   "explain": "Zodra de selectiebias nul is (d.w.z. de controlegroep heeft in afwezigheid van het beleid exact dezelfde verwachte uitkomst als de behandelde groep zónder beleid: $\\mathbb{E}[Y_{0i} \\mid D_i=1] = \\mathbb{E}[Y_{0i} \\mid D_i=0]$), valt de bias weg en meet het verschil zuiver de ATT.",
+   "prompt": "In Tennessee Project STAR (Krueger 1999) toetst men de willekeurige toewijzing via een Lineair Kansmodel (LPM): `reg small boy white_asian tchexper freelunch if aide==0`. Wat toont de toetsing aan wanneer de $F$-statistiek $F(4, 3738) = 0{,}06$ bedraagt met $p = 0{,}9936$?",
+   "explain": "In een gerandomiseerd experiment mag de toewijzing aan behandeling (hier small) niet afhangen van observeerbare achtergrondkenmerken. Een F-toets met p = 0,9936 toont dat er geen enkel statistisch verband is tussen leerlingkenmerken en klasgrootte, wat de integriteit van de randomisatie bevestigt.",
    "options": [
-    "Als de selectiebias nul is: $\\mathbb{E}[Y_{0i} \\mid D_i=1] = \\mathbb{E}[Y_{0i} \\mid D_i=0]$",
-    "Als de uitkomstvariabele perfect normaal verdeeld is zonder uitbijters",
-    "Als het aantal behandelden exact gelijk is aan het aantal niet-behandelden",
-    "Als alle controle-eenheden een uitkomst van 0 hebben"
+    "De achtergrondkenmerken zijn gezamenlijk niet gecorreleerd met toewijzing, wat bevestigt dat de randomisatie geslaagd is",
+    "De regressie lijdt onder ernstige multicollineariteit waardoor de testscores ongeldig zijn",
+    "Het model verklaart 99% van de variantie in testscores tussen klassentypes",
+    "De aanname van homoskedastische storingstermen is formeel verworpen"
    ],
    "answer": 0
   },
@@ -438,8 +437,8 @@
    "type": "cloze",
    "skill": "potential-outcomes",
    "level": 2,
-   "prompt": "Vul de ontbrekende econometrische component aan in de formele ontbinding van het waargenomen groepsverschil: E[Y|D=1] - E[Y|D=0] = ATT + {{selectiebias}}.",
-   "explain": "Het waargenomen verschil ontleedt wiskundig in het ware causale effect op de behandelden (ATT) plus de selectiebias: $\\mathbb{E}[Y_{0i} \\mid D_i=1] - \\mathbb{E}[Y_{0i} \\mid D_i=0]$.",
+   "prompt": "Vul de ontbrekende econometrische term aan in de formele ontbinding van het waargenomen groepsverschil: E[Y|D=1] - E[Y|D=0] = ATT + {{selectiebias}}.",
+   "explain": "Het waargenomen verschil ontbindt exact in het effect op de behandelden (ATT) plus de selectiebias: E[Y_0|D=1] - E[Y_0|D=0].",
    "text": "E[Y|D=1] - E[Y|D=0] = ATT + {{selectiebias}}",
    "lang": "nl"
   },
@@ -448,18 +447,18 @@
    "type": "numeric",
    "skill": "did-parallel-trends",
    "level": 2,
-   "prompt": "In een 2x2 DiD-studie bedraagt de gemiddelde uitkomst voor de behandelde groep 120 vóór en 160 na het beleid. Voor de controlegroep stijgt de uitkomst van 80 vóór naar 105 na het beleid. Wat is de geschatte DiD-behandelingsimpact $\\hat{\\tau}_{\\text{DiD}}$?",
-   "explain": "DiD = $(160 - 120) - (105 - 80) = 40 - 25 = 15$. De behandelde groep steeg 15 eenheden méér dan verwacht op basis van de controle-trend.",
-   "value": 15,
-   "tolerance": 0.01
+   "prompt": "In Card & Krueger (1994) bedraagt het gemiddelde aantal werknemers (FTE) in New Jersey 20.44 vóór en 21.03 na de minimumloonstijging. In Pennsylvania bedraagt het 23.33 vóór en 21.17 na. Bereken de geschatte DiD-behandelingsimpact $\\hat{\\delta}_{\\text{DiD}}$ (afgerond op 2 decimalen).",
+   "explain": "DiD = (21,03 - 20,44) - (21,17 - 23,33) = (+0,59) - (-2,16) = +2,75 voltijdsequivalenten. In tegenstelling tot klassieke neoklassieke verwachtingen daalde de werkgelegenheid niet, maar nam zij relatief toe.",
+   "value": 2.75,
+   "tolerance": 0.05
   },
   {
    "id": "m06",
    "type": "type",
    "skill": "did-parallel-trends",
    "level": 2,
-   "prompt": "Welke cruciale aanname (twee woorden in het Nederlands of Engels) stelt dat de behandelde en controlegroep in afwezigheid van het beleid hetzelfde tijdspad zouden hebben gevolgd?",
-   "explain": "De aanname van parallel trends (of parallelle trends / common trends) is de noodzakelijke identificatievoorwaarde voor Difference-in-Differences.",
+   "prompt": "Welke cruciale identificatie-aanname (twee woorden in het Nederlands of Engels) stelt dat de behandelde en controlegroep in afwezigheid van het beleid hetzelfde tijdspad zouden hebben gevolgd?",
+   "explain": "De aanname van parallel trends (of common trends) is de noodzakelijke voorwaarde voor causale identificatie in Difference-in-Differences modellen.",
    "answers": [
     "parallel trends",
     "parallelle trends",
@@ -472,13 +471,13 @@
    "type": "mcq",
    "skill": "did-parallel-trends",
    "level": 3,
-   "prompt": "Je voert een placebo-timingtoets uit voor een hervorming uit 1990 door een fictieve behandelingsdummy in 1987 te schatten op data tot 1989 (`if year < 1990`). De interactieterm `post1#treat` heeft een p-waarde van $0{,}003$. Wat is je wetenschappelijke conclusie?",
-   "explain": "Een statistisch significante interactie vóór de werkelijke interventie verwerpt de nulhypothese van gelijke pre-trends. De behandelde groep week reeds in 1987 af van de controlelanden, wat betekent dat parallel trends faalt en de DiD-schatting vertekend is.",
+   "prompt": "In de wiskundige decompositie $\\hat{\\delta}_{2\\times 2} = \\text{ATT} + \\text{PT bias} + \\text{NA bias}$ van Jonathan James, wat vertegenwoordigt de term 'NA bias'?",
+   "explain": "NA bias staat voor No Anticipation bias: E[Y_0|Pre] - E[Y_1|Pre]. Als economische actoren anticiperen op een toekomstig beleid en hun gedrag al in de pre-periode aanpassen (Y_1 in pre verschilt van Y_0 in pre), raakt de pre-treatment baseline vervuild en ontstaat er anticipatiebias.",
    "options": [
-    "De parallel trends aanname is verworpen; de DiD-methode is niet causaal betrouwbaar",
-    "De parallel trends aanname is robuust bevestigd; het model is causaal valide",
-    "Het model lijdt onder heteroskedasticiteit die eenvoudig met OLS opgelost wordt",
-    "De controlegroep reageerde pas drie jaar later op de hervorming"
+    "De vertekening door schending van de aanname van géén anticipatie (No Anticipation), waarbij actoren hun gedrag al vóór de hervorming aanpassen",
+    "De niet-asymptotische steekproefvariantie veroorzaakt door ontbrekende waarnemingen in de paneldata",
+    "Het selectie-effect veroorzaakt door niet-lineaire tijdstrends in de controlegroep",
+    "De vertekening door niet-normaal verdeelde residuen in de Random Effects schatting"
    ],
    "answer": 0
   },
@@ -487,8 +486,8 @@
    "type": "cloze",
    "skill": "did-parallel-trends",
    "level": 2,
-   "prompt": "Vul de factor variable operator in Stata in die zowel de twee hoofdeffecten als de interactieterm schat: `xtreg y i.post{{##}}i.treat controls, re`.",
-   "explain": "De dubbele hashtag `##` instrueert Stata om zowel de hoofdeffecten van de variabelen als hun volledige interactie (`#`) in de regressie op te nemen.",
+   "prompt": "Vul de Stata factor-variabele operator in die zowel de twee hoofdeffecten als de interactieterm in de regressie opneemt: `xtreg y i.post{{##}}i.treat controls, re`.",
+   "explain": "De dubbele hashtag ## instrueert Stata om automatisch de afzonderlijke hoofdeffecten (i.post en i.treat) én hun volledige interactie (1.post#1.treat) in het regressiemodel op te nemen.",
    "text": "xtreg y i.post{{##}}i.treat controls, re",
    "lang": "code"
   },
@@ -498,7 +497,7 @@
    "skill": "synthetic-control",
    "level": 2,
    "prompt": "Welke afkorting (5 letters) staat voor de optimalisatiemaatstaf die SCM minimaliseert om de best passende synthetische controlegroep in de pre-behandelingsperiode te bepalen?",
-   "explain": "RMSPE staat voor Root Mean Squared Prediction Error.",
+   "explain": "RMSPE staat voor Root Mean Squared Prediction Error: de vierkantswortel uit het gemiddelde van de gekwadrateerde afwijkingen tussen de werkelijke en de synthetische eenheid vóór de interventie.",
    "answers": [
     "RMSPE"
    ],
@@ -509,13 +508,13 @@
    "type": "mcq",
    "skill": "synthetic-control",
    "level": 2,
-   "prompt": "Wat is het fundamentele methodologische voordeel van Synthetic Control (SCM) ten opzichte van een klassieke regressie tegen een ongewogen OECD-gemiddelde bij de evaluatie van West-Duitsland?",
-   "explain": "SCM construeert een op maat gesneden gewogen combinatie van donorlanden die specifiek matcht op de economische structuur en het pre-herenigingstraject van West-Duitsland. Een simpel ongewogen gemiddelde van heterogene OECD-landen vertoont geen parallelle trend met West-Duitsland.",
+   "prompt": "Wat is het methodologische voordeel van Synthetic Control (SCM) ten opzichte van een klassieke regressie tegen een ongewogen OECD-gemiddelde bij de evaluatie van de Duitse hereniging?",
+   "explain": "Een ongewogen gemiddelde van heterogene OECD-landen vertoont geen parallelle trend met West-Duitsland. SCM kiest datagestuurd en transparant de optimale gewichten om de pre-treatment eigenschappen van West-Duitsland exact te dupliceren, waardoor een betrouwbare contrafeitelijke evolutie ontstaat.",
    "options": [
-    "SCM construeert een datagestuurde, op maat gemaakte counterfactual die pre-trends optimaal matcht zonder extrapolatie",
-    "SCM verhoogt het aantal behandelde landen kunstmatig van 1 naar 100",
-    "SCM vereist geen enkele aanname over predictoren of pre-intervention data",
-    "SCM vervangt paneldata door zuivere tijdreeksanalyse zonder donoren"
+    "SCM construeert een transparante, gewogen counterfactual die pre-trends en predictoren optimaal matcht zonder extrapolatie buiten het convex omhulsel",
+    "SCM verhoogt het aantal behandelde landen kunstmatig door bootstrap sampling",
+    "SCM vereist geen enkele aanname over predictoren of pre-intervention gegevens",
+    "SCM kan alleen worden toegepast als de aanname van parallelle trends al perfect voldaan is"
    ],
    "answer": 0
   },
@@ -524,18 +523,18 @@
    "type": "numeric",
    "skill": "synthetic-control",
    "level": 2,
-   "prompt": "In Computerklas 8 wordt de event-variabele gedefinieerd als `event = year - 1985`. Welke numerieke waarde heeft het basisjaar 1989 (het jaar direct voorafgaand aan de hereniging) in deze event study?",
-   "explain": "Het jaar 1989 correspondeert met event-waarde: $1989 - 1985 = 4$. Daarom wordt in Stata `ib4.event` gespecificeerd als basisniveau.",
+   "prompt": "In Computerklas 8 wordt de event-variabele gedefinieerd als `event = year - 1985`. Welke numerieke waarde heeft het basisjaar 1989 (het referentiejaar direct voorafgaand aan de hereniging) in deze specificatie?",
+   "explain": "Voor het jaar 1989 geldt: event = 1989 - 1985 = 4. Daarom wordt in Stata ib4.event gespecificeerd als basiscategorie.",
    "value": 4,
-   "abs": 0.01
+   "tolerance": 0.01
   },
   {
    "id": "m12",
    "type": "cloze",
    "skill": "synthetic-control",
    "level": 2,
-   "prompt": "Vul het post-estimation commando aan dat na `synth_runner` de werkelijke behandelde eenheid afbeeldt tussen alle grijze/oranje placebo-donorlijnen.",
-   "explain": "Het commando `single_treatment_graphs` plot de ruwe en gestandaardiseerde effecttrajecten van de behandelde eenheid te midden van de donor placeboruns.",
+   "prompt": "Vul het Stata post-estimation commando aan dat na `synth_runner` de behandelde eenheid afbeeldt tussen alle grijze/oranje placebo-donorlijnen.",
+   "explain": "Het commando single_treatment_graphs plot het werkelijke effecttraject van de behandelde eenheid samen met alle placebotrajecten van de donorpool om de relatieve omvang visueel te inspecteren.",
    "text": "{{single_treatment_graphs}}, trlinediff(-1) do_color(orange%15)",
    "lang": "code"
   },
@@ -545,7 +544,7 @@
    "skill": "rdd-sharp-fuzzy",
    "level": 2,
    "prompt": "Welk specifiek causaal effect (4 letters) identificeert een Fuzzy RDD-schatting via 2SLS voor de subpopulatie die compliant is aan de drempel?",
-   "explain": "Fuzzy RDD identificeert het Local Average Treatment Effect (LATE): het causale effect voor compliers rond de drempelwaarde.",
+   "explain": "Fuzzy RDD identificeert het Local Average Treatment Effect (LATE): het causale effect voor 'compliers' (individuen die uitsluitend behandeld worden omdát zij de drempel overschrijden).",
    "answers": [
     "LATE"
    ],
@@ -556,13 +555,13 @@
    "type": "mcq",
    "skill": "rdd-sharp-fuzzy",
    "level": 3,
-   "prompt": "Wat toont een statistisch significante discontinuïteit in de dichtheid van de forcing variabele bij de drempel (McCrary density test)?",
-   "explain": "Een plotse ophoping (bunching) van waarnemingen net aan één kant van de drempel wijst op actieve manipulatie of sortering van de toewijzingsvariabele door actoren. Dit schendt de aanname van lokale willekeur en ondermijnt de causale validiteit van RDD.",
+   "prompt": "Waarom vormt een statistisch significante discontinuïteit in de dichtheid van de forcing variabele bij de drempel (McCrary density test) een ernstige bedreiging voor de validiteit van RDD?",
+   "explain": "Als individuen of functionarissen de toewijzingsvariabele kunnen manipuleren om net aan de gunstige kant van de drempel te geraken (bunching), ontstaat er selectiebias. De aanname van lokale continuïteit faalt, waardoor het verschil bij de drempel niet langer causaal is.",
    "options": [
-    "Dat actoren de toewijzingsvariabele manipuleren (bunching), wat de RDD-validiteit schendt",
-    "Dat het instrument in de first stage uiterst krachtig is ($F > 10$)",
-    "Dat de uitkomstvariabele heteroskedastisch verdeeld is rond het nulpunt",
-    "Dat de behandeling een perfecte compliance kent conform Sharp RDD"
+    "Het wijst op actieve manipulatie of zelfselectie (bunching) rond de drempel, waardoor eenheden net links en rechts niet langer vergelijkbaar zijn",
+    "Het toont aan dat de first-stage instrumentele regressie een te lage F-statistiek heeft ($F < 10$)",
+    "Het betekent dat de residuen niet langer homoskedastisch verdeeld zijn over de steekproef",
+    "Het bewijst dat de behandeling deterministisch is zoals in een Sharp RDD"
    ],
    "answer": 0
   },
@@ -572,7 +571,7 @@
    "skill": "rdd-sharp-fuzzy",
    "level": 2,
    "prompt": "In Computerklas 8 schatten we met `reg vote c.margin##i.x, robust` een sprong op `1.x` van 6.044. Hoeveel procentpunt bedraagt het geschatte causale incumbency advantage (afgerond op 2 decimalen)?",
-   "explain": "De coëfficiënt op de drempeldummy `1.x` is 6.044, wat betekent dat zittend senator zijn levert direct een electoraal voordeel op van 6,04 procentpunt in de volgende verkiezing.",
+   "explain": "De coëfficiënt op 1.x meet de discontinue sprong in het stemmenaandeel bij een nipte verkiezingsoverwinning (margin nadert 0). Zittend senator zijn verhoogt het stemmenaandeel bij de volgende verkiezing direct met 6,04 procentpunt.",
    "value": 6.04,
    "tolerance": 0.05
   },
@@ -581,8 +580,8 @@
    "type": "cloze",
    "skill": "rdd-sharp-fuzzy",
    "level": 2,
-   "prompt": "Vul het instrumentatieblok aan in `ivreg2` waarbij pensioen (`pen`) wordt geïnstrueerd door pensioengerechtigdheid (`elig`): `ivreg2 mc ({{pen=elig}}) c.esse_m##c.esse_m, first robust`.",
-   "explain": "In Stata's ivreg2 en ivregress syntaxis specificeer je endogene variabelen en hun instrumenten tussen haakjes als `(endog = instrumenten)`.",
+   "prompt": "Vul het instrumentatieblok aan in `ivreg2` waarbij feitelijk pensioen (`pen`) wordt geïnstrueerd door pensioengerechtigdheid (`elig`): `ivreg2 mc ({{pen=elig}}) c.esse_m##c.esse_m, first robust`.",
+   "explain": "In de 2SLS-syntaxis van ivreg2 specificeer je de endogene variabele en haar instrument tussen ronde haakjes als (endogene_var = instrumenten).",
    "text": "ivreg2 mc ({{pen=elig}}) c.esse_m##c.esse_m if esse_m>=-10 & esse_m<=10, first robust",
    "lang": "code"
   }
@@ -595,6 +594,12 @@
    "back": "Omdat E[Y|D=1] - E[Y|D=0] gelijk is aan het ware effect (ATT) plus de selectiebias (E[Y_0|D=1] - E[Y_0|D=0]). Als behandelden zónder beleid al systematisch verschilden van onbehandelden, is OLS vertekend."
   },
   {
+   "id": "c-project-star",
+   "skill": "potential-outcomes",
+   "front": "Hoe toetst men willekeurige toewijzing in een gerandomiseerd experiment (zoals Tennessee Project STAR)?",
+   "back": "Via een balanceringstoets met een Lineair Kansmodel (LPM): men regresseert de toewijzingsdummy op achtergrondkenmerken (reg small boy white_asian tchexper freelunch). De F-toets moet niet-significant zijn (p > 0,05)."
+  },
+  {
    "id": "c-did-reg",
    "skill": "did-parallel-trends",
    "front": "Welk Stata commando schat een Difference-in-Differences model met cluster-robuuste standaardfouten op groepsniveau?",
@@ -603,38 +608,32 @@
   {
    "id": "c-parallel-trends",
    "skill": "did-parallel-trends",
-   "front": "Wat is de cruciale identificatie-aanname van Difference-in-Differences (DiD)?",
-   "back": "De aanname van parallelle trends: in afwezigheid van de interventie zouden de gemiddelde uitkomsten van de behandelde en controlegroep parallel zijn geëvolueerd: E[Y_{0,post} - Y_{0,pre} | D=1] = E[Y_{0,post} - Y_{0,pre} | D=0]."
+   "front": "Wat is de cruciale identificatie-aanname van Difference-in-Differences (DiD) en de ontbinding van Jonathan James?",
+   "back": "De aanname van parallelle trends: E[Y_{0T,post} - Y_{0T,pre}] = E[Y_{0C,post} - Y_{0C,pre}]. De decompositie luidt: delta = ATT + PT bias + NA bias. Zowel de parallel trends bias als de anticipatiebias (No Anticipation bias) moeten 0 zijn."
   },
   {
    "id": "c-event-study",
    "skill": "did-parallel-trends",
    "front": "Hoe toetst een event study model (bv. xtreg y ib4.event##i.treat) de aanname van parallelle trends?",
-   "back": "De pre-treatment interacties (event#treat vóór de interventie) moeten statistisch niet-significant zijn (dichtbij 0). Zijn ze significant, dan faalt parallel trends en is DiD niet causaal."
+   "back": "De pre-treatment interacties (event#treat vóór de interventie) moeten statistisch niet-significant zijn (gezamenlijk 0). Zijn ze significant, dan liepen de trends al uiteen en faalt DiD."
   },
   {
    "id": "c-synth-weights",
    "skill": "synthetic-control",
-   "front": "Aan welke twee wiskundige restricties moeten de gewichten w_j in de Synthetic Control Method (SCM) voldoen?",
-   "back": "1. Niet-negatief: w_j >= 0\n2. Optelsom tot 1: sum(w_j) = 1\nDit voorkomt extrapolatie buiten het convex omhulsel van de donor pool."
+   "front": "Aan welke twee wiskundige restricties moeten de donor-gewichten w_j in SCM voldoen en waarom?",
+   "back": "1. Niet-negatief: w_j >= 0\n2. Sommatie tot 1: sum(w_j) = 1\nDit dwingt af dat de synthetische controle binnen het convex omhulsel van de donorpool ligt en voorkomt extrapolatie buiten de empirische ondersteuning van de data."
   },
   {
    "id": "c-synth-inference",
    "skill": "synthetic-control",
    "front": "Hoe verloopt statistische inferentie in de Synthetic Control Method (synth_runner)?",
-   "back": "Via in-space placebotoetsen: SCM wordt toegepast op elk donorland. De p-waarde is de fractie donorlanden met een post/pre RMSPE-ratio die minstens zo extreem is als die van de behandelde eenheid."
+   "back": "Via in-space placebotoetsen (randomization inference): SCM wordt geschat voor elk onbehandeld donorland. De p-waarde is de fractie donorlanden met een post/pre RMSPE-ratio die minstens zo extreem is als die van de behandelde eenheid."
   },
   {
-   "id": "c-sharp-rdd",
+   "id": "c-rdd-sharp-fuzzy",
    "skill": "rdd-sharp-fuzzy",
-   "front": "Wat kenmerkt een Sharp RDD en hoe wordt dit geschat in Stata?",
-   "back": "Behandeling springt deterministisch van 0 naar 1 bij de drempel (perfecte compliance). Schatting: reg y c.w##i.x if abs(w) <= h, robust\nwaarbij x = (w >= c). Coëfficiënt 1.x meet de discontinue sprong."
-  },
-  {
-   "id": "c-fuzzy-rdd",
-   "skill": "rdd-sharp-fuzzy",
-   "front": "Waarom vereist Fuzzy RDD een 2SLS-schatter en welk effect wordt geïdentificeerd?",
-   "back": "Omdat er onvolledige compliance is: de drempel verhoogt de behandelingskans discontinu, maar forceert deze niet. De drempel elig = (w >= c) dient als instrument voor feitelijke behandeling D: ivreg2 y (D=elig) c.w, first robust. Dit identificeert het LATE voor compliers."
+   "front": "Wat is het fundamentele verschil tussen Sharp RDD en Fuzzy RDD en hoe worden ze geschat?",
+   "back": "Bij Sharp RDD springt de behandelingskans deterministisch van 0 naar 1 (geschat via OLS met interactie). Bij Fuzzy RDD stijgt de behandelingskans discontinu tussen 0 en 1 wegens onvolledige naleving (geschat via 2SLS met ivreg2, wat het LATE voor compliers identificeert)."
   }
  ],
  "production": {
@@ -642,7 +641,7 @@
   "lang": "nl",
   "minWords": 150,
   "prompt": "Als econometrisch onderzoeker evalueer je de economische impact van de Duitse hereniging in 1990 op het bbp per hoofd van West-Duitsland (`german_reunification.dta`).\n\n1. Formuleer de standaard DiD-regressievergelijking in Stata met Random Effects en land-specifieke tijdstrends (`model_v`). Wat is het geschatte effect en hoe interpreteer je de interactieterm?\n2. Leg uit hoe je de aanname van parallel trends formeel toetst via een placebo in de tijd én via een event study model (`ib4.event##i.treat`). Welke econometrische conclusie trek je uit de testresultaten van Computerklas 8?\n3. Waarom biedt de Synthetic Control Method (`synth`) hier een betrouwbaardere counterfactual dan een klassiek OECD-gemiddelde? Welke landen vormen synthetisch West-Duitsland en wat leert de inferentie via `synth_runner` over het werkelijke langetermijneffect van de hereniging?",
-  "model": "1. Standaard DiD-specificatie (model_v):\nxtreg gdp i.post##i.treat inf_rate trade educ c.year##i.country_e, re vce(cluster country_e)\nDe interactieterm 1.post#1.treat meet het DiD-behandelingseffect (ATT). De puntschatting bedraagt +738,07 dollar (p = 0,014), wat op het eerste gezicht suggereert dat de hereniging het West-Duitse bbp per hoofd significant deed toenemen met 738 dollar ten opzichte van andere OECD-landen.\n\n2. Toetsing van de Parallel Trends Aanname:\n- Placebo in de tijd: We definiëren een fictieve hervorming in 1987 en beperken de regressie tot de pre-behandelingsperiode (if year < 1990). Als de placebo-interactie 1.post1#1.treat significant is, faalt parallel trends.\n- Event Study model: We schatten xtreg gdp ib4.event##i.treat inf_rate educ c.year##i.country_e, re vce(cluster country_e) met 1989 als referentiejaar (ib4). In Computerklas 8 zijn de pre-treatment interacties 1.event#1.treat (p = 0,000), 2.event#1.treat (p = 0,019) en 3.event#1.treat (p = 0,014) allen sterk statistisch significant!\n- Conclusie: De identificatie-aanname van parallelle trends is onweerlegbaar geschonden. West-Duitsland bewoog al vóór 1990 op een ander groeipad dan de overige OECD-landen. De positieve DiD-schatting van +738 dollar is vertekend en econometrisch ongeldig.\n\n3. Synthetic Control Method (SCM) & Inferentie:\n- Waarom SCM superieur is: Omdat er slechts één behandelde eenheid is (N_1 = 1) en geen enkel individueel land of ongewogen gemiddelde parallel loopt, construeert SCM (synth) een datagestuurde, optimale gewogen donorpool die pre-trends en predictoren minimaliseert binnen het convex omhulsel (w_j >= 0, sum w_j = 1).\n- Samenstelling Synthetisch West-Duitsland: Het model selecteert 76,5% Oostenrijk en 23,5% Zwitserland (alle andere 14 donorlanden krijgen gewicht 0). De pre-hereniging RMSPE is zeer laag (145,63).\n- Inferentie via synth_runner: De in-space en in-time placebotoetsen tonen dat de hereniging op de middellange en lange termijn leidde tot een aanzienlijk en statistisch significant lagere bbp-groei per hoofd voor West-Duitsland ten opzichte van zijn synthetische counterfactual (een kloof die oploopt tot meer dan 2000 dollar per inwoner, p_std = 0,000 na 14 jaar). Dit weerspiegelt de zware economische lasten van de monetaire unie en structurele heropbouw van de voormalige DDR (Duitse Democratische Republiek).",
+  "model": "1. Standaard DiD-specificatie (model_v):\nxtreg gdp i.post##i.treat inf_rate trade educ c.year##i.country_e, re vce(cluster country_e)\nDe factor-variabele interactieterm 1.post#1.treat meet het causale DiD-behandelingseffect (ATT). De puntschatting bedraagt +738,07 dollar (p = 0,014). Een naïeve onderzoeker zou hieruit concluderen dat de hereniging het West-Duitse bbp per hoofd significant deed toenemen met 738 dollar ten opzichte van andere OECD-landen.\n\n2. Toetsing van de Parallel Trends Aanname:\n- Placebo in de tijd: We definiëren een fictieve hervorming in het verleden (bv. 1987) en beperken de steekproef tot de pre-behandelingsperiode (if year < 1990). Als de interactie 1.post1#1.treat statistisch significant is, faalt parallel trends.\n- Event Study model: We schatten xtreg gdp ib4.event##i.treat inf_rate educ c.year##i.country_e, re vce(cluster country_e) waarbij 1989 (event = 4) de referentiecategorie is (ib4). In Computerklas 8 blijken de pre-treatment interacties 1.event#1.treat (p = 0,000), 2.event#1.treat (p = 0,019) en 3.event#1.treat (p = 0,014) allen sterk statistisch significant!\n- Conclusie: De identificatie-aanname van parallelle trends is onweerlegbaar geschonden. West-Duitsland bewoog al vóór 1990 op een geheel ander groeipad dan de controlelanden. De positieve DiD-schatting van +738 dollar is vertekend en econometrisch ongeldig.\n\n3. Synthetic Control Method (SCM) & Inferentie:\n- Waarom SCM superieur is: Omdat er slechts één behandelde eenheid is (N_1 = 1) en geen enkel individueel land of simpel ongewogen gemiddelde parallel loopt, construeert SCM (synth) een datagestuurde, optimale gewogen donorpool die pre-trends en covariaten minimaliseert binnen het convex omhulsel (w_j >= 0, sum w_j = 1) zonder extrapolatie.\n- Samenstelling Synthetisch West-Duitsland: Het algoritme kent 76,5% gewicht toe aan Oostenrijk en 23,5% aan Zwitserland (alle andere 14 donorlanden krijgen gewicht 0). De pre-hereniging RMSPE is zeer laag (145,63).\n- Inferentie via synth_runner: De in-space en in-time placebotoetsen tonen dat de hereniging op de middellange en lange termijn leidde tot een aanzienlijk en statistisch significant lager bbp per hoofd voor West-Duitsland ten opzichte van zijn synthetische counterfactual (een cumulatief verlies oplopend tot meer dan 2000 dollar per inwoner, p_std = 0,000 na 14 jaar). Dit weerspiegelt de enorme financiële transfers en loonharmonisatiekosten voor de integratie van de voormalige DDR (Duitse Democratische Republiek (Oost-Duitsland)).",
   "rubric": [
    "Correcte specificatie van het DiD-regressiemodel in Stata met interactie (i.post##i.treat) en interpretatie van de puntschatting (+738 dollar)",
    "Uiteenzetting van de parallel trends assumptie en de twee validatietoetsen (placebo timing en event study met ib4.event)",
