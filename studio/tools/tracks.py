@@ -75,8 +75,16 @@ def check_consistency():
         for k in ("title", "short", "glyph", "goal", "subtitle", "levels", "lang"):
             if not g.get(k):
                 problems.append(f"tracks.json: '{t}' mist '{k}'")
-        if not os.path.exists(os.path.join(STUDIO, "content", "syllabus", f"{t}.json")):
+        syl_path = os.path.join(STUDIO, "content", "syllabus", f"{t}.json")
+        if not os.path.exists(syl_path):
             problems.append(f"'{t}': studio/content/syllabus/{t}.json ontbreekt")
+        else:
+            try:
+                syl_data = json.load(open(syl_path, encoding="utf-8"))
+                if not isinstance(syl_data.get("topics"), list):
+                    problems.append(f"'{t}': syllabus mist een 'topics'-lijst")
+            except Exception as e:
+                problems.append(f"'{t}': kan syllabus niet laden ({e})")
         for var in (f"--{t}:", f"--{t}-soft:", f"--{t}-ink:"):
             if var not in css:
                 problems.append(f"styles.css: kleurvariabele {var} voor '{t}' ontbreekt (licht én donker)")

@@ -13,238 +13,248 @@
    "id": "m1",
    "title": "Module 1 — Het Meervoudig Lineair Regressiemodel (MLRM) & Stata Fundamenten (Lecture 1 + Computer Class 1)",
    "topics": [
-    {
-     "id": "econometrics-01-stata-fundamentals",
-     "title": "MLRM Grondslagen, LSA-aannames, Do-files & Databewerking",
-     "level": "fundament",
-     "objectives": [
-      "De 4 Least Squares Assumptions (LSA 1 to 4) van het MLRM formaliseren en de Gauss-Markov eigenschappen (BLUE, zuiverheid, consistentie) bewijzen",
-      "De wiskundige formule voor Omitted Variable Bias (OVB) afleiden en de richting van de vertekening bepalen",
-      "Heteroskedasticiteit (Breusch-Pagan, White test) en multicollineariteit (VIF) diagnosticeren en corrigeren via robuuste standaardfouten",
-      "Professionele Stata do-files met logging opzetten, data verkennen via summarize detail, tabstat en ttest, veilige dummy's genereren zonder missing value valkuil, en datasets koppelen (merge) en herstructureren (reshape long/wide)"
-     ],
-     "theory": [
-      "MLRM modelopbouw Yi = beta0 + beta1 X1i + ... + betak Xki + ui en OLS residuminimalisatie",
-      "LSA 1 to 4: E(u|X)=0, i.i.d. trekkingen, geen extreme uitschieters (eindige vierde momenten), geen perfecte multicollineariteit",
-      "Asymptotische eigenschappen van OLS: consistentie via Law of Large Numbers (LLN) en asymptotische normaliteit via Central Limit Theorem (CLT)",
-      "Omitted Variable Bias formule: plim beta1_hat = beta1 + beta2 * Cov(x1, x2)/Var(x1)",
-      "Heteroskedasticiteit: Var(u|X) != sigma^2 leidt tot inefficiëntie van OLS en ongeldige t-toetsen; Huber-White sandwich estimator vce(robust)",
-      "Stata werkomgeving, logging (SMCL vs text), missing values (.) als +oneindig, tabulate kruistabellen, merge 1:1/m:1 met _merge controle, en reshape voor paneldata"
-     ],
-     "example": "regress wage educ exper, vce(robust) | summarize wage, detail | tabstat wage, s(mean sd p50) by(female) | merge m:1 id using macro.dta | reshape long inc, i(id) j(year)",
-     "exercise": "Leid de OVB-formule wiskundig af en bepaal het effect van weggelaten vaardigheid; voer daarna een volledige data cleaning en bivariate toetsing uit op mroz.dta in Stata.",
-     "test": "LSA aannames en OLS eigenschappen, OVB-richting bepalen, missing value valkuil in Stata, en merge/reshape syntaxis."
-    }
+    "econometrics-01-stata-fundamentals"
    ]
   },
   {
    "id": "m2",
    "title": "Module 2 — Dummy-variabelen, Kwalitatieve Factoren & Chow-toets (Lecture 2 + Computer Class 2)",
    "topics": [
-    {
-     "id": "econometrics-02-dummy-variables-interactions",
-     "title": "Kwalitatieve Variabelen, Dummy Variable Trap, Interacties & Chow-toets",
-     "level": "fundament",
-     "objectives": [
-      "Kwalitatieve factoren modelleren als 0-1 binaire indicatoren en de dummy variable trap wiskundig bewijzen via een singuliere X'X-matrix",
-      "Aantonen dat de keuze van de referentiegroep (basisgroep) invariant is voor voorspelde waarden, SSR en R2, en de Halvorsen-Palmquist formule voor semi-elasticiteit afleiden",
-      "Hellinginteracties (slope dummies c.##i.) en meervoudige dummy-interacties (i.##i.) formaliseren en interpreteren",
-      "Kwadratische specificaties en keerpunten berekenen, en de Chow-toets op structurele parameterstabiliteit uitvoeren via interacties met testparm"
-     ],
-     "theory": [
-      "Kwalitatieve versus kwantitatieve economische variabelen (Hamermesh & Biddle 1994 discriminatie)",
-      "Dummy variable trap: exacte multicollineariteit en niet-inverteerbare regressormatrix bij opname van M dummy's én intercept",
-      "Halvorsen & Palmquist (1980) correctie: exact % delta y = 100 * (exp(beta1) - 1)% in semi-log modellen",
-      "Interactie-effecten: interceptverschuiving versus hellingverandering (heterogeen scholingsrendement per geslacht)",
-      "Kwadratische regressie: eerste afgeleide dy/dx = beta1 + 2*beta2*x en keerpunt x* = -beta1 / (2*beta2)",
-      "Chow structural break test: klassieke F-toets versus modern interactiemodel met geclusterde/robuuste standaardfouten"
-     ],
-     "example": "regress lwage i.female##c.educ c.exper##c.exper, vce(robust) | testparm 1.female#c.educ | margins, dydx(exper) at(exper=(5 15 25))",
-     "exercise": "Analyseer loonverschillen en schoonheidspremies met Hamermesh & Biddle data; bereken het kwadratische ervaringsoptimum en voer een Chow-toets uit.",
-     "test": "Wiskundig bewijs dummy trap, Halvorsen-Palmquist afleiding, factorvariabele syntax (ib#., c.##i.), en interpretatie van interactiecoëfficiënten."
-    }
+    "econometrics-02-dummy-variables-interactions"
    ]
   },
   {
    "id": "m3",
    "title": "Module 3 — Endogeniteit, Instrumentele Variabelen & 2SLS (Lecture 3 + Computer Class 3)",
    "topics": [
-    {
-     "id": "econometrics-03-instrumental-variables-2sls",
-     "title": "Endogeniteit, Method of Moments, 2SLS Schatting & Diagnostische Toetsen",
-     "level": "gevorderd",
-     "objectives": [
-      "De drie klassieke oorzaken van endogeniteit (OVB, meetfout met dempingsvertekening, simultaneïteit) formaliseren en bewijzen waarom OLS inconsistent is",
-      "De Method of Moments gebruiken om OLS en IV af te leiden en het consistentiebewijs van de IV-schatter leveren",
-      "De twee kernvoorwaarden voor een geldig instrument (relevantie en exogeniteit/uitsluitingsrestrictie) beargumenteren en verklaren waarom Var(b_IV) > Var(b_OLS)",
-      "2SLS schatten via ivregress, verklaren waarom handmatige tweetraps-OLS verkeerde standaardfouten geeft, zwakke instrumenten toetsen (F > 10, Stock-Yogo), en post-estimation toetsen uitvoeren (Wu-Hausman en Sargan/Hansen J-toets)"
-     ],
-     "theory": [
-      "Wiskundig bewijs: plim beta_OLS = beta + Cov(x,u)/Var(x) != beta bij endogeniteit",
-      "Meetfout in x: dempingsvertekening (attenuation bias) naar nul plim beta_hat = beta * sigma_x*^2 / (sigma_x*^2 + sigma_e^2)",
-      "Simultane vergelijkingen (SEM): vraag en aanbod simultaniteit en reverse causality",
-      "IV consistentiebewijs: plim beta_IV = beta + Cov(z, u)/Cov(z, x) = beta mits Cov(z, u) = 0 en Cov(z, x) != 0",
-      "Efficiëntieverlies van IV: Var(b_IV) = Var(b_OLS) / R^2(x, z); hoe zwakker het instrument, hoe groter de variantie",
-      "Zwakke instrumenten: finite sample bias naar OLS approx 1/(F+1); Staiger-Stock vuistregel F > 10 en Stock-Yogo drempelwaarden",
-      "Diagnostiek: Hausman endogeniteitstoets (Durbin-Wu-Hausman) en Sargan/Hansen J-toets op overidentificatie (NR^2 ~ chi^2)"
-     ],
-     "example": "ivregress 2sls lwage exper exper2 (educ = mothereduc fathereduc), robust first | estat firststage | estat endogenous | estat overid",
-     "exercise": "Leid de IV-schatter af via momentenvoorwaarden; schat het rendement op onderwijs in mroz.dta met 2SLS en toets instrumentsterkte en overidentificatie.",
-     "test": "Wiskundig consistentiebewijs, OVB vs simultaneïteit vs meetfout, handmatige 2SLS standaardfoutenvalkuil, first-stage F-drempels en Sargan J-toets."
-    }
+    "econometrics-03-instrumental-variables-2sls"
    ]
   },
   {
    "id": "m4",
    "title": "Module 4 — Binaire Uitkomstmodellen: LPM, Logit & Probit (Lecture 4 + Computer Class 4)",
    "topics": [
-    {
-     "id": "econometrics-04-binary-outcome-models",
-     "title": "Lineair Kansmodel, Logit, Probit, Maximum Likelihood & Marginale Effecten",
-     "level": "gevorderd",
-     "objectives": [
-      "De inherente gebreken van het Lineair Kansmodel (LPM) formaliseren: kansen buiten [0,1], niet-normale storingen en conditionele Bernoulli-heteroskedasticiteit Var(y|x) = p(1-p)",
-      "De cumulatieve verdelingsfuncties van Logit (logistische CDF) en Probit (standaardnormale CDF) afleiden en het Maximum Likelihood schattingsprincipe formuleren",
-      "Odds Ratios in Logit exact wiskundig en economisch interpreteren, en marginale effecten (AME vs MEM vs MER) afleiden via de kettingregel met margins",
-      "Modelfit en evaluatie uitvoeren via McFadden pseudo-R2, de Likelihood Ratio toets (lrtest) en de classificatietabel (sensitivity, specificity)"
-     ],
-     "theory": [
-      "LPM gebreken: voorspelde kansen < 0 of > 1; heteroskedasticiteit p(1-p) maakt OLS inefficiënt en WLS faalt bij kansen buiten [0,1]",
-      "Latente variabele indexmodel: y* = x'beta + e, waarbij y = 1 als y* > 0",
-      "Logit specificatie P(y=1|x) = exp(x'beta)/(1 + exp(x'beta)) en Probit P(y=1|x) = Phi(x'beta)",
-      "Maximum Likelihood Estimation (MLE): log-likelihood functie ln L = sum [yi ln G(xi'b) + (1-yi) ln(1 - G(xi'b))] en Newton-Raphson iteratie",
-      "Odds ratio's in Logit: OR = exp(beta); percentage verandering = (exp(beta) - 1) * 100%; let op: Probit kent GEEN odds ratio's",
-      "Marginale effecten: dP/dx = beta * g(x'beta); Average Marginal Effect (AME) versus Marginal Effect at the Mean (MEM)",
-      "Toetsen en fit: Likelihood Ratio toets LR = 2(ln Lur - ln Lr) ~ chi^2 (let op: faalt na robust; gebruik dan testparm), McFadden pseudo-R2, en classificatietabel"
-     ],
-     "example": "logit inlf educ exper c.exper##c.exper nwifeinc, robust | logit, or | margins, dydx(*) | probit inlf educ exper nwifeinc, robust | estat classification",
-     "exercise": "Leid de eerste afgeleide van het Logit marginale effect af; schat een werkloosheidsuitkeringsmodel in benefits.dta en vergelijk AME, odds ratios en McFadden R2.",
-     "test": "LPM heteroskedasticiteit bewijs, Logit vs Probit CDF, odds ratio berekening, AME vs MEM verschil via margins, en lrtest vs testparm na robust."
-    }
+    "econometrics-04-binary-outcome-models"
    ]
   },
   {
    "id": "m5",
    "title": "Module 5 — Multinomiale, Geordende & Telmodellen (Lecture 5 + Computer Class 5)",
    "topics": [
-    {
-     "id": "econometrics-05-multinomial-ordered-models",
-     "title": "Multinomiale Logit, IIA-aanname, Geordende Probit & Poisson Telmodellen",
-     "level": "expert",
-     "objectives": [
-      "Multinomiaal logit modelleren via wiskundige normalisatie (beta0 = 0) en Relative Risk Ratios (RRR) berekenen en interpreteren",
-      "De Independence of Irrelevant Alternatives (IIA) eigenschap bewijzen, de McFadden paradox (rode bus / blauwe bus) toelichten en toetsen via de Hausman-McFadden toets",
-      "Alternative-specific conditional logit (asclogit) specificeren voor alternatief-specifieke kenmerken en prijselasticiteiten berekenen",
-      "Geordende probit/logit (oprobit) afleiden met latente index en drempelwaarden (cut points kappa), aantonen waarom het effect op middelste categorieën ambigu is, en Poisson regressie met Incident Rate Ratios (IRR) schatten en toetsen op overdispersie"
-     ],
-     "theory": [
-      "Nominale keuzemodellen: waarom OLS/LPM faalt bij ongeordende keuzes (arbitraire toekenning van getallen)",
-      "Multinomiaal logit kansformule: P(y=j|x) = exp(x'betaj) / (1 + sum exp(x'betak)); normalisatie basiscategorie beta0 = 0",
-      "Relative Risk Ratios (RRR): RRR = exp(betaj); interpretatie ten opzichte van de gekozen referentiecategorie",
-      "IIA aanname: kansverhouding P(y=j)/P(y=k) hangt enkel af van alternatieven j en k; McFadden rode/blauwe bus paradox; Hausman IIA-toets (nooit met robust)",
-      "Conditional logit (asclogit): keuzes gemodelleerd aan de hand van attributen van de alternatieven (prijzen, reistijden) met lange datastructuur",
-      "Geordende modellen (oprobit/ologit): ordinale data, latente variabele y* = x'beta + e, drempelwaarden kappa1 < ... < kappa_J-1; ambigu teken voor tussenliggende categorieën",
-      "Telmodellen (Count data): Poisson regressie met conditionele verwachting E(y|x) = exp(x'beta), Incident Rate Ratio (IRR), equi-dispersie aanname Var(y|x) = E(y|x), overdispersie en Negatief Binomiaal model"
-     ],
-     "example": "mlogit vote educ age female, base(1) rrr | test 1.female | asclogit choice price, case(id) alternatives(brand) | oprobit health educ age, robust | margins, dydx(*) | poisson docvis educ age, irr robust",
-     "exercise": "Bewijs wiskundig dat in multinomial logit de som van de marginale effecten over alle alternatieven gelijk is aan nul; analyseer Brexit-stemkeuze en zorgconsumptie in Stata.",
-     "test": "IIA wiskundig bewijs en Hausman-valkuil, RRR interpretatie, cut points betekenis bij oprobit, en equi-dispersie toetsing bij Poisson."
-    }
+    "econometrics-05-multinomial-ordered-models"
    ]
   },
   {
    "id": "m6",
    "title": "Module 6 — Beperkte Afhankelijke Variabelen: Tobit & Heckman Selectie (Lecture 6 + Computer Class 6)",
    "topics": [
-    {
-     "id": "econometrics-06-limited-dependent-variables",
-     "title": "Censurering, Troncering, Tobit Hoekoplossingen & Heckman Selectiemodel",
-     "level": "expert",
-     "objectives": [
-      "Het formele wiskundige en conceptuele onderscheid tussen censurering en troncering definiëren en aantonen waarom OLS vertekend en inconsistent is",
-      "Het Tobit model formaliseren via de latente index en Maximum Likelihood, en de drie verschillende marginale effecten (latente y*, getrunceerd E(y|y>0), ongeconditioneerd E(y)) en de McDonald-Moffitt decompositie afleiden",
-      "Niet-willekeurige steekproefselectie formaliseren via het reserveringsloon en de Inverse Mills Ratio (IMR lambda) algebraïsch afleiden uit de bivariate normale verdeling",
-      "Het Heckman twee-stappen selectiemodel (Heckit) schatten, verklaren waarom handmatige OLS in stap 2 foutieve standaardfouten oplevert, de selectiecorrelatie rho toetsen, en de cruciale noodzaak van exclusierestricties verantwoorden tegen multicollineariteit"
-     ],
-     "theory": [
-      "Censurering (x gekend voor iedereen, y afgetopt op drempel) versus troncering (zowel x als y ontbreken buiten de drempel)",
-      "Waarom OLS faalt bij hoekoplossingen: OLS op de hele steekproef leidt tot afvlakking (attenuation bias); OLS op y > 0 leidt tot truncatiebias omdat E(u|y>0, x) != 0",
-      "Tobit model: y* = x'beta + u met u ~ N(0, sigma^2); y = max(0, y*); log-likelihood combineert discrete kansmassa P(y=0) met continue normale dichtheid f(y)",
-      "De grote Tobit examenval: de gerapporteerde coëfficiënt beta is het effect op de latente index y*, NIET op de waargenomen uitkomst y!",
-      "De drie marginale effecten: dE(y*)/dx = beta, dE(y|y>0)/dx, dE(y)/dx = beta * Phi(x'beta/sigma); McDonald-Moffitt extensieve vs intensieve marge",
-      "Heckman sample selection: selectievergelijking d* = z'gamma + v en uitkomstvergelijking y = x'beta + u met gecorreleerde fouten corr(u,v) = rho",
-      "Wiskundige afleiding van de conditionele verwachting: E(y | d=1, x, z) = x'beta + rho * sigma_u * lambda(z'gamma), waarbij lambda de Inverse Mills Ratio is",
-      "Omitted variable bias: als rho != 0, laat OLS op werkenden de term lambda weg; Heckit stap 1 Probit schat lambda_hat, stap 2 OLS includeert lambda_hat",
-      "Exclusierestrictie: z moet minstens één variabele bevatten die wel in de selectievergelijking zit maar niet in de uitkomstvergelijking, anders ontstaat extreme multicollineariteit corr(lambda, x) approx -0.99"
-     ],
-     "example": "tobit hours educ age kids, ll(0) | margins, dydx(educ) atmeans predict(ystar(0,.)) | heckman lwage educ exper, select(lfp = educ age kids mtr) twostep",
-     "exercise": "Leid de conditionele verwachting E(y|d=1) af met de Inverse Mills Ratio; schat arbeidsaanbod en lonen in mroz.dta en evalueer de exclusierestrictie.",
-     "test": "Wiskundig verschil censurering vs troncering, Tobit marginale effecten formules, IMR afleiding en economische betekenis van rho, en noodzaak exclusierestrictie."
-    }
+    "econometrics-06-limited-dependent-variables"
    ]
   },
   {
    "id": "m7",
    "title": "Module 7 — Paneldata: Pooled OLS, Fixed Effects & Random Effects (Lecture 7 + Computer Class 7)",
    "topics": [
-    {
-     "id": "econometrics-07-panel-data-estimators",
-     "title": "Paneldata Structuur, Within vs Between Variatie, LSDV, FE, RE & Mundlak",
-     "level": "expert",
-     "objectives": [
-      "Paneldata declareren via xtset, de totale variantie ontleden in overall-, between- en within-variatie via xtsum, en bewijzen waarom tijdsinvariante variabelen nul within-variatie hebben",
-      "Het model met ongeobserveerde individuele heterogeniteit (alpha_i) specificeren en de gevaren van Pooled OLS aantonen: OVB bij Cov(x_it, alpha_i) != 0 en te kleine standaardfouten door seriële correlatie Cov(v_it, v_is) = sigma_alpha^2",
-      "Het Fixed Effects model afleiden: de Within-transformatie (time-demeaning) algebraïsch bewijzen, vergelijken met LSDV, en aantonen waarom tijdsinvariante variabelen wegvallen",
-      "Het Random Effects model formaliseren: quasi-demeaning transformatie met parameter theta afleiden, de Breusch-Pagan LM toets (xttest0) interpreteren, de Hausman-toets correct uitvoeren zonder vce(), en de Mundlak-benadering toepassen met geclusterde standaardfouten"
-     ],
-     "theory": [
-      "Paneldata voordelen: controleren voor ongeobserveerde tijdsinvariante heterogeniteit en dynamische effecten over de tijd",
-      "Within vs Between variatie: xtsum scheidt verschillen tussen personen van veranderingen over de tijd binnen hetzelfde individu",
-      "Pooled OLS falen: seriële correlatie vereist geclusterde standaardfouten vce(cluster id); bij Cov(x, alpha) != 0 blijft Pooled OLS inconsistent",
-      "Fixed Effects (FE): Cov(x_it, alpha_i) != 0 is toegestaan; Within-transformatie trekt persoonsgemiddelde af zodat (alpha_i - alpha_i) = 0 wegvalt; LSDV via regress y x i.id; testparm i.id",
-      "Random Effects (RE): cruciale identificatie-aanname Cov(x_it, alpha_i) = 0; quasi-demeaning GLS schatter met theta = 1 - sqrt(sigma_e^2 / (T*sigma_a^2 + sigma_e^2))",
-      "Limietgevallen van theta: theta = 0 reduceert RE exact tot Pooled OLS; theta -> 1 reduceert RE exact tot Fixed Effects",
-      "Breusch-Pagan LM toets (xttest0): toetst H0: sigma_a^2 = 0 (Pooled OLS) versus H1: sigma_a^2 > 0 (RE)",
-      "Hausman toets: vergelijkt FE (altijd consistent) met RE (efficiënt onder H0, inconsistent onder H1); let op de examenval: schat FE en RE zónder vce() voor de hausman-toets",
-      "Mundlak benadering: projecteert alpha_i = mean(x_i)'gamma + eta_i; schat RE met persoonsgemiddelden; biedt identieke schattingen aan FE én een geldige endogeniteitstoets met geclusterde fouten",
-      "Two-Way Fixed Effects (TWFE): toevoegen van jaardummy's i.year om te controleren voor macro-economische schokken; testparm i.year"
-     ],
-     "example": "xtset id year | xtsum lwage educ exper black | xtreg lwage exper tenure union, fe vce(cluster id) | xtreg lwage educ exper tenure black, re vce(cluster id) theta | xttest0 | hausman fixed random | testparm i.year",
-     "exercise": "Bewijs algebraïsch dat time-demeaning de individuele effecten alpha_i elimineert; schat loonvergelijkingen in nls_panel.dta met Pooled OLS, FE, RE en voer de Mundlak-procedure uit.",
-     "test": "Wiskundig time-demeaning bewijs, quasi-demeaning theta limietwaarden, Hausman-toets uitvoeringsvalkuil, en Mundlak benadering."
-    }
+    "econometrics-07-panel-data-estimators"
    ]
   },
   {
    "id": "m8",
    "title": "Module 8 — Beleidsevaluatie: DiD, Synthetic Control & RDD (Lectures 8 & 9 + Computer Class 8)",
    "topics": [
-    {
-     "id": "econometrics-08-program-evaluation-methods",
-     "title": "Potential Outcomes, Difference-in-Differences, Synthetic Control & RDD",
-     "level": "expert",
-     "objectives": [
-      "Het Potential Outcomes Framework (Rubin Causal Model) formaliseren, causale effecten (ATE, ATT, ITT, LATE) wiskundig definiëren en de selectiebias decompositie afleiden",
-      "Difference-in-Differences (DiD) formaliseren via dubbele verschillen en interactietermen (i.post##i.treat), en de parallel trends identificatie-aanname toetsen via event studies en temporele placebo's",
-      "De Synthetic Control Method (SCM) formaliseren als data-gedreven gewogen donorpool met gewichtsrestricties (wj >= 0, som wj = 1), RMSPE minimalisatie, en inferentie via permutaties (synth_runner)",
-      "Regression Discontinuity Design operationaliseren: Sharp RDD (lokale lineaire regressie rond drempelwaarde) versus Fuzzy RDD (2SLS instrumentatie via drempelindicator), bandwidth selectie afwegen, en de McCrary bunching test uitvoeren"
-     ],
-     "theory": [
-      "Fundamenteel probleem van causale inferentie: counterfactual uitkomst ontbreekt; selectiebias decompositie E(Y|D=1) - E(Y|D=0) = ATT + [E(Y0|D=1) - E(Y0|D=0)]",
-      "Difference-in-Differences (DiD): dubbele differentiatie elimineert tijdsinvariante niveauverschillen en algemene macro-tijdseffecten; interactieterm beta_DiD meet de ATT",
-      "Identificatie-aanname van DiD: Parallel Trends aanname (in afwezigheid van behandeling zouden de trends van behandelde en controlegroepen gelijk zijn verlopen)",
-      "Event Study modellen: lead-lag specificatie met relatieve tijdindicatoren ten opzichte van basisjaar t = -1 (ib#.event##i.treat); pre-treatment coëfficiënten moeten nul zijn om parallel trends te staven",
-      "Synthetic Control Method (Abadie et al. 2010): oplossing bij N_1 = 1 behandelde eenheid wanneer parallel trends faalt; gewogen combinatie van controle-eenheden binnen het convex omhulsel; minimalisatie van pre-treatment predictiefout met predictorgewichtenmatrix V",
-      "SCM inferentie via placebo's: in-space placebotoetsen (elk donorland behandelen) en in-time placebotoetsen (fictieve vroege behandeldag); post/pre RMSPE-ratio verdeling",
-      "Regression Discontinuity Design (RDD): quasi-random toewijzing rond een scherpe drempelwaarde van een toewijzingsvariabele (running / forcing variable W); lokale continuïteitsaanname",
-      "Sharp RDD (toewijzing springt deterministisch van 0 naar 1; lokaal ATE via reg y c.w##i.drempel if abs(w) <= h) versus Fuzzy RDD (toewijzing springt probabilistisch; instrumenteer feitelijke behandeling via drempelindicator met ivreg2 voor het LATE)",
-      "RDD diagnostiek: optimale bandbreedte h (bias vs variantie afweging), Local Linear Regression vs Global Polynomial, en McCrary density test op manipulatie/bunching"
-     ],
-     "example": "xtreg gdp i.post##i.treat controls, re vce(cluster country) | xtreg gdp ib4.event##i.treat, re vce(cluster country) | synth gdp gdp schooling, trunit(17) trperiod(1990) | synth_runner gdp ..., trunit(17) trperiod(1990) | reg vote c.margin##i.above if abs(margin) <= 10, robust | ivreg2 mc (pen = elig) c.age##c.age, first robust",
-     "exercise": "Leid de selectiebias decompositie af; evalueer de impact van de Duitse hereniging via DiD event studies en de Synthetic Control Method, en schat incumbency effecten via Sharp RDD.",
-     "test": "Potential outcomes decompositie, DiD parallel trends toetsing en event studies, SCM gewichtsrestricties en placebo inferentie, en Sharp vs Fuzzy RDD."
-    }
+    "econometrics-08-program-evaluation-methods"
    ]
+  }
+ ],
+ "topics": [
+  {
+   "id": "econometrics-01-stata-fundamentals",
+   "title": "MLRM Grondslagen, LSA-aannames, Do-files & Databewerking",
+   "level": "fundament",
+   "objectives": [
+    "De 4 Least Squares Assumptions (LSA 1 to 4) van het MLRM formaliseren en de Gauss-Markov eigenschappen (BLUE, zuiverheid, consistentie) bewijzen",
+    "De wiskundige formule voor Omitted Variable Bias (OVB) afleiden en de richting van de vertekening bepalen",
+    "Heteroskedasticiteit (Breusch-Pagan, White test) en multicollineariteit (VIF) diagnosticeren en corrigeren via robuuste standaardfouten",
+    "Professionele Stata do-files met logging opzetten, data verkennen via summarize detail, tabstat en ttest, veilige dummy's genereren zonder missing value valkuil, en datasets koppelen (merge) en herstructureren (reshape long/wide)"
+   ],
+   "theory": [
+    "MLRM modelopbouw Yi = beta0 + beta1 X1i + ... + betak Xki + ui en OLS residuminimalisatie",
+    "LSA 1 to 4: E(u|X)=0, i.i.d. trekkingen, geen extreme uitschieters (eindige vierde momenten), geen perfecte multicollineariteit",
+    "Asymptotische eigenschappen van OLS: consistentie via Law of Large Numbers (LLN) en asymptotische normaliteit via Central Limit Theorem (CLT)",
+    "Omitted Variable Bias formule: plim beta1_hat = beta1 + beta2 * Cov(x1, x2)/Var(x1)",
+    "Heteroskedasticiteit: Var(u|X) != sigma^2 leidt tot inefficiëntie van OLS en ongeldige t-toetsen; Huber-White sandwich estimator vce(robust)",
+    "Stata werkomgeving, logging (SMCL vs text), missing values (.) als +oneindig, tabulate kruistabellen, merge 1:1/m:1 met _merge controle, en reshape voor paneldata"
+   ],
+   "example": "regress wage educ exper, vce(robust) | summarize wage, detail | tabstat wage, s(mean sd p50) by(female) | merge m:1 id using macro.dta | reshape long inc, i(id) j(year)",
+   "exercise": "Leid de OVB-formule wiskundig af en bepaal het effect van weggelaten vaardigheid; voer daarna een volledige data cleaning en bivariate toetsing uit op mroz.dta in Stata.",
+   "test": "LSA aannames en OLS eigenschappen, OVB-richting bepalen, missing value valkuil in Stata, en merge/reshape syntaxis."
+  },
+  {
+   "id": "econometrics-02-dummy-variables-interactions",
+   "title": "Kwalitatieve Variabelen, Dummy Variable Trap, Interacties & Chow-toets",
+   "level": "fundament",
+   "objectives": [
+    "Kwalitatieve factoren modelleren als 0-1 binaire indicatoren en de dummy variable trap wiskundig bewijzen via een singuliere X'X-matrix",
+    "Aantonen dat de keuze van de referentiegroep (basisgroep) invariant is voor voorspelde waarden, SSR en R2, en de Halvorsen-Palmquist formule voor semi-elasticiteit afleiden",
+    "Hellinginteracties (slope dummies c.##i.) en meervoudige dummy-interacties (i.##i.) formaliseren en interpreteren",
+    "Kwadratische specificaties en keerpunten berekenen, en de Chow-toets op structurele parameterstabiliteit uitvoeren via interacties met testparm"
+   ],
+   "theory": [
+    "Kwalitatieve versus kwantitatieve economische variabelen (Hamermesh & Biddle 1994 discriminatie)",
+    "Dummy variable trap: exacte multicollineariteit en niet-inverteerbare regressormatrix bij opname van M dummy's én intercept",
+    "Halvorsen & Palmquist (1980) correctie: exact % delta y = 100 * (exp(beta1) - 1)% in semi-log modellen",
+    "Interactie-effecten: interceptverschuiving versus hellingverandering (heterogeen scholingsrendement per geslacht)",
+    "Kwadratische regressie: eerste afgeleide dy/dx = beta1 + 2*beta2*x en keerpunt x* = -beta1 / (2*beta2)",
+    "Chow structural break test: klassieke F-toets versus modern interactiemodel met geclusterde/robuuste standaardfouten"
+   ],
+   "example": "regress lwage i.female##c.educ c.exper##c.exper, vce(robust) | testparm 1.female#c.educ | margins, dydx(exper) at(exper=(5 15 25))",
+   "exercise": "Analyseer loonverschillen en schoonheidspremies met Hamermesh & Biddle data; bereken het kwadratische ervaringsoptimum en voer een Chow-toets uit.",
+   "test": "Wiskundig bewijs dummy trap, Halvorsen-Palmquist afleiding, factorvariabele syntax (ib#., c.##i.), en interpretatie van interactiecoëfficiënten."
+  },
+  {
+   "id": "econometrics-03-instrumental-variables-2sls",
+   "title": "Endogeniteit, Method of Moments, 2SLS Schatting & Diagnostische Toetsen",
+   "level": "gevorderd",
+   "objectives": [
+    "De drie klassieke oorzaken van endogeniteit (OVB, meetfout met dempingsvertekening, simultaneïteit) formaliseren en bewijzen waarom OLS inconsistent is",
+    "De Method of Moments gebruiken om OLS en IV af te leiden en het consistentiebewijs van de IV-schatter leveren",
+    "De twee kernvoorwaarden voor een geldig instrument (relevantie en exogeniteit/uitsluitingsrestrictie) beargumenteren en verklaren waarom Var(b_IV) > Var(b_OLS)",
+    "2SLS schatten via ivregress, verklaren waarom handmatige tweetraps-OLS verkeerde standaardfouten geeft, zwakke instrumenten toetsen (F > 10, Stock-Yogo), en post-estimation toetsen uitvoeren (Wu-Hausman en Sargan/Hansen J-toets)"
+   ],
+   "theory": [
+    "Wiskundig bewijs: plim beta_OLS = beta + Cov(x,u)/Var(x) != beta bij endogeniteit",
+    "Meetfout in x: dempingsvertekening (attenuation bias) naar nul plim beta_hat = beta * sigma_x*^2 / (sigma_x*^2 + sigma_e^2)",
+    "Simultane vergelijkingen (SEM): vraag en aanbod simultaniteit en reverse causality",
+    "IV consistentiebewijs: plim beta_IV = beta + Cov(z, u)/Cov(z, x) = beta mits Cov(z, u) = 0 en Cov(z, x) != 0",
+    "Efficiëntieverlies van IV: Var(b_IV) = Var(b_OLS) / R^2(x, z); hoe zwakker het instrument, hoe groter de variantie",
+    "Zwakke instrumenten: finite sample bias naar OLS approx 1/(F+1); Staiger-Stock vuistregel F > 10 en Stock-Yogo drempelwaarden",
+    "Diagnostiek: Hausman endogeniteitstoets (Durbin-Wu-Hausman) en Sargan/Hansen J-toets op overidentificatie (NR^2 ~ chi^2)"
+   ],
+   "example": "ivregress 2sls lwage exper exper2 (educ = mothereduc fathereduc), robust first | estat firststage | estat endogenous | estat overid",
+   "exercise": "Leid de IV-schatter af via momentenvoorwaarden; schat het rendement op onderwijs in mroz.dta met 2SLS en toets instrumentsterkte en overidentificatie.",
+   "test": "Wiskundig consistentiebewijs, OVB vs simultaneïteit vs meetfout, handmatige 2SLS standaardfoutenvalkuil, first-stage F-drempels en Sargan J-toets."
+  },
+  {
+   "id": "econometrics-04-binary-outcome-models",
+   "title": "Lineair Kansmodel, Logit, Probit, Maximum Likelihood & Marginale Effecten",
+   "level": "gevorderd",
+   "objectives": [
+    "De inherente gebreken van het Lineair Kansmodel (LPM) formaliseren: kansen buiten [0,1], niet-normale storingen en conditionele Bernoulli-heteroskedasticiteit Var(y|x) = p(1-p)",
+    "De cumulatieve verdelingsfuncties van Logit (logistische CDF) en Probit (standaardnormale CDF) afleiden en het Maximum Likelihood schattingsprincipe formuleren",
+    "Odds Ratios in Logit exact wiskundig en economisch interpreteren, en marginale effecten (AME vs MEM vs MER) afleiden via de kettingregel met margins",
+    "Modelfit en evaluatie uitvoeren via McFadden pseudo-R2, de Likelihood Ratio toets (lrtest) en de classificatietabel (sensitivity, specificity)"
+   ],
+   "theory": [
+    "LPM gebreken: voorspelde kansen < 0 of > 1; heteroskedasticiteit p(1-p) maakt OLS inefficiënt en WLS faalt bij kansen buiten [0,1]",
+    "Latente variabele indexmodel: y* = x'beta + e, waarbij y = 1 als y* > 0",
+    "Logit specificatie P(y=1|x) = exp(x'beta)/(1 + exp(x'beta)) en Probit P(y=1|x) = Phi(x'beta)",
+    "Maximum Likelihood Estimation (MLE): log-likelihood functie ln L = sum [yi ln G(xi'b) + (1-yi) ln(1 - G(xi'b))] en Newton-Raphson iteratie",
+    "Odds ratio's in Logit: OR = exp(beta); percentage verandering = (exp(beta) - 1) * 100%; let op: Probit kent GEEN odds ratio's",
+    "Marginale effecten: dP/dx = beta * g(x'beta); Average Marginal Effect (AME) versus Marginal Effect at the Mean (MEM)",
+    "Toetsen en fit: Likelihood Ratio toets LR = 2(ln Lur - ln Lr) ~ chi^2 (let op: faalt na robust; gebruik dan testparm), McFadden pseudo-R2, en classificatietabel"
+   ],
+   "example": "logit inlf educ exper c.exper##c.exper nwifeinc, robust | logit, or | margins, dydx(*) | probit inlf educ exper nwifeinc, robust | estat classification",
+   "exercise": "Leid de eerste afgeleide van het Logit marginale effect af; schat een werkloosheidsuitkeringsmodel in benefits.dta en vergelijk AME, odds ratios en McFadden R2.",
+   "test": "LPM heteroskedasticiteit bewijs, Logit vs Probit CDF, odds ratio berekening, AME vs MEM verschil via margins, en lrtest vs testparm na robust."
+  },
+  {
+   "id": "econometrics-05-multinomial-ordered-models",
+   "title": "Multinomiale Logit, IIA-aanname, Geordende Probit & Poisson Telmodellen",
+   "level": "expert",
+   "objectives": [
+    "Multinomiaal logit modelleren via wiskundige normalisatie (beta0 = 0) en Relative Risk Ratios (RRR) berekenen en interpreteren",
+    "De Independence of Irrelevant Alternatives (IIA) eigenschap bewijzen, de McFadden paradox (rode bus / blauwe bus) toelichten en toetsen via de Hausman-McFadden toets",
+    "Alternative-specific conditional logit (asclogit) specificeren voor alternatief-specifieke kenmerken en prijselasticiteiten berekenen",
+    "Geordende probit/logit (oprobit) afleiden met latente index en drempelwaarden (cut points kappa), aantonen waarom het effect op middelste categorieën ambigu is, en Poisson regressie met Incident Rate Ratios (IRR) schatten en toetsen op overdispersie"
+   ],
+   "theory": [
+    "Nominale keuzemodellen: waarom OLS/LPM faalt bij ongeordende keuzes (arbitraire toekenning van getallen)",
+    "Multinomiaal logit kansformule: P(y=j|x) = exp(x'betaj) / (1 + sum exp(x'betak)); normalisatie basiscategorie beta0 = 0",
+    "Relative Risk Ratios (RRR): RRR = exp(betaj); interpretatie ten opzichte van de gekozen referentiecategorie",
+    "IIA aanname: kansverhouding P(y=j)/P(y=k) hangt enkel af van alternatieven j en k; McFadden rode/blauwe bus paradox; Hausman IIA-toets (nooit met robust)",
+    "Conditional logit (asclogit): keuzes gemodelleerd aan de hand van attributen van de alternatieven (prijzen, reistijden) met lange datastructuur",
+    "Geordende modellen (oprobit/ologit): ordinale data, latente variabele y* = x'beta + e, drempelwaarden kappa1 < ... < kappa_J-1; ambigu teken voor tussenliggende categorieën",
+    "Telmodellen (Count data): Poisson regressie met conditionele verwachting E(y|x) = exp(x'beta), Incident Rate Ratio (IRR), equi-dispersie aanname Var(y|x) = E(y|x), overdispersie en Negatief Binomiaal model"
+   ],
+   "example": "mlogit vote educ age female, base(1) rrr | test 1.female | asclogit choice price, case(id) alternatives(brand) | oprobit health educ age, robust | margins, dydx(*) | poisson docvis educ age, irr robust",
+   "exercise": "Bewijs wiskundig dat in multinomial logit de som van de marginale effecten over alle alternatieven gelijk is aan nul; analyseer Brexit-stemkeuze en zorgconsumptie in Stata.",
+   "test": "IIA wiskundig bewijs en Hausman-valkuil, RRR interpretatie, cut points betekenis bij oprobit, en equi-dispersie toetsing bij Poisson."
+  },
+  {
+   "id": "econometrics-06-limited-dependent-variables",
+   "title": "Censurering, Troncering, Tobit Hoekoplossingen & Heckman Selectiemodel",
+   "level": "expert",
+   "objectives": [
+    "Het formele wiskundige en conceptuele onderscheid tussen censurering en troncering definiëren en aantonen waarom OLS vertekend en inconsistent is",
+    "Het Tobit model formaliseren via de latente index en Maximum Likelihood, en de drie verschillende marginale effecten (latente y*, getrunceerd E(y|y>0), ongeconditioneerd E(y)) en de McDonald-Moffitt decompositie afleiden",
+    "Niet-willekeurige steekproefselectie formaliseren via het reserveringsloon en de Inverse Mills Ratio (IMR lambda) algebraïsch afleiden uit de bivariate normale verdeling",
+    "Het Heckman twee-stappen selectiemodel (Heckit) schatten, verklaren waarom handmatige OLS in stap 2 foutieve standaardfouten oplevert, de selectiecorrelatie rho toetsen, en de cruciale noodzaak van exclusierestricties verantwoorden tegen multicollineariteit"
+   ],
+   "theory": [
+    "Censurering (x gekend voor iedereen, y afgetopt op drempel) versus troncering (zowel x als y ontbreken buiten de drempel)",
+    "Waarom OLS faalt bij hoekoplossingen: OLS op de hele steekproef leidt tot afvlakking (attenuation bias); OLS op y > 0 leidt tot truncatiebias omdat E(u|y>0, x) != 0",
+    "Tobit model: y* = x'beta + u met u ~ N(0, sigma^2); y = max(0, y*); log-likelihood combineert discrete kansmassa P(y=0) met continue normale dichtheid f(y)",
+    "De grote Tobit examenval: de gerapporteerde coëfficiënt beta is het effect op de latente index y*, NIET op de waargenomen uitkomst y!",
+    "De drie marginale effecten: dE(y*)/dx = beta, dE(y|y>0)/dx, dE(y)/dx = beta * Phi(x'beta/sigma); McDonald-Moffitt extensieve vs intensieve marge",
+    "Heckman sample selection: selectievergelijking d* = z'gamma + v en uitkomstvergelijking y = x'beta + u met gecorreleerde fouten corr(u,v) = rho",
+    "Wiskundige afleiding van de conditionele verwachting: E(y | d=1, x, z) = x'beta + rho * sigma_u * lambda(z'gamma), waarbij lambda de Inverse Mills Ratio is",
+    "Omitted variable bias: als rho != 0, laat OLS op werkenden de term lambda weg; Heckit stap 1 Probit schat lambda_hat, stap 2 OLS includeert lambda_hat",
+    "Exclusierestrictie: z moet minstens één variabele bevatten die wel in de selectievergelijking zit maar niet in de uitkomstvergelijking, anders ontstaat extreme multicollineariteit corr(lambda, x) approx -0.99"
+   ],
+   "example": "tobit hours educ age kids, ll(0) | margins, dydx(educ) atmeans predict(ystar(0,.)) | heckman lwage educ exper, select(lfp = educ age kids mtr) twostep",
+   "exercise": "Leid de conditionele verwachting E(y|d=1) af met de Inverse Mills Ratio; schat arbeidsaanbod en lonen in mroz.dta en evalueer de exclusierestrictie.",
+   "test": "Wiskundig verschil censurering vs troncering, Tobit marginale effecten formules, IMR afleiding en economische betekenis van rho, en noodzaak exclusierestrictie."
+  },
+  {
+   "id": "econometrics-07-panel-data-estimators",
+   "title": "Paneldata Structuur, Within vs Between Variatie, LSDV, FE, RE & Mundlak",
+   "level": "expert",
+   "objectives": [
+    "Paneldata declareren via xtset, de totale variantie ontleden in overall-, between- en within-variatie via xtsum, en bewijzen waarom tijdsinvariante variabelen nul within-variatie hebben",
+    "Het model met ongeobserveerde individuele heterogeniteit (alpha_i) specificeren en de gevaren van Pooled OLS aantonen: OVB bij Cov(x_it, alpha_i) != 0 en te kleine standaardfouten door seriële correlatie Cov(v_it, v_is) = sigma_alpha^2",
+    "Het Fixed Effects model afleiden: de Within-transformatie (time-demeaning) algebraïsch bewijzen, vergelijken met LSDV, en aantonen waarom tijdsinvariante variabelen wegvallen",
+    "Het Random Effects model formaliseren: quasi-demeaning transformatie met parameter theta afleiden, de Breusch-Pagan LM toets (xttest0) interpreteren, de Hausman-toets correct uitvoeren zonder vce(), en de Mundlak-benadering toepassen met geclusterde standaardfouten"
+   ],
+   "theory": [
+    "Paneldata voordelen: controleren voor ongeobserveerde tijdsinvariante heterogeniteit en dynamische effecten over de tijd",
+    "Within vs Between variatie: xtsum scheidt verschillen tussen personen van veranderingen over de tijd binnen hetzelfde individu",
+    "Pooled OLS falen: seriële correlatie vereist geclusterde standaardfouten vce(cluster id); bij Cov(x, alpha) != 0 blijft Pooled OLS inconsistent",
+    "Fixed Effects (FE): Cov(x_it, alpha_i) != 0 is toegestaan; Within-transformatie trekt persoonsgemiddelde af zodat (alpha_i - alpha_i) = 0 wegvalt; LSDV via regress y x i.id; testparm i.id",
+    "Random Effects (RE): cruciale identificatie-aanname Cov(x_it, alpha_i) = 0; quasi-demeaning GLS schatter met theta = 1 - sqrt(sigma_e^2 / (T*sigma_a^2 + sigma_e^2))",
+    "Limietgevallen van theta: theta = 0 reduceert RE exact tot Pooled OLS; theta -> 1 reduceert RE exact tot Fixed Effects",
+    "Breusch-Pagan LM toets (xttest0): toetst H0: sigma_a^2 = 0 (Pooled OLS) versus H1: sigma_a^2 > 0 (RE)",
+    "Hausman toets: vergelijkt FE (altijd consistent) met RE (efficiënt onder H0, inconsistent onder H1); let op de examenval: schat FE en RE zónder vce() voor de hausman-toets",
+    "Mundlak benadering: projecteert alpha_i = mean(x_i)'gamma + eta_i; schat RE met persoonsgemiddelden; biedt identieke schattingen aan FE én een geldige endogeniteitstoets met geclusterde fouten",
+    "Two-Way Fixed Effects (TWFE): toevoegen van jaardummy's i.year om te controleren voor macro-economische schokken; testparm i.year"
+   ],
+   "example": "xtset id year | xtsum lwage educ exper black | xtreg lwage exper tenure union, fe vce(cluster id) | xtreg lwage educ exper tenure black, re vce(cluster id) theta | xttest0 | hausman fixed random | testparm i.year",
+   "exercise": "Bewijs algebraïsch dat time-demeaning de individuele effecten alpha_i elimineert; schat loonvergelijkingen in nls_panel.dta met Pooled OLS, FE, RE en voer de Mundlak-procedure uit.",
+   "test": "Wiskundig time-demeaning bewijs, quasi-demeaning theta limietwaarden, Hausman-toets uitvoeringsvalkuil, en Mundlak benadering."
+  },
+  {
+   "id": "econometrics-08-program-evaluation-methods",
+   "title": "Potential Outcomes, Difference-in-Differences, Synthetic Control & RDD",
+   "level": "expert",
+   "objectives": [
+    "Het Potential Outcomes Framework (Rubin Causal Model) formaliseren, causale effecten (ATE, ATT, ITT, LATE) wiskundig definiëren en de selectiebias decompositie afleiden",
+    "Difference-in-Differences (DiD) formaliseren via dubbele verschillen en interactietermen (i.post##i.treat), en de parallel trends identificatie-aanname toetsen via event studies en temporele placebo's",
+    "De Synthetic Control Method (SCM) formaliseren als data-gedreven gewogen donorpool met gewichtsrestricties (wj >= 0, som wj = 1), RMSPE minimalisatie, en inferentie via permutaties (synth_runner)",
+    "Regression Discontinuity Design operationaliseren: Sharp RDD (lokale lineaire regressie rond drempelwaarde) versus Fuzzy RDD (2SLS instrumentatie via drempelindicator), bandwidth selectie afwegen, en de McCrary bunching test uitvoeren"
+   ],
+   "theory": [
+    "Fundamenteel probleem van causale inferentie: counterfactual uitkomst ontbreekt; selectiebias decompositie E(Y|D=1) - E(Y|D=0) = ATT + [E(Y0|D=1) - E(Y0|D=0)]",
+    "Difference-in-Differences (DiD): dubbele differentiatie elimineert tijdsinvariante niveauverschillen en algemene macro-tijdseffecten; interactieterm beta_DiD meet de ATT",
+    "Identificatie-aanname van DiD: Parallel Trends aanname (in afwezigheid van behandeling zouden de trends van behandelde en controlegroepen gelijk zijn verlopen)",
+    "Event Study modellen: lead-lag specificatie met relatieve tijdindicatoren ten opzichte van basisjaar t = -1 (ib#.event##i.treat); pre-treatment coëfficiënten moeten nul zijn om parallel trends te staven",
+    "Synthetic Control Method (Abadie et al. 2010): oplossing bij N_1 = 1 behandelde eenheid wanneer parallel trends faalt; gewogen combinatie van controle-eenheden binnen het convex omhulsel; minimalisatie van pre-treatment predictiefout met predictorgewichtenmatrix V",
+    "SCM inferentie via placebo's: in-space placebotoetsen (elk donorland behandelen) en in-time placebotoetsen (fictieve vroege behandeldag); post/pre RMSPE-ratio verdeling",
+    "Regression Discontinuity Design (RDD): quasi-random toewijzing rond een scherpe drempelwaarde van een toewijzingsvariabele (running / forcing variable W); lokale continuïteitsaanname",
+    "Sharp RDD (toewijzing springt deterministisch van 0 naar 1; lokaal ATE via reg y c.w##i.drempel if abs(w) <= h) versus Fuzzy RDD (toewijzing springt probabilistisch; instrumenteer feitelijke behandeling via drempelindicator met ivreg2 voor het LATE)",
+    "RDD diagnostiek: optimale bandbreedte h (bias vs variantie afweging), Local Linear Regression vs Global Polynomial, en McCrary density test op manipulatie/bunching"
+   ],
+   "example": "xtreg gdp i.post##i.treat controls, re vce(cluster country) | xtreg gdp ib4.event##i.treat, re vce(cluster country) | synth gdp gdp schooling, trunit(17) trperiod(1990) | synth_runner gdp ..., trunit(17) trperiod(1990) | reg vote c.margin##i.above if abs(margin) <= 10, robust | ivreg2 mc (pen = elig) c.age##c.age, first robust",
+   "exercise": "Leid de selectiebias decompositie af; evalueer de impact van de Duitse hereniging via DiD event studies en de Synthetic Control Method, en schat incumbency effecten via Sharp RDD.",
+   "test": "Potential outcomes decompositie, DiD parallel trends toetsing en event studies, SCM gewichtsrestricties en placebo inferentie, en Sharp vs Fuzzy RDD."
   }
  ]
 }

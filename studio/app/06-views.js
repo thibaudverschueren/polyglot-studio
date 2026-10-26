@@ -188,7 +188,7 @@ PS.views.tracks = () => {
     const T = PS.C.track(t); const ids = PS.C.lessonIds(t); const syl = PS.C.syllabus(t);
     const done = ids.filter((id) => PS.S.isDone(t, id)).length; const act = PS.S.active(t);
     return `<a class="card card-hover track-card" data-track="${t}" href="#/pad/${t}" style="padding:22px">${glyph(t)}<div class="kicker">${ES(T.levels || '')}</div><div class="title" style="font-size:26px">${ES(T.title)}</div><p class="small muted" style="margin:4px 0 0;max-width:88%">${ES(T.subtitle)}</p>
-      <div class="meta"><span class="chip">${done}/${ids.length} lessen</span>${syl ? `<span class="chip chip-line">${syl.topics.length} op de roadmap</span>` : ''}<span style="flex:1"></span>${PS.ring(PS.S.trackMastery(t), 40, 4, `${PS.pct(PS.S.trackMastery(t))}`)}</div>
+      <div class="meta"><span class="chip">${done}/${ids.length} lessen</span>${syl && syl.topics ? `<span class="chip chip-line">${syl.topics.length} op de roadmap</span>` : ''}<span style="flex:1"></span>${PS.ring(PS.S.trackMastery(t), 40, 4, `${PS.pct(PS.S.trackMastery(t))}`)}</div>
       ${act ? `<div class="small" style="margin-top:12px"><strong>Volgende:</strong> Les ${act} — ${ES(PS.C.lesson(t, act).title)}</div>` : ''}</a>`;
   }).join('');
   return { html: `<div class="page">${mobileBar()}<div class="eyebrow">Leerpaden</div><h1 class="display">Vier sporen, één methode.</h1><p class="lede">Elke les volgt hetzelfde ritme: kort <strong>ophalen</strong>, <strong>leren</strong> met tussentijdse checks, <strong>oefenen</strong> tot je het twee keer foutloos produceert, zelf iets <strong>maken</strong>, en een <strong>meesterproef</strong> met nieuwe vragen.</p>
@@ -212,9 +212,9 @@ PS.views.track = (t) => {
     const sub = st === 'new' ? `${L.level || ''} · ${L.minutes || 30} min` : PS.STATUS_LABEL[st] + (p && p.needsReview ? ' · herhalen nodig' : '');
     return `<li class="path-item ${cls}"><span class="path-node">${PS.DONE.has(st) && st !== 'legacy' ? PS.icon('check') : unlocked ? id : PS.icon('lock', 'icon-s')}</span><a class="path-card" href="#/les/${t}/${id}"><div class="t">${ES(L.title)}</div><div class="s">Les ${id} · ${ES(sub)}</div></a><span>${ladder(st, p && p.needsReview)}</span></li>`;
   });
-  const planned = syl ? syl.topics.filter((x) => !covered.has(x.id)).slice(0, 60) : [];
+  const planned = (syl && syl.topics) ? syl.topics.filter((x) => !covered.has(x.id)).slice(0, 60) : [];
   planned.forEach((x, i) => items.push(`<li class="path-item planned"><span class="path-node">${ids.length + i + 1}</span><div class="path-card"><div class="t">${ES(x.title)}</div><div class="s">${ES(x.level || '')} · gepland — wordt gegenereerd zodra je eraan toe bent</div></div><span></span></li>`));
-  const total = Math.max(ids.length, syl ? syl.topics.length : 0);
+  const total = Math.max(ids.length, (syl && syl.topics) ? syl.topics.length : 0);
   return { html: `<div class="page"><div class="lesson-top"><a class="back" href="#/paden">${PS.icon('chevronLeft')} Leerpaden</a></div>
     <section class="hero">${glyph(t)}<div class="eyebrow" style="color:var(--accent)">${ES(T.levels || 'Leerpad')}</div><h1 class="display">${ES(T.title)}</h1><p class="lede">${ES(T.subtitle)}</p>
       <div class="hero-stats"><div><div class="v num">${done}<span class="muted small">/${total}</span></div><div class="k">lessen afgerond</div></div><div><div class="v num">${mastered}</div><div class="k">beheerst</div></div><div><div class="v num">${PS.SRS.dueKeys(t).length}</div><div class="k">kaarten te herhalen</div></div></div>

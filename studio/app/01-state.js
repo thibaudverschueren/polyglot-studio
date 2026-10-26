@@ -160,7 +160,7 @@ PS.S = {
   },
   trackMastery(t) {
     const ids = PS.C.lessonIds(t); if (!ids.length) return 0;
-    const syl = PS.C.syllabus(t); const total = Math.max(ids.length, syl ? syl.topics.length : 0);
+    const syl = PS.C.syllabus(t); const total = Math.max(ids.length, syl && syl.topics ? syl.topics.length : 0);
     return ids.reduce((a, id) => a + this.lessonMastery(t, id), 0) / total;
   },
 };
