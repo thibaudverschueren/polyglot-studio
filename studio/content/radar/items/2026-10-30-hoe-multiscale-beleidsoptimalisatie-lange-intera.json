@@ -1,0 +1,187 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe multiscale beleidsoptimalisatie lange interacties van taalmodellen stabiliseert",
+ "subtitle": "Door kredietverlening te verankeren op interactierondes en lokaal te verfijnen per token, trainen autonome software-agents stabieler zonder dat het leersignaal verzuipt in ruis.",
+ "topic": "ai",
+ "minutes": 11,
+ "tldr": [
+  "Software-agents nemen tientallen beslissingen per taak, waardoor klassieke leermethodes niet weten welke specifieke stap tot succes of falen leidde.",
+  "MPO splitst het leersignaal: complete interactierondes bepalen de hoofdrichting, terwijl een gecentreerde correctie afzonderlijke teksttokens lokaal bijstuurt.",
+  "Op een zoekbenchmark presteert een 4B-model 4,33 procentpunt beter dan de sterkste eerdere methode.",
+  "In vergelijking met critic-vrije methodes zoals GRPO vereist MPO een waardenetwerk (critic), wat de GPU-geheugendruk tijdens de training verhoogt."
+ ],
+ "plain": "Stel je een schaakgrootmeester voor die een partij van vijftig zetten analyseert. Als hij na winst elke vingerbeweging van zijn hand apart beloont, leert hij niets: een handbeweging is pas nuttig als onderdeel van een volledige zet, zoals een loper naar veld c4 schuiven. Bestaande critic-gebaseerde leermethodes voor AI-assistenten doen precies dat: ze beoordelen elk los woordje alsof het een opzichzelfstaande actie is (terwijl critic-vrije groepsmethodes zoals GRPO juist één uniform signaal aan het hele traject toekennen). MPO lost dit op door eerst de volledige beurt te beoordelen, bijvoorbeeld een zoekopdracht van twintig woorden. Binnen die beurt krijgen sleutelwoorden een klein accent, maar de beurt als geheel behoudt zijn gemiddelde waardering. Als een beurt een blunder was met score min vier, blijft de gemiddelde waardering van die beurt negatief, al kunnen individuele effectieve tokens daarbinnen relatief hoger (en zelfs positief) worden gewaardeerd. De vergelijking loopt spaak doordat schaakzetten vaste spelregels volgen met een discreet bord, terwijl een taalmodel oneindig veel vrije tekstvarianten kan genereren.",
+ "why": "Wie autonome software-agents bouwt met tools of workflows in n8n, stuit geregeld op vastlopende ketens: één verkeerde API-aanroep of database-opdracht halverwege laat een taak van tien stappen mislukken. Gangbare reinforcement learning traint zulke lange ketens moeizaam doordat het leersignaal verzuipt in variatie op woordniveau. MPO koppelt het succes van de taak direct aan complete interactierondes, zoals een specifieke tool-aanroep. Hierdoor leren modellen gerichter navigeren en browsen, wat ontwikkelaars merken aan stabielere agents die minder ontsporen bij geautomatiseerde taken.",
+ "sections": [
+  {
+   "title": "De kloof tussen interactierondes en teksttokens bij agentic RL",
+   "md": "Je leert hier waarom bestaande reinforcement-learningmethodes vastlopen wanneer een taalmodel tegelijk complete interactierondes plant en afzonderlijke tokens genereert.\n\n### Het interactiemodel: macro-acties en autoregressieve stappen\nEen autonoom taalmodel (LLM-agent) lost opdrachten op door afwisselend acties uit te voeren en observaties uit zijn omgeving te verwerken. De interactie verloopt volgens een formeel [Markov decision process](https://en.wikipedia.org/wiki/Markov_decision_process) (MDP) als een sequentie van observaties en beurten:\n\n$$\\tau = (o_{0}, a_{0}, o_{1}, a_{1}, \\ldots, o_{T}, a_{T})$$\n\nHierin is $o_{0}$ de initiële taakomschrijving, $a_{t}$ de volledige beurt van de assistent (zoals een zoekopdracht, codeblok of API-aanroep) en $o_{t+1}$ de feedback van de omgeving (zoals een webpagina of foutmelding). De agent genereert elke beurt echter autoregressief, token voor token:\n\n$$a_{t} = (a_{t,1}, \\ldots, a_{t,L_{t}}), \\qquad \\pi_{\\theta}(a_{t} \\mid h_{t}) = \\prod_{i=1}^{L_{t}} \\pi_{\\theta}(a_{t,i} \\mid h_{t,i})$$\n\nWaarbij $h_{t}$ de interactiegeschiedenis is bij aanvang van beurt $t$, en $h_{t,i} = (h_{t}, a_{t,<i})$ de context vóór het genereren van token $i$.\n\nIn praktische omgevingen ontvangt de agent uitsluitend een terminale beloning $R(\\tau)$ na afloop van de taak. Tussentijdse tokens leveren geen directe beloning op:\n\n$$r_{t,i} := \\begin{cases} R(\\tau), & t = T,\\ i = L_{T} \\\\ 0, & \\text{anders} \\end{cases}$$\n\nDit creëert het krediettoewijzingsprobleem (*credit assignment problem*): hoe verdeel je die ene eindscore over tientallen beurten en duizenden afzonderlijke tokens?\n\n### Twee verschillende families: groeps- versus tokenmethodes\nBestaande algoritmen voor [reinforcement learning](https://en.wikipedia.org/wiki/Reinforcement_learning) bij taalmodellen vallen grofweg uiteen in twee benaderingen:\n\n1. **Critic-vrije groepsmethodes (zoals GRPO, DAPO en GSPO)**: Deze methoden vergelijken uitkomsten binnen een groep gegenereerde antwoorden en berekenen één enkel voordeel (*advantage*) per traject. Dit signaal wordt uniform toegekend aan elk token in de hele keten. Hierdoor maakt het algoritme geen onderscheid tussen een gerichte zoekopdracht en een leesteken halverwege.\n2. **Critic-gebaseerde tokenmethodes (zoals PPO, VC-PPO, VAPO en SAO)**: Deze methoden trainen een waardenetwerk (*critic*) dat op elk afzonderlijk token een verwachte waarde schat. Zij behandelen ieder token formeel als een opzichzelfstaande actie. Hierdoor ontbreekt het overzicht van een macro-actie: het model ziet niet dat een tool-aanroep pas effect heeft als de volledige instructie is afgerond.\n\n> [!note] De empirische structuur van de critic\n> Onderzoekers van [arXiv 2610.35013](https://arxiv.org/abs/2610.35013) ontdekten een duidelijk patroon in de critic-waarden: binnen een beurt blijven voorspellingen relatief stabiel, terwijl ze bij interactiegrenzen grotere veranderingen vertonen. Over 2.048 geanalyseerde trajecten (16.323 beurten) verklaarden verschillen tussen beurtgemiddelden een mediaan van 89,5% van de totale critic-waardevariantie binnen een traject. In 93,8% van de trajecten was de variantie tussen beurten groter dan de variantie binnen beurten."
+  },
+  {
+   "title": "Wiskundige grenzen aan beleidsverbetering over twee schalen",
+   "md": "Je leert hier hoe beleidsverbetering mathematisch verschilt tussen interactiebeurten en tokens, en waarom token-surrogaten een extra verdelingsverschuiving veroorzaken.\n\n### De macro-prestatiekloof en beurt-surrogaat\nOm te begrijpen waar de instabiliteit ontstaat, modelleren de auteurs complete beurten als macro-acties met horizon $T+1$ en discontovoet $\\gamma = 1$. Voor een oud beleid $\\pi$ en een nieuw beleid $\\pi'$ definiëren we de macro-voordeelfunctie:\n\n$$A_{t}^{\\pi}(h, a) = Q_{t}^{\\pi}(h, a) - V_{t}^{\\pi}(h)$$\n\nVolgens het prestatieverschillemma (*Performance Difference Lemma*, PDL) geldt voor het verschil in verwachte taakopbrengst $\\mathcal{J}$:\n\n$$\\mathcal{J}(\\pi') - \\mathcal{J}(\\pi) = \\sum_{t=0}^{T} \\mathbb{E}_{h_{t} \\sim d_{t}^{\\pi'}, a_{t} \\sim \\pi'(\\cdot \\mid h_{t})}\\left[ A_{t}^{\\pi}(h_{t}, a_{t}) \\right]$$\n\nOmdat we tijdens training alleen data hebben die bemonsterd is onder het oude beleid $\\pi$ (met toestandsverdeling $d_{t}^{\\pi}$), benaderen we dit verschil met een surrogaatdoelfunctie $\\mathcal{S}_{M}$ via de complete-beurtratio $\\rho_{t} = \\pi'(a_{t} \\mid h_{t}) / \\pi(a_{t} \\mid h_{t})$:\n\n$$\\mathcal{S}_{M}(\\pi'; \\pi) = \\mathbb{E}_{\\pi}\\left[ \\sum_{t=0}^{T} (\\rho_{t} - 1) A_{t}^{\\pi}(h_{t}, a_{t}) \\right]$$\n\nIn Stelling 1 leiden de auteurs af dat zolang de totale-variatieafstand op beurtniveau begrensd is door $\\alpha_{M} = \\sup_{t,h} D_{\\mathrm{TV}}(\\pi'(\\cdot \\mid h), \\pi(\\cdot \\mid h))$, er een ondergrens geldt voor beleidsverbetering:\n\n$$\\mathcal{J}(\\pi') - \\mathcal{J}(\\pi) \\geq \\mathcal{S}_{M} - 2 A_{\\max} T(T+1) \\alpha_{M}^{2}$$\n\n### De extra boete voor token-surrogaten\nWat gebeurt er als we dit beurtsurrogaat vervangen door een standaard token-surrogaat $\\mathcal{S}_{T} = \\mathbb{E}_{\\pi} \\sum_{t} \\sum_{i} (\\rho_{t,i} - 1) A_{t,i}^{\\pi, \\mathrm{tok}}$?\n\nDe exacte macro-voordelen zijn gelijk aan de som van de exacte token-voordelen over de beurt:\n\n$$\\sum_{i=1}^{L_{t}} A_{t,i}^{\\pi, \\mathrm{tok}}(h_{t,i}, a_{t,i}) = A_{t}^{\\pi}(h_{t}, a_{t})$$\n\nToch zijn de surrogaatfuncties niet identiek. In Stelling 2 tonen de onderzoekers aan dat token-surrogaten een extra discrepantie introduceren:\n\n$$|\\mathcal{S}_{M} - \\mathcal{S}_{T}| \\leq 2(T+1) A_{\\max}^{\\mathrm{tok}} L_{\\max}(L_{\\max}-1) \\alpha_{T}^{2}$$\n\nWaardoor de theoretische ondergrens daalt naar:\n\n$$\\mathcal{J}(\\pi') - \\mathcal{J}(\\pi) \\geq \\mathcal{S}_{T} - 2 A_{\\max} T(T+1) \\alpha_{M}^{2} - 2(T+1) A_{\\max}^{\\mathrm{tok}} L_{\\max}(L_{\\max}-1) \\alpha_{T}^{2}$$\n\n> [!warning] Verdelingsverschuiving binnen de beurt\n> Het macro-surrogaat $\\mathcal{S}_{M}$ evalueert token-voordelen over prefixen die bemonsterd worden onder het nieuwe beleid $\\pi'$. Het token-surrogaat $\\mathcal{S}_{T}$ weegt elk token daarentegen afzonderlijk via $\\rho_{t,i}$, waardoor het prefixverdelingen van het oude beleid $\\pi$ gebruikt. Deze interne verdelingsverschuiving (*within-turn distribution shift*) verklaart waarom klassieke token-PPO bij lange beurten aan stabiliteit inboet."
+  },
+  {
+   "title": "Het MAE-mechanisme: krediet propageren en lokaal projecteren",
+   "md": "Je leert hier hoe Multiscale Advantage Estimation (MAE) het beurtniveau berekent via een telescoopsom en vervolgens relatief krediet per token toewijst via een kleinste-kwadratenprojectie.\n\n### Beurt-propagatie via een telescoopsom\nOm credit assignment over macro-interacties te koppelen aan token-generatie, introduceert MPO de *Multiscale Advantage Estimation* (MAE). MAE hergebruikt een enkele critic $V(h_{t,i})$.\n\nDe temporele differentiefout ([temporal difference learning](https://en.wikipedia.org/wiki/Temporal_difference_learning)) op token-niveau is gedefinieerd als:\n\n$$\\delta_{t,i} = r_{t,i} + V_{t,i+1} - V_{t,i}$$\n\nWaarbij op de beurtgrens geldt dat $V_{t, L_{t}+1} := V_{t+1, 1}$. Wanneer we alle residuele TD-fouten binnen een beurt sommeren, ontstaat een telescoopsom waarin alle interne critic-voorspellingen exact tegen elkaar wegvallen:\n\n$$\\delta_{t}^{\\mathrm{turn}} = \\sum_{i=1}^{L_{t}} \\delta_{t,i} = \\mathbf{1}\\{t=T\\} R(\\tau) + V_{t+1,1} - V_{t,1}$$\n\nOp deze macro-tijdsas passen we Generalized Advantage Estimation (GAE) toe met parameter $\\lambda \\in [0, 1]$:\n\n$$A_{t}^{\\mathrm{turn}} = \\delta_{t}^{\\mathrm{turn}} + \\lambda A_{t+1}^{\\mathrm{turn}} = \\sum_{\\ell=0}^{T-t} \\lambda^{\\ell} \\delta_{t+\\ell}^{\\mathrm{turn}}$$\n\nDit beurtvoordeel vervalt uitsluitend per interactieronde in plaats van per token. Voor vaste grenswaarden is het signaal onafhankelijk van de interne critic-schattingen en de lengte van de beurt.\n\n### Binnen-beurt correctie via projectie\nOm tokens binnen een beurt toch van elkaar te kunnen onderscheiden, berekent MAE een lokaal spoor dat strikt begrensd blijft tot de huidige beurt:\n\n$$A_{t,i}^{\\mathrm{intra}} = \\sum_{j=i}^{L_{t}} \\lambda_{\\mathrm{intra}}^{j-i} \\delta_{t,j}$$\n\nWe willen nu gewichten $\\mathbf{w} \\in \\mathbb{R}^{L_{t}}$ vinden die zo dicht mogelijk bij de geschaalde lokale signalen $\\beta \\mathbf{A}_{t}^{\\mathrm{intra}}$ liggen, onder de strikte voorwaarde dat hun gemiddelde exact gelijk is aan het macro-beurtvoordeel $A_{t}^{\\mathrm{turn}}$:\n\n$$\\mathbf{A}_{t}^{\\mathrm{MAE}} = \\underset{\\mathbf{w} \\in \\mathbb{R}^{L_{t}}}{\\operatorname{argmin}} \\frac{1}{2} \\|\\mathbf{w} - \\beta \\mathbf{A}_{t}^{\\mathrm{intra}}\\|_{2}^{2} \\quad \\text{onder voorwaarde dat} \\quad \\frac{1}{L_{t}} \\sum_{i=1}^{L_{t}} w_{i} = A_{t}^{\\mathrm{turn}}$$\n\nDit strikt convexe optimalisatieprobleem levert een unieke oplossing op:\n\n$$A_{t,i}^{\\mathrm{MAE}} = A_{t}^{\\mathrm{turn}} + \\beta \\left( A_{t,i}^{\\mathrm{intra}} - \\overline{A}_{t}^{\\mathrm{intra}} \\right)$$\n\nWaarbij $\\overline{A}_{t}^{\\mathrm{intra}} = \\frac{1}{L_{t}} \\sum_{i=1}^{L_{t}} A_{t,i}^{\\mathrm{intra}}$ het rekenkundig gemiddelde is van het lokale spoor.\n\n> [!rule] Verschillende vervalsnelheden voor verschillende tijdschalen\n> In de experimenten functioneert de combinatie $(\\lambda = 0.80, \\lambda_{\\mathrm{intra}} = 0.95, \\beta = 1.00)$ het beste. Dit verschil vloeit voort uit de twee tijdschalen: $\\lambda$ telt interactierondes (bij $\\lambda=0.80$ is de geometrische spoorlengte $1/(1-\\lambda) = 5$ beurten), terwijl $\\lambda_{\\mathrm{intra}}$ telt in tokens (bij $0.95$ is dat 20 tokens). Omdat een traject veel minder beurten dan tokens telt, voorkomt $\\lambda < \\lambda_{\\mathrm{intra}}$ dat krediet over te veel interacties wordt doorgetrokken en ruis van verre interacties ophoopt, terwijl een grotere lokale factor $\\lambda_{\\mathrm{intra}}$ (0,95) voorkomt dat de toewijzing binnen een beurt beperkt blijft tot slechts enkele tokens."
+  },
+  {
+   "title": "Beleidsupdate met stop-gradient en empirische validatie",
+   "md": "Je leert hier hoe MPO beurt-gewogen importance sampling combineert met token-specifieke gradiënten via een stop-gradient en welke prestaties dit oplevert.\n\n### De stop-gradient constructie\nBij het updaten van het beleidsnetwerk ontstaat een wiskundige complicatie: als we alle token-voordelen simpelweg vermenigvuldigen met de gezamenlijke beurtratio $\\rho_{t}(\\theta) = \\prod_{i=1}^{L_{t}} \\rho_{t,i}(\\theta)$, zou de gecentreerde correctie $\\beta (A_{t,i}^{\\mathrm{intra}} - \\overline{A}_{t}^{\\mathrm{intra}})$ in de ongeknipte som over de beurt exact naar nul sommeren.\n\nOm dit op te lossen, ontkoppelt MPO de voorwaartse weging van de gradiënt via de stop-gradient operator ($\\operatorname{sg}$):\n\n$$\\widetilde{\\rho}_{t,i}(\\theta) = \\rho_{t,i}(\\theta) \\, \\operatorname{sg}\\!\\left[ \\prod_{j \\neq i} \\rho_{t,j}(\\theta) \\right]$$\n\nIn de forward pass geldt $\\widetilde{\\rho}_{t,i}(\\theta) = \\rho_{t}(\\theta)$, waardoor de volledige beurtratio de clipping stuurt. In de backward pass geldt daarentegen:\n\n$$\\nabla_{\\theta} \\widetilde{\\rho}_{t,i}(\\theta) = \\rho_{t}(\\theta) \\nabla_{\\theta} \\log \\pi_{\\theta}(a_{t,i} \\mid h_{t,i})$$\n\nDe uiteindelijke doelfunctie wordt gemaximaliseerd via geknipte PPO-surrogaatoptimalisatie over alle geldige assistent-tokens in de batch:\n\n$$\\mathcal{L}_{\\mathrm{MPO}}(\\theta) = \\widehat{\\mathbb{E}}_{t,i} \\left[ \\min\\left( \\widetilde{\\rho}_{t,i}(\\theta) \\widehat{A}_{t,i}^{\\mathrm{MAE}}, \\, \\operatorname{clip}\\left(\\widetilde{\\rho}_{t,i}(\\theta), 1-\\epsilon, 1+\\epsilon\\right) \\widehat{A}_{t,i}^{\\mathrm{MAE}} \\right) \\right]$$\n\n### Empirische resultaten en vergelijkingen\nIn [de paper](https://arxiv.org/abs/2610.35013) evalueren de onderzoekers MPO op twee modelgroottes (Qwen3-4B-Thinking en Qwen3-30B-A3B-Instruct) in drie omgevingen: zoekopdrachten (BrowseComp-Plus, GAIA, HLE), toolgebruik (Claw-Eval) en workflow-automatisering (Automation Bench).\n\nMPO behaalt de hoogste score op alle negen gerapporteerde metrieken bij beide modelgroottes. Ten opzichte van de sterkste niet-MPO-baseline verbetert MPO de pass@1-score op het 4B-model met 4,33 procentpunt op BrowseComp-Plus, 3,85 punt op GAIA en 0,66 punt op HLE. Op het grotere 30B-A3B-model bedragen de winsten respectievelijk 3,59, 3,80 en 0,12 procentpunt.\n\nWanneer de beurt-importance-sampling wordt vervangen door token-gewichten (MPO met token-IS), dalen alle scores: op BrowseComp-Plus daalt pass@1 met 2,36 procentpunt voor het 4B-model. Ook het volledig weglaten van de lokale verfijning door $\\beta = 0$ te kiezen leidt tot prestatieverlies, met een daling van 6,28 procentpunt op BrowseComp-Plus. Dit toont aan dat zowel de macro-verankering op beurtniveau als de gecentreerde verfijning per token bijdraagt aan de prestaties.\n\n> [!tip] Test-time scaling\n> De voorsprong van MPO blijft behouden wanneer het aantal bemonsteringen per taak toeneemt (*test-time scaling*). Bij 32 onafhankelijke pogingen bereikt MPO met het 4B-model een pass@32 van 75,90 op BrowseComp-Plus, 69,90 op GAIA en 34,00 op HLE, waarmee het de sterkste van GRPO en PPO met respectievelijk 3,61 (BrowseComp-Plus), 5,82 (GAIA) en 5,80 (HLE) procentpunt overtreft."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "89.5%",
+   "label": "mediaan aandeel van verschillen tussen beurtgemiddelden in de critic-waardevariantie binnen een traject",
+   "quote": "Across 2,048 trajectories and 16,323 turns from eight checkpoint batches of one search-agent run, differences between turn means account for a median of 89.5% of the critic’s token-weighted within-trajectory value variance.",
+   "source": 1
+  },
+  {
+   "value": "93.8%",
+   "label": "percentage van de trajecten waarin tussen-beurtvariantie groter is dan binnen-beurtvariantie",
+   "quote": "Between-turn variance exceeds within-turn variance in 93.8% of trajectories.",
+   "source": 1
+  },
+  {
+   "value": "4.33",
+   "label": "procentpunt verbetering in BrowseComp-Plus pass@1 voor het 4B-model ten opzichte van de sterkste niet-MPO baseline",
+   "quote": "Relative to the strongest non-MPO baseline in each column, MPO improves BrowseComp-Plus, GAIA, and HLE pass@1 by 4.33, 3.85, and 0.66 points on 4B, and by 3.59, 3.80, and 0.12 points on 30A3B.",
+   "source": 1
+  },
+  {
+   "value": "2.36",
+   "label": "procentpunt daling in pass@1 op BrowseComp-Plus voor 4B wanneer beurt-IS wordt vervangen door token-IS",
+   "quote": "The Search pass@1 drops on BrowseComp-Plus, GAIA, and HLE are 2.36, 3.12, and 1.03 points for 4B, and 2.05, 2.19, and 0.58 points for 30A3B.",
+   "source": 1
+  },
+  {
+   "value": "75.90",
+   "label": "pass@32 percentage behaald door MPO met het 4B-model op BrowseComp-Plus",
+   "quote": "Its pass@32 reaches 75.90 on BrowseComp-Plus, 69.90 on GAIA, and 34.00 on HLE, exceeding the stronger of GRPO and PPO by 3.61, 5.82, and 5.80 points, respectively.",
+   "source": 1
+  }
+ ],
+ "caveats": "Bij het interpreteren van de resultaten moeten verschillende methodologische en praktische randvoorwaarden in acht worden genomen:\n\n1. **Extra GPU-geheugengebruik**: MPO vereist een getraind critic-netwerk om waardeschattingen te leveren. In tegenstelling tot critic-vrije methoden zoals GRPO verhoogt een afzonderlijke critic de geheugendruk, wat de inzet bij grotere modellen hardwarematig kan beperken.\n2. **Aanname van een terminale beloning**: De wiskundige afleiding en de telescoopeigenschap waarbij interne critic-voorspellingen wegvallen ($\\delta_{t}^{\\mathrm{turn}}$), zijn geformuleerd voor taken met uitsluitend een beloning aan het einde van het traject ($r_{t,i}=0$ vóór stap $T$). Voor omgevingen met tussentijdse beloningen is het raamwerk niet zonder meer toepasbaar.\n3. **Gevoeligheid voor hyperparameters**: De prestaties leunen op de afstemming van drie parameters ($\\lambda=0.80$, $\\lambda_{\\mathrm{intra}}=0.95$, $\\beta=1.00$). Zowel het verhogen als verlagen van $\\lambda$ of $\\beta$ leidt volgens de ablaties tot meetbaar prestatieverlies.\n4. **Enkele runs in de ablaties**: De parametervergelijkingen in de paper vermelden expliciet dat elke configuratie (\"Each setting has one run\") één keer is getraind, waardoor trainingsruis niet volledig statistisch kan worden uitgesloten.\n5. **Onduidelijk causaal verband bij critic-nauwkeurigheid**: De hogere verklaarde variantie van de critic tijdens latere trainingsfasen is gemeten op de eigen rollouts van het beleid. Dit suggereert dat de bezochte toestandsketens consistenter zijn, maar toont volgens de auteurs zelf niet aan dat de critic intrinsiek beter leert.",
+ "glossary": [
+  {
+   "term": "Multi-turn agent",
+   "def": "Een taalmodel dat taken oplost door over meerdere rondes afwisselend acties (zoals zoekopdrachten of tool-aanroepen) te genereren en omgevingsfeedback te verwerken."
+  },
+  {
+   "term": "Credit assignment",
+   "def": "Het toewijzen van wiskundige verantwoordelijkheid (beloning of straf) aan specifieke beslissingen in een lange keten die leidden tot het uiteindelijke resultaat."
+  },
+  {
+   "term": "Macro-actie",
+   "def": "Een samengestelde handeling, zoals een volledige tekstuele beurt of API-aanroep, die als één interactie aan de omgeving wordt aangeboden."
+  },
+  {
+   "term": "Generalized Advantage Estimation (GAE)",
+   "def": "Een algoritme dat voordelen schat als een exponentieel gewogen som van temporele-differentiefouten om de balans tussen variantie en vertekening te sturen."
+  },
+  {
+   "term": "Importance sampling",
+   "def": "Een statistische techniek die verwachtingswaarden onder een nieuw beleid berekent met behulp van data gegenereerd door een ouder beleid, geschaald via hun waarschijnlijkheidsratio."
+  },
+  {
+   "term": "Stop-gradient",
+   "def": "Een bewerking in computationele grafen die de doorgifte van afgeleiden blokkeert tijdens de backward pass, terwijl de waarde voorwaarts behouden blijft."
+  },
+  {
+   "term": "Total variation distance",
+   "def": "Een statistische afstandsmaat die het maximale verschil in toegewezen kans tussen twee kansverdelingen over dezelfde uitkomstenruimte kwantificeert."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom vallen alle interne critic-voorspellingen binnen een beurt weg bij het berekenen van de beurt-differentiefout delta_t^turn?",
+   "options": [
+    "Doordat de som over de temporele differenties van opeenvolgende tokens een telescoopreeks vormt waarbij V(t, i+1) steeds wegvalt tegen -V(t, i+1) van de volgende stap.",
+    "Doordat de critic binnen een beurt constant wordt gehouden en dus voor elk token exact dezelfde waarde voorspelt.",
+    "Omdat de stop-gradient operatie de gradiënten van alle tussenliggende critic-voorspellingen blokkeert tijdens de berekening.",
+    "Doordat de kleinste-kwadratenprojectie de tussenliggende waarden dwingt om exact naar nul te sommeren."
+   ],
+   "answer": 0,
+   "explain": "De som van de TD-fouten over een beurt is een wiskundige telescoopreeks: delta_{t,i} = r_{t,i} + V_{t,i+1} - V_{t,i}. Omdat alle tussentijdse beloningen r_{t,i} gelijk zijn aan nul, vallen alle tussenliggende termen paarsgewijs tegen elkaar weg, waardoor alleen de grenswaarden V_{t+1,1} - V_{t,1} overblijven."
+  },
+  {
+   "id": "q2",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom kiezen de auteurs voor een lagere vervalfactor op beurtniveau (lambda = 0.80) dan op token-niveau binnen de beurt (lambda_intra = 0.95)?",
+   "options": [
+    "Omdat één beurt tientallen tokens bevat, waardoor een beurt-stap een veel grotere tijdshorizon overspant dan een individuele token-stap.",
+    "Omdat het critic-netwerk op beurtniveau veel minder accuraat is dan op het niveau van individuele teksttokens.",
+    "Omdat de importance-sampling ratio exponentieel groeit met het aantal interactierondes en daardoor zwaarder moet worden afgekapt.",
+    "Omdat de theorie van Markov-beslissingsprocessen voorschrijft dat macro-acties een strikt lagere factor vereisen dan micro-acties."
+   ],
+   "answer": 0,
+   "explain": "De twee parameters tellen verschillende gebeurtenissen: lambda vervalt per interactieronde (bij 0.80 is de geometrische spoorlengte 5 beurten), terwijl lambda_intra vervalt per gegenereerd token (bij 0.95 is dat 20 tokens). Omdat een traject veel minder beurten dan tokens telt, zou een gelijke parameterwaarde tot een ongewenst lange beurthistorie leiden."
+  },
+  {
+   "id": "q3",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Wat is het doel van de stop-gradient constructie in de definitie van de aangepaste ratio rho_tilde?",
+   "options": [
+    "Voorkomen dat de centered lokale correctie binnen een beurt naar nul sommeert in de ongeknipte beleidsgradiënt.",
+    "Voorkomen dat de kansverdeling over de tokens binnen de beurt niet meer sommeert tot één.",
+    "Het critic-netwerk beschermen tegen overfitting op de terminale beloning tijdens de backward pass.",
+    "Garanderen dat de KL-divergentie tussen het oude en nieuwe beleid strikt onder de drempelwaarde epsilon blijft."
+   ],
+   "answer": 0,
+   "explain": "Omdat de lokale correctie (A_{t,i}^{intra} - gem_A) per constructie sommeert tot nul over de beurt, zou vermenigvuldiging met een uniforme, differentieerbare beurtratio rho_t(theta) de invloed van de token-specifieke voordelen in de ongeknipte beleidsgradiënt volledig tenietdoen. De stop-gradient behoudt de beurtratio in de forward pass, maar koppelt de gradiënt puur aan het individuele token."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Verdiept reinforcement learning en beleidsoptimalisatie voor taalmodellen en autonome agents."
+  },
+  {
+   "track": "automation",
+   "why": "Direct toepasbaar op de robuustheid van multi-step tool-calling agents en complexe API-ketens in n8n."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "Multiscale Policy Optimization for Long-Horizon LLM Agents",
+   "url": "https://arxiv.org/abs/2610.35013"
+  },
+  {
+   "n": 2,
+   "title": "Wikipedia — Reinforcement learning",
+   "url": "https://en.wikipedia.org/wiki/Reinforcement_learning"
+  },
+  {
+   "n": 3,
+   "title": "Wikipedia — Markov decision process",
+   "url": "https://en.wikipedia.org/wiki/Markov_decision_process"
+  },
+  {
+   "n": 4,
+   "title": "Wikipedia — Temporal difference learning",
+   "url": "https://en.wikipedia.org/wiki/Temporal_difference_learning"
+  }
+ ],
+ "id": "2026-10-30-hoe-multiscale-beleidsoptimalisatie-lange-intera",
+ "kind": "paper",
+ "date": "2026-10-30",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-30",
+  "kind": "paper",
+  "verified": "2026-10-30",
+  "candidate": "arxiv:2610.35013",
+  "signal": "381 upvotes op Hugging Face Daily Papers",
+  "significance": 4
+ }
+}
