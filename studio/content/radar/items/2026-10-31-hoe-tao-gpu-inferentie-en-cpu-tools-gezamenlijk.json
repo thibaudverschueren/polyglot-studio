@@ -1,0 +1,199 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe TAO gpu-inferentie en cpu-tools gezamenlijk inroostert",
+ "subtitle": "Door naderende afronding van externe tools te voorspellen en sessies via dynamisch programmeren te plaatsen, voorkomt TAO dat videogeheugen nodeloos geblokkeerd blijft.",
+ "topic": "systems",
+ "minutes": 11,
+ "tldr": [
+  "Tijdens externe tools zoals zoekopdrachten blokkeren autonome agents kostbaar videogeheugen, terwijl planners niet weten wanneer taken terugkeren.",
+  "TAO onderbreekt wachtende sessies, schat hun terugkeertijd in en plaatst ze via een wiskundig keuzemodel gezamenlijk terug op servers.",
+  "Hierdoor daalt de tijd tot het eerste token (TTFT) met maximaal 36,3 procent op de hoofdmodellen, wat zorgt voor merkbaar vlottere interacties.",
+  "Bij zeer onvoorspelbare externe taken verliest de tijdschatting nauwkeurigheid, waardoor de planner soms te vroeg rekencapaciteit reserveert."
+ ],
+ "plain": "Denk aan een gespecialiseerde operatiekamer en een extern laboratorium. Wanneer een chirurg tijdens een ingreep weefsel naar het lab stuurt, duurt de uitslag bijvoorbeeld tien minuten. Laat je de patiënt op de operatietafel liggen, dan blijft die kostbare kamer onbenut voor andere operaties. TAO brengt de wachtende patiënt tijdelijk naar een rustkamer en voorspelt wanneer het lab klaar is. Vlak voor de uitslag binnenkomt, plant het systeem de patiënt opnieuw in op een operatiekamer waar het team het dossier nog paraat heeft. Heb je een blok van dertig minuten vrij, dan combineert de planner twee ingrepen van vijftien minuten in plaats van een willekeurige patiënt toe te laten. De vergelijking loopt spaak omdat echte patiënten niet in milliseconden verplaatst kunnen worden, terwijl digitale rekenprocessen direct gepauzeerd en hervat worden.",
+ "why": "Wie software-agents bouwt in frameworks of n8n merkt dat externe acties — zoals SQL-queries, web-scrapers of bash-commando's — secondenlang duren. In conventionele clusters blijven dure GPU's tijdens die wachttijd gereserveerd of wordt de context gewist, waardoor latere beurten traag herstarten. TAO lost dit op door GPU-capaciteit direct vrij te geven en sessies pas terug te halen zodra de tool afrondt. Voor engineers betekent dit dat agentclusters tot 29,5% meer tokens per seconde verwerken zonder extra hardware aan te schaffen.",
+ "sections": [
+  {
+   "title": "Het knelpunt: waarom tool-aanroepen gpu-clusters blokkeren",
+   "md": "Je leert hier waarom het afwisselen tussen taalmodel-inferentie op GPU's en externe tool-uitvoering op CPU's leidt tot geheugenverspilling en wachtrijvertraging.\n\n### Het interactiemodel van software-agents\nAutonome software-agents voeren taken uit via interactieve rondes. Het taalmodel analyseert een vraag, genereert een opdracht voor een extern hulpprogramma (zoals een bash-commando, zoekmachine of compiler), wacht op de uitvoer en formuleert vervolgens de volgende stap. Dit patroon creëert wat onderzoekers van [arXiv 2610.37230](https://arxiv.org/abs/2610.37230) een CGDC-omgeving noemen (*Clustered-GPUs with Distributed-CPUs*): een configuratie van [distributed computing](https://en.wikipedia.org/wiki/Distributed_computing) waarbij modelgeneratie draait op een gedeelde pool GPU-knooppunten, terwijl de tools worden uitgevoerd op externe CPU's met eigen werkgeheugen buiten het GPU-toelatingsbudget.\n\n### Het dilemma van de KV-cache\nTijdens de generatiefase bouwt het taalmodel in het snelle videogeheugen (VRAM) een sleutel-waarde-cache (*KV-cache*) op. Deze cache bewaart de aandachtsvectoren van eerdere tokens. Hierdoor hoeft het model bij een volgende beurt niet de volledige gespreksgeschiedenis opnieuw te verwerken (*prefill*). Zodra een externe CPU-tool start, ontstaat er een fundamenteel planningsdilemma:\n\n1. **Toelating vasthouden**: De agent behoudt zijn actieve status op het GPU-knooppunt. Omdat externe tools geregeld meerdere seconden duren, staat de rekenkracht van de GPU stil terwijl kostbaar VRAM bezet blijft voor andere gebruikers.\n2. **Sessie uitwerpen**: De agent wordt van de GPU verwijderd om ruimte te maken. Zodra de tool afrondt, moet de volledige geschiedenis echter opnieuw worden berekend. Deze herberekening leidt tot zogeheten *KV-cache thrashing*, waardoor de reactietijd (*Time to First Token*, TTFT) oploopt.\n\n:::sim kvcache {}\n:::\n\n### De tekortkoming van klassieke schedulers\nBestaande systemen voor [job scheduling](https://en.wikipedia.org/wiki/Job_scheduler) (zoals vLLM met Round-Robin of Cache-Aware toewijzing, of frameworks zoals Dynamo en ThunderAgent) werken volgens het principe van evalueren en beslissen (*evaluate-then-decide*). Zij beoordelen sessies echter afzonderlijk via vaste vuistregels en negeren wanneer externe tools exact afronden. Hierdoor nemen ze kortzichtige plaatsingsbeslissingen die waardevolle combinaties van sessies uitsluiten.\n\nTAO lost dit op via gecontroleerde sessie-onderbreking (*session interruption*): zodra een sessie een tool aanroept, geeft de scheduler de GPU-toelating vrij en verplaatst de sessie naar een wachtpoel ($P$). Zo blijft VRAM beschikbaar voor actieve taken zonder dat het hergebruik van eerdere berekeningen verloren hoeft te gaan."
+  },
+  {
+   "title": "Sessie-evaluatie: cacheverval, tool-gereedheid en tokengrootte",
+   "md": "Je leert hoe TAO elke sessie-knooppuntcombinatie waardeert via een driedelig lexicografisch profiel van cachekrediet met tijdsverval, tool-gereedheid en tokenomvang.\n\n### De driedelige lexicografische waardering\nIn de wachtpoel $P$ wachten onderbroken sessies en nieuwe verzoeken op toewijzing aan een GPU-knooppunt uit verzameling $B$. In plaats van verschillende eigenschappen arbitrair samen te voegen met gewogen vermenigvuldigers, kent TAO aan elk paar $(i, b)$ van sessie $i$ en knooppunt $b$ een driedelige vector toe:\n\n$$\\bm{v}_{i,b} = (k_{i,b}, r_i, t_i)$$\n\nDe ordening is strikt lexicografisch: het cachekrediet $k_{i,b}$ krijgt absolute voorrang om tijdrovende prefill-berekeningen te vermijden. Pas wanneer dat krediet gelijk is (of door veroudering wegvalt), geeft de binaire gereedheidsindicator $r_i$ de doorslag. Is ook die gelijk, dan beslist de tokenomvang $t_i$.\n\n### 1. Temporeel verval van cachekrediet\nWanneer een sessie op knooppunt $b$ stopt, blijven zijn KV-blokken mogelijk tijdelijk in VRAM aanwezig. Naarmate de tijd verstrijkt, overschrijven andere actieve sessies deze blokken via verwijderingsalgoritmen. TAO modelleert de afnemende kans op cachebehoud via een exponentieel verval:\n\n$$k_{i,b}(t) = k^0_{i,b} \\, 2^{-\\tau_{i,b}/h}, \\qquad \\tau_{i,b} = \\max(0, t - t^{\\mathrm{obs}}_{i,b})$$\n\nHierin is $k^0_{i,b}$ het waargenomen aantal herbruikbare tokens, $t^{\\mathrm{obs}}_{i,b}$ het tijdstip van de laatste observatie en $h = 10$ seconden de halfwaardetijd. Knooppunten zonder waargenomen cache ontvangen nul krediet. Na 10 seconden wachttijd is het toegekende krediet gehalveerd; na 20 seconden resteert nog slechts een kwart.\n\n### 2. Binaire gereedheid van de tool\nTool-gereedheid ($r_i$) slaat een brug tussen de externe CPU en het GPU-cluster door in te schatten welke sessies binnen een tijdshorizon van $H = 1$ seconde inferentie nodig hebben. TAO gebruikt directe timingberichten of schat de duur via een conservatieve statistische formule over eerdere aanroepen van functietype $f$:\n\n$$\\widehat{D}_f = \\begin{cases} \\bar{d}_f, & n_f = 1 \\\\[4pt] \\bar{d}_f + \\sqrt{\\dfrac{2 s_f^2 \\log(3/\\delta)}{n_f}} + \\dfrac{3 R_f \\log(3/\\delta)}{n_f}, & n_f \\ge 2 \\end{cases}$$\n\nHierin is $\\bar{d}_f$ de gemiddelde duur, $s_f^2$ de steekproefvariantie, $R_f$ het waargenomen bereik en $\\delta = 0{,}2$. Bij ontbrekende geschiedenis hanteert het systeem een standaardduur van 5 seconden. De resterende tijd is $\\widehat{d}_i(t) = \\max\\{0, \\widehat{D}_f - e_i(t)\\}$, waarbij $e_i(t)$ de verstreken tijd is.\n\nDe binaire statusindicator voor gereedheid wordt vervolgens bepaald aan de hand van waargenomen voltooiing en de tijdshorizon:\n\n$$r_i(t) = \\begin{cases} 1, & o_i(t) = 1 \\\\ a_i(t) b_i(t), & o_i(t) = 0, \\ z_i(t) \\le t \\\\ a_i(t) g_i(t) \\mathbf{1}[z_i(t) \\le t+H], & \\text{anders} \\end{cases}$$\n\nHierin duidt $o_i(t) = 1$ op een daadwerkelijk voltooide tool, $z_i(t)$ op het verwachte afrondingstijdstip en $g_i(t)$ op een geldige tijdstempel binnen 30 seconden. Sessies waarvan de voorspelde eindtijd is verstreken ($z_i(t) \\le t$), krijgen een tijdelijke peilstatus ($b_i(t)$) in plaats van permanent klaar te blijven.\n\n### 3. Tokenomvang als beslisser\nAls sessies gelijk scoren op cachekrediet en gereedheid, geeft de tokenomvang $t_i$ voorrang aan sessies met een langere context. Het vanaf nul herberekenen van een lange context kost immers verhoudingsgewijs meer rekenkracht."
+  },
+  {
+   "title": "Gezamenlijke toewijzing via dynamisch programmeren",
+   "md": "Je leert hoe TAO sessieplaatsing modelleert als een meervoudig knapzakprobleem en exact oplost met dynamisch programmeren onder capaciteitsgrenzen.\n\n### Waarom individuele plaatsing faalt\nKlassieke schedulers kennen GPU-ruimte één voor één toe via een gretige volgorde (*greedy heuristic*), zoals *best-fit-decreasing* (BFD). Dit leidt tot suboptimale keuzes:\n\n> [!example] De valkuil van individuele toewijzing\n> Stel dat een knooppunt 10 eenheden vrij VRAM heeft. Sessie A vereist 8 eenheden met waarde $(100, 1, \\cdot)$. Sessies B en C vereisen elk 5 eenheden met respectievelijk waarde $(80, 1, \\cdot)$ en $(70, 1, \\cdot)$.\n> Een gretige scheduler wijst Sessie A toe omdat die afzonderlijk de hoogste score heeft. Er resteren 2 eenheden, waardoor noch B noch C erbij past. Totale opbrengst: 100.\n> Een gezamenlijke planner ziet dat B en C samen precies $5 + 5 = 10$ eenheden innemen en samen een waarde van $80 + 70 = 150$ realiseren.\n\n### Het wiskundige model\nLaat $w_i$ de geheugenkosten zijn om sessie $i$ toe te laten (het geheugenbeslag van het totale aantal tokens minus de gedeelde prefixcapaciteit), en laat $C_b$ de resterende geheugencapaciteit van knooppunt $b$ zijn. Met toewijzingsvariabele $x_{i,b} \\in \\{0, 1\\}$ luidt de verzameling van haalbare plannen:\n\n$$\\mathcal{X} = \\left\\{ x : \\sum_{b \\in B} x_{i,b} \\le 1, \\quad \\sum_{i \\in P} w_i x_{i,b} \\le C_b, \\quad x_{i,b} = 0 \\text{ als } (i,b) \\notin E \\right\\}$$\n\nWaarbij $E \\subseteq P \\times B$ de geldige combinaties aangeeft. TAO zoekt het toewijzingsplan $x^\\star$ dat de totale waarde over alle knooppunten lexicografisch maximaliseert:\n\n$$x^\\star \\in \\underset{x \\in \\mathcal{X}}{\\operatorname{arg\\,lexmax}} \\sum_{i \\in P} \\sum_{b \\in B} x_{i,b} \\bm{v}_{i,b}$$\n\n### Discretisatie en de DP-oplossing\nHet meervoudig knapzakprobleem (*multiple knapsack problem*) is combinatorisch complex. Om dit binnen milliseconden exact op te lossen, discretiseert TAO geheugenkosten en knooppuntcapaciteiten met een kwantum $\\Delta$:\n\n$$\\bar{w}_i = \\lceil w_i / \\Delta \\rceil, \\qquad \\bar{C}_b = \\lfloor C_b / \\Delta \\rfloor$$\n\nLaat $\\bm{s} = (s_1, \\ldots, s_{|B|})$ de vector van gebruikte capaciteiten zijn en $\\bm{u}_{j,b}$ de ingebedde vectorwaarde voor kandidaat $j$ op knooppunt $b$. De optimale lexicografische waarde over de eerste $j$ kandidaten bij gebruikt capaciteitsniveau $\\bm{s}$ voldoet aan de recurrente betrekking:\n\n$$D_j(\\bm{s}) = \\mathop{\\mathrm{lexmax}} \\left\\{ D_{j-1}(\\bm{s}), \\; \\max_{b \\text{ in aanmerking}}^{\\mathrm{lex}} \\left[ D_{j-1}(\\bm{s} - \\bar{w}_j \\bm{e}_b) + \\bm{u}_{j,b} \\right] \\right\\}$$\n\nHierin is $\\bm{e}_b$ de eenheidsvector voor knooppunt $b$, met basisvoorwaarde $D_0[\\bm{0}] = \\bm{0}$.\n\n> [!tip] Schaalbaarheid in grote clusters\n> In een voorbereidende stap van $O(nm)$ groepeert TAO knooppunten met identieke cache-eigenschappen in $g \\le m$ dimensies. Dreigt de rekentijd het schema te overschrijden, dan valt het algoritme terug op een snelle BFD-heuristiek. In metingen met vier replica's nam het voorbereiden en oplossen van het DP-probleem minder dan 0,12% van de totale uitvoeringstijd in beslag."
+  },
+  {
+   "title": "Asynchrone planning, hervalidatie en gemeten prestaties",
+   "md": "Je leert hoe de planner asynchroon rekent, plannen hervalideert tegen de levende clusterstatus en welke prestaties dit oplevert in benchmarks.\n\n### Asynchrone werkers en hervalidatie\nOmdat het cluster continu verzoeken afrondt terwijl het dynamisch programmeren rekent, draait de planner in een afzonderlijke werker. Op planningstijdstip $s$ bevriest het systeem een momentopname (*snapshot*) van de wachtpoel en capaciteiten.\n\nOp tijdstip $t$ levert de planner het berekende toewijzingsplan $x_s$ af. Vóór daadwerkelijke toelating controleert een executor de actuele status:\n1. Is de toestand van een geselecteerde sessie intussen gewijzigd (bijvoorbeeld door een mislukte tool of gewijzigde toelaatbaarheid), dan wordt het plan verworpen.\n2. Blijft de toestand geldig, dan voert de executor het langste prefix van het plan uit dat binnen de actuele knooppuntcapaciteiten past.\n\n### De theoretische verliesgrens\nOm het effect van verouderde momentopnamen te analyseren, leiden de auteurs een analytische verliesgrens af ten opzichte van het verse optimum op toewijzingstijdstip $t$:\n\n$$\\max_{x \\in \\mathcal{X}_t^\\Delta} U_t(x) - U_t(y_t) \\le A_{s,t} + 2\\epsilon_{s,t} + T_{s,t}$$\n\nHierin representeert $U_t$ een vaste scalaire score die de lexicografische rangorde handhaaft:\n- $A_{s,t}$ vangt nieuwe kansen op die ontstonden doordat capaciteit of toelaatbaarheid toenam tussen $s$ en $t$.\n- $\\epsilon_{s,t}$ meet waardeverloop (*value drift*), zoals het verval van cachekrediet, begrensd door $KL(t-s)$ bij Lipschitz-continue functies (waardoor de term $2\\epsilon_{s,t}$ begrensd wordt door $2KL(t-s)$).\n- $T_{s,t}$ kwantificeert het uitvoeringsverlies wanneer een plan moet worden ingekort of verworpen.\n\n### Empirische resultaten en componentanalyses\nIn evaluaties op DeepSeek-V4 Flash (SWE-Lite, Terminal-Bench, AutomationBench), Qwen3-32B (SWE-Lite, SWE-verified) en GLM-4.7 (SWE-Lite, SWE-verified) geldt TAO over het geheel genomen als de sterkste keuze (*strongest overall choice*). Het presteert echter niet in elke configuratie beter dan alle baselines. Zo haalt TAO op Terminal-Bench bij 16 en 64 werkers een lagere decodeer-doorvoer dan respectievelijk ThunderAgent (-8,8%) en vLLM CA (-6,2%), en noteert het op Qwen3-32B SWE-verified bij 128 werkers een 2,5% hogere latentie dan ThunderAgent. Onder zware belasting op AutomationBench bij 128 werkers presteert TAO aanzienlijk minder dan baselines zoals ThunderAgent (7,0% hogere latentie en 11,2% lagere decodeer-doorvoer) en Dynamo (waar de TTFT van TAO met 19,123 s tegenover 3,166 s flink hoger uitvalt).\n\nIn de evaluaties op DeepSeek-V4 Flash en Qwen3-32B daalt de taaklatentie met maximaal 26,8%, de TTFT met maximaal 36,3% en stijgt de decodeer-doorvoer met maximaal 29,5% (op het grotere GLM-4.7 daalt TTFT zelfs met maximaal 38,4%).\n\nDe componentanalyses op SWE-Lite met DeepSeek-V4 Flash bij 32 werkers bevestigen de rol van elk mechanisme. De volledige TAO-configuratie behaalt de hoogste decodeer-doorvoersnelheid en cache-hitratio, samen met de laagste gemiddelde TTFT, vertraging na tool-afloop en pauzewachttijd. Zonder cachekrediet zakt de decodeer-doorvoer van 1417,97 naar 1398,35 tokens/s; zonder tool-gereedheid daalt deze naar 1363,06 tokens/s. Wanneer het dynamisch programmeeralgoritme wordt vervangen door best-fit-decreasing, zakt de doorvoer naar 1233,72 tokens/s."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "26.8%",
+   "label": "maximale afname in taaklatentie op geëvalueerde DeepSeek-V4 Flash en Qwen3-32B opstellingen",
+   "quote": "Across the evaluated DeepSeek-V4 Flash and Qwen3-32B settings, this design delivers improvements of up to 26.8% in latency, 36.3% in mean TTFT, and 29.5% in decode throughput.",
+   "source": 1
+  },
+  {
+   "value": "36.3%",
+   "label": "maximale vermindering van de gemiddelde tijd tot het eerste token (TTFT) op DeepSeek-V4 Flash en Qwen3-32B",
+   "quote": "Across the evaluated DeepSeek-V4 Flash and Qwen3-32B settings, this design delivers improvements of up to 26.8% in latency, 36.3% in mean TTFT, and 29.5% in decode throughput.",
+   "source": 1
+  },
+  {
+   "value": "29.5%",
+   "label": "maximale winst in decodeer-doorvoersnelheid op DeepSeek-V4 Flash en Qwen3-32B",
+   "quote": "Across the evaluated DeepSeek-V4 Flash and Qwen3-32B settings, this design delivers improvements of up to 26.8% in latency, 36.3% in mean TTFT, and 29.5% in decode throughput.",
+   "source": 1
+  },
+  {
+   "value": "10",
+   "label": "halfwaardetijd in seconden voor het temporele verval van de waargenomen KV-cachewaarde",
+   "quote": "We use h=10 seconds and round the resulting credit for valuation.",
+   "source": 1
+  },
+  {
+   "value": "0.410 s",
+   "label": "gemiddelde afwijking (mean absolute error) in seconden bij het voorspellen van tool-duur over 10.967 voltooide aanroepen",
+   "quote": "Across 10,967 completed tools, the final duration prediction has a mean absolute error of 0.410 s, with 82.9% of errors within 0.5 s.",
+   "source": 1
+  },
+  {
+   "value": "1233.72 tok/s",
+   "label": "decodeer-doorvoersnelheid op SWE-Lite met DeepSeek-V4 Flash wanneer DP-hervatting wordt vervangen door best-fit-decreasing",
+   "quote": "Using the pause ordering from ThunderAgent yields 1355.20 tok/s, while replacing DP resumption with best-fit-decreasing (BFD) yields 1233.72 tok/s.",
+   "source": 1
+  },
+  {
+   "value": "0.12%",
+   "label": "maximaal aandeel van voorbereiding en solver-rekentijd in de totale uitvoeringstijd bij de sweep met vier replica's",
+   "quote": "recorded preparation plus completed-solve work is below 0.12% of runtime in the four-replica sweep (Appendix I).",
+   "source": 1
+  }
+ ],
+ "caveats": "Bij het interpreteren van de resultaten moeten verschillende praktische beperkingen in acht worden genomen:\n\n1. **Afhankelijkheid van voorspelbare tool-tijden**: De gereedheidsindicator leunt op historische gemiddelden en timeouts. Bij taken met onvoorspelbare externe vertraging (zoals instabiele netwerkverbindingen of menselijke interactie) neemt de schattingsfout toe, waardoor sessies te vroeg of te laat worden ingeroosterd.\n2. **Discretisatie en afrondingsverlies**: Het discretiseren van geheugencapaciteit met kwantum $\\Delta$ maakt het knapzakprobleem snel oplosbaar, maar kan plannen uitsluiten die vóór discretisatie strikt genomen wel op het knooppunt pasten.\n3. **Vaste halfwaardetijd ($h=10$ s)**: De afname van cachewaarde gebruikt een statische halfwaardetijd van 10 seconden. In zwaar overboekte clusters kan de fysieke KV-cache op de GPU sneller worden overschreven dan de decay-formule veronderstelt.\n4. **Geringe meerwaarde bij lage belasting**: Bij een lage concurrency (zoals 4 tot 8 werkers) blijft TAO volgens de auteurs binnen 2,3% van eenvoudigere baselines; zonder wachtrij biedt gezamenlijke optimalisatie immers weinig voordeel.\n5. **Voorwaardelijke verliesgrens**: De analytische verliesgrens bewijst de kwaliteit ten opzichte van een verse momentopname op hetzelfde tijdstip $t$. Het vormt geen bewijs van minimale end-to-end latentie over de gehele levenscyclus van een agenttaak.",
+ "glossary": [
+  {
+   "term": "CGDC (Clustered-GPUs with Distributed-CPUs)",
+   "def": "Een systeemarchitectuur waarbij taalmodelinferentie draait op een gedeeld GPU-cluster, terwijl externe tools zoals compilers of zoekmachines asynchroon op afzonderlijke CPU's worden uitgevoerd."
+  },
+  {
+   "term": "KV-cache",
+   "def": "Het snelle videogeheugen waarin eerder berekende sleutel- en waardematrices van de aandachtslaag worden bewaard om herberekening bij volgende tokens te vermijden."
+  },
+  {
+   "term": "Prefix reuse",
+   "def": "Het hergebruiken van bestaande KV-cacheblokken van eerdere gespreksrondes op hetzelfde GPU-knooppunt om de voorbereidende prefill-fase te versnellen."
+  },
+  {
+   "term": "Tool-return readiness",
+   "def": "Een binaire statusindicator die aangeeft of een wachtende agent binnen een korte tijdshorizon zijn externe tool zal afronden en opnieuw GPU-toelating vereist."
+  },
+  {
+   "term": "Lexicografische ordening",
+   "def": "Een prioriteringsvolgorde waarbij vectorelementen hiërarchisch worden vergeleken: pas bij gelijkheid op de eerste positie beslist het volgende element."
+  },
+  {
+   "term": "Meervoudig knapzakprobleem",
+   "def": "Een combinatorisch vraagstuk waarbij items met een gewicht en waarde optimaal over meerdere knapzakken met elk een eigen capaciteitslimiet moeten worden verdeeld."
+  },
+  {
+   "term": "Dynamisch programmeren",
+   "def": "Een algoritmetechniek die een complex optimalisatieprobleem oplost door het op te splitsen in overlappende deelproblemen en tussenuitkomsten systematisch te bewaren."
+  },
+  {
+   "term": "Time to First Token (TTFT)",
+   "def": "De tijdsduur tussen het moment waarop een nieuw verzoek of tool-resultaat bij het model aankomt en het moment waarop het eerste uitvoertoken wordt gegenereerd."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom gebruikt TAO een lexicografische vector $(k_{i,b}, r_i, t_i)$ in plaats van een lineair gewogen som van de evaluatiefactoren?",
+   "options": [
+    "Om arbitraire wegingsfactoren te vermijden en te borgen dat prefix-cachehergebruik altijd strikt voorrang krijgt op gereedheid en tokengrootte.",
+    "Omdat dynamisch programmeren wiskundig niet kan convergeren wanneer de objectieffunctie uit lineair gesommeerde termen bestaat.",
+    "Om het geheugengebruik van de scheduler te reduceren door numerieke waarden om te zetten naar binaire coördinaten.",
+    "Omdat gedistribueerde CPU-tools geen floating-point gewichten kunnen uitwisselen met het centrale GPU-cluster."
+   ],
+   "answer": 0,
+   "explain": "Een lexicografische vector garandeert een strikte rangorde zonder dat handmatig afgestemde gewichten nodig zijn. Cache-krediet ($k_{i,b}$) staat voorop om dure prefill-berekeningen te vermijden; pas bij gelijke of verstreken cachewaarde beslist tool-gereedheid ($r_i$), gevolgd door de contextgrootte ($t_i$)."
+  },
+  {
+   "id": "q2",
+   "type": "order",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Wat is de juiste volgorde van de stappen die een agentsessie doorloopt bij het uitvoeren van een externe tool onder TAO?",
+   "tiles": [
+    "Het taalmodel rondt een inferentiestap af en initieert een externe CPU-tool.",
+    "De scheduler onderbreekt de GPU-toelating van de sessie en plaatst deze in de wachtpoel.",
+    "Het geregistreerde KV-cachekrediet van de sessie op de GPU-knooppunten vervalt exponentieel.",
+    "De voorspeller stelt vast dat de tool afrondt binnen het tijdvenster en zet de gereedheidsindicator op 1.",
+    "Het dynamisch programmeeralgoritme berekent een gezamenlijke plaatsing voor de wachtende sessies.",
+    "De executor hervalideert de toewijzing tegen de actuele knooppuntcapaciteit en hervat de sessie."
+   ],
+   "explain": "Bij een tool-aanroep geeft de sessie direct GPU-toelating vrij en verhuist naar de wachtpoel. Daar vervalt zijn cachewaarde over de tijd ($h = 10$ s). Zodra afronding binnen de tijdshorizon ($H = 1$ s) nadert, wordt de gereedheid actief. Vervolgens selecteert het DP-algoritme gezamenlijk toewijzingen en controleert de executor vlak voor uitvoering of de live capaciteit en toestand nog kloppen."
+  },
+  {
+   "id": "q3",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Waarom levert gezamenlijke toewijzing via dynamisch programmeren een hogere doorvoer op dan individuele toewijzing per sessie via een heuristiek zoals best-fit-decreasing?",
+   "options": [
+    "Een individuele heuristiek kent capaciteit toe aan de eerste grote taak, waardoor combinaties van meerdere kleinere taken met een hogere totale waarde worden geblokkeerd.",
+    "Dynamisch programmeren verhoogt de fysieke bandbreedte van de NVLink-verbindingen tussen de GPU-knooppunten in het cluster.",
+    "Individuele toewijzing vereist dat alle externe CPU-tools tegelijkertijd pauzeren om geheugencorruptie op de host te voorkomen.",
+    "Dynamisch programmeren splitst afzonderlijke tokens over meerdere GPU's zodat het decoderen parallel kan plaatsvinden."
+   ],
+   "answer": 0,
+   "explain": "Individuele of gretige heuristieken zijn kortzichtig: door één sessie direct toe te laten, kan een knooppunt net te weinig restcapaciteit overhouden voor twee andere sessies die samen veel meer cachewinst of doorvoer hadden opgeleverd. Dynamisch programmeren evalueert de complete wachtpoel gezamenlijk onder de knooppuntlimieten."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Verdiept hoe LLM-inferentie en KV-cachebeheer op GPU-clusters worden geoptimaliseerd tijdens multi-turn interacties."
+  },
+  {
+   "track": "automation",
+   "why": "Direct van toepassing op workflows en agentsystemen (zoals in n8n) die langdurig wachten op externe API's en tools."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "TAO: Tool-Aware Joint Scheduling for LLM-Based Agentic Serving",
+   "url": "https://arxiv.org/abs/2610.37230"
+  },
+  {
+   "n": 2,
+   "title": "Wikipedia — Job scheduler",
+   "url": "https://en.wikipedia.org/wiki/Job_scheduler"
+  },
+  {
+   "n": 3,
+   "title": "Wikipedia — Distributed computing",
+   "url": "https://en.wikipedia.org/wiki/Distributed_computing"
+  }
+ ],
+ "id": "2026-10-31-hoe-tao-gpu-inferentie-en-cpu-tools-gezamenlijk",
+ "kind": "paper",
+ "date": "2026-10-31",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-10-31",
+  "kind": "paper",
+  "verified": "2026-10-31",
+  "candidate": "arxiv:2610.37230",
+  "signal": "47 upvotes op Hugging Face Daily Papers",
+  "significance": 4
+ }
+}
