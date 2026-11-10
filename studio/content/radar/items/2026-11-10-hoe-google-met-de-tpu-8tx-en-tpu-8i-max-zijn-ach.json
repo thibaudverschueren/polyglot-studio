@@ -1,0 +1,211 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe Google met de TPU 8tx en TPU 8i Max zijn achtste chipgeneratie uitbreidt",
+ "subtitle": "Door trainingschips te scheiden van inferentiehardware en multichip-behuizingen in te zetten omzeilt Google de fysieke geheugenmuur voor AI-modellen.",
+ "topic": "chips",
+ "minutes": 10,
+ "tldr": [
+  "Groeiende AI-modellen stellen tegenstrijdige eisen aan chips voor het trainen van gewichten en het verwerken van lange contexten.",
+  "Google splitst zijn achtste chipgeneratie daarom in afzonderlijke systemen voor training, inferentie, vertrouwelijk rekenen en extra geheugenbandbreedte.",
+  "Met een verdubbeling van de 8,601 GB/s aan bandbreedte voorkomt de 8i Max dat processors stilvallen bij zware taken.",
+  "Gebruikers blijven voor deze chips echter gebonden aan Google Cloud of specifieke contracten voor eigen datacenters."
+ ],
+ "plain": "Zie een datacenter als een transportbedrijf. Het trainen van een AI-model lijkt op het vervoeren van zware zeecontainers: je hebt grote vrachtwagens nodig die urenlang zware ladingen verplaatsen. Het beantwoorden van gebruikersvragen lijkt juist op stadsbezorging met lichte bestelbusjes, waarbij wendbaarheid en snelle toegang tot adressen tellen. Vroeger gebruikte men vaak één type voertuig voor beide taken. Google splitst zijn wagenpark nu op. De TPU 8i Max plakt als het ware twee bestelbusjes aan elkaar om twee keer zoveel laadruimte te bieden binnen hetzelfde parkeervak. De TPU 8tx werkt als een gepantserde wagen die vracht tijdens het rijden beveiligt. Deze vergelijking houdt op omdat chips geen fysieke dozen vervoeren, maar bits die via microscopische verbindingen direct geheugen delen.",
+ "why": "Voor machine learning en cloudarchitectuur markeert dit een duidelijke verschuiving: accelerators worden niet langer als één universele rekenkrachtbron ontworpen, maar modulair opgesplitst per taak. Wie autonome AI-agents uitrolt over grote contexten, krijgt met de TPU 8i Max dubbele HBM-bandbreedte (evenals dubbele rekenkracht en dubbel SRAM) per chipbehuizing. Gereguleerde sectoren kunnen via de 8tx privégegevens verwerken zonder onversleutelde blootstelling in het werkgeheugen. Door directe PyTorch-ondersteuning en opensource-engines zoals vLLM daalt bovendien de drempel voor externe ontwikkelaars.",
+ "sections": [
+  {
+   "title": "De tweedeling: waarom training en inferentie verschillende hardware eisen",
+   "md": "Je leert hier waarom de fysieke geheugenmuur en uiteenlopende rekenkarakteristieken dwingen tot gespecialiseerde siliciumontwerpen voor training en inferentie.\n\n### De historische eengemaakte accelerator\nIn de vroege jaren van grootschalige neurale netwerken vertrouwden datacenters op uniforme hardware voor zowel training als inferentie. Een [ASIC (Application-Specific Integrated Circuit)](https://en.wikipedia.org/wiki/Application-specific_integrated_circuit) of GPU werd ontworpen om algemene tensorbewerkingen uit te voeren. Naarmate modellen groeiden van miljoenen naar honderden miljarden parameters, begonnen de werklasten echter technisch uit elkaar te lopen.\n\nHet trainen van basismodellen is een rekenintensieve operatie (*compute-bound*). Hierbij worden miljoenen tokens parallel verwerkt om gewichtsmatrices bij te werken via backpropagation. De doorslaggevende factor is ruwe rekenkracht in matrixvermenigvuldigingseenheden en een netwerk dat tienduizenden chips kan synchroniseren zonder vertraging.\n\nInferentie daarentegen – het daadwerkelijk genereren van antwoorden voor gebruikers of autonome agents – is tijdens de generatiefase vaak geheugenintensief (*memory-bound*). Een model moet voor elk nieuw gegenereerd token alle modelgewichten en eerdere sleutel-waarde-paren (*KV-cache*) opnieuw uit het geheugen ophalen. Hier bepalen geheugenbandbreedte en latentie de verwerkingssnelheid.\n\n### De splitsing in de achtste generatie\nMet de introductie van de achtste generatie [TPU (Tensor Processing Unit)](https://en.wikipedia.org/wiki/Tensor_Processing_Unit) splitst Google zijn hardware voor het eerst formeel op:\n\n- **TPU 8t (Training)**: Ontworpen voor maximale rekenkracht per watt (*goodput*). Een cluster kan via de zogeheten Virgo-netwerktopologie opschalen tot 9.600 chips in één superpod, met een piekprestatie van 12.6 FP4 PFLOPs per chip.\n- **TPU 8i (Inference)**: Ontworpen voor lage latentie en agenttaken. Deze chip levert 10.1 FP4 PFLOPs, maar bevat 288 GB HBM3e-geheugen met een bandbreedte van 8,601 GB/s en een specifiek Boardfly-netwerk dat de communicatievertraging tussen chips tot de helft vermindert.\n\n> [!note] Wat is de geheugenmuur?\n> De geheugenmuur (*memory wall*) beschrijft het fenomeen waarbij de rekencapaciteit van processors veel sneller groeit dan de snelheid waarmee geheugenbussen data kunnen aanleveren. Als een chip moet wachten op data uit het werkgeheugen, blijven rekeneenheden noodgedwongen inactief."
+  },
+  {
+   "title": "TPU 8i Max: twee dies op één package tegen de geheugenmuur",
+   "md": "Je leert hoe de TPU 8i Max door een multichip-architectuur de HBM-bandbreedte, rekenkracht en het SRAM verdubbelt voor lange contextvensters.\n\n### Het knelpunt van miljoenen tokens context\nAutonome software-agents voeren steeds complexere taken uit: ze analyseren volledige codebases, verwerken uren aan video en bewaren uitgebreide interactiegeschiedenissen. Bij het genereren van tekst slaat het aandachtsmechanisme van transformermodellen per token tussenresultaten op in de zogenaamde *KV-cache* (Key-Value cache).\n\nVoor een context van één miljoen tokens groeit deze cache tot tientallen gigabytes per actieve sessie. De processor moet deze data bij elke stap ophalen. Wanneer de geheugenbandbreedte ontoereikend is, stokt de gegevensdoorvoer en stijgt de wachttijd tot het volgende token (*Time to Next Token*).\n\n:::sim kvcache {}\n:::\n\n### Twee chips op één substraat\nOm dit knelpunt op te lossen zonder te wachten op een nieuw siliciumontwerptraject, combineert Google in de [TPU 8i Max](https://blog.google/innovation-and-ai/infrastructure-and-cloud/global-network/tpu-8i-max-and-8tx/) twee afzonderlijke TPU 8i-dies op één fysieke chipverpakking (*package*).\n\nDoor deze koppeling verdubbelen de prestaties ten opzichte van de standaard TPU 8i:\n- **Dubbele rekenkracht**: Twee TPU 8i-dies (chips) binnen dezelfde behuizing.\n- **Dubbel SRAM**: Twee keer zoveel intern cachegeheugen (het basisontwerp van de 8i bood al 384 MB SRAM per chip).\n- **Dubbele HBM-bandbreedte**: Twee parallelle geheugeninterfaces naar HBM3e-stacks verdubbelen de bandbreedte ten opzichte van de 8,601 GB/s van de afzonderlijke TPU 8i.\n\n> [!tip] Rekenkracht per rack\n> Omdat de TPU 8i Max twee chips in dezelfde fysieke rack-ruimte past, verdubbelt de rekendichtheid per vierkante meter en levert aanzienlijk meer rekenkracht per watt. Datacenters kunnen hierdoor aanzienlijk grotere taalmodellen lokaal in het snelle geheugen houden zonder racks bij te bouwen."
+  },
+  {
+   "title": "TPU 8tx: hardwarematige data-isolatie voor vertrouwelijk rekenen",
+   "md": "Je leert hoe de TPU 8tx gevoelige bedrijfsdata en modelgewichten direct in het silicium afschermt tijdens actieve inferentie en maatwerktraining.\n\n### De zwakke plek van standaard versleuteling\nIn traditionele computerarchitecturen worden gevoelige gegevens op twee momenten beschermd: in rust via schijfversleuteling (*data at rest*) en tijdens transport over netwerkkabels via TLS (*data in transit*). Zodra een processor data verwerkt, moeten de bytes echter onversleuteld in het werkgeheugen worden geladen (*data in use*).\n\nVoor banken, overheden en gezondheidszorg vormt dit een risico: een beheerder met root-toegang of een kwetsbaarheid in het besturingssysteem kan het geheugen uitlezen waarin privégegevens of bedrijfseigen modelgewichten staan.\n\n### De architectuur van de 8tx\nDe TPU 8tx lost dit op door versleuteling rechtstreeks in de hardwarelaag in te bouwen. Gegevens en gewichten blijven zelfs tijdens matrixberekeningen geïsoleerd en beschermd tegen inzage door de host-omgeving.\n\nGoogle combineert hiervoor verschillende bouwstenen:\n\n| Component | TPU 8t / 8i | TPU 8tx |\n|---|---|---|\n| **Siliciumbasis** | TPU 8t (training) / TPU 8i (inferentie) | Zelfde silicium als TPU 8t |\n| **Host-processor** | Google Axion (ARM-architectuur) | 5e generatie AMD EPYC (x86) |\n| **Interconnect** | Virgo (8t) / Boardfly (8i) | Boardfly (lage latentie) |\n| **Beveiligingslaag** | Standaard cloud-isolatie | Hardwarematige vertrouwelijke computing |\n\n### Gelijktijdige inferentie en verfijning\nOmdat de TPU 8tx rekencapaciteit van trainingsniveau koppelt aan het snelle Boardfly-netwerk voor inferentie, kan één systeem twee taken tegelijk uitvoeren:\n1. Het beveiligen van agentische inferentie met gevoelige data.\n2. Het lokaal bijwerken van modellen via *fine-tuning*, destillatie of reinforcement learning, zonder dat privégegevens naar een afzonderlijk trainingscluster moeten worden geëxporteerd."
+  },
+  {
+   "title": "Optische interconnects en clusterorkestratie: OCS en TPU Sync",
+   "md": "Je leert hoe optische circuitschakelaars en de TPU Sync-softwarelaag netwerkvertragingen en geheugenopslag tussen duizenden nodes beheersen.\n\n### Dynamische topologieën met Optical Circuit Switching\nIn traditionele datacenters lopen netwerkverbindingen via elektronische pakketschakelaars. Dit vereist continue optisch-elektrische omzettingen, wat warmte en vertraging veroorzaakt. Google gebruikt hiervoor *Optical Circuit Switching* (OCS), een optische circuitschakeling op basis van micro-elektromechanische spiegels (MEMS) die lichtstralen direct naar de juiste glasvezel richten.\n\nIn combinatie met Google Kubernetes Engine (GKE) maakt OCS zogeheten *dynamisch slicen* mogelijk:\n- **Super-slicing**: Het dynamisch samenvoegen van fysieke TPU-kubussen tot één grote rekentopologie voor grootschalige trainingsruns.\n- **Sub-slicing**: Het onmiddellijk opsplitsen van een cluster in kleinere, geïsoleerde partities voor gerichte inferentietaken.\n\nOmdat er geen fysieke herbekabeling of handmatige herconfiguratie van nodepools nodig is, dalen opstarttijden van taken met een factor tot 5x en versnelt het herstel bij hardwarefouten.\n\n> [!example] Geheugenhiërarchie met TPU Sync\n> In grote clusters raken accelerators verstopt als ze alle context in HBM moeten bewaren. De opensourcesoftware **TPU Sync** fungeert als model-toestandslaag. TPU Sync koppelt chip-HBM, host-DRAM, netwerkopslag en het datacenter tot één virtuele hiërarchie. Enerzijds verplaatst TPU Sync inactieve KV-caches binnen milliseconden uit HBM naar host-DRAM om kostbare HBM-capaciteit vrij te maken. Anderzijds streamt het context tussen ontkoppelde prefill- en decode-nodes en synchroniseert het RL-gewichten, waardoor de KV-overdrachtslatentie en de wachttijd voor het eerste token (*Time to First Token*, TTFT) met meer dan 90% dalen."
+  },
+  {
+   "title": "De softwarelaag: open ecosystemen tegen de historische ontwikkelaarsdrempel",
+   "md": "Je leert hoe Google via TorchTPU, opensource-engines en geautomatiseerde agents de overstap vanaf alternatieve platforms vereenvoudigt.\n\n### Het einde van verplichte framework-migraties\nHistorisch gezien vormde software de grootste barrière voor adoptie van TPUs. Waar Nvidia een sterke positie opbouwde met CUDA en PyTorch, vereiste Google in de begindagen frameworks zoals TensorFlow en later JAX. Voor machine learning-ontwikkelaars betekende een overstap vaak het herschrijven van duizenden regels code.\n\nMet de introductie van **TorchTPU** draait standaard PyTorch-code direct op TPUs. Modellen uit repositories zoals Hugging Face functioneren zonder codewijzigingen. Bovendien levert Google kant-en-klare backends voor populaire opensource inferentie-engines zoals vLLM en SGLang.\n\n### Agent Compute Engine voor wachttijden\nEen specifiek probleem bij autonome AI-agents is verspilling van rekentijd. Wanneer een agent een externe API aanroept, een SQL-query uitvoert of wacht op menselijke goedkeuring, blijven GPU- of TPU-kernen normaal gesproken gereserveerd en stroom verbruiken.\n\nDe **Agent Compute Engine** lost dit op door sessies tijdens dergelijke wachttijden automatisch te pauzeren en de toestand te bevriezen. Zodra het antwoord binnenkomt, hervat de accelerator de berekening direct, wat operationele infrastructuurkosten merkbaar drukt."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "2.7",
+   "label": "maximale factor (tot 2,7x) waarmee TPU 8t de trainingsprestaties verhoogt ten opzichte van de vorige TPU-generatie",
+   "quote": "TPU 8t and 8i offer up to 2.7 times better training performance and 80% better inference price performance, respectively, versus our previous generation of TPUs.",
+   "source": 1
+  },
+  {
+   "value": "80%",
+   "label": "verbetering in de prijs-prestatieverhouding voor inferentie van TPU 8i ten opzichte van de vorige generatie",
+   "quote": "TPU 8t and 8i offer up to 2.7 times better training performance and 80% better inference price performance, respectively, versus our previous generation of TPUs.",
+   "source": 1
+  },
+  {
+   "value": "2x",
+   "label": "maximale factor (tot 2x) waarmee TPU 8tx de latentie verlaagt ten opzichte van TPU 8t",
+   "quote": "delivering up to 2x lower latency compared to TPU 8t with a near-zero performance penalty.",
+   "source": 1
+  },
+  {
+   "value": "90%",
+   "label": "minimale reductie in KV-overdrachtslatentie en Time to First Token dankzij TPU Sync",
+   "quote": "streaming context across disaggregated prefill and decode nodes, and synchronizing RL weights to cut KV transfer latency and Time to First Token (TTFT) by more than 90%.",
+   "source": 1
+  },
+  {
+   "value": "5x",
+   "label": "maximale versnelling van taak-opstarttijden door dynamisch slicen met optische schakelaars in GKE",
+   "quote": "This topology agility slashes job startup times by up to 5x and accelerates fault recovery by up to 4.5x, maximizing overall fleet utilization and workload goodput across all TPUs.",
+   "source": 1
+  },
+  {
+   "value": "288 GB",
+   "label": "HBM3e-geheugencapaciteit van een individuele TPU 8i-chip",
+   "quote": "It delivers 10.1 FP4 PFLOPs of peak performance and features 288 GB of HBM3e memory with 8,601 GB/s bandwidth.",
+   "source": 2
+  },
+  {
+   "value": "8,601 GB/s",
+   "label": "geheugenbandbreedte van de TPU 8i via HBM3e",
+   "quote": "It delivers 10.1 FP4 PFLOPs of peak performance and features 288 GB of HBM3e memory with 8,601 GB/s bandwidth.",
+   "source": 2
+  },
+  {
+   "value": "9,600",
+   "label": "maximaal aantal TPU 8t-chips in een Virgo Network superpod",
+   "quote": "It uses the Virgo Network fabric, allowing it to scale up to 9,600 chips per \"superpod,\" delivering 121 FP4 ExaFLOPs of compute performance.",
+   "source": 2
+  }
+ ],
+ "caveats": "Bij de interpretatie van de aankondiging rond de TPU 8tx en TPU 8i Max moeten enkele duidelijke kanttekeningen worden geplaatst:\n\n1. **Vendor lock-in en beschikbaarheid**: Hoewel Google stelt dat klanten TPUs nu ook in eigen datacenters kunnen plaatsen, blijft het ecosysteem primair verbonden aan Google Cloud. TPUs zijn niet als losse componenten op de open hardwaremarkt verkrijgbaar zoals PCIe-kaarten van andere fabrikanten.\n2. **Ontbrekende absolute meetwaarden**: In het aankondigingsbericht worden relatieve claims gedaan (zoals een verdubbeling van rekenkracht en geheugenbandbreedte voor de 8i Max, en tot 2x lagere latentie voor de 8tx), maar ontbreken absolute benchmarks in teraflops per watt of gemeten milliseconden per token.\n3. **Eigen benchmarks en evaluatiekaders**: De gerapporteerde resultaten op InferenceX en AgentX zijn afkomstig van Google zelf. Onafhankelijke validatie door externe testlaboratoria ontbreekt in de vrijgegeven documentatie.\n4. **Softwarestatus**: Verschillende aangekondigde softwarecomponenten, waaronder de TPU-agentsuite, verkeren nog in een voorvertoningsfase (*preview*). De praktische stabiliteit in grootschalige productie moet zich buiten Google nog bewijzen.\n5. **Koeling en stroomdichtheid**: De documentatie vermeldt dat de achtste generatie vloeistofkoeling gebruikt, maar geeft geen inzicht in het piekverbruik in kilowatt per rack wanneer twee 8i-dies op één behuizing worden samengebracht.",
+ "glossary": [
+  {
+   "term": "HBM (High Bandwidth Memory)",
+   "def": "Een gestapeld type werkgeheugen dat via een brede geheugenbus een zeer hoge dataoverdrachtsnelheid rechtstreeks aan de chip levert."
+  },
+  {
+   "term": "SRAM (Static RAM)",
+   "def": "Snel intern geheugen op de processor zelf dat zonder verversingscycli werkt en minimale wachttijden biedt."
+  },
+  {
+   "term": "Confidential Computing",
+   "def": "Een beveiligingstechniek waarbij gegevens in hardwarematig geïsoleerde en versleutelde enclaves worden verwerkt, zodat ze zelfs tijdens actieve berekeningen beschermd blijven."
+  },
+  {
+   "term": "OCS (Optical Circuit Switching)",
+   "def": "Een netwerktechnologie die lichtsignalen via spiegels direct schakelt zonder optisch-elektrische omzetting, wat herconfiguratie van topologieën vergemakkelijkt."
+  },
+  {
+   "term": "KV-cache",
+   "def": "Een geheugenstructuur waarin eerdere sleutel- en waardetensoren van het aandachtsmechanisme worden opgeslagen om dubbele berekeningen bij opeenvolgende tokens te voorkomen."
+  },
+  {
+   "term": "Systolic Array",
+   "def": "Een netwerk van gekoppelde rekeneenheden waarin data stelselmatig door een raster van vermenigvuldigers stroomt zonder telkens naar het hoofdgeheugen terug te keren."
+  },
+  {
+   "term": "Goodput",
+   "def": "De hoeveelheid nuttige rekenresultaten of modeloutput die per tijdseenheid en per watt daadwerkelijk wordt geleverd, exclusief overhead en herberekeningen."
+  },
+  {
+   "term": "Boardfly",
+   "def": "Een door Google ontworpen netwerktopologie met lage latentie die specifiek is afgestemd op snelle communicatie tussen inferentiechips."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom kiest Google bij de TPU 8i Max voor twee chips op één package in plaats van het simpelweg koppelen van meer losse TPU 8i-nodes via het netwerk?",
+   "options": [
+    "Om de geheugenbandbreedte en het SRAM direct op het substraat te verdubbelen zonder de vertraging van netwerkcommunicatie tussen nodes te introduceren.",
+    "Omdat de Virgo-netwerktopologie maximaal één chip per serverrack ondersteunt bij inferentietaken.",
+    "Om het stroomverbruik van de vloeistofkoeling te halveren door de helft van de rekeneenheden uit te schakelen.",
+    "Omdat het bfloat16-formaat niet via optische switches kan worden verstuurd tussen verschillende racks."
+   ],
+   "answer": 0,
+   "explain": "Door twee dies op één chipverpakking te plaatsen, verdubbelen de rekenkracht, het snelle SRAM en de HBM-bandbreedte binnen dezelfde rack-voetafdruk, waardoor grote contextvensters lokaal op zeer hoge snelheid kunnen worden verwerkt zonder netwerkoverhead."
+  },
+  {
+   "id": "q2",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Welke combinatie van eigenschappen onderscheidt de TPU 8tx van de reguliere TPU 8t?",
+   "options": [
+    "De 8tx deelt het rekensilicium met de 8t, maar gebruikt AMD EPYC-hosts en het Boardfly-netwerk voor hardwarematige gegevensbeveiliging en lagere latentie.",
+    "De 8tx vervangt de HBM3e-stacks door optische transistors om berekeningen volledig zonder elektrisch vermogen uit te voeren.",
+    "De 8tx halveert het aantal matrixkernen om uitsluitend als goedkope netwerkswitch binnen GKE te functioneren.",
+    "De 8tx draait exclusief op Google Axion ARM-processors en ondersteunt uitsluitend 8-bit integer-berekeningen voor computervisie."
+   ],
+   "answer": 0,
+   "explain": "De TPU 8tx bouwt voort op het silicium van de trainingschip TPU 8t, maar combineert dit met 5e generatie AMD EPYC CPU-hosts voor hardwarematige versleuteling in het geheugen en het Boardfly-netwerk voor snelle inferentie."
+  },
+  {
+   "id": "q3",
+   "type": "order",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Rangschik de stappen in de juiste volgorde waarin TPU Sync en de clusterinfrastructuur het geheugen beheren bij een agenttaak met een lange context.",
+   "tiles": [
+    "Prefill-nodes verwerken de initiële context en slaan de gegenereerde sleutel-waarde-paren op in lokaal HBM-geheugen.",
+    "TPU Sync verplaatst inactieve delen van de KV-cache naar host-DRAM en gedeelde netwerkopslag om snel chipgeheugen vrij te maken.",
+    "Decode-nodes halen de benodigde context gestreamd op zodra de agent nieuwe tokens moet genereren.",
+    "De Agent Compute Engine bevriest de sessie automatisch wanneer de agent wacht op externe database- of toolreacties."
+   ],
+   "explain": "De cyclus start met de initiële prefill in lokaal HBM, waarna TPU Sync het geheugen ontlast door trapsgewijze opslag naar DRAM en netwerkopslag, decode-nodes de data streamen voor tokengeneratie, en inactieve sessies tijdens tool-wachttijden worden gepauzeerd om verspilling te voorkomen."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Verdiept hoe de architectuur van neurale netwerken (zoals aandachtsmechanismen) direct wordt beperkt door fysieke geheugenbandbreedte en netwerklatentie."
+  },
+  {
+   "track": "automation",
+   "why": "Belangrijk voor het ontwerpen en draaien van autonome agents die intensief communiceren met externe API's en langdurig geheugen vereisen."
+  },
+  {
+   "track": "jev",
+   "why": "Biedt een praktijkvoorbeeld van de Jevons-paradox: zuinigere en snellere accelerators maken AI-inferentie goedkoper, waardoor het totale verbruik aan datacenterenergie juist toeneemt."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "TPU 8tx and TPU 8i Max",
+   "url": "https://blog.google/innovation-and-ai/infrastructure-and-cloud/global-network/tpu-8i-max-and-8tx/"
+  },
+  {
+   "n": 2,
+   "title": "Wikipedia — Tensor Processing Unit",
+   "url": "https://en.wikipedia.org/wiki/Tensor_Processing_Unit"
+  },
+  {
+   "n": 3,
+   "title": "Wikipedia — Application-specific integrated circuit",
+   "url": "https://en.wikipedia.org/wiki/Application-specific_integrated_circuit"
+  }
+ ],
+ "id": "2026-11-10-hoe-google-met-de-tpu-8tx-en-tpu-8i-max-zijn-ach",
+ "kind": "news",
+ "date": "2026-11-10",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-11-10",
+  "kind": "news",
+  "verified": "2026-11-10",
+  "candidate": "hn:50432831",
+  "signal": "243 punten en 73 reacties op Hacker News",
+  "significance": 5
+ }
+}
