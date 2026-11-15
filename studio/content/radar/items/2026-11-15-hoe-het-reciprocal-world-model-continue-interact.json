@@ -1,0 +1,188 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe het Reciprocal World Model continue interactie mogelijk maakt zonder beurtwisselingen",
+ "subtitle": "Door taalintentie en audiovisuele generatie op een gedeelde tijdlijn te synchroniseren in vaste tijdsblokken, reageert en luistert Duo v1 gelijktijdig.",
+ "topic": "ai",
+ "minutes": 11,
+ "tldr": [
+  "Klassieke multimodale modellen werken met beurtwisselingen, waardoor interactie met gelijktijdig luisteren, kijken en spreken ontbreekt.",
+  "Duo v1 koppelt een causaal taalmodel continu aan een audiovisuele diffusietransformer op een gezamenlijke tijdlijn.",
+  "Het model behaalt een algemeen slagingspercentage van 93,3 procent over 180 binaire evaluatiechecks voor interactie en generatietrouw.",
+  "De inhoudelijke reactiekwaliteit bedraagt 73,3 procent (22 van 30 geslaagd); fouten treden vooral op bij grappen of impliciete bedoelingen."
+ ],
+ "plain": "Vergelijk de huidige AI-spraakassistenten met walkietalkies: je drukt op de knop, spreekt je zin in, laat los en wacht tot de ander klaar is. Tussendoor onderbreken of tegelijk lachen kan niet. Duo v1 werkt daarentegen als een echt telefoongesprek met beeld. Terwijl jij praat, luistert en kijkt het systeem tegelijkertijd. Het verwerkt beeld en geluid in hapklare brokjes van ongeveer zeven tiende van een seconde, precies zeventien videobeelden. Binnen zo'n brokje beslist het systeem of het zwijgt, knikt of meteen iets terugzegt, terwijl zijn lippen synchroon meebewegen met het geluid dat het uitzendt. De vergelijking met een menselijke beller houdt op bij de vaste klokslag: mensen reageren vloeiend en continu, terwijl het computermodel continu tikt in starre, vaste rekenblokken.",
+ "why": "Dit verandert de interactiearchitectuur van multimodale systemen: van beurtelingse pijplijnen naar één wederkerig wereldmodel. Ontwikkelaars van realtime AI-systemen hoeven geen complexe externe logica meer te bouwen om stiltes te detecteren of onderbrekingen af te handelen. Doordat redenering en audiovisuele generatie in vaste tijdsblokken op dezelfde tijdlijn lopen, verdwijnt de beurtwisseling. Dat maakt directe mens-machine-interactie mogelijk in videogesprekken, visuele assistentie en procesbewaking zonder vertraging van externe schakelaars.",
+ "sections": [
+  {
+   "title": "Het interactieparadigma: van beurtwisselingen naar het Reciprocal World Model",
+   "md": "Je leert hier waarom klassieke wereldmodellen beperkt blijven tot passieve simulatie en hoe het Reciprocal World Model continue interactie formaliseert.\n\n### Passieve werelden versus levende aanwezigheid\nBestaande wereldmodellen zoals Genie en Dreamer richten zich op het simuleren van de fysieke werkelijkheid: gegeven eerdere observaties en acties van een gebruiker voorspellen ze hoe een visuele omgeving evolueert. Binnen dat raamwerk bevindt de intelligentie zich echter buiten de gegenereerde wereld. Een gebruiker stuurt de simulatie aan via invoersignalen met een beperkt aantal vrijheidsgraden (zoals een toetsenbord, muis of tekstprompts), maar niets binnen die virtuele wereld neemt de toestand van de gebruiker realtime waar om zelfstandig te beslissen hoe het reageert.\n\nAan de andere kant werken multimodale spraakassistenten historisch gezien volgens een [half-duplex](https://en.wikipedia.org/wiki/Duplex_%28telecommunications%29) principe. Zoals bij een walkietalkie kan slechts één partij tegelijk communiceren. De architectuur wacht tot de gebruiker stopt met spreken, verwerkt het audiosignaal via spraakherkenning (ASR), genereert een tekstrespons met een taalmodel en zet die om in spraak via tekst-naar-spraak (TTS). Dit introduceert voelbare vertragingen en sluit natuurlijke fenomenen zoals gelijktijdig spreken, non-verbale reacties tijdens het luisteren en directe onderbrekingen uit.\n\n### Het Reciprocal World Model (RWM)\nIn het rapport van [Cao et al. (2026)](https://arxiv.org/abs/2611.15131) introduceren de onderzoekers het *Reciprocal World Model* (RWM) en de implementatie ervan in **Duo v1**. Het RWM stelt dat intelligentie en fysieke realiteit even wezenlijke bestanddelen van een wereld vormen. Om een interactieve aanwezigheid te creëren, definieert RWM twee complementaire capaciteiten:\n\n1. **Intent (Intentie)**: levert de cognitieve basis voor interacties en beslist op elk moment over deelname (spreken of wachten).\n2. **Realization (Realisatie)**: vertaalt die intentie continu naar samenhangend audiovisueel gedrag (synchrone video en stereogeluid).\n\n| Eigenschap | Klassieke pijplijn (Cascade) | Fysisch wereldmodel (o.a. Genie) | Reciprocal World Model (Duo v1) |\n|---|---|---|---|\n| **Interactiemodus** | Half-duplex (beurtwisseling) | Passieve besturing (gamepad/prompt) | [Full-duplex](https://en.wikipedia.org/wiki/Duplex_%28telecommunications%29) (continu gelijktijdig) |\n| **Rol van intelligentie** | Sequentiële verwerkingsschakel | Externe besturing buiten de wereld | Intrinsiek onderdeel van de interactieve wereld |\n| **Signaalmodaliteiten** | Gescheiden tekst- en audiostromen | Uitsluitend videoframes | Gezamenlijke video en stereogeluid |\n| **Tijdstructuur** | Variabel per gespreksbeurt | Vaste framerate zonder taalredenering | Vaste tijdsblokken op één gedeelde tijdlijn |\n\n> [!note] Wat betekent reciproque in deze context?\n> Reciproque duidt op wederkerigheid: de intentie van het systeem bepaalt hoe het reageert op de veranderende omgeving van de gebruiker, terwijl de fysieke realisatie van die intentie (de uitgesproken woorden en getoonde mimiek) direct weer onderdeel wordt van de gedeelde omgeving voor de volgende tijdstap."
+  },
+  {
+   "title": "De modulaire opbouw: Intent en Realisatie op een gedeelde tijdlijn",
+   "md": "Je leert hier hoe Duo v1 een taalmodel en een diffusietransformer koppelt via verborgen toestanden en strikt causale tijdsblokken.\n\n### Interactie in vaste tijdsblokken (chunks)\nOm continue communicatie rekenkundig beheersbaar te maken, deelt Duo v1 de tijd op in opeenvolgende blokken van vaste lengte, aangeduid als $\\mathbf{c}_k$. Elk blok beslaat exact 17 videoframes bij 24 beelden per seconde, wat overeenkomt met:\n\n$$t_{\\text{sample}} = \\frac{17}{24}\\text{ s} \\approx 0{,}708\\text{ s}$$\n\nEen blok hoeft niet samen te vallen met een woord, zin of beurtgrens. Binnen elk blok $\\mathbf{c}_k$ ontvangt het systeem de inkomende gebruikersvideo $u_k^v$, het transcript $u_k^t$ en de gebruikersaudio $u_k^a$.\n\n### De Intent Module: beslissen over deelname\nDe Intent Module past een voorgetraind multimodaal taalmodel (een Qwen3-VL backbone) aan voor causale interactie. In plaats van louter als instructie-encoder voor een beeldmodel te dienen, redeneert de Intent Module autoregressief over de interactie en neemt hij actieve participatiebeslissingen. De invoercontext $C_k^\\phi$ combineert de globale taakomschrijving $d$, ingebedde videoframes van de gebruiker $x_{u,<k}^v$, transcripten $u_{t,<k}$ en eerdere tekstuitvoer van de assistent $y_{<k}$:\n\n$$C_k^\\phi = \\bigl(d,\\ x_{u,<k}^v,\\ u_{t,<k},\\ y_{<k}\\bigr)$$\n\n$$y_k \\sim p_\\phi(\\cdot \\mid C_k^\\phi), \\qquad h_k = f_\\phi(C_k^\\phi,\\ y_k)$$\n\nDe gegenereerde uitvoer $y_k$ begint verplicht met een expliciete actietoken: óf `<speak>` gevolgd door tekstwoorden, óf `<wait>` zonder nieuwe tekst. Het initiële blok $y_0$ staat vast op `<wait>`. De verborgen toestand (*hidden state*) $h_k$ uit laag 50 van het taalmodel transporteert de beslissing direct naar de Realization Module.\n\n### Causale visuele encodering zonder tijdslekken\nOmdat een computervisie-encoder opeenvolgende beelden samenvoegt in temporele patches, zou een standaard groepering informatie uit toekomstige frames kunnen mengen voordat een aandachtsmasker kan ingrijpen. Duo v1 lost dit op door temporele groepen strikt binnen één blok te houden. Voor een 17-frame blok met bronbeelden $0, \\ldots, 16$ vormt de encoder de paren volgens een vast schema; het laatste paar wordt gevormd als $(16, 16)$ door het zestiende frame te dupliceren, in plaats van frame 17 uit het volgende blok te gebruiken.\n\n### De Realization Module: audiovisuele stroomgeneratie\nDe Realization Module gebruikt een causale diffusietransformer (DiT, overgenomen van MiniMax-H3) die via flow matching tegelijkertijd audio- en videolatents genereert:\n\n$$C_k^\\theta = \\bigl(I_{\\text{ref}},\\ h_k,\\ x_{u,<k}^v,\\ u_{a,<k},\\ z_{<k}^a,\\ z_{<k}^v\\bigr)$$\n\n$$(z_k^a,\\ z_k^v) \\sim p_\\theta(\\cdot \\mid C_k^\\theta)$$\n\nHierbij levert $I_{\\text{ref}}$ de visuele referentie-afbeelding van de assistent, en vormen $z_{<k}^a$ en $z_{<k}^v$ de eerdere gegenereerde mediageschiedenis. De tekstuele sturing $x_k^t$ wordt berekend door een lineaire projectie en een verfijningsnetwerk (*refiner*), waarbij een aandachtsmasker $M_k^{\\text{feat}}$ de representatie beperkt tot tokens van de instructie $d$ en de huidige tekst $y_k$:\n\n$$x_k^t = \\operatorname{Refine}_\\theta\\bigl(\\operatorname{Project}_\\theta(h_k);\\ M_k^{\\text{feat}}\\bigr)$$\n\nVoor positionele inbedding hanteert het netwerk 3D-RoPE. Temporele posities lopen synchroon met werkelijke afspeeltijden in eenheden van 25 milliseconden (aangezien de audiocodec 40 latente vectoren per seconde per stereokanaal produceert). Audio gebruikt de twee uiterste ruimtelijke positie-identificaties om het linker- en rechterkanaal te scheiden.\n\n> [!tip] Latente compressiefactoren\n> Het videosysteem codeert een RGB-groep van 17 frames $(17, H, W, 3)$ naar 5 latente frames met een ruimtelijke verkleining van $16 \\times 16$ en 24 kanalen. Vóór invoer in de diffusietransformer worden $2 \\times 2$ latente patches samengevoegd tot vectoren van 96 dimensies."
+  },
+  {
+   "title": "Het trainingsregime: actie-herbalancering en dual rollout distillation",
+   "md": "Je leert hier hoe de auteurs trainingsinstabiliteit voorkomen met gerichte gewichten en hoe dual rollout de distributiekloof tussen training en inzet overbrugt.\n\n### Fase 1: Intent-supervisie en herstel van imperfecte geschiedenis\nIn een doorsnee conversatie bevatten de meeste tijdsblokken geen nieuwe spraak van de assistent. Zonder correctie zou een standaard autoregressief verlies ertoe leiden dat het model vervalt in een permanente `<wait>`-toestand. Het team introduceert daarom een gewogen doelfunctie:\n\n$$\\mathcal{L}_{\\text{intent}} = -\\mathbb{E}\\left[\\frac{\\sum_{k,j} m_{k,j} w_{k,j} \\log p_\\phi(y_{k,j} \\mid C_k^{\\mathrm{I}}, y_{k,<j})}{\\max\\left(1, \\sum_{k,j} m_{k,j} w_{k,j}\\right)}\\right]$$\n\nHierbij kent $w_{k,j}$ verschillende gewichten toe aan actietokens en inhoudstokens, waarbij onderscheid wordt gemaakt tussen wachten tijdens stilte, wachten terwijl de gebruiker praat, reguliere gespreksopeningen en onderbrekingen. Om het model te leren herstellen van fouten tijdens live-gebruik, past de training doelbewust verstoringen toe op de assistentgeschiedenis: zinnen worden willekeurig afgekapt of herhaald, of openingsacties worden vervangen door `<wait>`, waarbij de verliesfunctie het model dwingt in het volgende blok alsnog met `<speak>` te reageren.\n\n### Fase 2: Causale realisatietraining via flow matching\nIn de tweede fase blijft de Intent Module bevroren. De Realization Module leert via flow matching een snelheidsvectorveld $v^\\star = z - \\epsilon$ te voorspellen tussen Gaussiaanse ruis $\\epsilon$ (tijd $\\tau = 0$) en zuivere mediaparameters $z \\in \\{z^v, z^a\\}$ (tijd $\\tau = 1$):\n\n$$\\tilde{z}_\\tau = (1-\\tau)\\epsilon + \\tau z, \\qquad v^\\star = z - \\epsilon$$\n\nHet aandachtsmasker tijdens de training enforces strikte causaliteit: de ruisende mediabeddingen van blok $k$ mogen kijken naar de referentie-afbeelding, de instructie, de verborgen toestand $h_k$ en de schone media van eerdere blokken ($<k$), maar hebben geen toegang tot hun eigen schone doelsignalen of tot latere blokken.\n\n### Fase 3: Dual rollout distillation (DMD)\nOm de rekenintensieve diffusietransformer geschikt te maken voor realtime-interactie, past Duo v1 *Distribution Matching Distillation* (DMD) toe. Hiermee wordt het model gedestilleerd tot een vierstapsgenerator ($N = 4$).\n\nTijdens standaardtraining conditioneert het model echter op foutloze opgenomen tekst en media, terwijl het tijdens live interactie moet voortbouwen op zijn eigen voorspelde uitingen. Om deze verdelingskloof (*distribution shift*) te dichten, introduceert Duo v1 **dual rollout**:\n\n1. Binnen elk trainingsvenster genereert de bevroren Intent Module vanaf blok $k_0$ autoregressief de resterende teksttokens.\n2. De Realization Module genereert vervolgens blok voor blok de bijbehorende latente media ($z_{\\text{gen}}$) via Self Forcing.\n\nEen bevroren reëel-scoremodel $\\mu_{\\text{real}}$ en een meelerend nep-scoremodel $\\mu_{\\text{fake}}^\\psi$ evalueren het gegenereerde venster onder een gedeelde ruisinjectie. De gradiënt van de generator volgt het verschil tussen beide schattingen:\n\n$$\\Delta = \\frac{\\hat{z}_{\\text{fake}} - \\hat{z}_{\\text{real}}}{\\kappa}, \\qquad z_{\\text{DMD}} = \\operatorname{sg}[z_{\\text{gen}} - \\Delta]$$\n\nHierbij staat $\\operatorname{sg}$ voor stop-gradient en normaliseert $\\kappa$ de schaal. Een optionele GAN-criticuskop op tussenliggende lagen beoordeelt de audiovisuele natuurlijkheid zonder de tekst te inspecteren.\n\n> [!rule] Camerastabiliteit via rotatieweging\n> Omdat DMD gevoelig is voor geleidelijke cameradrift, berekent een hulpmodel (VGGT) de relatieve rotatiehoeken $\\alpha_i$ en hoeksnelheden $\\delta_i$ over gegenereerde frames. Vensters met buitensporige camerarotatie krijgen een lager gewicht $\\rho$ in de videoverliesfunctie, waardoor het beeld stabiel blijft zonder gradiënten door VGGT terug te sturen."
+  },
+  {
+   "title": "De streaming-infrastructuur: orkestratie op acht GPU's en causale VAE-decodering",
+   "md": "Je leert hier hoe Duo v1 de rekentijd binnen het strikte venster van 708 milliseconden houdt door parallellisatie over acht GPU's.\n\n### Het tijdsschema en de deadline-formule\nOm ononderbroken weergave te garanderen, moet de cyclusduur van elk blok ($T_{\\text{cycle},k}$) kleiner blijven dan de opnameduur van 17 frames ($17/24\\text{ s} \\approx 708\\text{ ms}$):\n\n$$T_{\\text{cycle},k} = t_{\\text{gen},k} + \\max\\bigl\\{t_{\\text{intent},k+1},\\ t_{\\text{decode},k}^{\\text{full}}\\bigr\\} + t_{\\text{switch},k} \\le \\frac{17}{24}\\text{ s}$$\n\nDe auteurs rapporteren de volgende verwerkingstijden voor de samenstellende componenten:\n- **Intentie-inferentie ($t_{\\text{intent}}$)**: 90 tot 160 ms per blok.\n- **Latente generatie ($t_{\\text{gen}}$)**: 200 tot 450 ms voor vier diffusietaps plus één schone voorwaartse berekening (bij een videoresolutie van $768 \\times 576$).\n- **Incrementele decodering ($t_{\\text{decode}}$)**: circa 30 ms per pakket van 4 frames.\n- **Transmissie en weergave-overhead ($t_{\\text{overhead}}$)**: circa 40 ms.\n\nDe totale reactietijd tot het eerste berekende signaal ($t_{\\text{intent}} + t_{\\text{gen}} + t_{\\text{overhead}}$) bedraagt daarmee 330 tot 650 ms. Wanneer een uiting van de gebruiker net na de start van een samplingvenster eindigt, kan daar een resterende wachttijd tot circa 708 ms bijkomen voordat het venster sluit.\n\n### Hardwaretoewijzing over acht GPU's\nDe volledige runtime draait op één server met acht GPU's, georganiseerd in parallelle fasen:\n- **GPU 0 tot 3**: Voeren de Intent Module uit met viervoudig tensorparallellisme (TP4), gelijktijdig met de spraakherkenning.\n- **GPU 0 tot 7**: Voeren gezamenlijk de Realization Module uit, waarbij dynamisch geschakeld wordt tussen tensorparallellisme (TP) en sequentieparallellisme (SP) op basis van een geheugen- en snelheidsprofiel.\n- **GPU 4 tot 7**: Nemen de VAE-videodecodering voor hun rekening via ruimtelijke opdeling (*spatial tiling*). Deze decodering van blok $k$ overlapt in de tijd met de intentieberekening van blok $k+1$ op GPU 0-3.\n\n### Causale VAE-decodering zonder vooruitblik\nDe oorspronkelijke VAE van MiniMax vereiste een vooruitblik van twee latente frames om 17 beelden te reconstrueren, wat een blokkerende vertraging veroorzaakte aan de randen van een tijdsblok. Duo v1 past de decodering aan zodat de 5 latente frames per blok incrementeel worden verwerkt en na temporele uitlijning worden omgezet in één ankerbeeld van 1 frame gevolgd door vier pakketten van 4 frames (het 1-4-4-4-4 temporele schema, samen 17 frames). Omdat de decodering van één latent circa 30 ms duurt, blijft dit onder het weergave-interval van het eerste videobeeld bij 24 fps ($1/24\\text{ s} \\approx 41{,}7\\text{ ms}$).\n\n:::sim kvcache {}\n:::\n\n> [!note] Geheugenbeheer van de KV-cache\n> Een uniforme cachemanager hanteert een schuifvenster voor de Intent Module en periodieke resets voor de Realization Module. Bij een reset worden historische mediagegevens gewist om geheugen vrij te maken, terwijl de referentieafbeelding en instructies behouden blijven. Een schone voorwaartse berekening van de gegenereerde latents legt vervolgens een nieuw ankerpunt vast."
+  },
+  {
+   "title": "Empirische evaluatie: betrouwbaarheid versus de grens van contextbegrip",
+   "md": "Je leert hier wat de evaluatiestatistieken aantonen over de visuele stabiliteit en waar de grenzen van de interactie liggen.\n\n### Resultaten van de menselijke beoordeling\nHet model werd geëvalueerd op 30 realtime duplex-interactiescenario's aan de hand van zes binaire criteria (elk beoordeeld als strikt geslaagd of gezakt, zonder deelpunten). Over de 180 afzonderlijke controles slaagde het systeem in 168 gevallen, oftewel een totaalscore van 93,3%.\n\nOp drie criteria voor generatiegetrouwheid slaagde het model voor alle 90 controles (30 van de 30 per criterium):\n- **Taalgetrouwheid (*language adherence*)**: elke respons werd in de verwachte taal geleverd.\n- **Spraakverstaanbaarheid (*speech intelligibility*)**: volledige, verstaanbare spraak zonder haperingen.\n- **Stabiliteit van visuele identiteit (*visual identity stability*)**: geen identiteitswissels, gezichts- of lichaamsvervormingen of onverklaarde gedaanteveranderingen.\n\nDe audiovisuele synchronisatie (lipbeweging afgestemd op de spraak) slaagde in 90,0% van de gevallen, en de emotionele overeenstemming tussen stemgeluid en gezichtsuitdrukking bereikte 96,7%.\n\n| Criterium | Geslaagde checks | Score / Percentage |\n|---|---|---|\n| Algemeen resultaat | 168 / 180 | 93,3% |\n| Visuele identiteitsstabiliteit | 30 / 30 | alle 30 geslaagd |\n| Spraakverstaanbaarheid | 30 / 30 | alle 30 geslaagd |\n| Taalgetrouwheid | 30 / 30 | alle 30 geslaagd |\n| Emotionele consistentie | 29 / 30 | 96,7% |\n| Audiovisuele synchronisatie (lipsync) | 27 / 30 | 90,0% |\n| Inhoudelijke reactiekwaliteit (*content responsiveness*) | 22 / 30 | 73,3% |\n\n### Waar de interactie tekortschiet: impliciete context\nDe grootste resterende uitdaging is de inhoudelijke reactiekwaliteit (*content responsiveness*), die bleef steken op 73,3% (22 van de 30 gevallen geslaagd). Volgens de auteurs vallen de fouten uiteen in twee patronen:\n\n1. **Taalnuances en humor**: bij subtiele terloopse opmerkingen of grappen schiet een letterlijke verwerking van woorden tekort om de ware intentie in een fractie van een seconde te doorgronden.\n2. **Integratie van beeld en geluid**: situaties waarin de betekenis van een gesproken zin pas duidelijk wordt in combinatie met het camerabeeld. In één praktijkvoorbeeld vertelde een gebruiker die binnenshuis zat dat hij net een deelfiets had ontgrendeld toen het begon te regenen. Gezien de context (binnen zitten) betrof dit een klacht over pech, maar het model vatte de opmerking op als een verzoek om praktisch advies en stelde voor om het fietsen uit te stellen.\n\n### Stabilisatie van synthetische data\nOmdat natuurlijke datasets voor videobellen schaars zijn, bouwden de onderzoekers een geautomatiseerde productiepijplijn op basis van gestructureerde scenario's (*screenplays*). Bij standaard videocreatie, waarbij elk blok uitsluitend voortbouwt op het laatste frame van het vorige blok, treedt cumulatieve drift op: het basissysteem verloor 34,2 helderheidsniveaus (*luma*) tegen blok 9, met vervormde texturen tot gevolg. Door de eerste 124 frames van blok 0 als vaste referentie voor beeldkwaliteit aan te houden, stabiliseerde de synthesemethode voor trainingsdata op circa 99 luma na een lichte initiële daling, met behoud van consistente gelaatstrekken tot en met blok 9 over een reeks van 60 seconden."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "93.3%",
+   "label": "algemeen slagingspercentage over alle 180 binaire interactiechecks in de menselijke evaluatie",
+   "quote": "Of 180 checks (30 cases × 6 criteria), 168 passed (93.3%).",
+   "source": 1
+  },
+  {
+   "value": "73.3%",
+   "label": "slagingspercentage op inhoudelijke reactiekwaliteit (content responsiveness)",
+   "quote": "Content responsiveness, which asks whether a reply substantively addresses what the user has just said and shown, reached 73.3% (22/30).",
+   "source": 1
+  },
+  {
+   "value": "90",
+   "label": "aantal geslaagde controles op taalgetrouwheid, spraakverstaanbaarheid en visuele identiteitsstabiliteit samen (alle 90 checks)",
+   "quote": "The clearest strength is generation fidelity: the model passed all 90 checks on language adherence, speech intelligibility, and visual identity stability.",
+   "source": 1
+  },
+  {
+   "value": "96.7%",
+   "label": "percentage gevallen waarin de vocale emotie overeenkwam met gelaatsuitdrukking en lichaamstaal",
+   "quote": "Vocal emotion was consistent with facial expression and body language in 96.7% of cases, and lip movement stayed aligned with speech in 90.0%.",
+   "source": 1
+  },
+  {
+   "value": "90.0%",
+   "label": "percentage interacties waarin de lipbeweging synchroon bleef met de gegenereerde spraak",
+   "quote": "Vocal emotion was consistent with facial expression and body language in 96.7% of cases, and lip movement stayed aligned with speech in 90.0%.",
+   "source": 1
+  },
+  {
+   "value": "34.2",
+   "label": "verlies aan luma-helderheidsniveaus na 9 blokken bij de basismethode voor datasynthese",
+   "quote": "The baseline loses 34.2 luma levels by block 9, with increasingly exaggerated facial textures.",
+   "source": 1
+  },
+  {
+   "value": "0.90",
+   "label": "minimale SSIM-drempelwaarde voor de consistentie van het eerste videobeeld bij kwaliteitscontrole",
+   "quote": "We compare the first frame with the conditioning image, requiring an SSIM of at least 0.90 and a perceptual-hash Hamming distance of at most 4.",
+   "source": 1
+  }
+ ],
+ "caveats": "Bij de interpretatie van de gepresenteerde resultaten moeten enkele technische kanttekeningen worden gemaakt:\n\n1. **Subtiele context en impliciete betekenis**: Met een score van 73,3% op inhoudelijke reactiekwaliteit toont de evaluatie aan dat het realtime inschatten van intenties kwetsbaar blijft zodra humor, ironie of gecombineerde beeld-geluidcontext een rol spelen.\n2. **Cumulatieve reactievertraging door sampling**: De gerapporteerde rekentijd van 330 tot 650 ms geldt vanaf het moment dat een tijdsblok start. Omdat het samplingvenster 708 ms duurt, kan een uiting die net na de start van een blok valt een totale wachttijd van meer dan één seconde ervaren voordat de eerste reactie zichtbaar wordt.\n3. **Hardware-intensieve infrastructuur**: De streaming runtime vereist een dedicated node met acht gekoppelde GPU's om gelijktijdige taalinferentie, diffusietransformatie en VAE-decodering binnen het tijdsbudget te houden. Dit maakt het systeem voorlopig ongeschikt voor lokale uitvoering op randapparatuur.\n4. **Geheugenresets versus langetermijnconsistentie**: Om geheugenuitputting op de GPU's te voorkomen, past de KV-cachemanager periodieke resets toe op de audiovisuele geschiedenis. Hoewel dit de latentie stabiel houdt, ontbreken in de bronnen systematische metingen naar hoe goed het model visuele en conversatie-elementen vasthoudt over sessies die langer duren dan enkele minuten.\n5. **Beperkte omvang van de testsuite**: De kwantitatieve menselijke evaluatie rust op 30 geselecteerde duplex-gesprekken (180 meetpunten). Dat biedt een eerste indicatie van de werking, maar vormt een te kleine steekproef om statistisch harde claims te maken over robuustheid tegen dialecten, rumoerige achtergronden of snelle camerabewegingen.",
+ "glossary": [
+  {
+   "term": "Reciprocal World Model (RWM)",
+   "def": "Een wereldmodel dat cognitieve besluitvorming (intentie) en fysieke audiovisuele generatie (realisatie) continu en wederkerig integreert als gelijkwaardige onderdelen van dezelfde omgeving."
+  },
+  {
+   "term": "Full-duplex",
+   "def": "Een communicatiesysteem waarin beide partijen gelijktijdig informatie kunnen zenden en ontvangen zonder op elkaars beurt te hoeven wachten."
+  },
+  {
+   "term": "Distribution Matching Distillation (DMD)",
+   "def": "Een distillatietechniek die een diffusiemodel terugbrengt naar weinig stappen door de verdeling van de gegenereerde steekproeven via twee scoremodellen direct af te stemmen op de dataverdeling."
+  },
+  {
+   "term": "Dual rollout",
+   "def": "Een trainingsprocedure waarbij zowel het taalmodel als het audiovisuele generatiemodel hun eigen voorspelde geschiedenis genereren om de discrepantie tussen trainings- en inferentiecontext te verkleinen."
+  },
+  {
+   "term": "Flow matching",
+   "def": "Een trainingsparadigma voor generatieve modellen dat leert een lineair snelheidsveld te voorspellen tussen een willekeurige ruisverdeling en de doeldataverdeling."
+  },
+  {
+   "term": "3D-RoPE",
+   "def": "Een uitbreiding van Rotary Position Embedding die ruimtelijke en temporele coördinaten codeert om relatieve posities in video en meerkanaals audio vast te leggen."
+  },
+  {
+   "term": "Causaal aandachtsmasker (causal attention mask)",
+   "def": "Een matrix binnen een transformernetwerk die verhindert dat rekeneenheden aandacht schenken aan toekomstige tijdstappen of ongeoorloofde doelsignalen."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 1,
+   "prompt": "Waarom herhaalt de visuele encoder van de Intent Module frame 16 als paar (16, 16) aan het einde van een 17-frame blok?",
+   "options": [
+    "Om te vermijden dat beeldinformatie uit het volgende tijdsblok mengt in de huidige representatie voordat het aandachtsmasker ingrijpt.",
+    "Omdat het VAE-netwerk uitsluitend even aantallen beelden kan comprimeren via ruimtelijke convoluties.",
+    "Om het geheugenbeslag van de KV-cache op GPU 0 tot 3 met de helft te verlagen.",
+    "Om bewegingsonscherpte bij snelle camerabewegingen wiskundig te neutraliseren."
+   ],
+   "answer": 0,
+   "explain": "Bij temporele patching worden opeenvolgende videoframes samengevoegd in één visueel token. Als frame 16 gekoppeld zou worden aan frame 17 (het eerste beeld van het volgende blok), zou toekomstige informatie onomkeerbaar in de invoer lekken voordat het aandachtsmasker kan filteren."
+  },
+  {
+   "id": "q2",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Welke discrepantie lost de 'dual rollout' tijdens de DMD-distillatiefase (Stage 3) specifiek op?",
+   "options": [
+    "Het verschil tussen trainen op perfecte opgenomen data en inzetten op zelfgegenereerde tekst en media tijdens live interactie.",
+    "Het faseverschil tussen het linker en het rechter audiokanaal bij stereoweergave.",
+    "De temporele mismatch tussen 24 fps videobeelden en de 40 Hz audiocodec.",
+    "De geheugenverzadiging veroorzaakt door het simultaan decoderen op acht GPU's."
+   ],
+   "answer": 0,
+   "explain": "Vóór de distillatie traint de Realization Module op opgenomen assistenttekst en zuivere opnames. Tijdens live gebruik moet het model echter voortbouwen op zijn eigen onvolmaakte audiovisuele geschiedenis en gegenereerde intentietokens. Dual rollout simuleert deze inferentiecontext direct tijdens de trainingsfase."
+  },
+  {
+   "id": "q3",
+   "type": "order",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Rangschik de stappen van de streaming-cyclus voor een reactieblok in de chronologische volgorde van uitvoering.",
+   "tiles": [
+    "Acquisitie van gebruikersvideo en audio over een venster van 17 frames (circa 708 ms)",
+    "Autoregressieve intentie-inferentie en actiekeuze (<speak> of <wait>) op GPU 0-3",
+    "Gezamenlijke generatie van audio- en videolatents via vier diffusietaps op GPU 0-7",
+    "Causale incrementele decodering van videolatents naar beelden, overlappend met de volgende intentieberekening"
+   ],
+   "explain": "De runtime vangt eerst het invoervenster van 17 frames op ($t_{\\text{sample}}$). Vervolgens bepaalt de Intent Module op GPU 0-3 de actie en verborgen toestand ($t_{\\text{intent}}$). Daarna genereert de diffusietransformer op GPU 0-7 de audiovisuele latents ($t_{\\text{gen}}$), waarna GPU 4-7 incrementeel decoderen terwijl GPU 0-3 al aan het volgende blok begint."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Het paper toont hoe causale multimodaliteit, diffusietransformatie en taalredenering samenkomen in één wederkerig wereldmodel voor realtime interactie."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "Duo: A Reciprocal World Model for Full-Duplex Interaction",
+   "url": "https://arxiv.org/abs/2611.15131"
+  },
+  {
+   "n": 3,
+   "title": "Wikipedia — Duplex (telecommunications)",
+   "url": "https://en.wikipedia.org/wiki/Duplex_%28telecommunications%29"
+  }
+ ],
+ "id": "2026-11-15-hoe-het-reciprocal-world-model-continue-interact",
+ "kind": "paper",
+ "date": "2026-11-15",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-11-15",
+  "kind": "paper",
+  "verified": "2026-11-15",
+  "candidate": "arxiv:2611.15131",
+  "signal": "40 upvotes op Hugging Face Daily Papers",
+  "significance": 4
+ }
+}
