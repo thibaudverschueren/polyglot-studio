@@ -1,0 +1,188 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe LWS taalmodellen laat leren tijdens inferentie zonder snelheidsverlies",
+ "subtitle": "Door onbenutte rekenpauzes tijdens aandachtsberekeningen te benutten met onderbreekbare leertaken, draait een taalmodel continue training zonder de voorspelsnelheid aan te tasten.",
+ "topic": "chips",
+ "minutes": 11,
+ "tldr": [
+  "Lange teksten verwerken maakt taalmodellen traag omdat het geheugen volloopt met eerdere woorden.",
+  "Nieuwe modellen slaan context op in aanpasbare gewichten, waarbij de rekenchip leertaken uitvoert tijdens korte pauzes in de voorspelling.",
+  "Bij TTT-E2E 3B op 128.000 tokens behoudt LWS 99,3 procent van de leerwinst en draait even snel als zonder bijleren.",
+  "De methode werkt alleen tijdens het inlezen van tekst en versnelt het stap voor stap genereren van antwoorden nog niet."
+ ],
+ "plain": "Stel je een onderzoeker voor die een vuistdik rapport van duizend bladzijden moet analyseren. Normaal legt hij elk gelezen blad open op een grote tafel om er later naar terug te kunnen kijken. Al snel ligt die tafel overvol en kost het zoeken naar oude zinnen meer tijd dan het lezen zelf.\n\nIn plaats daarvan leest hij nu per blok van tien pagina's, schrijft de kerninzichten direct bij op zijn eigen beknopte spiekbriefje, en legt de gelezen vellen weg. Telkens wanneer zijn ogen even pauzeren om een bladzijde om te slaan, gebruikt hij die fractie van een seconde om zijn aantekeningen bij te werken. Zo blijft de tafel leeg en groeit alleen zijn kennis.\n\nDe vergelijking houdt op bij de schaal: een mens schrijft associatief en traag, terwijl een computerchip duizenden wiskundige correcties berekent in pauzes van enkele microseconden.",
+ "why": "In agent-toepassingen en geautomatiseerde dataverwerking analyseren taalmodellen documenten van tienduizenden woorden. Vandaag botst dat op de geheugenmuur van accelerators: de buffer voor eerdere woorden slibt dicht. Als modellen context direct opslaan in hun gewichten, blijft het geheugengebruik constant. Tot nu toe halveerde dat continue bijleren de doorvoersnelheid. Dankzij architecturen zoals LWS kunnen AI-servers lange contexten verwerken met de snelheid van gewone inferentie, zonder extra trainingshardware.",
+ "sections": [
+  {
+   "title": "Waarom lange contexten vastlopen op de geheugenmuur",
+   "md": "Je leert hier waarom het bewaren van eerdere tokens traditionele taalmodellen vertraagt en hoe inferentietijdleren dat knelpunt omzeilt via aanpasbare modelgewichten.\n\n### De lineaire tol van de KV-cache\nStandaard transformatormodellen verwerken tekst via een aandachtsmechanisme (*self-attention*). Om bij elk nieuw woord te bepalen welke eerdere woorden relevant zijn, projecteert het model invoertokens naar sleutels (*keys*) en waarden (*values*). Tijdens het genereren bewaart het systeem deze vectoren in een geheugenbuffer: de KV-cache. Hierdoor hoeven historische tokens niet bij elke stap opnieuw door alle lagen te worden berekend.\n\nBij lange invoerreeksen — zoals boeken, codebases of interactieve gesprekken van 32.000 tot 128.000 tokens — ontstaat een structureel probleem:\n\n1. **Geheugencapaciteit**: De omvang van de KV-cache groeit lineair ($O(N)$) met de contextlengte $N$. Bij grote modellen overschrijdt deze buffer al snel de capaciteit van het snelle videogeheugen (HBM).\n2. **Rekenintensiteit**: Elk nieuw token moet de interactie berekenen met alle voorgaande tokens. De rekenkosten per token lopen daardoor gestaag op.\n\nBestaande oplossingen comprimeren deze cache (kwantisatie) of gooien minder belangrijke tokens weg (*eviction*), maar verliezen daarbij details of blijven lineair meegroeien. Recurrente architecturen zoals Mamba-2 persen alle context samen in een vaste toestand, maar verliezen volgens onderzoek van Tandon et al. (2025), aangehaald door [Gao et al. (2026)](https://arxiv.org/abs/2611.18523), meetbaar kwaliteit op lange sequenties vergeleken met volledige aandacht.\n\n### Context opslaan in veranderbare gewichten\nEen alternatieve richting is inferentietijdleren (*Inference-Time Learning* of ITL), onder meer toegepast in TTT-E2E. In plaats van een onbeperkt groeiende aandachtsbuffer hanteert het model een vast, lokaal aandachtsvenster (bijvoorbeeld 8.192 tokens). Informatie die buiten dit venster valt, gaat niet verloren: het model traint tijdens het lezen continu op de binnenkomende tekst en slaat de opgedane kennis op in zijn eigen gewichten.\n\nHet model verwerkt de invoer in blokken (*chunks*) van bijvoorbeeld 1.024 tokens. Elk blok doorloopt twee fasen:\n\n- **Voorspelling (Prediction)**: De voorwaartse berekening (*forward pass*) berekent de voorspelling voor de volgende tokens met de huidige gewichten.\n- **Leren (Learning)**: Op basis van de voorspellingsfout voert het model een terugwaartse berekening (*backward pass*) uit over de laatste $d$ lagen om een deel van de gewichten direct bij te werken.\n\nVoor een lineaire transformatielaag $Y = XW$ berekent de terugwaartse pas de gradiënten naar eerdere lagen:\n\n$$dX = dY W^{\\top}$$\n\nen de gradiënten voor de gewichtsaanpassing:\n\n$$dW = X^{\\top} dY$$\n\nDe modelparameters zijn daardoor niet langer statische, onveranderlijke getallen, maar vormen een dynamische toestand die voortdurend meebeweegt met de tekst.\n\n### De leertol bij sequentiële uitvoering\nDeze opzet stuit op een forse hindernis. Bij TTT-E2E 3B op een NVIDIA B200 verwerkt de voorwaartse pas tokens bij een context van 128.000 tokens weliswaar 2,5× sneller dan volledige aandacht, maar het leren eist 54% van de totale uitvoeringstijd op. Als de chip het voorspellen telkens stillegt om eerst te trainen, verdampt de tijdswinst.\n\nHuidige [hardwareversnellers](https://en.wikipedia.org/wiki/Hardware_acceleration) zijn niet gebouwd voor deze combinatie: inferentiechips gaan uit van vaste gewichten, terwijl trainingschips ontworpen zijn voor grote batches waarin gewichten pas na duizenden stappen veranderen."
+  },
+  {
+   "title": "Drie rekenkundige knelpunten op bestaande inferentiechips",
+   "md": "Je leert hier waarom bestaande chips rekenkracht laten liggen tijdens inferentie en waarom gelijktijdig leren botst op bewerkingsvolgorde en vectorcapaciteit.\n\n### Onbenutte matrixkernen tijdens aandachtsberekeningen\nModerne AI-accelerators halen hun rekenkracht uit gespecialiseerde matrix-arrays (MAC-kernen). Bij transformators wisselen matrixvermenigvuldigingen ($QK^{\\top}$ en $AV$) elkaar echter voortdurend af met niet-matrixbewerkingen, zoals schalen, exponentiëren en sommeren voor de softmax-functie:\n\n$$O = \\text{softmax}\\left(\\frac{QK^{\\top}}{\\sqrt{d_k}}\\right)V$$\n\nTerwijl de vector- en scalaire eenheden deze normalisaties uitrekenen, moeten de matrix-kernen wachten op de tussenresultaten. Metingen van de auteurs op een AWS Inferentia2-chip tonen dat de tensor-engine gedurende slechts 27% van de uitvoeringstijd van een voorwaartse laag actief rekent. Op een TPU v5e haalt TTT-E2E tijdens de voorspelling slechts 19% van de maximale matrixdoorvoer.\n\n:::sim attention {\"tokens\": [\"De\", \"kat\", \"zat\"], \"Q\": [[1, 0], [0, 1], [1, 1]], \"K\": [[1, 0], [0, 1], [1, 1]]}\n:::\n\nDe totale onbenutte matrixcapaciteit is ruim voldoende: de matrixbewerkingen voor het leren vergen slechts 33% van de tijd die de voorspelling ongebruikt laat. De uitdaging zit in de praktische inpassing.\n\n### Het volgordeprobleem en gewichtsvertraging\nVoorspelling en leren bewegen in tegengestelde richtingen door het netwerk. Bij een model met $L$ lagen waarvan de laatste $d$ lagen aanpasbaar zijn (aangeduid als $\\text{ITL}(L, d)$), loopt de voorspelling voorwaarts van laag 1 naar $L$. De terugwaartse leerfase start bij laag $L$ en daalt af naar laag $L-d+1$.\n\nHierdoor zijn de gradiënten van de diepste laag ($L$) als eerste klaar, terwijl de invoerlaag van het leerblok ($L-d+1$) als allerlaatste wordt bijgewerkt. Het volgende invoerblok bereikt tijdens zijn voorwaartse pas echter als eerste die laag $L-d+1$. Als de voorspelling strikt moet wachten op de allernieuwste gewichten (*fully fresh*), blokkeert de pijplijn.\n\nDe auteurs ontdekten dat individuele lagen een vertraging in gewichtsversheid tolereren. Een vertraging van $\\ell$ blokken betekent dat de voorspelling werkt met gewichten van $\\ell$ iteraties geleden, terwijl het leren de meest recente versie blijft bijwerken. Bij TTT-E2E 3B op 128.000 tokens behoudt een uniforme vertraging van 1 blok voor alle aanpasbare lagen 96,3% van de kwaliteitswinst in negatieve log-likelihood (NLL). Een gedifferentieerd beleid (`1111|0000`), waarbij de vier vroegste lagen 1 blok mogen achterlopen en de vier laatste lagen direct vers zijn, behoudt zelfs 99,3% van de winst.\n\n### Fragmentatie en de vectorflessenhals\nTwee hardware-obstakels verhinderen een eenvoudige samenvoeging van beide taken:\n\n1. **Gefragmenteerde pauzes**: Geheugenefficiënte aandachtsalgoritmen zoals FlashAttention splitsen berekeningen op in tegels (*tiles*). Dit vermindert dataverkeer naar het hoofdgeheugen, maar hakt de inactieve periodes van de matrix-array op in zeer korte intervallen. De grote rekenkernen van het leerproces duren vaak langer dan één zo'n pauze.\n2. **De vectorflessenhals**: De terugwaartse pas vereist softmax-gradiënten voor de aandachtslaag ($dS$) en de woordenschatlaag ($dZ$):\n\n$$r = \\sum_{j} P_{j} dP_{j} = O^{\\top} dO, \\quad dS_{j} = P_{j}(dP_{j} - r)$$\n\n$$dZ_{i} = p_{i} - \\mathbf{1}[i = t]$$\n\nDeze niet-matrixbewerkingen eisen op een gemodelleerde NPU 2,1× de onbenutte capaciteit van de gedeelde vector-eenheid op. Samen zijn ze verantwoordelijk voor 86,8% van al het vectorwerk tijdens het leren."
+  },
+  {
+   "title": "De LWS-architectuur: versiebeheer, preemptie en gespecialiseerde datapaden",
+   "md": "Je leert hier hoe LWS met 145 rekengroepen, onderbreekbare reductieblokken en aparte softmax-eenheden leertaken uitvoert zonder de voorspeltaak te vertragen.\n\n### Gedistribueerde rekengroepen\nIn plaats van enkele grote, monolithische matrixvermenigvuldigers (zoals de vier MXU's op een TPU v5e) verdeelt LWS een vergelijkbare rekencapaciteit (393 TOPS INT8) over 145 kleinere rekengroepen (*compute groups*). Elke groep bevat vier MAC-clusters met elk 16 MXINT8-tegels (in totaal 580 onafhankelijk aanstuurbare clusters), een router en lokaal SRAM-geheugen.\n\nDe voorspelling behoudt te allen tijde absolute voorrang op de hardware. Leertaken worden door een gedistribueerde *Learning Engine* opportunistisch ingepland op clusters die op dat moment niet door de voorspelling worden aangesproken.\n\n```\n[ Besturing Voorspelling ] ---> Prioritaire voorspeltaak (Forward)\n                                      |\n                                      v\n                         [ Operand-selector per groep ]\n                                      ^\n                                      |\n[ Learning Engine Slices ] ---> Leertaak (Backward dX / dW)\n```\n\n### Hardware-versiebeheer voor gewichten\nOm te voorkomen dat leertaken wachten tot voorspellingen klaar zijn met het uitlezen van gewichten, scheidt LWS het publiceren van nieuwe gewichten van het vrijgeven van oude geheugenbanken:\n\n- **Geheugenbanken in DRAM**: Voor een toegestane vertraging van $\\ell$ blokken reserveert het systeem $\\ell + 1$ fysieke geheugenbanken in het externe geheugen. Bij een vertraging van 1 blok zijn twee banken per laag voldoende.\n- **Versietabel op de chip**: De *Version Table* registreert welke bank de actieve versie bevat en houdt per bank een referentieteller bij van actieve lezers (zowel voorwaartse als achterwaartse passes).\n- **Master-gewichten**: Om numerieke afrondingsfouten bij opeenvolgende updates te voorkomen, bewaart het systeem *master weights* in hogere precisie (BF16). De *Weight Update Engine* verwerkt gradiënten via stochastische gradiëntafdaling (SGD) of AdamW, waarna een kwantiseerder het resultaat wegschrijft naar een vrije gewichtsbank. Zodra het schrijven voltooid is, publiceert de tabel direct het nieuwe versienummer.\n\nOude banken worden pas hergebruikt wanneer alle geregistreerde lezers hun berekening hebben afgerond.\n\n### Onderbreekbare reductieblokken\nOm te kunnen werken binnen de korte rekenpauzes van de voorspelling, deelt LWS elke matrixtegel van het leerproces op in kleine reductieblokken van 32 elementen. Zodra een prioritaire voorspeltaak arriveert, breekt de leertaak niet willekeurig af, maar voltooit uitsluitend het lopende blok van 32 getallen.\n\nOp deze grens zijn alle tussenliggende vermenigvuldigingen netjes opgeteld in de partiële sommen. Een speciale *Resume/Suspend* (R/S)-controller bewaart deze 256 bytes aan tussentijdse sommen in het lokale SRAM en schrijft een compacte descriptor van 46 bits weg (met laagnr, gewichtsversie, tegelbereik en blokpositie). De matrixkernen worden onmiddellijk vrijgegeven voor de voorspelling. Zodra de voorspeltaak zijn uitvoertegel afrondt, laadt de R/S-controller de toestand weer in en hervat het leren direct vanaf het volgende reductieblok, zonder voltooid rekenwerk opnieuw te doen.\n\n> [!tip] Waarom een descriptor van 46 bits volstaat\n> Omdat de pijplijn netjes leegloopt op een blokgrens van 32 elementen, hoeven interne registers van de vermenigvuldigers niet bewaard te worden. Alleen de geaccumuleerde tussenstand en de positie-index zijn nodig om later verder te rekenen.\n\n### Gespecialiseerde eenheden voor softmax en activatievoorbereiding\nLWS pakt de vectorflessenhals en de activatievoorbereiding aan met specifieke hardware:\n\n- **$dS$- en $dZ$-eenheden (ontlasting van de vector-eenheid)**: Acht van de 145 rekengroepen bevatten speciale rekenkernen voor softmax-gradiënten. De **$dS$-eenheid** berekent aandachtsgradiënten door opgeslagen ongenormaliseerde aandachtskansen direct te hergebruiken, zonder ze volledig te herberekenen zoals in FlashAttention-2. De **$dZ$-eenheid** verwerkt woordenschatgradiënten in twee streaming-stappen met een gedeeld exponentieel circuit, wat grote tussenbuffers vermijdt. Samen nemen zij 86,8% van het vectorwerk weg en ontlasten zo de gedeelde vector-eenheid.\n- **Stash Pack en Stash Q (scheiding van activatievoorbereiding)**: Het berekenen van gewichtsgradiënten ($dW = X^{\\top} dY$) vereist dat activaties en gradiënten worden herschikt en gekwantiseerd naar MXINT8-blokken van 32 tokens. Om het voorspelpad niet te belasten, bevat élk van de 580 MAC-clusters (over alle 145 groepen) een lichte **Stash Pack**-eenheid die activaties tijdens de voorspelling compact bewaart in BF16. Pas tijdens het leren verzamelen en kwantiseren de **Stash Q**-eenheden (alleen aanwezig in de acht speciale rekengroepen) deze data voor de MAC-arrays. Dit houdt de voorbereiding buiten het kritieke pad van de voorspelling en deelt de hardware over alle clusters."
+  },
+  {
+   "title": "Prestaties, siliciumkosten en de grenzen van gelijktijdige uitvoering",
+   "md": "Je leert hier hoe LWS presteert op datacenter- en edge-chips, hoeveel siliciumoppervlak de toevoegingen kosten en wat de grenzen zijn van de architectuur.\n\n### Volledige doorvoer over negen modellen\nDe onderzoekers toetsten LWS via een cyclus-nauwkeurige simulator met Ramulator 2 (DRAM) en gesynthetiseerde Verilog-ontwerpen op 16 nm. De opstellingen modelleren een datacenter-NPU (TPU v5e-klasse met 819 GB/s HBM) en een edge-NPU (Jetson AGX Orin-klasse met LPDDR5).\n\nBij TTT-E2E 3B op 128.000 tokens behaalt LWS op de datacenter-NPU een genormaliseerde doorvoersnelheid van $\\eta = 1{,}00$ (7.046 tokens/s). Het model leert hierdoor zonder vertraging ten opzichte van zuivere inferentie. Voor dit specifieke model haalt seriële uitvoering circa $\\eta = 0{,}69$ (4.861 tokens/s) doordat het leren het kritieke pad verlengt, terwijl Equinox circa $\\eta = 0{,}79$ (5.575 tokens/s) bereikt.\n\nOver negen verschillende modellen (waaronder Llama-3.1 8B, Qwen3 8B en Gemma-3 12B) handhaaft LWS eveneens de maximale voorspelsnelheid ($\\eta = 1{,}00$). Daarmee realiseert LWS over alle modellen gemiddeld 1,6× de doorvoer van seriële uitvoering (gemiddeld $\\eta = 0{,}64$) en 1,3× die van de sterkste eerdere architectuur (Equinox, gemiddeld $\\eta = 0{,}75$).\n\n| Architectuur | Fijnmazige deling | Vector-ontlasting | Versheidsbeleid | Gemiddelde doorvoer $\\eta$ (9 modellen) |\n|---|---|---|---|---|\n| Serieel | Nee | Nee | Alleen vers (lag 0) | 0,64 |\n| DaCapo | Statische partitie | Nee | Model-breed lag 1 | 0,69 |\n| Neu10 | Engine lenen | Nee | Model-breed lag 1 | 0,74 |\n| Equinox | Instructies mengen | Nee | Model-breed lag 1 | 0,75 |\n| **LWS** | **Onderbreekbaar blok** | **$dS$-/$dZ$-eenheden** | **Laagspecifiek (per-layer lag)** | **1,00** |\n\nDoordat de chip niet langer hoeft te draaien, daalt het statische energieverbruik. De extra leer-energie per voorspeld token blijft beperkt tot 37,6% op de datacenter-NPU (tegenover 52,4% bij seriële uitvoering) en 29,3% op de edge-chip.\n\n### Siliciumoppervlak en hardwarekosten\nRTL-synthese toont aan dat de extra logica van LWS op 16 nm slechts 1,47 mm² inneemt op de datacenter-chip, een toename van 3,3% ten opzichte van de baseline rekenlogica. Wanneer het geïntegreerde SRAM-geheugen (32 MB) wordt meegerekend, beslaat de LWS-uitbreiding slechts 1,5% van het totale NPU-kernoppervlak (2,7% op de edge-chip met 4 MB SRAM).\n\nDe $dS$- en $dZ$-eenheden in de acht uitgeruste groepen vormen de grootste individuele toevoeging (0,30 mm²). Een standaard rekengroep groeit qua oppervlakte met ongeveer 2%, terwijl een uitgeruste groep met 23% toeneemt. Het ontwerp vereist geen extra MAC-rekenmatrix.\n\nOp geheugengebied vraagt het kwantiseerde model (TTT-E2E 3B) ongeveer 3,0 GB in DRAM. Het hardwarematige versiebeheer voegt daar 178 MB aan toe voor reservebanken. De master-gewichten in hogere precisie vergen 1,04 GB, wat de totale gewichtsopslag op circa 4,2 GB brengt."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "54%",
+   "label": "aandeel van leren in de totale uitvoeringstijd van TTT-E2E op een B200",
+   "quote": "However, Learning accounts for 54% of ITL’s total execution time, offsetting most of this speedup.",
+   "source": 1
+  },
+  {
+   "value": "27%",
+   "label": "activiteit van de tensor-engine tijdens een voorwaartse laag op AWS Inferentia2",
+   "quote": "Across the measured forward layer, the tensor engine is active for only 27% of execution time.",
+   "source": 1
+  },
+  {
+   "value": "99.3%",
+   "label": "behouden kwaliteitswinst ten opzichte van volledig vers leren bij TTT-E2E 3B op 128K tokens",
+   "quote": "On modeled datacenter and edge NPUs, LWS hides Learning within Prediction, sustaining Prediction-only throughput while preserving 99.3% of fully fresh Learning's quality benefit for TTT-E2E 3B at 128K tokens.",
+   "source": 1
+  },
+  {
+   "value": "1.5%",
+   "label": "toename van het NPU-kernoppervlak door LWS bij RTL-synthese",
+   "quote": "RTL design and synthesis show that LWS adds 1.5% to the NPU core area, without needing another MAC array.",
+   "source": 1
+  },
+  {
+   "value": "1.6x",
+   "label": "doorvoerversnelling van LWS ten opzichte van seriële uitvoering over negen modellen",
+   "quote": "Across nine models, LWS achieves 1.6x the throughput of serial execution and 1.3x that of the best prior co-execution architecture.",
+   "source": 1
+  },
+  {
+   "value": "86.8%",
+   "label": "aandeel van softmax-gradiënten in het totale vectorwerk van leren",
+   "quote": "Together, they account for 86.8% of Learning’s vector work.",
+   "source": 1
+  },
+  {
+   "value": "37.6%",
+   "label": "gemiddelde energie-overhead voor leren onder LWS op de datacenter-NPU",
+   "quote": "By using Prediction’s idle compute capacity, LWS limits average Learning energy overhead to 37.6%, compared with 49.7% for Neu10 and 52.4% for serial execution.",
+   "source": 1
+  }
+ ],
+ "caveats": "Bij het interpreteren van de resultaten gelden duidelijke technische beperkingen en open vragen:\n\n1. **Beperkt tot prefill**: De evaluatie richt zich uitsluitend op het inlezen van lange contexten tijdens chunked prefill. Autoregressieve generatie (waarbij een model token voor token een antwoord genereert) en meervoudige batch-inferentie vallen buiten de reikwijdte van de studie.\n2. **Afhankelijkheid van rekenpauzes**: LWS verbergt leertaken in de onbenutte rekentijd van de matrix-kernen tijdens aandachtsberekeningen. Modellen of algoritmen die erin slagen de matrix-arrays continu voor 100% te benutten, laten geen ruimte over voor leertaken zonder de voorspelling te vertragen.\n3. **Gevoeligheid voor gewichtsvertraging**: De tolerantiemetingen zijn voornamelijk uitgevoerd op TTT-E2E 3B en LaCT. Modellen met andere aandachtsstructuren of diepere leerlagen kunnen sterker inboeten aan taalprecisie wanneer gewichtsupdates worden uitgesteld.\n4. **Simulatiestatus**: Hoewel de rekenkernen in Verilog zijn gemodelleerd en via RTL op 16 nm zijn gesynthetiseerd, zijn de systeemprestaties gemeten via cyclus-nauwkeurige simulatie (Ramulator 2) en niet op fysiek gefabriceerd silicium.\n5. **DRAM-verkeer**: Hoewel het binnen de grenzen van de HBM-bandbreedte past, brengt LWS per tekstblok 2,43 GB aan extra geheugenverkeer mee voor het bijwerken van master-gewichten en versiebeheer, bovenop 8,5 GB aan aandachtskansen.",
+ "glossary": [
+  {
+   "term": "Inferentietijdleren (Inference-Time Learning / ITL)",
+   "def": "Een techniek waarbij een model tijdens het verwerken van invoertekst blijft trainen en context opslaat in zijn gewichten in plaats van in een groeiende geheugencache."
+  },
+  {
+   "term": "LWS (Learning While Serving)",
+   "def": "Een acceleratorarchitectuur die onbenutte matrixcapaciteit tijdens de voorspelling gebruikt om tegelijkertijd leertaken uit te voeren zonder vertraging."
+  },
+  {
+   "term": "Gewichtsvertraging (visibility lag)",
+   "def": "Het aantal invoerblokken dat een transformatorlaag mag achterlopen op de meest recente gewichtsupdate zonder noemenswaardig verlies van nauwkeurigheid."
+  },
+  {
+   "term": "Onderbreekbaar reductieblok (resumable reduction block)",
+   "def": "Een rekenpatroon van 32 getallen waarin een leertaak op een veilige grens kan pauzeren en tussenstanden opslaat, zodat de voorspelling direct voorrang krijgt."
+  },
+  {
+   "term": "Versietabel (Version Table)",
+   "def": "Een hardware-administratie op de chip die bijhoudt welke gewichtsbank actief is, hoeveel rekenprocessen een versie lezen en wanneer geheugen vrijkomt."
+  },
+  {
+   "term": "Softmax-gradiënt",
+   "def": "De wiskundige afgeleide van de aandachts- of woordenschatkansen tijdens de terugwaartse pas, die zware elementgewijze berekeningen vereist op de vector-eenheid."
+  },
+  {
+   "term": "Prefill",
+   "def": "De initiële fase van LLM-inferentie waarin een volledige prompt parallel wordt verwerkt om interne toestand op te bouwen."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom leidt het direct toepassen van gewichtsupdates (lag 0) bij inferentietijdleren tot een opstopping op de chip?",
+   "options": [
+    "Omdat de terugwaartse leerpas in omgekeerde volgorde rekent, waardoor de invoerlagen hun updates als laatste ontvangen terwijl de volgende voorspelling ze als eerste nodig heeft.",
+    "Omdat de matrix-arrays van inferentiechips technisch niet in staat zijn om getallen in te laden met een precisie van 8 bits.",
+    "Omdat het overschrijven van master-gewichten in het DRAM-geheugen de databus permanent blokkeert voor reguliere invoerdata.",
+    "Omdat de aandachtsberekening tijdens de voorwaartse pas geen enkele pauze bevat waarin andere taken kunnen worden ingevoegd."
+   ],
+   "answer": 0,
+   "explain": "De terugwaartse pas rekent van de uitvoerlaag terug naar de invoerlaag. De gewichten van de vroegste aanpasbare lagen zijn dus pas als allerlaatste klaar, terwijl de volgende voorwaartse pas juist bij die lagen begint. Zonder toegestane vertraging moet de voorspelling wachten."
+  },
+  {
+   "id": "q2",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Welk specifiek knelpunt lossen de gespecialiseerde dS- en dZ-eenheden in de LWS-architectuur op?",
+   "options": [
+    "De gedeelde vector-eenheid raakte overbelast omdat softmax-gradiënten meer dan het dubbele van de onbenutte vectorcapaciteit opeisten.",
+    "De routers van de rekengroepen konden het netwerkverkeer tussen de 145 groepen niet zonder vertraging routeren.",
+    "De kwantisatie van gewichten in het externe DRAM-geheugen veroorzaakte afrondingsfouten bij opeenvolgende rekenstappen.",
+    "De matrix-arrays konden niet snel genoeg schakelen tussen INT8-vermenigvuldigingen en drijvende-kommaberekeningen."
+   ],
+   "answer": 0,
+   "explain": "Hoewel er voldoende onbenutte matrixcapaciteit was, vroegen de softmax-gradiënten voor aandacht (dS) en woordenschat (dZ) 2,1× de onbenutte capaciteit van de gedeelde vector-eenheid. Dedicated dS- en dZ-hardware neemt 86,8% van die vectorlast weg."
+  },
+  {
+   "id": "q3",
+   "type": "order",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Zet de stappen in de juiste volgorde waarin een LWS-rekengroep een leertaak pauzeert wanneer er een voorspeltaak binnenkomt:",
+   "tiles": [
+    "De leertaak voltooit het lopende reductieblok van 32 elementen.",
+    "De controller slaat 256 bytes aan partiële sommen en een 46-bits descriptor op in het lokale SRAM.",
+    "De matrixkernen worden vrijgegeven en voeren direct de prioritaire voorspeltaak uit.",
+    "Na afronding van de voorspelling herstelt de controller de opgeslagen toestand en hervat het leren vanaf het volgende blok."
+   ],
+   "explain": "LWS breekt niet willekeurig af, maar op een blokgrens van 32 elementen. De tussenresultaten en status worden bewaard in lokaal SRAM, waarna de voorspelling voorrang krijgt. Zodra die klaar is, pakt de leertaak de draad direct weer op."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Het artikel behandelt de wiskundige en hardwarematige werking van transformators, aandachtsmechanismen en inferentietijdleren."
+  },
+  {
+   "track": "automation",
+   "why": "In geautomatiseerde workflows vermindert efficiënte lange-contextverwerking de vertraging bij het doorzoeken van grote documentstromen."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "Mutable Inference: Architecting LLM Accelerators for Inference-Time Learning",
+   "url": "https://arxiv.org/abs/2611.18523"
+  },
+  {
+   "n": 2,
+   "title": "Hardware acceleration",
+   "url": "https://en.wikipedia.org/wiki/Hardware_acceleration"
+  }
+ ],
+ "id": "2026-11-16-hoe-lws-taalmodellen-laat-leren-tijdens-inferent",
+ "kind": "paper",
+ "date": "2026-11-16",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-11-16",
+  "kind": "paper",
+  "verified": "2026-11-16",
+  "candidate": "arxiv:2611.18523",
+  "signal": "nieuw op arXiv",
+  "significance": 4
+ }
+}

@@ -1,0 +1,191 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe Callo ongeldige KV-cache hergebruikt voor speculatieve decodering",
+ "subtitle": "Door verouderde aandachtsvectoren te herpositioneren en live bij te werken tijdens de herberekening, maskeert Callo de wachttijd bij contextbewerkingen zonder kwaliteitsverlies.",
+ "topic": "systems",
+ "minutes": 11,
+ "tldr": [
+  "AI-agenten passen eerdere context vaak aan, waardoor opgeslagen berekeningen vervallen en de server moet wachten op een volledige herberekening.",
+  "Callo gebruikt die ongeldige tussenresultaten direct om alvast conceptwoorden te voorspellen terwijl een andere processor de exacte context herberekent.",
+  "Bij Llama-3.3-70B accepteert het model bij 65 procent van de cache-misses alle 32 voorgestelde conceptwoorden, wat de wachttijd verkort.",
+  "De winst van speculatie neemt af wanneer de decodeer-instantie zelf verzadigd raakt (bijvoorbeeld bij een lage batchlimiet) of wanneer taken uitzonderlijk lange antwoorden vereisen."
+ ],
+ "plain": "Stel je een advocaat voor die een contract van 50 pagina's nakijkt. Op pagina 5 vervangt de cliënt één alinea. Volgens de strikte regels moet de griffier nu het hele dossier vanaf pagina 5 opnieuw overtikken en controleren, wat vier minuten duurt. In plaats van vier minuten duimen te draaien, pakt de advocaat zijn oude conceptversie erbij. Die versie klopt niet meer exact, maar de overige 45 pagina's zijn nauwelijks veranderd. Hij schrijft alvast een reactie van twee alinea's op basis van dat oude concept. Zodra de griffier klaar is, vergelijkt de advocaat zijn geschreven zinnen met het definitieve dossier. Wat klopt, blijft staan; wat afwijkt, past hij direct aan. Hierdoor bespaart hij kostbare wachttijd. De vergelijking loopt spaak zodra een kleine tekstwijziging de volledige betekenis omdraait: een menselijke advocaat ziet dat meteen, maar een taalmodel kan bij een minieme nuance in eerdere zinnen plots heel andere woorden voorstellen.",
+ "why": "Agentic workflows in n8n of softwareontwikkeling passen voortdurend eerdere context aan: ze wissen oude foutmeldingen, vatten tussenstappen samen of vervangen gereedschapsuitvoer door tijdelijke aanduidingen. In traditionele AI-clusters maakt elke bewerking de KV-cache ongeldig, waardoor gebruikers secondenlang wachten op een herberekening. Callo maskeert bijna de helft (circa 47%) van die wachttijd door speculatieve decodering te combineren met gespreide netwerkoverdracht. Voor engineers die interactieve agents bouwen, betekent dit dat contextbeheer niet langer wordt afgestraft met voelbare vertragingen, terwijl de modeluitvoer gegarandeerd identiek blijft aan exacte berekeningen.",
+ "sections": [
+  {
+   "title": "Het knelpunt van contextbewerkingen bij autonome agenten",
+   "md": "Je leert hier waarom het aanpassen van eerdere gesprekscontext de KV-cache ongeldig maakt en hoe prefill-decode-disaggregatie een wachttijd op de decode-instantie veroorzaakt.\n\n### De prijs van contextbeheer\nAutonome codeer- en taakagenten werken in lange sessies waarin tientallen verzoeken elkaar opvolgen. Uit metingen aan 4.764 praktijksessies van Claude Code blijkt dat een sessie mediaan 38 verzoeken telt, met een gemiddelde contextlengte van ongeveer 62.000 tokens per interactie. Naarmate zo'n sessie vordert, grijpt het agentframework regelmatig in op de dialooggeschiedenis:\n\n1. Oude gereedschapsuitvoer wordt gemaskeerd of vervangen door korte aanduidingen om contextrot tegen te gaan.\n2. Eerdere foutieve pogingen worden gewist om te voorkomen dat het model in herhalingslussen raakt.\n3. Oudere dialoogrondes worden samengevat om tokens en kosten te besparen.\n\nHet verwijderen van overbodige context vermindert het aantal invoertokens zonder de slagingskans van taken aan te tasten. Desondanks dwingen huidige systemen vaak een strikt append-only beleid af. De reden hiervoor ligt in de werking van de aandachtsbuffer van grote taalmodellen.\n\n### Prefix caching en de straf van cache-invalidatie\nTijdens de autoregressieve generatie slaat een transformer de berekende Key- en Value-vectoren van eerdere tokens op in de zogeheten KV-cache. Hierdoor hoeven historische tokens niet bij elke stap opnieuw door alle gewichten te worden gehaald. *Prefix caching* hergebruikt deze cache zolang opeenvolgende tokens vanaf het allereerste begin exact overeenkomen.\n\nZodra een agent een wijziging aanbrengt in het midden van de prompt, breekt dit mechanisme. Zelfs als duizenden tokens achter de bewerking ongewijzigd blijven, verschuiven hun relatieve en absolute posities. Bovendien verandert de context waarnaar hun aandachtsmechanisme kijkt. Volgens de regels van [cache-invalidatie](https://en.wikipedia.org/wiki/Cache_invalidation) verklaart het systeem de gehele achtervoegselbuffer (*suffix*) ongeldig. Dit veroorzaakt een *cache miss*: de server moet het hele achtervoegsel opnieuw verwerken in een *re-prefill*. Bij Llama-3.3-70B resulteert 79% van de verzoeken in een typische SWE-agent configuratie in zo'n miss, waarbij per keer mediaan 3.100 tokens opnieuw berekend moeten worden.\n\n```\nNormale prefix cache:   [ Prompt-prefix (exact) ] ---> [ Nieuwe tokens ]\n                              Hergebruikt               Prefill\n\nContextbewerking:       [ Prefix ] [ Bewerkte tool ] [ Ongeldig achtervoegsel ] ---> [ Nieuwe beurt ]\n                        Hergebruik    Gewijzigd        MOET OPNIEUW (re-prefill)        Prefill\n```\n\n### De kloof tussen prefill en decode\nModerne AI-infrastructuur past prefill-decode (P/D) disaggregatie toe. Omdat de prefill-fase rekenintensief is (matrixvermenigvuldigingen over duizenden tokens tegelijk) en de decode-fase juist wordt begrensd door geheugenbandbreedte (sequentiële generatie token per token), worden beide taken op fysiek gescheiden GPU-instanties geplaatst:\n\n- De **P-instantie** voert de zware herberekening van de prompt uit en verzendt de KV-cache over het netwerk.\n- De **D-instantie** wacht tot die exacte data binnenkomt en genereert vervolgens de woorden van het antwoord.\n\nTijdens een contextbewerking blokkeert het kritieke pad: de D-instantie staat voor dat specifieke verzoek stil terwijl de P-instantie het achtervoegsel herberekent. In [Ou en Lentz (2026)](https://arxiv.org/abs/2611.18459) introduceren de onderzoekers **Callo**. De kernobservatie van Callo is dat de D-instantie de ongeldig verklaarde KV-cache van de vorige beurt nog fysiek in het geheugen heeft staan. In plaats van te wachten, kan de D-instantie die data direct inzetten om conceptantwoorden te genereren."
+  },
+  {
+   "title": "Ongeldige cache als wiskundig fundament voor conceptgeneratie",
+   "md": "Je leert hier waarom ongeldig verklaarde KV-vectoren niet willekeurig zijn en hoe de logit-kloof voorspelt of een concepttoken de verificatie zal doorstaan.\n\n### Waarom ongeldige data toch bruikbaar is\nIn tegenstelling tot methoden die KV-buffers comprimeren, kwantiseren of uitdunnen om geheugen te sparen, mist een ongeldig verklaarde cache uitsluitend de recente contextbewerking. Het overgrote deel van de tekst is identiek gebleven. De fout die door de bewerking ontstaat, heeft daardoor een meetbare wiskundige structuur over de opeenvolgende transformerlagen:\n\n1. **Positie-uitlijning**: Door positionele encoderingen (zoals RoPE) opnieuw toe te passen (*re-rotation*), worden de sleutels direct aangepast aan hun nieuwe index in de prompt.\n2. **Oppervlakkige lagen**: In laag 0 kijken tokens nog niet via zelfaandacht naar eerdere tokens. Na herrotering is de KV-toestand in laag 0 wiskundig identiek aan de exacte toestand, op afrondingsfouten na.\n3. **Diepe lagen**: Pas naarmate de representatie door diepere lagen stroomt, mengt de invloed van het bewerkte tekstfragment zich via aandacht in de behouden tokens. De relatieve $L_2$-fout:\n\n$$\\frac{\\|X - X^*\\|_2}{\\|X^*\\|_2}$$\n\noverschrijdt pas bij laag 12 (voor Values) en laag 14 (voor Keys) tweemaal de numerieke referentiewaarde, en stabiliseert zich in de diepste lagen rond twee- tot viermaal die referentie.\n\nBij offline experimenten blijkt dat wanneer men een model met deze gerepositioneerde, ongeldige KV-cache de exacte tokens uit eerdere stappen voedt, het voorspelde volgende token in 98,3% van de posities exact overeenkomt met de voorspelling op de foutloze cache. Bij 80% van de posities wijkt de totale variatieafstand van de kansverdeling minder dan 0,01 af van de exacte verdeling.\n\n### Hoge acceptatiegraad bij speculatie\nOmdat de verborgen toestand zo dicht bij de waarheid blijft, kan de D-instantie met het volledige doelmodel concepttokens (*drafts*) genereren via [speculatieve executie](https://en.wikipedia.org/wiki/Speculative_execution). Over een venster van 32 concepttokens accepteert het model bij Llama-3.3-70B in 65% van de cache-misses het volledige venster zonder één enkele fout onder *fixed-tie greedy* verificatie. Onder een *any-max* regel loopt dit op naar 70%.\n\n| Conceptbron | Volledig venster geaccepteerd (32 tokens) | Gemiddeld aantal geaccepteerde tokens |\n|---|---|---|\n| Doelmodel op exacte KV-cache (bovengrens) | 80% | niet gerapporteerd |\n| **Callo: doelmodel op ongeldige KV-cache** | **65%** | **25,4** |\n| Prompt-lookup via n-grams (zonder KV-toestand) | 12% | niet gerapporteerd |\n| Doelmodel zonder het behouden achtervoegsel | 10% | niet gerapporteerd |\n\n> [!note] Waarom n-grams falen\n> N-grams zoeken naar letterlijke tekstherhalingen in de prompt. Bij interactieve agenten bestaat 96% van de vroege tokens in een antwoord echter uit redeneerstappen in natuurlijke taal vóór het eerste codeblok. N-grams kunnen die redenering niet raden; daarvoor is het volledige taalmodel nodig.\n\n### De logit-kloof als foutindicator\nWanneer een concepttoken toch faalt, gebeurt dat niet willekeurig. Fouten treden op waar het taalmodel twijfelt. Dit is zichtbaar in het verschil tussen de hoogste logit en de op één na hoogste logit (de *logit gap* $\\Delta \\ell = \\ell_{(1)} - \\ell_{(2)}$):\n\n- Waar $\\Delta \\ell \\ge 1{,}0$, stemt de voorspelling op de ongeldige cache in 97% tot 100% van de gevallen overeen met de exacte berekening.\n- Waar $\\Delta \\ell < 0{,}5$, daalt de overeenstemming naar 65%.\n\nDeze minimale verschillen beslaan slechts 2,4% van alle gegenereerde posities, maar zijn verantwoordelijk voor 60% van alle afwijzingen bij verificatie. Een logit-kloof kleiner dan 1,0 verklaart zelfs 85% van de eerste fouten. Hierdoor kan het systeem tijdens het genereren zelf inschatten of verder speculeren nog zinvol is.\n\n:::sim kvcache {}\n:::\n"
+  },
+  {
+   "title": "De architectuur van Callo: staging, streaming en lock-vrije decodering",
+   "md": "Je leert hier hoe Callo de voorlopige toestand opbouwt, berekende lagen incrementeel overdraagt en parallel decodeert zonder synchronisatiesloten.\n\n### Drie leidende ontwerpprincipes\nHet systeem is ontworpen rond drie strikte randvoorwaarden:\n\n1. **Verliesvrij (Lossless)**: Ongeldige cache dient uitsluitend om concepttokens voor te stellen. Tokens worden definitief vastgelegd op basis van de exacte KV-toestand.\n2. **Onafhankelijk van het agentframework (Harness-agnostisch)**: Callo detecteert contextbewerkingen zelfstandig op serverniveau zonder aanpassingen aan de code van de agent.\n3. **Voorrang voor exacte berekeningen**: Speculatieve decodering mag reguliere verzoeken nooit vertragen en breekt direct af zodra de betrouwbaarheid inzakt.\n\n```\n[ P-instantie ] --- (1) Start re-prefill ---> [ Berekent laag per laag ] -- (3) Streamt lagen via NVLink --+\n                                                                                                          |\n[ D-instantie ] --- (1) Staging (Triton) ---> (2) Registreert blokken ---> (4) Lock-vrij draften <-------+\n                                                                                   |\n                                              (5) Voltooiingsmelding --------------+\n                                                                                   v\n                                                                           (6) Verificatie (1 pass)\n```\n\n### Fase 1: Staging op de decode-instantie\nZodra een bewerkt verzoek binnenkomt, bouwt de D-instantie een voorlopige toestand (*provisional KV*). Dit gebeurt in twee delen:\n\n- **Bestaande tokens**: Callo lijnt de tokens van het vorige verzoek (inclusief het zojuist gegenereerde antwoord) uit met de nieuwe prompt. Identieke reeksen worden gekopieerd naar nieuwe blokken. Een gespecialiseerde Triton-kernel herroteert de positionele vectoren in het geheugen.\n- **Nieuwe tussenstukken en staarttokens**: Tokens die nieuw zijn ingevoegd of aan het einde zijn toegevoegd, hebben geen voorganger. De D-instantie berekent deze lokaal in kleine brokjes van maximaal $C_s = 112$ tokens per stap binnen haar normale batch. Deze tussenstappen worden opgeslagen in tijdelijke *scratch blocks* om te voorkomen dat de reguliere batch stagneert. Bij SWE-agent vergt dit mediaan 424 tokens per miss-verzoek.\n\n### Fase 2: Incrementele streaming per laag\nIn standaard vLLM berekent de P-instantie de volledige prompt en stuurt vervolgens alle KV-blokken in één grote netwerkuitbarsting (*burst*) naar de D-instantie. Callo splitst dit op:\n\nZodra de P-instantie één aandachtslaag berekend heeft, registreert een CUDA-event dit. Een asynchrone achtergrond-thread verstuurt de KV-data van die specifieke laag direct via NVLink (met NIXL) naar de D-instantie. Omdat vLLM werkt met prefill-brokken tot 8.192 tokens en 88% van de re-prefills binnen één brok past, arriveert de exacte toestand strikt laag voor laag.\n\n### Fase 3: Lock-vrij draften op een helende toestand\nTerwijl de P-instantie de lagen binnenschrijft, leest de D-instantie diezelfde geheugenblokken uit om concepttokens te genereren. Dit gebeurt volledig lock-vrij: er zijn geen semaforen of synchronisatiebarrières tussen de schrijvende netwerkthread en de lezende decodematrix.\n\n> [!tip] Waarom een mengsel van oude en nieuwe lagen werkt\n> Een raceconditie waarbij een laag net vóór, tijdens of na het lezen wordt overschreven, beïnvloedt uitsluitend de kwaliteit van het conceptvoorstel, nooit de correctheid van het antwoord. Uit metingen blijkt dat een tussenmengsel van exacte en ongeldige lagen nooit minder tokens accepteert dan de ongeldige cache alleen. Zodra de helft van de lagen exact is overschreven, stijgt de acceptatiegraad naar het niveau van een 100% foutloze cache."
+  },
+  {
+   "title": "Verificatie en scheduleregels: verliesvrije afronding onder wisselende belasting",
+   "md": "Je leert hier hoe de verificatiestap de exacte uitvoer waarborgt en hoe drie scheduler-regels voorkomen dat speculatie reguliere decodering vertraagt.\n\n### Exacte verificatie in één voorwaartse pas\nZodra de P-instantie alle lagen heeft verzonden, stuurt zij een afrondingssignaal. De D-instantie stopt dan met draften en plant een verificatiestap in haar eerstvolgende batchronde.\n\nDe verificateur voert één enkele voorwaartse berekening uit over het laatste prompt-token en alle $k$ gegenereerde concepttokens (een invoer van $k+1$ tokens). Omdat deze berekening uitsluitend de berekende exacte KV-cache raadpleegt en de KV-vectoren van de concepttokens opnieuw berekent, zijn de resulterende logits identiek aan die van een traditioneel serving-systeem. Callo hanteert standaard *fixed-tie greedy* verificatie:\n\n- Het systeem accepteert het langste aaneengesloten prefix van concepttokens dat exact overeenkomt met de argmax van het doelmodel.\n- Bij het eerste afwijkende token stopt de acceptatie, waarna de verificatiestap direct het correcte token toevoegt.\n- Als alle $k$ concepttokens kloppen, levert de pas direct een extra bonustoken op.\n\nIn validatie-experimenten over 1.928 verificatiemomenten en 44.792 toegekende tokens vonden de onderzoekers nul vingerafdrukverschillen in de KV-toestand en geen enkele afwijking in modeluitvoer.\n\n### Drie regels voor capaciteitsbeheer\nSpeculatieve decodering levert alleen winst op zolang de D-instantie ongebruikte rekencycli heeft. Als gewone decodering alle capaciteit opeist, moet speculatie wijken. Drie regels sturen dit proces:\n\n1. **Toelating (Admission)**: Een verzoek mag alleen speculeren als er een vrij batchslot is dat geen enkel regulier verzoek nodig heeft. Er moeten minimaal 256 behouden tokens aanwezig zijn, en de rekentijd voor staging ($s$ tokens vermenigvuldigd met batchgrootte $B$) moet onder een strikt budget blijven ($K = 4.096$).\n2. **Vroegtijdig stoppen (Early Stop)**: Op basis van de logit-kloof berekent het model de cumulatieve overlevingskans over de reeks:\n\n$$P_{\\text{cum}} = \\prod_{i=1}^k p_i$$\n\nZodra $P_{\\text{cum}}$ onder de drempelwaarde $\\theta = 0{,}3$ zakt, stopt het draften direct. Deze regel vermindert het aantal weggegooide concepttokens met 30%, terwijl 97% van de bruikbare tokens behouden blijft.\n3. **Plaatsmaken (Yielding)**: Komen er nieuwe reguliere verzoeken binnen die capaciteit vereisen, dan leveren speculerende verzoeken hun batchslot in, te beginnen bij het verzoek met de laagste cumulatieve acceptatiekans. Reeds gegenereerde concepttokens blijven behouden in het geheugen voor latere verificatie.\n\n### Gemeten tijdswinst op de testopstelling\nOp een testopstelling met twee NVIDIA H200 NVL GPU's (141 GB per kaart) via NVLink behaalt Callo bij gematigde systeembelasting (52% van piekcapaciteit) op Llama-3.3-70B een versnelling van 1,19× op miss-verzoeken en 1,14× over alle verzoeken samen vergeleken met vLLM.\n\n```\nvLLM:   |=== Wachten op exacte KV (1,7 s) ===|====== Reguliere decodering (2,9 s) ======|\n\nCallo:  |== Streaming (1,3 s) ==|== Verificatie & rest-decode (2,5 s) ==|\n        |-- Draften op oude KV -|\n        [   Winst: 0,8 s (47% van de miss-penalty gemaskeerd)          ]\n```\n\nBij vLLM wacht een miss-verzoek gemiddeld 1,7 seconden op de exacte KV-toestand, gevolgd door 2,9 seconden decodering. Onder Callo arriveert de exacte KV-cache 0,4 seconden sneller dankzij de gespreide streaming, terwijl de resterende decodering met nog eens 0,4 seconden krimpt doordat goedgekeurde concepttokens het antwoord al hebben opgebouwd. Samen maskeert dit 47% van de oorspronkelijke wachttijd."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "79%",
+   "label": "aandeel verzoeken dat leidt tot een cache-miss door contextwijzigingen bij Llama-3.3-70B",
+   "quote": "On Llama-3.3-70B, 79% of requests in the main workload result in edit-induced misses.",
+   "source": 1
+  },
+  {
+   "value": "98.3%",
+   "label": "overeenkomst in voorspeld volgend token tussen ongeldige KV en exacte KV bij offline evaluatie",
+   "quote": "The predicted next token matches that on the exact KV at 98.3% of positions, and the next-token distribution is within 0.01 total variation of the exact one at 80%.",
+   "source": 1
+  },
+  {
+   "value": "65%",
+   "label": "percentage miss-verzoeken waarbij het volledige venster van 32 concepttokens wordt geaccepteerd",
+   "quote": "The whole window is accepted in 65% of miss requests under fixed-tie greedy verification and 70% under any-max greedy verification.",
+   "source": 1
+  },
+  {
+   "value": "1.5%",
+   "label": "reductie van de KV-pool op de decode-instantie voor Callo's runtime-buffers",
+   "quote": "This reduces the D-instance’s KV pool by 1.5% on the main configuration.",
+   "source": 1
+  },
+  {
+   "value": "0.24%",
+   "label": "gemiddeld aandeel van scratch-blokken in de KV-pool van de decode-instantie bij gematigde belasting",
+   "quote": "At moderate load on the main configuration, scratch blocks occupy 0.24% of the D-instance’s KV pool on average and 2.71% at peak.",
+   "source": 1
+  },
+  {
+   "value": "24.6%",
+   "label": "gemiddelde bezetting van de KV-pool onder Callo vergeleken met 27,2 procent onder vLLM",
+   "quote": "Overall, mean KV pool occupancy is 24.6% under Callo, compared with 27.2% under vLLM.",
+   "source": 1
+  }
+ ],
+ "caveats": "Bij het interpreteren van deze resultaten gelden belangrijke technische randvoorwaarden:\n\n1. **Verdwijnen van winst bij verzadiging**: Callo benut overcapaciteit op de D-instantie. Wanneer de decodeercapaciteit zwaar overboekt raakt door een zeer lage batchlimiet op de decode-instantie (bijvoorbeeld maximaal twee verzoeken), daalt de bijdrage van speculatie naar slechts 3% en is vrijwel alle winst toe te schrijven aan de verbeterde netwerkstreaming.\n2. **Kort redeneren versus lange ketens**: De tijdswinst betreft het maskeren van de prefill-wachttijd. Bij taken die uitzonderlijk lange redeneerketens genereren (honderden tot duizenden decodeerstappen), maakt de wachttijd voor prefill slechts een fractie uit van de totale latentie, waardoor de relatieve winst verwaarloosbaar wordt.\n3. **Architectuurgevoeligheid**: Waar Llama-3.3-70B en Mistral-Small-3.2-24B in respectievelijk 65% en 70% van de gevallen hun volledige venster behouden, haalt Gemma-4-31B slechts 32%. Dit model gebruikt alternerende sliding-window lagen die gevoeliger zijn voor positieverschuivingen en eerdere context sneller afkappen.\n4. **Infrastructuurvereisten**: Callo vereist strikte sessie-affiniteit (opeenvolgende beurten moeten op dezelfde D-instantie landen die de oude cache bewaart) en een snelle interconnectie (zoals NVLink) om lagen incrementeel zonder transmissie-overhead binnen te schrijven.\n5. **Ongeteste scenario's**: De bronnen evalueren uitsluitend tekstbewerkingen binnen dezelfde modelparameters. Of een KV-cache bruikbaar blijft als speculatieve basis na een LoRA-adapterwissel of bij geheugenmodellen die dynamische externe kennisblokken injecteren, blijft een open vraag.",
+ "glossary": [
+  {
+   "term": "Prefill-decode disaggregatie (P/D)",
+   "def": "Het fysiek scheiden van de rekenintensieve invoerverwerking (prefill) en de geheugenbandbreedte-intensieve token-generatie (decode) over gescheiden GPU-instanties."
+  },
+  {
+   "term": "KV-cache",
+   "def": "Een GPU-geheugenbuffer die de berekende Key- en Value-vectoren van eerdere tokens bewaart zodat ze tijdens autoregressieve decodering niet opnieuw berekend hoeven te worden."
+  },
+  {
+   "term": "Prefix caching",
+   "def": "Een optimalisatie waarbij opgeslagen KV-vectoren worden hergebruikt voor nieuwe prompts zolang de reeks vanaf het eerste token exact overeenkomt."
+  },
+  {
+   "term": "Ongeldig verklaarde KV-cache (invalidated KV)",
+   "def": "Opgeslagen aandachtsvectoren uit een eerdere dialoogbeurt die na een tekstwijziging in het midden van de prompt niet meer exact aansluiten op de nieuwe tokenposities."
+  },
+  {
+   "term": "Speculatieve decodering",
+   "def": "Een versnellingstechniek waarbij een conceptbron meerdere vervolgtokens voorstelt die vervolgens in één parallelle stap door het doelmodel worden geverifieerd."
+  },
+  {
+   "term": "Staging",
+   "def": "Het voorbereidende proces waarin Callo oude KV-vectoren herpositioneert, positie-encoderingen aanpast via herrotering en ontbrekende invoertokens berekent in een tijdelijke werkbuffer."
+  },
+  {
+   "term": "Fixed-tie greedy verificatie",
+   "def": "Een deterministische verificatieregel die concepttokens goedkeurt zolang ze overeenkomen met de hoogste logit van het doelmodel, waarbij gelijke scores worden beslecht door het laagste token-id te kiezen."
+  },
+  {
+   "term": "Logit-kloof (logit gap)",
+   "def": "Het absolute verschil tussen de hoogste en de op één na hoogste logit-waarde van een voorspelling, dat fungeert als maatstaf voor de zekerheid van het model."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom slaagt Callo erin om met ogenschijnlijk ongeldige KV-cache toch in 65% van de gevallen een venster van 32 concepttokens foutloos voor te stellen?",
+   "options": [
+    "Omdat een contextwijziging alleen aandacht in diepere lagen beïnvloedt, terwijl eerdere lagen en ongewijzigde posities wiskundig vrijwel gelijk blijven aan de exacte toestand.",
+    "Omdat de prefill-instantie vóór het starten van de decodering alle aandachtsvectoren van de gewijzigde tokens comprimeert en synchroniseert.",
+    "Omdat het taalmodel tijdens interactieve sessies uitsluitend deterministische codevoorbeelden genereert waarvan de syntaxis ongevoelig is voor promptwijzigingen.",
+    "Omdat de decode-instantie ontbrekende tokens automatisch aanvult met statistische n-grams uit de eerdere dialooggeschiedenis."
+   ],
+   "answer": 0,
+   "explain": "Een contextbewerking tast behouden tokens alleen indirect aan via aandacht in diepere lagen. Laag 0 is na herrotering wiskundig identiek op afronding na, en in 98,3% van de posities voorspelt het model met ongeldige KV exact hetzelfde volgende token als met de volledige herberekening."
+  },
+  {
+   "id": "q2",
+   "type": "order",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Zet de verwerkingsstappen van een cache-miss in Callo in de juiste chronologische volgorde, vanaf de promptinvoer tot de definitieve toekenning.",
+   "tiles": [
+    "Staging: de decode-instantie herpositioneert behouden KV-blokken, herroteert sleutels en berekent nieuwe tokens in scratch-blokken.",
+    "Speculatief draften op de decode-instantie terwijl de prefill-instantie berekende lagen stapsgewijs over de netwerkverbinding binnenschrijft.",
+    "Ontvangst van de voltooiingsmelding van de prefill-instantie zodra alle exacte KV-lagen volledig in het GPU-geheugen staan.",
+    "Verificatie van alle gegenereerde concepttokens in één voorwaartse berekening tegen de exacte KV-cache en definitieve toekenning."
+   ],
+   "explain": "Callo splitst het kritieke pad: na staging start het draften direct en loopt parallel aan het streamen van exacte lagen. Pas na de voltooiingsmelding vindt de verificatie in één parallelle stap plaats."
+  },
+  {
+   "id": "q3",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Waarom leidt het lock-vrij overschrijven van de voorlopige KV-cache door binnenkomende exacte lagen tijdens het draften niet tot foutieve modelantwoorden?",
+   "options": [
+    "Omdat concepttokens uitsluitend als voorstellen dienen en de definitieve toekenning pas plaatsvindt na verificatie op de volledige, exacte KV-cache.",
+    "Omdat de GPU-geheugencontroller tussenliggende lees- en schrijfbewerkingen automatisch atomair buffert via hardwarematige geheugensloten.",
+    "Omdat de prefill-instantie alleen geheugenblokken overschrijft die pas in een latere generatiefase door het taalmodel worden geraadpleegd.",
+    "Omdat eventuele verschillen tussen lagen direct worden gecorrigeerd door een speciaal distillatienetwerk op de decode-instantie."
+   ],
+   "answer": 0,
+   "explain": "Callo is strikt verliesvrij doordat draften alleen hypothesen genereert. Zelfs als een concepttoken ontstaat op een tussenstadium van oude en nieuwe lagen, garandeert de verificatiestap op de 100% exacte KV-cache dat alleen wiskundig correcte tokens worden gecommitteerd."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Verdiept hoe transformer-aandachtsmechanismen en KV-caching werken bij autoregressieve decodering en speculatieve inferentie."
+  },
+  {
+   "track": "automation",
+   "why": "Relevant voor het bouwen van latency-gevoelige agentic workflows in n8n waarbij de dialooggeschiedenis frequent wordt aangepast."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "Callo: Serving Cache-Miss Requests with Speculative Decoding on Invalidated KV under Prefill-Decode Disaggregation",
+   "url": "https://arxiv.org/abs/2611.18459"
+  },
+  {
+   "n": 2,
+   "title": "Wikipedia — Speculative execution",
+   "url": "https://en.wikipedia.org/wiki/Speculative_execution"
+  },
+  {
+   "n": 3,
+   "title": "Wikipedia — Cache invalidation",
+   "url": "https://en.wikipedia.org/wiki/Cache_invalidation"
+  }
+ ],
+ "id": "2026-11-16-hoe-callo-ongeldige-kv-cache-hergebruikt-voor-sp",
+ "kind": "paper",
+ "date": "2026-11-16",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-11-16",
+  "kind": "paper",
+  "verified": "2026-11-16",
+  "candidate": "arxiv:2611.18459",
+  "signal": "nieuw op arXiv",
+  "significance": 4
+ }
+}
