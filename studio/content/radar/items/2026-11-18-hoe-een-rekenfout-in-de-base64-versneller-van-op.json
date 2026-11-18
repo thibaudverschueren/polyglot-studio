@@ -1,0 +1,202 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe een rekenfout in de Base64-versneller van OpenJDK leidt tot willekeurige code-uitvoering",
+ "subtitle": "Een rekenkundige onderloop in de handgeschreven vector-assembly van Java overschrijft naburig geheugen en maakt remote code execution mogelijk.",
+ "topic": "systems",
+ "minutes": 11,
+ "tldr": [
+  "Java garandeert geheugenveiligheid, maar snelle hardware-instructies voor Base64-tekstverwerking bleken een rekenfout in de assembly-code te bevatten.",
+  "Een onverwacht gelijkheidsteken veroorzaakt een negatieve lengte, waardoor de processor 62 bytes voorbij het gereserveerde geheugenblok overschrijft.",
+  "Beveiligingsonderzoekers kenden de fout een kritieke CVSS-score van 9.2 toe, omdat aanvallers kwetsbare servers op afstand kunnen overnemen.",
+  "De aanval vereist specifieke x86-processors met AVX-512 VBMI-ondersteuning en een JIT-compiler die de versnelde code eerst activeert."
+ ],
+ "plain": "Denk aan een douanebeambte die vrachtbrieven overtypt in een formulier met precies vijftig invoervakjes. De beambte heeft al 48 vakjes ingevuld wanneer er aan het einde een vreemd leesteken opduikt. Door een rekenfout raakt het systeem in de war en berekent het een negatieve lengte. In plaats van te stoppen, drukt een stempelmachine blindelings vanaf dat punt 64 vakjes door. Omdat er na positie 48 nog maar twee vrije vakjes waren, vloeien er 62 vakjes aan inkt over op het formulier van de volgende vrachtwagen op de stapel. Een kwaadwillende chauffeur kan die overlopende inkt zo richten dat hij de instructies van de volgende vrachtwagen vervalst en de controle over het hele douanekantoor overneemt. De vergelijking houdt op waar formulieren van papier zijn: in echt computergeheugen liggen geen losse vellen, maar één aaneengesloten rij getallen waarin code en gegevens direct in elkaar overgaan.",
+ "why": "Java vormt de basis van negentig procent van de Fortune 500-bedrijven, van banktransacties tot cloudinfrastructuur. Een programmeur kiest Java juist voor automatische geheugenveiligheid, in de aanname dat klassieke geheugencorruptie onmogelijk is. Java4Shell weerlegt die aanname: wie op de achtergrond zware vector-instructies inzet voor pure snelheid, haalt de kwetsbaarheden van C en machinetaal direct terug in de runtime. Zodra een publieke authenticatieserver of webhook kwaadaardig gemanipuleerde Base64-tekst decodeert, kan een aanvaller zonder inloggegevens binnendringen. Systeembeheerders moeten hun runtimes direct updaten of de bewuste hardware-versneller uitschakelen.",
+ "sections": [
+  {
+   "title": "De belofte van geheugenveiligheid en de prijs van intrinsics",
+   "md": "Je leert hier waarom de Java Virtual Machine vertrouwt op geoptimaliseerde assembly-instructies en hoe die optimalisaties de ingebouwde geheugenveiligheid kunnen ondermijnen.\n\n### Geheugenveiligheid in Java\nEen van de voornaamste verkoopargumenten van de Java-programmeertaal is automatische geheugenveiligheid. Waar programmeurs in C of C++ handmatig geheugen moeten toewijzen en vrijgeven, beheert de Java Virtual Machine (JVM) geheugen automatisch via garbage collection. Bovendien controleert de runtime bij elke lees- of schrijfactie of een index binnen de grenzen van een array valt. Overschrijdt een programma die grenzen, dan werpt Java direct een uitzondering op (`ArrayIndexOutOfBoundsException`) in plaats van willekeurig geheugen te overschrijven.\n\nVolgens beveiligingsonderzoekers van [calif.io](https://calif.io/java4shell/) is Java de op twee na populairste programmeertaal ter wereld en draait negentig procent van de Fortune 500-bedrijven erop. Juist omdat de taal kritieke sectoren zoals banken, luchtvaart en telecommunicatie aandrijft, vertrouwt de industrie blindelings op deze strikte geheugenscheiding.\n\n### De rol van de HotSpot C2-compiler en intrinsics\nHoewel toepassingen in Java worden geschreven, is de onderliggende runtime zelf — de HotSpot JVM binnen [OpenJDK](https://en.wikipedia.org/wiki/OpenJDK) — grotendeels gebouwd in C, C++ en machinetaal (assembly). Om prestaties te optimaliseren, analyseert de runtime welke functies intensief worden uitgevoerd. De zogeheten C2 Just-In-Time (JIT) compiler vertaalt zulke veelgebruikte methoden tijdens runtime direct naar native machinecode.\n\nVoor veelvoorkomende, rekenintensieve taken volstaat gewone machinecode echter niet. Daarom bevat HotSpot zogeheten **intrinsics**: met de hand geschreven assembly-routines die specifiek zijn afgestemd op de instructiesets van moderne processors. Een van die versnelde routines verwerkt [Base64](https://en.wikipedia.org/wiki/Base64), een standaardformaat ([RFC 4648](https://en.wikipedia.org/wiki/Base64)) dat binaire data omzet in afdrukbare tekst voor authenticatieprotocollen, netwerkberichten en bestandsuploads.\n\n### Vectorverwerking met AVX-512 VBMI\nOm Base64-decodering te versnellen op x86-64-architecturen, benut OpenJDK de **AVX-512 VBMI**-instructieset (*Vector Byte Manipulation Instructions*). Waar een standaard processorinstructie één of hoogstens enkele bytes per cyclus verwerkt, manipuleren vector-instructies brede registers van 512 bits (oftewel 64 bytes tegelijk).\n\nHet gevaar schuilt in de aard van handgeschreven assembly: op dit niveau bestaan de automatische grensbewakers van Java niet. Als de assembly-code een logische fout bevat bij het bepalen van de arraygrenzen, schrijft de processor de vectorgegevens ongecontroleerd weg over het fysieke geheugen van het proces."
+  },
+  {
+   "title": "De rekenfout in het bitmasker: hoe een gelijkheidsteken geheugen overschrijft",
+   "md": "Je leert hier hoe een logische fout bij het verwerken van Base64-opvulteekens leidt tot een negatieve lengte, een ongeldig bitmasker en een ongecontroleerde overschrijving van het heap-geheugen.\n\n### De structuur van Base64 en padding\nBase64 codeert binaire gegevens door elke 3 bytes (24 bits) op te splitsen in vier groepen van 6 bits, die elk worden vertaald naar een karakter uit een tabel van 64 tekens. Wanneer de oorspronkelijke binaire invoer geen veelvoud van 3 bytes is, vult de encoder de resterende bits aan met nullen en voegt hij aan de gecodeerde tekst één of twee gelijkheidstekens (`=`) toe als padding.\n\nBij het decoderen berekent OpenJDK vooraf hoeveel geheugen nodig is voor de uitvoerbuffer. De runtime gebruikt hiervoor de volgende formule, waarbij de invoerlengte door 4 wordt gedeeld, vermenigvuldigd met 3, en gecorrigeerd voor de aanwezige padding:\n\n$$\\text{bufferlengte} = \\left(\\lceil \\frac{\\text{invoerlengte}}{4} \\rceil \\times 3\\right) - \\text{padding}$$\n\nStel dat een aanvaller een gemanipuleerde reeks stuurt van 65 tekens: 64 maal de letter `A`, gevolgd door één gelijkheidsteken (`=`):\n\n$$\\lceil 65 / 4 \\rceil = 17 \\implies 17 \\times 3 = 51 \\implies 51 - 1 = 50 \\text{ bytes}$$\n\nDe Java-runtime reserveert op basis van deze berekening een byte-array van exact 50 bytes op de heap.\n\n### De verwerking van de staart in assembly\nDe x86-64 intrinsic van OpenJDK leest de invoer eerst in grote blokken van 256 bytes, en schakelt daarna over op blokken van 64 bytes. De eerste 64 `A`-tekens leveren keurig 48 gedecodeerde bytes op ($64 \\times 6 / 8 = 48$), die netjes binnen de 50-byte buffer passen.\n\nVervolgens resteert er nog 1 teken van de invoer: het losse gelijkheidsteken (`=`). Voor restanten kleiner dan 64 bytes schakelt de assembly-routine over op de vector-instructie `evmovdqub` (de intrinsic-variant van de instructie `VMOVDQU8`). Deze instructie schrijft bytes weg naar het geheugen op basis van een 64-bit schrijfmasker (`k1`): alleen voor bits die op 1 staan, wordt de bijbehorende byte naar het geheugen geschreven.\n\nDe routine berekent het masker in vereenvoudigde vorm via de volgende logica:\n\n```text\ninput_mask := bzhiq(-1, input_length)\noutput_len := (input_length / 4) * 3\n\n// Verwerk de padding-tekens\nif input[input_length - 1] == '=':\n    output_len -= 1\n    input_mask >>= 1\nif input[input_length - 2] == '=':\n    output_len -= 1\n    input_mask >>= 1\n\noutput_mask := bzhiq(-1, output_len)\n```\n\n### De onderloop en het gedrag van bzhiq\nBij een resterende invoer van slechts 1 byte (`input_length = 1`) berekent de integer-deling `(1 / 4) * 3` een initiële `output_len` van 0. Direct daarna controleert de code of het laatste teken een gelijkheidsteken is. Omdat dit klopt, verlaagt de code `output_len` met 1:\n\n$$\\text{output\\_len} = 0 - 1 = -1$$\n\nDe variabele `output_len` onderloopt dus naar een negatieve waarde. Vervolgens roept de routine de x86-instructie `bzhiq(-1, output_len)` aan. Deze instructie (*Zero High Bits Starting with Specified Bit Position*) zet alle bits vanaf de opgegeven positie op nul om overtollige bytes af te kappen.\n\n> [!warning] Specificatie van de bzhi-instructie\n> Volgens de specificatie van de x86-instructieset (BMI2) voert `bzhi` géén bewerking uit wanneer de indexwaarde groter dan of gelijk is aan 64. Omdat `-1` als een niet-ondertekend 64-bit geheel getal (`uint64`) representeert als $2^{64}-1$ (`0xFFFFFFFFFFFFFFFF`), is de index veel groter dan 64. De instructie laat alle bits ongemoeid, waardoor `output_mask` gelijk blijft aan `-1u64`: alle 64 bits staan op 1.\n\n### De geheugenoverschrijving van 62 bytes\nOmdat alle 64 bits in het masker actief zijn, schrijft `evmovdqub` niet 0 bytes weg (de verwachte uitvoerlengte voor een enkel opvulteken), maar een volledig blok van 64 bytes. Deze schrijfactie start op doelpositie 48 in de array:\n\n$$48 + 64 = 112$$\n\nDe gealloceerde array was echter slechts 50 bytes groot. De schrijfactie loopt door tot index 111 en overschrijft daardoor exact **62 bytes** (van offset 50 tot en met 111) buiten de gereserveerde buffer.\n\n| Byte-bereik in de schrijfoperatie | Controle door de aanvaller | Waarde in het geheugen |\n|---|---|---|\n| Byte 0 (offset 48) | Volledig controleerbaar | Binnen de grenzen van de 50-byte array |\n| Byte 1 (offset 49) | 4 bits controleerbaar | Binnen de grenzen van de 50-byte array |\n| Bytes 2..47 (offset 50..95) | Ongecontroleerd | Overschrijft naburig geheugen buiten de array |\n| Bytes 48..63 (offset 96..111) | Ongecontroleerd | Heeft altijd de vaste waarde `0x9a` |\n\nNadat de assembly-stub klaar is, constateert de hogere Java-code dat de invoer ongeldig is en werpt een `IllegalArgumentException` op. De schade is dan echter al aangericht: het naburige geheugen op de heap is reeds gemanipuleerd."
+  },
+  {
+   "title": "Van vaste overschrijving naar willekeurig lezen en schrijven",
+   "md": "Je leert hier hoe aanvallers een vaste geheugenoverschrijving transformeren in gerichte lees- en schrijfrechten via het manipuleren van bufferlengtes.\n\n### De beperking van een vaste schrijfactie\nOp het eerste gezicht lijkt een out-of-bounds schrijfactie van 62 bytes met grotendeels vaste data (`0x9a`) onbruikbaar voor een gerichte aanval. Een aanvaller kan immers geen willekeurige machine-instructies injecteren als de te schrijven bytes vastliggen. Om van deze beperkte geheugencorruptie naar willekeurige code-uitvoering te komen, hergebruikten de onderzoekers een techniek die bekend is uit het aanvallen van JavaScript-engines: het manipuleren van arraylengtes.\n\nIn de Java Virtual Machine heeft elk array-object een header in het geheugen. Deze header bevat metagegevens over het object, waaronder een veld dat de lengte van de array definieert.\n\n### De writer: willekeurig schrijven\nDe onderzoekers positioneren via gerichte geheugentoewijzingen een tweede array — de zogeheten **writer** — direct achter de Base64-uitvoerbuffer. Wanneer de 62-byte overflow plaatsvindt, vergroot de vaste geheugenoverschrijving (*fixed spill*) het lengteveld in de header van deze writer:\n\n```\n[ Base64 buffer (50 B) ] ---> [ 62 B overflow ]\n                                      |\n                                      v\n                         [ Header: Lengte van Writer ]\n                         (Overschreven met grotere waarde)\n```\n\nDoordat de lengte van de writer kunstmatig wordt vergroot, controleert de JVM verdere schrijfacties binnen die array aan de hand van de nieuwe, corrupte lengte. De applicatie kan via deze writer vervolgens willekeurige bytes schrijven naar het geheugen dat ná de writer ligt. Daarmee transformeert de vaste overschrijving in een begrensde lineaire schrijfactie met zelfgekozen data.\n\n### De reader en JavaBleed: willekeurig lezen\nOp identieke wijze bouwen de onderzoekers een leesprimitieve, de **reader**. Door met de writer het lengteveld van een derde array te overschrijven waarvan de inhoud via een regulier netwerkantwoord naar de client wordt teruggestuurd, leest de server geheugen uit dat ver voorbij de oorspronkelijke array ligt.\n\nDe onderzoekers noemen deze informatielak-capaciteit **JavaBleed**, als verwijzing naar de beruchte Heartbleed-fout. Hiermee kan een aanvaller bij kwetsbare publieke endpoints zonder authenticatie (en bij andere toepassingen na inloggen) gevoelige gegevens uit de Java-heap uitlezen, zoals:\n\n- Persoonsgegevens (PII) van andere gebruikers\n- Privésleutels en TLS-certificaten\n- API-tokens en actieve sessiesleutels\n\n### Geheugenherstel (repair)\nOmdat de daaropvolgende lineaire schrijfacties van de vergrote writer headers van tussenliggende objecten kunnen beschadigen, zou de garbage collector crashen zodra deze over de heap loopt. De aanvalsketen bevat daarom een herstelfase: via de reader leest de exploit de oorspronkelijke headers uit en herstelt deze via de writer, zodat het Java-proces stabiel blijft draaien."
+  },
+  {
+   "title": "Remote Heap Feng Shui en code-uitvoering op afstand",
+   "md": "Je leert hier hoe aanvallers het geheugen van de virtuele machine over het netwerk structureren en de fout escaleren tot willekeurige code-uitvoering.\n\n### Het omzeilen van Thread-Local Allocation Buffers (TLAB)\nOm de Base64-buffer exact vóór de writer te positioneren, moeten de geheugenallocaties voorspelbaar zijn. HotSpot wijst echter standaard aan elke actieve Java-thread een eigen privaat geheugenblok toe, een *Thread-Local Allocation Buffer* (TLAB), binnen de jonge generatie (Eden) van de heap. Twee verschillende netwerkverzoeken die op verschillende threads worden afgehandeld, schrijven naar verschillende TLABs, waardoor er geen betrouwbare fysieke volgorde tussen hun objecten bestaat.\n\nOm dit obstakel te overwinnen, stuurt de aanvaller de afmetingen van de arrays zodanig dat de TLAB van de werkthread onvoldoende ruimte heeft. Hierdoor wijkt de geheugenbeheerder uit naar een rechtstreekse toewijzing in de gedeelde regio's van de G1 Garbage Collector, buiten de private thread-buffers om.\n\n```\n[ HTTP Thread 1: TLAB ] ----\\ \n                             ---> [ Gedeelde G1 Heap-regio's ]\n[ HTTP Thread 2: TLAB ] ----/      (Base64-buffer en Writer direct naast elkaar)\n```\n\n### Geheugenspreiding en netwerktiming\nOmdat de exacte toestand van de G1-heap niet vooraf bekend is, maakt de exploit gebruik van geheugenspreiding (*Spray and Pray*). De aanvaller alloceert meerdere paren van writers en readers verspreid over het geheugen, zodat de kans groot is dat de overschrijvende Base64-buffer direct vóór een writer belandt. Mislukte pogingen worden genegeerd en opnieuw geprobeerd.\n\nOm de toewijzingen op afstand nauwkeurig te timen, manipuleert de aanval de TCP-netwerklaag:\n\n1. De client verzendt gegevens van het HTTP-verzoek tot vlak vóór het moment waarop de kritieke buffer moet worden gealloceerd.\n2. De client wacht totdat de server een TCP-bevestigingspakket (ACK) terugstuurt, waarmee vaststaat dat de eerdere data door de doelserver is gebufferd.\n3. Pas na deze ACK stuurt de client de resterende bytes met de trigger, waardoor de allocaties in de gewenste volgorde plaatsvinden.\n\nVolgens de onderzoekers vereist deze techniek een stabiele netwerkverbinding met een lage round-trip time (RTT). In hun demonstratie losten zij dit op door een virtuele machine te huren in dezelfde cloudregio als het doelwit.\n\n### Escalatie naar Remote Code Execution\nZodra willekeurige lees- en schrijfrechten op de heap zijn gevestigd, escaleert de aanvalsketen naar willekeurige code-uitvoering ([Wikipedia: Arbitrary code execution](https://en.wikipedia.org/wiki/Arbitrary_code_execution)). De aanvaller gebruikt de willekeurige schrijfactie om JVM-interne structuren, het Code Cache van de JIT-compiler en JVM-hooks om native machinetaal uit te voeren te overschrijven. Hierdoor voert de virtuele machine native machinetaal van de aanvaller uit met de volledige besturingssysteembevoegdheden van het Java-proces."
+  },
+  {
+   "title": "Getroffen systemen, hardware-eisen en mitigaties",
+   "md": "Je leert hier welke processors en softwareversies vatbaar zijn voor Java4Shell en welke directe maatregelen beheerders kunnen nemen om systemen te beschermen.\n\n### Getroffen versies en distributies\nJava4Shell (CVE-2026-114938) treft OpenJDK vanaf versie 17.0.6 en nieuwer. Omdat nagenoeg alle commerciële en open-source Java-omgevingen bouwen op de broncode van OpenJDK, zijn onder meer de volgende distributies vatbaar:\n\n- Amazon Corretto\n- Eclipse Temurin (Adoptium)\n- Microsoft Build van OpenJDK\n- Azul Zulu\n- BellSoft Liberica\n- SAP SapMachine\n- Red Hat OpenJDK\n- Oracle OpenJDK, Oracle Java SE en Oracle GraalVM\n\nBinnen OpenJDK 17 (in tegenstelling tot latere hoofdversies) vereist de aanval overigens een invoer van 128 `A`-tekens gevolgd door een gelijkheidsteken (`=`), omdat de drempelwaarde om de versnelde codetwijg te bereiken daar hoger ligt.\n\n### Kwetsbare software in standaardconfiguratie\nDe onderzoekers toonden aan dat willekeurige code-uitvoering mogelijk was in standaardconfiguraties van tal van veelgebruikte enterprise-toepassingen:\n\n- **Pre-auth RCE** (zonder voorafgaande authenticatie): Keycloak, Atlassian Jira, Atlassian Confluence, JFrog Artifactory, Jenkins en PingFederate.\n- **Post-auth RCE** (na inloggen): Apache Kafka Broker, Apache Solr, Elasticsearch, Gerrit en Spinnaker.\n- **Client-side compromittering**: Een Java-toepassing die via TLS verbinding maakt met een kwaadwillende server kan eveneens worden overgenomen, zelfs als de client zelf geen enkele netwerkdienst aanbiedt.\n\n### Hardware-afhankelijkheid\nOmdat de fout zich in specifieke x86-64 assembly bevindt, vereist Java4Shell een processor die AVX-512 VBMI ondersteunt. Systemen met ARM64-processors (zoals Apple Silicon of AWS Graviton) gebruiken deze assembly-routine niet en zijn **niet vatbaar**.\n\nOnder de kwetsbare processors vallen onder meer Intel Xeon en AMD EPYC (servers), evenals AMD Ryzen (desktops en laptops):\n- Intel Xeon: Ice Lake, Sapphire Rapids, Emerald Rapids en Granite Rapids.\n- AMD EPYC en Ryzen: Zen 4 en nieuwere microarchitecturen.\n\n### Mitigaties en herstel\nOpenJDK bracht op 17 november 2026 een beveiligingsadvies (*security advisory*) uit en Oracle bracht een patch uit. Beheerders dienen hun Java-omgevingen zo snel mogelijk bij te werken. Indien direct patchen niet mogelijk is, bieden twee opstartvlaggen van de JVM een directe mitigatie:\n\n1. `-XX:-UseBASE64Intrinsics`: Schakelt hardware-geaccelereerde Base64-codering en -decodering volledig uit, waardoor HotSpot terugvalt op veilige Java-code.\n2. `-XX:UseAVX=2`: Beperkt vector-instructies tot AVX2 en schakelt AVX-512 uit (uitsluitend toepasbaar op x86-64 hosts; op ARM-systemen weigert de JVM te starten met deze vlag)."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "9.2",
+   "label": "CVSS 4.0-score van de Java4Shell-kwetsbaarheid",
+   "quote": "Under CVSS 4.0, this vulnerability scores 9.2 out of 10 (CRITICAL).",
+   "source": 1
+  },
+  {
+   "value": "90%",
+   "label": "aandeel van de Fortune 500-bedrijven dat op Java draait",
+   "quote": "Java is the world's third most popular programming language, powering 90% of Fortune 500 companies.",
+   "source": 1
+  },
+  {
+   "value": "62 bytes",
+   "label": "hoeveelheid geheugen die buiten de arraygrenzen wordt overschreven",
+   "quote": "That invalid length becomes a full 64-byte write, sending 62 bytes past the end of the array.",
+   "source": 1
+  },
+  {
+   "value": "50",
+   "label": "lengte in bytes van de gealloceerde buffer voor 65 tekens invoer",
+   "quote": "When the bug is triggered, with 65 bytes ([64 bytes] + '=') as input, that calculation allocates a 50-byte buffer.",
+   "source": 1
+  },
+  {
+   "value": "0x9a",
+   "label": "vaste byte-waarde die naar bytes 48 tot en met 63 van de 64-byte vector-instructie (buffer-offsets 96 tot en met 111) wordt geschreven",
+   "quote": "Uncontrolled write to bytes [2, 63]. For bytes 48..63, the value will always be 0x9a.",
+   "source": 1
+  },
+  {
+   "value": "< $200",
+   "label": "maximale tokenkosten voor het ontdekken en uitbuiten van de fout met behulp van AI (minder dan $200)",
+   "quote": "The total token cost was less than $200.",
+   "source": 1
+  },
+  {
+   "value": "128",
+   "label": "aantal A-tekens voor het gelijkheidsteken om de fout in OpenJDK 17 te triggeren",
+   "quote": "In older OpenJDK 17, the trigger input is 128 of A followed by =.",
+   "source": 1
+  }
+ ],
+ "caveats": "Bij het beoordelen van de Java4Shell-kwetsbaarheid moeten verschillende technische beperkingen en nuances in acht worden genomen:\n\n1. **Geen universele kant-en-klare exploit**: Er bestaat geen universele payload. Een geslaagde aanval vereist een specifieke combinatie van een bereikbare Base64-aanroep, een beïnvloedbare geheugenindeling, een bruikbare writer en een feedbackmechanisme (zoals een netwerkrespons die data uitlekt). Voor elke doelapplicatie moet een uniek profiel worden ontwikkeld.\n2. **Beperkte hardware-reikwijdte**: De kwetsbaarheid treft uitsluitend x86-64-processors met ondersteuning voor AVX-512 VBMI (zoals Intel Xeon vanaf Ice Lake en AMD EPYC/Ryzen vanaf Zen 4). Systemen op ARM64-architectuur (zoals AWS Graviton of Apple Silicon) en oudere x86-chips voeren deze assembly-routine niet uit en zijn niet vatbaar.\n3. **Rol van netwerkbuffers**: De remote Heap Feng Shui-techniek leunt op streaming van partiële HTTP-verzoekdata en timing via TCP-bevestigingen. Een reverse proxy zoals nginx buffert inkomende verzoeken standaard volledig, wat deze timing verstoort (al geldt deze bescherming volgens de onderzoekers niet voor applicaties die verzoeken in één keer verwerken zoals Elasticsearch, of bij getunnelde WebSocket-verbindingen).\n4. **JIT-opwarming als voorwaarde**: De kwetsbare intrinsic wordt pas ingezet nadat de C2 JIT-compiler de Base64-decoder herhaaldelijk heeft gecompileerd. In koud opgestarte processen of kortstondige taken wordt de code mogelijk niet direct bereikt.\n5. **Ontbreken van misbruik in het wild**: De ontdekking betrof een ethisch onderzoek door Calif, waarbij AI-assistentie (Codex) werd ingezet. De onderzoekers houden applicatiespecifieke exploit-ketens tijdelijk geheim; de bronnen maken geen melding van actief misbruik door aanvallers.",
+ "glossary": [
+  {
+   "term": "Java Virtual Machine (JVM)",
+   "def": "De runtime-omgeving die gecompileerde Java-bytecode vertaalt en uitvoert op het onderliggende besturingssysteem en de processor."
+  },
+  {
+   "term": "C2 JIT-compiler",
+   "def": "De compiler in HotSpot die veelgebruikte Java-methoden tijdens de uitvoering vertaalt naar geoptimaliseerde machinetaal."
+  },
+  {
+   "term": "Intrinsic",
+   "def": "Een handgeschreven assembly-routine binnen de virtuele machine die specifieke processorinstructies aanroept om veelvoorkomende bewerkingen te versnellen."
+  },
+  {
+   "term": "AVX-512 VBMI",
+   "def": "Een instructiesetuitbreiding voor x86-64 processors waarmee 512-bit vectorregisters byte-operaties parallel kunnen uitvoeren."
+  },
+  {
+   "term": "Base64",
+   "def": "Een coderingsformaat dat binaire gegevens omzet in een reeks van 64 afdrukbare ASCII-tekens, met gelijkheidstekens als opvulling."
+  },
+  {
+   "term": "Heap Feng Shui",
+   "def": "Een aanvalstechniek waarbij de volgorde van geheugentoewijzingen nauwkeurig wordt gemanipuleerd om kwetsbare geheugenblokken naast elkaar te positioneren."
+  },
+  {
+   "term": "Thread-Local Allocation Buffer (TLAB)",
+   "def": "Een privaat geheugendeel binnen de Java-heap dat exclusief aan één thread wordt toegewezen om snelle objectallocatie zonder vergrendelingen mogelijk te maken."
+  },
+  {
+   "term": "Remote Code Execution (RCE)",
+   "def": "Een beveiligingskwetsbaarheid waarmee een aanvaller over een computernetwerk willekeurige instructies kan laten uitvoeren op een doelsysteem."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom resulteert de instructie bzhiq(-1, output_len) in een bitmasker waarin alle 64 bits op 1 blijven staan wanneer de staart van de Base64-invoer een enkel gelijkheidsteken (=) bevat?",
+   "options": [
+    "De berekende lengte onderloopt naar -1, wat als niet-ondertekend 64-bit getal groter is dan 64, waardoor de processor volgens de specificatie geen bits wist.",
+    "De routine vangt het gelijkheidsteken op als een ongeldig karakter en wijst ter bescherming een standaard noodmasker van 64 actieve bits toe.",
+    "De C2 JIT-compiler detecteert een fout in de assembly-stub en dwingt de vector-instructie om de volledige registerbreedte naar het geheugen te schrijven.",
+    "Het gelijkheidsteken verplaatst de bitpositie met 64 stappen naar links, waardoor het masker automatisch overloopt naar een reeks van enen."
+   ],
+   "answer": 0,
+   "explain": "Bij een staart van 1 byte levert de deling (1 / 4) * 3 de waarde 0 op. Het aftrekken van 1 voor het opvulteken maakt output_len gelijk aan -1. Omdat -1 binair wordt geïnterpreteerd als 2^64 - 1 (wat veel groter is dan 64), wist de bzhi-instructie volgens de processorspecificatie geen enkel bit, waardoor output_mask op -1 (alle 64 bits op 1) blijft staan."
+  },
+  {
+   "id": "q2",
+   "type": "order",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Zet de stappen van de Java4Shell-aanvalsketen in de juiste chronologische volgorde vanaf de initiële voorbereiding tot het verkrijgen van willekeurige code-uitvoering.",
+   "tiles": [
+    "De Base64-decoder intensief aanroepen zodat de C2 JIT-compiler de kwetsbare AVX-512 intrinsic activeert.",
+    "Via netwerktiming en geheugenspreiding de toewijzing van de decoder- en doelbuffers buiten de TLAB forceren.",
+    "Het gemanipuleerde Base64-bericht insturen om 62 bytes voorbij het einde van de doelarray te overschrijven.",
+    "De overschreven lengte van de aangrenzende buffer benutten om heap-geheugen uit te lezen en JVM-structuren te manipuleren."
+   ],
+   "explain": "De aanval vereist eerst dat de JIT-compiler de versnelde intrinsic inschakelt. Vervolgens lijnt de aanvaller het geheugen uit buiten de individuele thread-buffers, triggert hij de vaste overschrijving van 62 bytes, en gebruikt hij de gemanipuleerde lengte om willekeurig geheugen te manipuleren en code-uitvoering te bereiken."
+  },
+  {
+   "id": "q3",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Waarom zijn servers met ARM64-processors (zoals AWS Graviton) beschermd tegen Java4Shell, zelfs wanneer ze een kwetsbare versie van OpenJDK draaien?",
+   "options": [
+    "De programmeerfout bevindt zich uitsluitend in de handgeschreven x86-64 assembly-code voor de AVX-512 VBMI intrinsic.",
+    "ARM64-processors beschikken over hardwarematige geheugengrenzen die out-of-bounds schrijfacties op instructieniveau tegenhouden.",
+    "De HotSpot JVM schakelt Just-In-Time compilatie voor Base64-decodering standaard uit op niet-x86 architecturen.",
+    "Op ARM64-systemen vereist de Base64-decoder verplichte padding-validatie voorafgaand aan enige geheugentoewijzing."
+   ],
+   "answer": 0,
+   "explain": "Java4Shell is geen logische fout in de generieke Java-klassebibliotheek zelf, maar een bug in de specifieke x86-64 assembly-implementatie die AVX-512 VBMI-vectorinstructies aanroept. Op ARM64-chips gebruikt OpenJDK andere instructies en codetwijgen, waardoor de kwetsbare routine daar niet aanwezig is."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "De onderzoekers gebruikten AI-modellen (Codex) en geautomatiseerde agenten om zowel de kwetsbaarheid in HotSpot te ontdekken als de complexe exploit-ketens voor remote code execution te ontwikkelen voor minder dan \\$200 aan modeltokens."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "Java4Shell: RCE in OpenJDK when processing Base64",
+   "url": "https://calif.io/java4shell/"
+  },
+  {
+   "n": 2,
+   "title": "Wikipedia — OpenJDK",
+   "url": "https://en.wikipedia.org/wiki/OpenJDK"
+  },
+  {
+   "n": 3,
+   "title": "Wikipedia — Arbitrary code execution",
+   "url": "https://en.wikipedia.org/wiki/Arbitrary_code_execution"
+  },
+  {
+   "n": 4,
+   "title": "Wikipedia — Base64",
+   "url": "https://en.wikipedia.org/wiki/Base64"
+  }
+ ],
+ "id": "2026-11-18-hoe-een-rekenfout-in-de-base64-versneller-van-op",
+ "kind": "news",
+ "date": "2026-11-18",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-11-18",
+  "kind": "news",
+  "verified": "2026-11-18",
+  "candidate": "hn:50538240",
+  "signal": "751 punten en 200 reacties op Hacker News",
+  "significance": 4
+ }
+}
