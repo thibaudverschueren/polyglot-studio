@@ -1,0 +1,174 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe de Duitse ringel-s leidt tot code-uitvoering in Ruby on Rails",
+ "subtitle": "Een ontbrekende grenscontrole bij het omzetten van de letter ß naar dubbel-S veroorzaakt een heap-overflow van één byte waarmee aanvallers servers kunnen overnemen.",
+ "topic": "systems",
+ "minutes": 10,
+ "tldr": [
+  "In verouderde tekensets verandert de kleine letter ringel-s bij omzetting naar hoofdletters in twee afzonderlijke letters S.",
+  "De programmeertaal Ruby reserveert twintig extra bytes, maar controleert tijdens het schrijven van het tweede teken de geheugengrens niet.",
+  "Een invoer met 21 ringel-s-tekens overschrijft precies één byte buiten de buffer en maakt serverovername op afstand mogelijk.",
+  "De kwetsbaarheid treft enkel niet-UTF-8-tekensets en de ontdekkers publiceren hun aanvalsmethode op 25 november 2026 (of later als grote leveranciers dan nog geen update hebben uitgebracht)."
+ ],
+ "plain": "Stel je een zaal voor met 21 vaste stoelen en twintig reserveklapstoelen voor gasten met extra bagage. Bij de ingang staat een portier die bijhoudt hoeveel zitplaatsen er nog over zijn. Voor een gewone bezoeker laat hij één persoon binnen. Maar wanneer er iemand met een tweelingwandelwagen arriveert, laat hij twee personen door, terwijl hij slechts één stoel afvinkt op zijn lijst. Komen er 21 van zulke wandelwagens aan, dan zijn alle twintig reserveplaatsen opgebruikt en belandt de 42ste bezoeker op de gang buiten de zaal. Die bezoeker staat nu in een doorgang waar personeel schakelaars bedient, waardoor de controle over het pand verloren gaat. Deze vergelijking houdt op te kloppen zodra we naar echte computers kijken: in plaats van een bezoeker op een gangpad, overschrijft een computerprogramma stuurgegevens van een naburig geheugenblok op de heap, waardoor de geheugenadministratie ontregeld raakt en een aanvaller controle kan krijgen.",
+ "why": "Webapplicaties op Ruby on Rails zijn kwetsbaar voor overname op afstand zonder inloggegevens. Voor teams met geautomatiseerde n8n-workflows gekoppeld aan zelf-gehoste tools dreigt acuut gevaar voor datadiefstal. Voor eigen Rails-deployments moeten beheerders Ruby bijwerken naar 3.3.14, 3.4.13 of 4.0.10. Bij gebundelde diensten moeten beheerders de applicatie-update van de leverancier installeren (zoals GitLab) of wachten op een patch (zoals Chatwoot). Op 25 november 2026 verschijnt de demonstratiecode, waarna gerichte scans direct toenemen.",
+ "sections": [
+  {
+   "title": "Het dilemma van variabele tekenlengte",
+   "md": "Je leert hier hoe verouderde tekensets werken en waarom het omzetten van de Duitse ringel-s naar hoofdletters de lengte van een tekst verandert.\n\n### Enkelbyte-coderingen versus moderne standaarden\nTekstverwerking op computers steunt tegenwoordig overwegend op de Unicode-standaard, waarin tekens flexibel worden gecodeerd via formaten zoals UTF-8 ([Wikipedia: Unicode](https://en.wikipedia.org/wiki/Unicode)). Vóór de brede invoering van Unicode gebruikten besturingssystemen zogenoemde **enkelbyte-tekensets** (*single-byte encodings*), zoals de ISO-8859-reeks en de Windows-125x-coderingen. In deze formaten wordt elk symbool voorgesteld door exact één byte, met waarden tussen `0x00` en `0xFF` (0 tot 255).\n\nIn de meeste van deze enkelbyte-systemen ontbreekt een hoofdlettervariant voor de Duitse kleine letter ringel-s (`ß`, code `0xDF` in ISO-8859-1). De officiële Duitse spellingsregel dicteert daarom dat de kleine letter `ß` bij omzetting naar hoofdletters (*upcasing*) wordt vervangen door twee opeenvolgende hoofdletters: **SS**. Een soortgelijke expansie treedt op bij zogenoemde *case folding*, waarbij teksten worden genormaliseerd voor hoofdletterongevoelige vergelijkingen en de letter `ß` verandert in `ss`.\n\n| Bewerking | Oorspronkelijk teken | Hexadecimale invoer | Resultaat na transformatie | Hexadecimale uitvoer | Lengteverandering |\n|---|---|---|---|---|---|\n| Kleine letter naar hoofdletter (`upcase`) | `ß` | `0xDF` (1 byte) | `SS` | `0x53 0x53` (2 bytes) | +1 byte |\n| Hoofdletterongevoelige normalisatie (`case-folding`) | `ß` | `0xDF` (1 byte) | `ss` | `0x73 0x73` (2 bytes) | +1 byte |\n| Gewone letterconversie | `a` | `0x61` (1 byte) | `A` | `0x41` (1 byte) | 0 bytes |\n\n### Waarom expansie risicovol is voor geheugenbeheer\nIn computertalen die rechtstreeks met het systeemgeheugen communiceren (zoals C, de taal waarin de standaard Ruby-interpreter is geschreven), moet een programma vooraf geheugenruimte reserveren (*alloceren*) op de heap. Zolang een transformatie één byte invoer omzet naar één byte uitvoer, is de benodigde uitvoerbuffer exact even groot als de invoertekst.\n\nZodra een teken echter uitzet van één naar twee bytes, past de uitvoer niet meer vanzelf in de oorspronkelijke lengte. Zoals de onderzoekers van Veria Labs melden ([Ruby2ßhell](https://verialabs.com/ruby2shell/)), kozen de ontwikkelaars van Ruby voor een praktische aanname: ze reserveerden standaard de lengte van de invoer plus een vaste marge van twintig extra bytes. Die vaste marge vormt de kern van het probleem."
+  },
+  {
+   "title": "De ontbrekende grenscontrole in de C-lus van Ruby",
+   "md": "Je leert hier waar de logische programmeerfout in de C-broncode van Ruby zit en hoe 21 ringel-s-tekens leiden tot een bufferoverflow.\n\n### De kwetsbare programmalus\nIn de C-code van de Ruby-interpreter wordt de conversie van enkelbyte-reeksen afgehandeld in een specifieke `while`-lus. Deze code bevindt zich in de verwerkingslaag voor reguliere expressies en tekenreeksbewerkingen en is aanwezig sinds Ruby 2.4.0 ([Ruby2ßhell](https://verialabs.com/ruby2shell/)). De kwetsbare functie wordt aangeroepen door methoden zoals `upcase`, `swapcase`, `downcase(:fold)` en de vergelijkingsfunctie `casecmp?`.\n\nDe kern van de lus ziet er schematisch als volgt uit:\n\n```c\nwhile (*pp < end && to < to_end) { /* controleert ruimte voor slechts één byte */\n    code = *(*pp)++;\n    if (code == SHARP_s) {\n        if (flags & ONIGENC_CASE_UPCASE) {\n            *to++ = 'S'; /* eerste byte geschreven */\n            code = 'S';\n        }\n        /* ... */\n    }\n    /* ... */\n    *to++ = code; /* tweede byte geschreven zonder controle */\n}\n```\n\n### Het ontbreken van de tweede controle\nLaten we de stappen binnen deze lus nauwkeurig volgen:\n\n1. De lusvoorwaarde `to < to_end` controleert uitsluitend of de huidige schrijfpositie `to` vóór het einde van de buffer `to_end` ligt. Dit garandeert dat er ruimte is voor **minimaal één byte**.\n2. Zodra het ingelezen teken gelijk is aan de ringel-s (`code == SHARP_s`) en de vlag voor hoofdletterconversie aanstaat, schrijft regel 5 direct de eerste `'S'` weg via `*to++`. Hierdoor schuift de pointer `to` één positie op.\n3. De variabele `code` wordt vervolgens op `'S'` gezet.\n4. Op regel 11 voert de functie de standaardafsluiting van de iteratie uit: `*to++ = code;`. Hier wordt de tweede letter `'S'` weggeschreven.\n\n> [!warning] De logische fout\nTussen regel 5 en regel 11 vindt **geen enkele controle** plaats op de grens `to < to_end`. Als er bij de start van de iteratie nog precies één byte vrije ruimte over was in de buffer, slaagde de controle op regel 1. Regel 5 vult die allerlaatste byte op. Regel 11 schrijft vervolgens de tweede byte zonder te kijken, waardoor de waarde direct buiten de gealloceerde geheugenbuffer belandt.\n\n### De rekensom achter de overflow\nDe uitvoerbuffer wordt door Ruby gealloceerd met een grootte van:\n\n$$\\text{Buffergrootte} = L_{\\text{invoer}} + 20$$\n\nWaarbij $L_{\\text{invoer}}$ het aantal bytes van de ingevoerde tekenreeks voorstelt. Elk `ß`-teken levert bij omzetting één extra byte op ten opzichte van de invoerlengte:\n\n- **1 tot 20 tekens `ß`**: De extra bytes vallen netjes binnen de 20 reservebytes. De buffer raakt voller, maar overschrijdt de rand niet.\n- **Bij het 21ste teken `ß`**: Alle 20 reservebytes zijn verbruikt. Bij het verwerken van dit 21ste teken is er op regel 1 nog exact één geldige byte over. Regel 5 vult deze laatste byte (`to == to_end`), waarna regel 11 de tweede byte over de grens heen schrijft.\n\nHet resultaat is een zogeheten **one-byte heap overflow** ([Ruby2ßhell](https://verialabs.com/ruby2shell/)). De weggeschreven byte is een vaste ASCII-waarde: `'S'` (`0x53`) bij `upcase`, of `'s'` (`0x73`) bij `case-folding`. Vervolgens leest de functie bij het kopiëren van het resultaat ook nog één byte buiten de grenzen (*out-of-bounds read*)."
+  },
+  {
+   "title": "Van een enkele byte naar willekeurige code-uitvoering",
+   "md": "Je leert hier hoe aanvallers een overschrijving van één byte misbruiken om willekeurige instructies uit te voeren op een Rails-server.\n\n### Geheugenspecifieke gevolgen van een heap-overschrijving\nIn eerste instantie lijkt één enkele overschreven byte met de waarde `0x53` onschuldig. In moderne geheugenbeheerders op Linux- en Unix-systemen (zoals ptmalloc in glibc of jemalloc) liggen geheugenblokken (*chunks*) op de heap echter strak tegen elkaar aan. Direct na de gebruikersdata van een blok volgen de stuurgegevens (*chunk metadata*) van het naastgelegen blok.\n\nDe aanvaller heeft volledige controle over de omvang van de buffer via de lengte van de aangeleverde tekenreeks ($L_{\\text{invoer}}$). Hierdoor kan de aanvaller sturen in welke geheugencategorie (*size class*) het blok terechtkomt en welk type object er direct achter ligt. Door de eerste byte van de aangrenzende metadata te overschrijven met `0x53`, verandert de gerapporteerde grootte of de statusvlag van dat naburige geheugenblok.\n\n```text\n[ Gealloceerde buffer (L + 20 bytes) ] [ Aangrenzend heap-blok ]\n| ... geldige data ... | S (0x53) weggeschreven over de rand! ---> [ Gewijzigde metadata ]\n```\n\nZodra het programma dat gemanipuleerde blok vrijgeeft of opnieuw toewijst, raakt de interne administratie van de geheugenbeheerder ontregeld. Dit leidt tot overlappende geheugenblokken, waardoor een aanvaller gerichte pointers en functie-adressen kan overschrijven. Daarmee kan de uitvoeringsstroom van het proces worden omgebogen naar eigen machine-instructies: willekeurige code-uitvoering (*arbitrary code execution*) ([Wikipedia: Arbitrary code execution](https://en.wikipedia.org/wiki/Arbitrary_code_execution)).\n\n### Pre-authenticatie in de standaardconfiguratie van Rails\nWat deze kwetsbaarheid uitzonderlijk maakt, is de bereikbaarheid via het web ([Wikipedia: Ruby on Rails](https://en.wikipedia.org/wiki/Ruby_on_Rails)). In de standaardconfiguratie van Ruby on Rails en Sinatra (klassieke stijl) verwerkt de webserver binnenkomende HTTP-verzoeken van niet-geauthenticeerde gebruikers. Parameters, query-strings of HTTP-headers die in een verouderde enkelbyte-codering worden aangeleverd, kunnen door het framework genormaliseerd of vergeleken worden voordat enige authenticatielaag actief wordt.\n\n> [!note] Waarom UTF-8 veilig blijft\n> Tekenreeksen die expliciet zijn gecodeerd als UTF-8 volgen in de Ruby-broncode een geheel ander uitvoeringstraject ([Ruby2ßhell](https://verialabs.com/ruby2shell/)). De fout bevindt zich exclusief in de logica voor verouderde enkelbyte-encodings (zoals ISO-8859 en Windows-125x). Een aanval werkt dan ook alleen wanneer de invoer als zodanig wordt aangeboden of geïnterpreteerd."
+  },
+  {
+   "title": "Getroffen platforms en herstelmaatregelen",
+   "md": "Je leert hier welke softwareversies kwetsbaar zijn en welke acties organisaties moeten ondernemen om systemen veilig te stellen.\n\n### Overzicht van getroffen Ruby-versies\nHet beveiligingslek treft alle niet-gepatchte Ruby-versies teruggaand tot versie 2.4.0 ([Ruby2ßhell](https://verialabs.com/ruby2shell/)). De officiële Ruby-onderhoudsteams hebben herstelversies uitgebracht in commit `ruby/ruby@d582f8f`:\n\n- **Ruby 4.0**: Versies 4.0.0 tot en met 4.0.9 zijn kwetsbaar; opgelost in **4.0.10**.\n- **Ruby 3.4**: Versies 3.4.0 tot en met 3.4.12 zijn kwetsbaar; opgelost in **3.4.13**.\n- **Ruby 3.3**: Versies 3.3.0 tot en met 3.3.13 zijn kwetsbaar; opgelost in **3.3.14**.\n- **Ruby 3.2 en ouder**: Alle eerdere releases tot 2.4.0 zijn kwetsbaar, maar hebben de end-of-life-status (EOL) bereikt en ontvangen geen officiële updates meer.\n\n### Status van zelf-gehoste software\nVeel zakelijke open-sourceapplicaties bundelen hun eigen Ruby-runtime. Voor deze pakketten moet de update rechtstreeks van de betreffende softwareleverancier komen:\n\n| Software | Getroffen versies | Hersteld in | Status op 20 november 2026 |\n|---|---|---|---|\n| GitLab | 19.6.0 en ouder | 19.6.1, 19.5.8, 19.4.10 | Gepatched |\n| Mastodon | 4.7.5 en ouder | 4.7.6, 4.6.12, 4.5.22, 4.4.29 | Gepatched |\n| OpenProject | 17.9.7 en ouder | 17.9.8, 17.8.3 | Gepatched |\n| Discourse (basis-image) | Vóór 2.0.20261119-0203 | 2.0.20261119-0203 | Gepatched |\n| GitHub Enterprise Server | 3.22.5 en ouder | Geen | Kwetsbaar |\n| Chatwoot | 4.20.0 en ouder | Geen | Kwetsbaar |\n\n### Onderzoek en tijdlijn\nHet beveiligingsbedrijf Veria Labs ontdekte de kwetsbaarheid onafhankelijk en demonstreerde als eerste de volledige code-uitvoering op afstand. De officiële Ruby-veiligheidswaarschuwing vermeldt daarnaast Stephan Lipp (Ada Logics) en Anthropic voor het melden van het onderliggende geheugenprimitief, evenals Moritz Sanft in samenwerking met OpenAI ([Ruby2ßhell](https://verialabs.com/ruby2shell/)).\n\nVeria Labs heeft aangekondigd dat zij op 25 november 2026 een demonstratiepakket (*proof of concept*) zullen publiceren waarmee de code-uitvoering op onaangepaste Rails-installaties wordt aangetoond, mits grote leveranciers tegen die tijd hun beveiligingsupdates hebben verspreid."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "20 bytes",
+   "label": "vaste marge waarmee Ruby de uitvoerbuffer vergroot bovenop de invoerlengte",
+   "quote": "The output buffer is allocated as the input length plus 20 bytes.",
+   "source": 1
+  },
+  {
+   "value": "21",
+   "label": "aantal ringel-s-tekens dat leidt tot een geheugenoverschrijving van één byte",
+   "quote": "Each ß adds one byte to the output, so an input with 21 of them overflows the buffer by one byte.",
+   "source": 1
+  },
+  {
+   "value": "2.4.0",
+   "label": "oudste Ruby-versie waarin de kwetsbare C-lus aanwezig is",
+   "quote": "The same loop is in several ISO-8859 and Windows-125x encodings and has been there since Ruby 2.4.0.",
+   "source": 1
+  },
+  {
+   "value": "25 November 2026",
+   "label": "geplande publicatiedatum van het demonstratieprogramma voor code-uitvoering",
+   "quote": "We'll be publishing a proof of concept demonstrating remote code execution on stock Rails on 25 November 2026, or later if major vendors have not shipped a fix by then.",
+   "source": 1
+  },
+  {
+   "value": "490,000",
+   "label": "ondergrens van het geschatte aantal websites dat wereldwijd op Ruby on Rails draait",
+   "quote": "As of October 2026, BuiltWith estimates between approximately 490,000 and 1.2 million web sites run Ruby on Rails.",
+   "source": 2
+  }
+ ],
+ "caveats": "Bij het beoordelen van deze kwetsbaarheid en de praktische risico's moeten enkele belangrijke kanttekeningen worden gemaakt:\n\n1. **Aanvalscode nog niet openbaar**: Veria Labs heeft de volledige aanvalsketen (*exploit chain*) nog niet vrijgegeven. De exacte techniek om van de overschrijving van één enkele byte (`0x53` of `0x73`) betrouwbaar door te stoten naar code-uitvoering onder moderne geheugenbeveiligingen (zoals ASLR) wordt pas op of na 25 november 2026 gedemonstreerd.\n2. **Vereiste invoercodering**: De fout treedt uitsluitend op bij tekenreeksen die door de interpreter worden behandeld als verouderde enkelbyte-coderingen (zoals ISO-8859 of Windows-125x). Moderne webapplicaties die uitsluitend strikt gevalideerde UTF-8-data verwerken en geen verouderde HTTP-tekensetheaders accepteren, raken het kwetsbare codepad in principe niet.\n3. **Blootstelling per framework**: Hoewel standaardinstallaties van Rails en klassieke Sinatra direct kwetsbaar zijn, melden de onderzoekers dat kale Rack-installaties en andere frameworks niet standaard blootgesteld zijn, tenzij applicatiecode zelf niet-UTF-8-invoer transformeert met hoofdletterfuncties.\n4. **Openstaande patches voor zakelijke pakketten**: Op 20 november 2026 hadden belangrijke zelf-gehoste applicaties, waaronder GitHub Enterprise Server en Chatwoot, nog geen herstelde versie beschikbaar gesteld voor hun gebruikers.\n5. **Verouderde Ruby-versies**: Ruby 3.2 en oudere versies worden niet meer officieel ondersteund door het kernteam. Organisaties die nog op deze versies draaien, ontvangen geen upstream patch en moeten handmatig migreren of mitigaties instellen.",
+ "glossary": [
+  {
+   "term": "Pre-authenticatie kwetsbaarheid",
+   "def": "Een beveiligingslek dat over het netwerk kan worden misbruikt zonder dat een aanvaller vooraf over inloggegevens of een actieve gebruikerssessie beschikt."
+  },
+  {
+   "term": "Heap overflow",
+   "def": "Een geheugenfout waarbij een programma gegevens wegschrijft voorbij de toegewezen grenzen van een dynamisch gereserveerd geheugenblok."
+  },
+  {
+   "term": "Enkelbyte-tekenset",
+   "def": "Een coderingssysteem waarin ieder tekstteken wordt gerepresenteerd door precies één byte van 8 bits, zoals ISO-8859-1 of Windows-1252."
+  },
+  {
+   "term": "Case folding",
+   "def": "Het normaliseren van tekst naar een vaste letterkast zodat vergelijkingen tussen tekenreeksen ongevoelig worden voor verschillen tussen hoofd- en kleine letters."
+  },
+  {
+   "term": "Off-by-one-fout",
+   "def": "Een logische programmeerfout waarbij een algoritme door een onjuiste grenscontrole exact één byte of element te veel verwerkt of overschrijft."
+  },
+  {
+   "term": "Arbitrary code execution (ACE)",
+   "def": "De situatie waarin een aanvaller eigen instructies of opdrachten kan laten uitvoeren binnen het actieve proces van een doelcomputer."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom ontstaat er in de C-lus van Ruby een geheugenoverschrijving bij het verwerken van een Duitse ringel-s?",
+   "options": [
+    "De lus controleert of er ruimte is voor één byte, maar schrijft bij een ringel-s zonder tweede controle twee bytes weg.",
+    "De interpreter vergeet de pointer van de brontekst op te hogen, waardoor een oneindige lus het geheugen volschrijft.",
+    "Het geheugenbeheer van Ruby ondersteunt geen buffers groter dan twintig bytes voor niet-Engelse invoer.",
+    "De C-compiler optimaliseert de voorwaarde to < to_end weg omdat de expressie als overbodig wordt beschouwd."
+   ],
+   "answer": 0,
+   "explain": "De controle `to < to_end` verifieert enkel of er nog minimaal één byte vrije ruimte is. Wanneer er exact één byte over is, slaagt de test, waarna de code de eerste 'S' wegschrijft en direct de tweede 'S' toevoegt zonder opnieuw te controleren of de buffergrens bereikt is."
+  },
+  {
+   "id": "q2",
+   "type": "numeric",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Hoeveel ringel-s-tekens (ß) in een enkelbyte-gecodeerde string zijn minimaal nodig om de doelbuffer met precies één byte te overschrijven?",
+   "value": 21,
+   "tolerance": 0,
+   "explain": "Ruby reserveert standaard de lengte van de invoer plus 20 reservebytes. Omdat elke ringel-s bij omzetting naar hoofdletters twee bytes ('SS') inneemt, levert elk teken één extra byte op. Na 20 tekens zijn alle 20 reservebytes verbruikt. Het 21ste teken schrijft zijn tweede byte één positie voorbij het gealloceerde geheugen."
+  },
+  {
+   "id": "q3",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom zijn tekenreeksen met een standaard UTF-8-codering niet kwetsbaar voor deze specifieke geheugenfout?",
+   "options": [
+    "UTF-8-tekenreeksen volgen in de broncode van Ruby een ander verwerkingstraject dan enkelbyte-coderingen.",
+    "UTF-8 codeert de kleine letter ringel-s in het geheugen altijd al als twee afzonderlijke ASCII-hoofdletters.",
+    "Ruby weigert hoofdletterconversies uit te voeren op UTF-8-reeksen zolang een gebruiker niet is ingelogd.",
+    "Het onderliggende besturingssysteem schermt UTF-8-geheugenblokken automatisch af tegen bufferverschuivingen."
+   ],
+   "answer": 0,
+   "explain": "Zoals Veria Labs meldt, volgen UTF-8-strings een ander codepad binnen Ruby. De kwetsbare C-lus bevindt zich uitsluitend in de verwerkingslogica voor verouderde enkelbyte-coderingen zoals ISO-8859 en Windows-125x."
+  }
+ ],
+ "related": [
+  {
+   "track": "automation",
+   "why": "Zelf-gehoste communicatie- en projecttools zoals Chatwoot en GitLab vormen vaak centrale schakels in geautomatiseerde n8n-workflows, waardoor ongeauthenticeerde kwetsbaarheden in die knooppunten de betrouwbaarheid van hele integratieketens direct bedreigen."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "Ruby2ßhell: Pre-authentication RCE on stock Rails",
+   "url": "https://verialabs.com/ruby2shell/"
+  },
+  {
+   "n": 2,
+   "title": "Wikipedia — Ruby on Rails",
+   "url": "https://en.wikipedia.org/wiki/Ruby_on_Rails"
+  },
+  {
+   "n": 3,
+   "title": "Wikipedia — Arbitrary code execution",
+   "url": "https://en.wikipedia.org/wiki/Arbitrary_code_execution"
+  },
+  {
+   "n": 4,
+   "title": "Wikipedia — Unicode",
+   "url": "https://en.wikipedia.org/wiki/Unicode"
+  }
+ ],
+ "id": "2026-11-20-hoe-de-duitse-ringel-s-leidt-tot-code-uitvoering",
+ "kind": "news",
+ "date": "2026-11-20",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-11-20",
+  "kind": "news",
+  "verified": "2026-11-20",
+  "candidate": "hn:50556287",
+  "signal": "393 punten en 169 reacties op Hacker News",
+  "significance": 4
+ }
+}

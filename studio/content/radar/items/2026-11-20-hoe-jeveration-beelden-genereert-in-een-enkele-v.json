@@ -1,0 +1,197 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe Jeveration beelden genereert in één enkele voorwaartse pas",
+ "subtitle": "Een gedeelde toevalstoestand en distributiematching stellen een bevroren taal-beeldmodel in staat om beelden te genereren, terwijl hetzelfde checkpoint ook dichte visuele kaarten voorspelt in één voorwaartse pas van circa 78 milliseconden per taak.",
+ "topic": "ai",
+ "minutes": 10,
+ "tldr": [
+  "Klassieke diffusie- en autoregressieve modellen vergen vaak tientallen opeenvolgende stappen, waardoor generatie seconden in beslag kan nemen.",
+  "Jeveration kiest alle beeldcodes tegelijk in één rekenstap door posities te sturen met een gedeelde toevalsvector.",
+  "Het model genereert een afbeelding in 78 milliseconden, tot wel 122 keer sneller dan bestaande multimodale autoregressieve modellen zoals Janus-Pro-7B.",
+  "De resolutie blijft beperkt tot 512 bij 512 pixels en fijne geometrische oppervlaktedetails verliezen aan scherpte."
+ ],
+ "plain": "Stel je een groep van 128 schilders voor die tegelijk aan één doek werken. Als ze zonder overleg beginnen aan de opdracht 'een rode auto', schildert de een een vrachtwagenwiel en de ander een sportwagendeur. Het resultaat sluit nergens op aan. Traditionele computersystemen lossen dit op door de schilders na elkaar te laten werken, maar dat kost veel tijd. Jeveration geeft alle 128 schilders vooraf hetzelfde spiekbriefje met één willekeurig getal, bijvoorbeeld 42. Dat getal legt de stijl en hoek vast, waardoor iedereen blindelings aan dezelfde auto werkt. De schilders hoeven niet op elkaar te wachten en leveren het werk in één tel af. De vergelijking loopt spaak zodra schilders menselijke fouten corrigeren via oogcontact: de computerposities communiceren niet achteraf met elkaar, maar vertrouwen volledig op de gedeelde beginwaarde en hun vooraf geleerde regels.",
+ "why": "Voor interactieve toepassingen en geautomatiseerde n8n-workflows is latentie de grootste drempel. Wie beeldgeneratie inzet in beslisbomen of realtime-applicaties, botst op diffusiemodellen die secondenlang rekenen. Jeveration toont dat discriminatieve Jev-beslismodellen, die normaal keuzes of scores produceren, via dezelfde architectuur beelden kunnen genereren in 78 milliseconden. Eén enkel model kan zowel tekst verwerken, beeld-naar-beeldtransformaties aansturen als dieptekaarten berekenen, telkens in één voorwaartse pas per aanroep. Dat drukt de rekenkosten op GPU-servers en maakt directe visuele feedback in software-agents haalbaar.",
+ "sections": [
+  {
+   "title": "Het dilemma van parallelle beeldsynthese",
+   "md": "Je leert hier waarom onafhankelijke parallelle voorspellingen leiden tot onsamenhangende afbeeldingen en waarom traditionele generatoren sequentieel werken.\n\n### De vertraging van iteratieve beeldgeneratie\nModerne beeldgeneratie steunt hoofdzakelijk op twee dominante architecturen ([arXiv 2611.24738](https://arxiv.org/abs/2611.24738)): **autoregressieve modellen** en **diffusiemodellen** ([Wikipedia: Generative AI](https://en.wikipedia.org/wiki/Generative_AI)). Beide families werken sequentieel. Een autoregressief model zoals Janus-Pro-7B voorspelt een afbeelding code voor code: voor een klein raster van $24 \\times 24$ codes voert het netwerk 576 opeenvolgende stappen uit. Diffusiemodellen zoals FLUX of Stable Diffusion beginnen met willekeurige ruis en verfijnen die stapsgewijs in twintig tot vijftig rekenrondes. Deze opeenvolging veroorzaakt een substantiële latentie: op een geavanceerde server-GPU vergt één afbeelding van Janus-Pro-7B ruim 9,5 seconden rekentijd.\n\n| Familie | Generatiemethode | Resolutie | Aantal stappen | Typische latentie |\n|---|---|---|---|---|\n| Autoregressief (bv. Janus-Pro-7B) | Token na token voorspellen | 384 px | 576 evaluaties | ~9.508 ms |\n| Diffusie / Flow (bv. SD3-medium) | Iteratieve ruisonderdrukking | 1024 px | 28 evaluaties | ~2.086 ms |\n| Parallelle beslissing (Jeveration) | Eén gezamenlijke keuze | 512 px | 1 voorwaartse pas | 78 ms |\n\n### System 1-modellen en de valkuil van onafhankelijkheid\nSystem 1-modellen, zoals Jev, werken volgens een ander principe dan taalgeneratoren. In plaats van lange tekstreeksen te formuleren, nemen ze directe, getypeerde beslissingen in één enkele voorwaartse pas (*forward pass*): een discrete keuze (*Choice*) tussen alternatieven of een numerieke waardering (*Score*). Onderzoekers passen deze modellen reeds toe voor robotsturing, objectdetectie en beeldbeoordeling ([arXiv 2611.24738](https://arxiv.org/abs/2611.24738)).\n\nOmdat deze modellen getraind zijn op multimodale data, beschikken ze over rijke visuele en semantische kennis. Een voor de hand liggende gedachte is daarom: laat een System 1-model voor elke positie van een afbeeldingsraster tegelijk een code kiezen uit een vooraf gedefinieerd codeboek. De invoerconditie $y$ (zoals een tekstprompt) bepaalt dan voor elke positie $i \\in \\{1, \\ldots, N\\}$ een categorische kansverdeling $q_i(c_i \\mid y)$. Het model bemonstert deze posities onafhankelijk en parallel:\n\n$$q_{\\text{ind}}(c \\mid y) = \\prod_{i=1}^N q_i(c_i \\mid y)$$\n\n### Waarom onafhankelijke factorisatie faalt\nIn de praktijk levert deze directe parallelle selectie visuele chaos op. Een prompt zoals *'een kat op een vensterbank'* laat miljoenen verschillende, geldige afbeeldingen toe: een rode cyperse kat naar links, een zwarte kat naar rechts, of een slapende kitten. Wanneer het model de posities onafhankelijk bemonstert, berekent elke positie slechts zijn marginale kans $p(c_i \\mid y)$ over alle mogelijke katten heen.\n\nDe theoretische onderbouwing hiervan volgt uit de Kullback-Leibler divergentie tussen de werkelijke doelverdeling $p(c \\mid y)$ en de onafhankelijke benadering $q_{\\text{ind}}$:\n\n$$\\min_{q_{\\text{ind}}} \\text{KL}(p \\parallel q_{\\text{ind}}) = \\sum_{i=1}^N H(c_i \\mid y) - H(c \\mid y)$$\n\nHierbij stelt $H$ de informatietheoretische entropie voor. Het verschil tussen de som van de afzonderlijke entropieën en de gezamenlijke entropie staat bekend als de **totale correlatie**. Deze maatstaf drukt uit hoe sterk beeldcodes onderling van elkaar afhangen. Omdat de onafhankelijke factorisatie deze correlatie negeert, kiest positie 1 een fragment van een rode kat, terwijl positie 2 gelijktijdig kiest voor een zwarte vacht. Het resultaat is een collage van onsamenhangende pixels waarin geen enkel globaal object herkenbaar blijft."
+  },
+  {
+   "title": "De gedeelde toevalsvector als coördinator",
+   "md": "Je leert hier hoe Jeveration afzonderlijke codeposities synchroniseert met één gedeelde toevalstoestand zonder autoregressieve afhankelijkheid.\n\n### Stochastische afhankelijkheid zonder sequentiële stappen\nOm de afzonderlijke posities op elkaar af te stemmen zonder terug te vallen op een tijdrovende sequentiële lus, introduceert Jeveration een gedeelde toevalstoestand $\\xi$. In plaats van deterministisch te voorspellen of onafhankelijk te bemonsteren, trekt het systeem per afbeelding één stochastische vector $\\xi$ uit een basisverdeling $p_0$. Alle $N$ posities worden geconditioneerd op deze identieke vector:\n\n$$q_\\theta(c \\mid y) = \\mathbb{E}_{\\xi \\sim p_0} \\left[ \\prod_{i=1}^N q_{\\theta, i}(c_i \\mid y, \\xi) \\right]$$\n\nZodra $\\xi$ vastligt, verlopen de beslissingen op alle posities nog steeds parallel en onafhankelijk van elkaar. De conditionering op een gemeenschappelijke $\\xi$ zorgt er echter voor dat de resulterende marginale verdelingen samenvallen op één specifieke realisatie van de prompt. De toevalsvector dicteert de zaadwaarde voor compositie, kleurpalet en camerahoek, waardoor alle parallelle keuzes convergeren naar één coherent geheel.\n\n> [!note] De samenstelling van de toevalsvector $\\xi$\n> Volgens de specificaties in de paper wordt $\\xi$ samengesteld via drie bewerkingen ([arXiv 2611.24738](https://arxiv.org/abs/2611.24738)):\n> 1. Elke positie wordt met kans $\\rho = 0{,}6$ gemaskeerd.\n> 2. De overblijvende posities worden gevuld met willekeurige discrete codes uit het codeboek.\n> 3. Aan alle inbeddingsvectoren wordt Gaussiaanse ruis toegevoegd met een schaal van $\\sigma = 0{,}1$.\n\n### Integratie in het taal-beeldmodel\nJeveration bouwt voort op een bestaand open vision-language model, **Qwen3.5-4B** ([arXiv 2611.24738](https://arxiv.org/abs/2611.24738)). Het complete basismodel en de bijbehorende visietoren blijven tijdens het hele proces **bevroren** (*frozen*). Om het model aan te passen voor beeldsynthese, voegen de onderzoekers Low-Rank Adaptation (LoRA) adapters toe met een rang van 256, samen met specifieke uitvoerkoppen. In totaal telt het systeem circa 1,0 miljard trainbare parameters bovenop het bevroren fundament.\n\nVoor een afbeelding voegt het systeem $N = 128$ beslistokens toe aan de invoerreeks, overeenkomend met de 128 discrete codes van de TA-TiTok-tokenizer ([arXiv 2611.24738](https://arxiv.org/abs/2611.24738)). De aandachtsmechanismen binnen de transformatorlagen verwerken deze tokens op twee verschillende manieren:\n\n- **Tekst- en prompttokens** gebruiken een causaal aandachtsmasker: elk tekstwoord kijkt uitsluitend terug naar voorgaande woorden.\n- **Beslistokens** gebruiken een **bidirectioneel aandachtsmasker**: alle 128 beslistokens kunnen gelijktijdig informatie uitwisselen met elkaar én kijken naar de volledige tekstinvoer.\n\nDoor deze bidirectionele uitwisseling binnen de transformatorlagen kan elke positie zijn voorspelling afstemmen op zowel de prompt $y$ als de gedeelde stochastische toestand $\\xi$ in één enkele voorwaartse berekening."
+  },
+  {
+   "title": "Tweetraps-training en distributiematching",
+   "md": "Je leert hier waarom directe supervisie faalt en hoe een hulpmodel en distributiematching het netwerk dwingen om de toevalstoestand te benutten.\n\n### Het probleem van directe supervisie\nEen voor de hand liggende trainingsopzet zou zijn om het netwerk te trainen met kruisentropie (*cross-entropy*) op een dataset van doelafbeeldingen, met $\\xi$ als extra invoer. De auteurs rapporteren dat deze aanpak mislukt: het model leert om de toevalstoestand $\\xi$ te negeren. Omdat $\\xi$ willekeurig wordt getrokken en geen verband houdt met de specifieke trainingsafbeelding in de batch, biedt $\\xi$ geen betrouwbare gradiënt om het verlies op die specifieke afbeelding te minimaliseren. Het netwerk valt terug op het gemiddelde van alle mogelijke beelden en produceert opnieuw onsamenhangende ruis.\n\nOm dit te verhelpen, hanteren de onderzoekers een tweetraps-trainingsprocedure ([arXiv 2611.24738](https://arxiv.org/abs/2611.24738)).\n\n### Fase 1: De beeldverdeling leren via gemaskeerde voorspelling\nIn de eerste fase leert het model hoe beeldcodes onderling samenhangen via gemaskeerde voorspelling (*masked modeling*). Voor een reeks doelcodes $c$ selecteert het systeem een willekeurige deelverzameling posities $M$ die worden gemaskeerd. Het model $\\phi$ moet de verborgen codes voorspellen op basis van de zichtbare contextcodes $c_{\\bar{M}}$ en de prompt $y$:\n\n$$\\mathcal{L}_{\\text{mask}}(\\phi) = \\mathbb{E} \\left[ \\frac{1}{|M|} \\sum_{i \\in M} -\\log p_{\\phi, i}(c_i \\mid c_{\\bar{M}}, y) \\right]$$\n\nOmdat de zichtbare codes $c_{\\bar{M}}$ concrete context leveren van dezelfde specifieke afbeelding, leert het model de ruimtelijke afhankelijkheden kennen. Na 80.000 stappen op tekst-naar-beelddata en 12.000 stappen op alle taken fungeert dit model $\\phi$ als een bevroren referentie-expert.\n\n### Fase 2: Beslistraining via distributiematching\nIn de tweede fase leert het beslismodel $\\theta$ om vanuit willekeurige toestand $\\xi$ in één pas een volledige code $\\hat{c}$ te genereren. Om te beoordelen of deze codes een coherente afbeelding vormen, introduceren de auteurs een meelerend **hulpmodel** $\\psi$ ([arXiv 2611.24738](https://arxiv.org/abs/2611.24738)):\n\n```text\n[ Toestand (y, ξ) ] ---> [ Beslismodel θ ] ---> Kandidaatcodes ĉ (één pas)\n                                                      |\n                                            [ Maskeer deel M ]\n                                              /              \\\n                                             v                v\n                [ Hulpmodel ψ (volgt θ) ]          [ Bevroren model φ (expert) ]\n                                 p_ψ,i                            p_φ,i\n                                     \\                              /\n                                      v                            v\n                                      Verlies: (p_ψ,i - p_φ,i)ᵀ · ℓ_θ,i\n```\n\n1. Het beslismodel $\\theta$ produceert logits $\\ell_{\\theta, i}$ en bemonstert parallel de codes $\\hat{c}$.\n2. Een willekeurige subset $M$ van $\\hat{c}$ wordt gemaskeerd.\n3. Zowel het bevroren expertmodel $\\phi$ als het meelerende hulpmodel $\\psi$ voorspellen de gemaskeerde posities vanuit dezelfde zichtbare codes $\\hat{c}_{\\bar{M}}$.\n4. Het verlies voor distributiematching minimaliseert het verschil tussen beide voorspellingen:\n\n$$\\mathcal{L}_{\\text{DM}}(\\theta) = \\mathbb{E} \\left[ \\frac{1}{|M|} \\sum_{i \\in M} \\text{sg}(p_{\\psi, i} - p_{\\phi, i})^{\\top} \\ell_{\\theta, i} \\right]$$\n\nWaar $\\text{sg}$ staat voor *stop-gradient*. Als $\\theta$ onsamenhangende codes kiest, wijkt de context af van wat $\\phi$ verwacht en ontstaat een verschil met $\\psi$. Alleen wanneer de codes gezamenlijk een aannemelijk beeld vormen, stemmen de twee voorspellingen overeen.\n\n> [!tip] Betrouwbaarheidsgestuurde verfijning\n> In de laatste 1.700 stappen van fase 2 voegt het team een correctietarget toe: de 50% minst zekere posities worden opnieuw gemaskeerd en door het expertmodel $\\phi$ in vier rondes aangevuld tot een referentie $c^{\\text{ref}}$. Dit levert een direct verlies $\\mathcal{L}_{\\text{corr}}$ op dat de detailkwaliteit aanscherpt."
+  },
+  {
+   "title": "Eén model voor generatie en dichte waarneming",
+   "md": "Je leert hier hoe dezelfde bevroren transformator naast tekst-naar-beeld ook beeld-naar-beeldgeneratie en dichte computervisietaken uitvoert.\n\n### Dubbele uitvoertakken in de afbeeldingskop\nOm de uiteindelijke logits voor de 128 codeposities te berekenen, gebruikt Jeveration een transformatorkop die voor elke positie een kenmerkvector $u_i$ levert. In plaats van een standaard lineaire laag splitst het model de voorspelling in twee complementaire takken ([arXiv 2611.24738](https://arxiv.org/abs/2611.24738)):\n\n1. **De codeboektak** ($f_{\\text{cb}}$): Deze projecteert $u_i$ naar de coderuimte en past een classificator toe die geïnitialiseerd is met de 8.192 vectoren uit het tokenizer-codeboek.\n2. **De brede tak** ($f_{\\text{wide}}$): Deze tak start met nul-initialisatie en projecteert $u_i$ rechtstreeks naar de logits, wat extra leercapaciteit biedt buiten de rigide codeboekgeometrie.\n\nDe uiteindelijke categorische verdeling telt de uitkomsten van beide takken op:\n\n$$q_{\\theta, i}(\\cdot \\mid y, \\xi) = \\operatorname{softmax}\\big(f_{\\text{cb}}(u_i) + f_{\\text{wide}}(u_i)\\big)$$\n\nUit ablatie-experimenten op het gemaskerde model uit fase 1 blijkt dat de combinatie van beide takken een hogere GenEval-score behaalt (0,64) dan de brede tak alleen (0,60) of de codeboektak alleen (0,59).\n\n### Beeld-naar-beeld en controleerbare synthese\nDezelfde architectuur kan ook bestaande afbeeldingen transformeren. Bij beeld-naar-beeldtaken (zoals het inkleuren van zwart-witfoto's of het omzetten van dieptekaarten naar fotorealistische beelden) codeert de bevroren visietoren de bronafbeelding naar visuele tokens. Daarnaast stuurt een geschakelde aftakking de bronafbeelding direct naar de TA-TiTok-decoder.\n\nDit levert een hoge efficiëntie op: een beeld-naar-beeldtaak vergt op een NVIDIA H200-GPU slechts **91,7 milliseconden**, nauwelijks 14 milliseconden meer dan zuivere tekst-naar-beeldsynthese. Het model handhaaft daarbij een sterke structurele getrouwheid, met een HED-randscore ($F_1$) van 0,880.\n\n### Dichte computervisie als getypeerde beslissingen\nJeveration trekt het System 1-beslisparadigma door naar klassieke computervisie ([arXiv 2611.24738](https://arxiv.org/abs/2611.24738)). Voor dichte computervisietaken gebruikt het netwerk 432 ruimtelijke queries als beslistokens (in plaats van willekeurige toevalscodes), waaruit taakspecifieke koppen vervolgens de semantische klassen of scores voorspellen:\n\n- **Semantische segmentatie**: Elke query kiest een discrete klasse (*Choice*).\n- **Diepteschatting**: Elke query voorspelt een continue afstandswaarde (*Score*).\n- **Oppervlaktenormalen**: Elke query voorspelt een driedimensionale richtingsvector (*Score*).\n\n| Taak | Uitvoertype | Jeveration (één checkpoint) | Gespecialiseerd model | DeepLabV3+ R50 |\n|---|---|---|---|---|\n| Segmentatie (mIoU $\\uparrow$) | Choice | **67,7** | 67,8 | 53,5 |\n| Dieptefout (abs m $\\downarrow$) | Score | **0,267 m** | 0,246 m | 0,393 m |\n| Oppervlaktenormalen (hoekfout $\\downarrow$) | Score | **24,2°** | 21,2° | 22,0° |\n\nOp de NYUv2-benchmark evenaart Jeveration met één enkel checkpoint de prestaties van afzonderlijk getrainde modellen op segmentatie (67,7 mIoU) en overtreft het traditionele netwerken zoals DeepLabV3+ met 14,2 punten. Al deze taken worden afgehandeld in circa 78 milliseconden per aanroep."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "78 ms",
+   "label": "rekentijd voor een 512x512-afbeelding op een enkele H200-GPU",
+   "quote": "Experiments show that Jeveration generates a 512x512 image in 78 ms, up to 122x faster than existing unified models, while maintaining competitive image quality and dense prediction performance.",
+   "source": 1
+  },
+  {
+   "value": "122x",
+   "label": "versnelling van Jeveration ten opzichte van bestaande multimodale modellen",
+   "quote": "Experiments show that Jeveration generates a 512x512 image in 78 ms, up to 122x faster than existing unified models, while maintaining competitive image quality and dense prediction performance.",
+   "source": 1
+  },
+  {
+   "value": "1.0B",
+   "label": "aantal trainbare parameters in LoRA-adapters en uitvoerkoppen",
+   "quote": "About 1.0B parameters are trainable in total, including the adapters, input modules and output heads.",
+   "source": 1
+  },
+  {
+   "value": "8,192",
+   "label": "omvang van het codeboek van de TA-TiTok-tokenizer",
+   "quote": "Image generation uses 128 TA-TiTok codes from an 8,192-entry codebook, and dense prediction uses 432 spatial queries.",
+   "source": 1
+  },
+  {
+   "value": "0.32",
+   "label": "GenEval-score van het gemaskerde model in één voorwaartse pas zonder beslistraining",
+   "quote": "Without it, the first-phase masked model reaches only 0.32 GenEval in one pass (Fig. 2).",
+   "source": 1
+  },
+  {
+   "value": "432",
+   "label": "aantal ruimtelijke queries voor dichte computervisietaken",
+   "quote": "Image generation uses 128 TA-TiTok codes from an 8,192-entry codebook, and dense prediction uses 432 spatial queries.",
+   "source": 1
+  }
+ ],
+ "caveats": "Bij het interpreteren van de resultaten van Jeveration moeten verschillende praktische en methodologische kanttekeningen worden gemaakt:\n\n1. **Beperkte resolutie**: Het model is uitsluitend geëvalueerd op een resolutie van 512 bij 512 pixels met 128 discrete codes. Bestaande éénstaps-diffusiemodellen zoals SANA-Sprint en FLUX.1-schnell opereren standaard op 1024 bij 1024 pixels. Hoe de methode schaalt naar hogere resoluties met grotere tokensequenties vermelden de auteurs niet.\n2. **Kwaliteitsverlies bij oppervlaktenormalen**: Hoewel segmentatie en diepteschatting concurrerend zijn, blijft de hoekfout bij oppervlaktenormalen achter bij gespecialiseerde modellen (24,2 graden tegenover 21,2 graden). De auteurs veronderstellen dat fijne geometrische oppervlaktedetails het meest gevoelig zijn voor het delen van modelcapaciteit over meerdere taken.\n3. **Complexe trainingspijplijn**: De inferentie verloopt in één voorwaartse pas van 78 milliseconden, maar het trainingsproces telt meerdere opeenvolgende fasen. Het vereist eerst 92.000 stappen gemaskeerde voorbereiding, gevolgd door distributiematching met een meebewegend hulpmodel en iteratieve sampling met classificeerder-vrije sturing (CFG 3) over vier rondes voor de correctiedoelen.\n4. **Prestatiekloof met grotere autoregressieve modellen**: Op de GenEval-benchmark scoort Jeveration 0,74. Hoewel dit sneller is dan Janus-Pro-7B (0,80), blijft de absolute afstemming op complexe prompts lager dan bij het grotere autoregressieve model.\n5. **Hardwarevereisten**: De gerapporteerde latentie van 78 milliseconden geldt specifiek voor een NVIDIA H200-datacenter-GPU bij een batchgrootte van 1. Op consumentenhardware zal de inferentietijd aanzienlijk hoger uitvallen.",
+ "glossary": [
+  {
+   "term": "System 1-model",
+   "def": "Een neuraal netwerk dat directe, getypeerde beslissingen zoals keuzes of scores neemt in één enkele rekenstap zonder langdurige sequentiële redenering."
+  },
+  {
+   "term": "Discrete tokenizer",
+   "def": "Een model dat een afbeelding comprimeert tot een compacte reeks gehele getallen die verwijzen naar vectoren in een vooraf gedefinieerd codeboek."
+  },
+  {
+   "term": "Voorwaartse pas (forward pass)",
+   "def": "De eenmalige berekening waarbij invoergegevens van de eerste naar de laatste laag van een neuraal netwerk stromen om een uitvoer te produceren."
+  },
+  {
+   "term": "Distributiematching",
+   "def": "Een trainingsmethode waarbij een model leert om de kansverdeling van zijn gegenereerde data af te stemmen op de verdeling van een referentiemodel."
+  },
+  {
+   "term": "Totale correlatie",
+   "def": "Een informatietheoretische maatstaf voor de onderlinge afhankelijkheid tussen meerdere variabelen, gedefinieerd als het verschil tussen de som van de individuele entropieën en de gezamenlijke entropie."
+  },
+  {
+   "term": "Dichte voorspelling (dense prediction)",
+   "def": "Een computervisietaak waarbij het model voor elke pixel of ruimtelijke regio een specifieke waarde toekent, zoals een semantische klasse of dieptewaarde."
+  },
+  {
+   "term": "LoRA (Low-Rank Adaptation)",
+   "def": "Een efficiënte techniek waarbij kleine, trainbare matrixparen worden toegevoegd aan een bevroren neuraal netwerk om het aan te passen aan nieuwe taken."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom resulteert een directe parallelle voorspelling van discrete beeldcodes zonder gedeelde toestand in een onsamenhangende afbeelding?",
+   "options": [
+    "Omdat de posities afzonderlijk de marginale kansen voorspellen en daardoor delen van verschillende geldige afbeeldingen combineren.",
+    "Omdat de visietoren van het taalmodel geen invoerafbeeldingen met een resolutie van meer dan 512 pixels kan verwerken.",
+    "Omdat het codeboek van de tokenizer te weinig unieke vectoren bevat om complexe patronen weer te geven.",
+    "Omdat de causale aandachtsmaskering verhindert dat teksttokens communiceren met de uitvoerkoppen van het netwerk."
+   ],
+   "answer": 0,
+   "explain": "Bij een directe parallelle voorspelling zonder stochastische synchronisatie modelleert elke positie alleen zijn eigen marginale kansverdeling. Omdat een tekstprompt meerdere verschillende geldige afbeeldingen toestaat, kiezen verschillende posities kenmerken van onverenigbare beelden, waardoor de totale correlatie verloren gaat."
+  },
+  {
+   "id": "q2",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Welke functie vervult het hulpmodel ψ tijdens de tweede trainingsfase van Jeveration?",
+   "options": [
+    "Het volgt de veranderende uitvoerverdeling van het beslismodel om het verschil met de referentieverdeling te berekenen.",
+    "Het voegt Gaussiaanse ruis toe aan de promptinbeddingen om overaanpassing op de tekstdata te voorkomen.",
+    "Het vertaalt de 128 discrete codes rechtstreeks naar RGB-pixels zonder tussenkomst van een afzonderlijke decoder.",
+    "Het berekent de dieptekaarten en oppervlaktenormalen zodat het hoofdmodel zich uitsluitend op tekst richt."
+   ],
+   "answer": 0,
+   "explain": "Het hulpmodel ψ begint als een kopie van het bevroren model φ en traint mee op de gegenereerde monsters van beslismodel θ. Daardoor representeert ψ de actuele verdeling van θ. Het verschil tussen de voorspellingen van ψ en φ levert het gradiëntsignaal waarmee θ leert om de ware beeldverdeling te benaderen."
+  },
+  {
+   "id": "q3",
+   "type": "order",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Plaats de stappen van het generatieproces van Jeveration tijdens inferentie in de juiste chronologische volgorde.",
+   "tiles": [
+    "Bemonsteren van de gedeelde toevalsvector met maskering en ruis",
+    "Verwerking van tekst- en beslistokens door het bevroren taal-beeldmodel in één voorwaartse pas",
+    "Optellen van de logits uit de codeboektak en de brede tak van de transformatorkop",
+    "Parallel selecteren van de 128 discrete beeldcodes",
+    "Decoderen van de codes naar een 512x512-afbeelding via de getrainde decoder"
+   ],
+   "explain": "Tijdens inferentie trekt Jeveration eerst de toevalsvector ξ. Vervolgens verwerkt het netwerk alle tokens in één enkele voorwaartse pas. De twee takken van de kop leveren samen de logits, waaruit de 128 codes parallel worden gekozen. Ten slotte rendert de decoder de uiteindelijke afbeelding."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Het artikel behandelt de wiskundige overgang van iteratieve diffusie naar eenmalige voorwaartse stochastische inferentie."
+  },
+  {
+   "track": "jev",
+   "why": "Jeveration bouwt rechtstreeks voort op het Jev-beslisparadigma door discrete keuzes en continue scores ruimtelijk te synchroniseren."
+  },
+  {
+   "track": "automation",
+   "why": "De reductie van generatielatentie tot 78 milliseconden maakt realtime beeldverwerking binnen geautomatiseerde n8n-stromen praktisch haalbaar."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "Jeveration: System One Models Now Generate",
+   "url": "https://arxiv.org/abs/2611.24738"
+  },
+  {
+   "n": 2,
+   "title": "Vision transformer",
+   "url": "https://en.wikipedia.org/wiki/Vision_transformer"
+  },
+  {
+   "n": 3,
+   "title": "Latent space",
+   "url": "https://en.wikipedia.org/wiki/Latent_space"
+  },
+  {
+   "n": 4,
+   "title": "Generative AI",
+   "url": "https://en.wikipedia.org/wiki/Generative_AI"
+  }
+ ],
+ "id": "2026-11-20-hoe-jeveration-beelden-genereert-in-een-enkele-v",
+ "kind": "paper",
+ "date": "2026-11-20",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-11-20",
+  "kind": "paper",
+  "verified": "2026-11-20",
+  "candidate": "arxiv:2611.24738",
+  "signal": "120 upvotes op Hugging Face Daily Papers",
+  "significance": 4
+ }
+}
