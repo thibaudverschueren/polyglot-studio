@@ -1,0 +1,206 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe geometrische contractie informatiestromen in hyper-connections balanceert",
+ "subtitle": "Door de Birkhoff-polytoop in de eerste netwerklagen gecontroleerd naar binnen te krimpen, voorkomt cmHC dat parallelle reststromen ontkoppelen of juist samensmelten tot identieke kopieën.",
+ "topic": "ai",
+ "minutes": 11,
+ "tldr": [
+  "Parallelle informatiestromen in taalmodellen wisselen vaak nauwelijks gegevens uit, of smelten bij te sterke menging juist samen tot identieke kopieën.",
+  "De methode cmHC krimpt de wiskundige mengruimte lichtjes naar binnen, uitsluitend in de allereerste lagen van het netwerk.",
+  "Op een 300B-model ligt het trainingsverlies op stap 2.000 met 0,0157 lager dan bij mHC, wat wijst op een stabielere vroege convergentie zonder extra parameters.",
+  "De wiskundige contractie moet beperkt blijven tot enkele ondiepe lagen, omdat diepere menging stromen alsnog laat vervagen."
+ ],
+ "plain": "Zie een taalmodel als vier koks die naast elkaar een meergangendiner bereiden. Als ze elkaar volkomen negeren, sluiten de gerechten niet op elkaar aan. Maar als ze bij elke stap al hun pannen leeggieten in één grote mengkom, smaakt elk gerecht uiteindelijk naar dezelfde puree. Dat is het dilemma: te weinig overleg levert vier losse eilandjes op, te veel overleg vernietigt elk uniek recept. De oplossing is simpel: alleen tijdens de eerste vijf minuten van de voorbereiding wisselen de koks verplicht een klein schepje bouillon uit, zeg drie procent, waarna ze elk zelfstandig verder koken. Zo ontstaat harmonie zonder dat de soep op het dessert gaat lijken. De vergelijking houdt op waar koks proeven en improviseren; het computermodel voert een strikte wiskundige vermenigvuldiging uit op vaste getallenreeksen zonder menselijk smaakgevoel.",
+ "why": "Wie grote AI-modellen traint, botst op de grenzen van traditionele restverbindingen: één informatiestroom per token remt de representatiekracht af. Hyper-connections splitsen die stroom in parallelle banen, maar veroorzaakten tot nu toe instabiele gradiënten of juist identieke, nutteloze stromen. Met cmHC kunnen onderzoekers multi-stream netwerken trainen tot 300 miljard parameters zonder extra modelparameters of instabiliteit. Op gespecialiseerde hardware daalt de uitvoeringslatentie van de hyper-connection operatoren bovendien met maximaal 44,8% ten opzichte van mHC, waardoor de communicatie-overhead van meerdere stromen sterk afneemt.",
+ "sections": [
+  {
+   "title": "Van klassieke restverbinding naar multi-stream hyper-connections",
+   "md": "Je leert hier hoe de traditionele residuele verbinding werkt, waarom hyper-connections die uitbreiden naar parallelle stromen en waarom ongecontroleerd mengen het trainingsproces ontregelt.\n\n### De identiteitsbrug in diepe netwerken\nSinds de introductie van ResNet ([Wikipedia: Residual neural network](https://en.wikipedia.org/wiki/Residual_neural_network)) vormt de residuele verbinding het fundament onder diepe architecturen, waaronder moderne taalmodellen. In plaats van een laag rechtstreeks een nieuwe toestand $x_{l+1} = f(x_l)$ te laten leren, berekent de rekenlaag uitsluitend een residu ten opzichte van de invoer:\n\n$$x_{l+1} = x_l + f(x_l)$$\n\nBij terugwaartse propagatie van de foutgradiënt zorgt deze sommatie voor een directe doorgifte:\n\n$$\\frac{\\partial \\mathcal{E}}{\\partial x_l} = \\frac{\\partial \\mathcal{E}}{\\partial x_{l+1}} \\left(1 + \\frac{\\partial f(x_l)}{\\partial x_l}\\right)$$\n\nDe constante term 1 voorkomt dat gradiënten exponentieel uitdoven (*vanishing gradients*), waardoor netwerken met honderden lagen stabiel convergeren. Toch heeft dit klassieke patroon een nadeel: alle representaties moeten door één enkel vectorpad van dimensie $d$. Vroege en late transformaties moeten dezelfde snelweg delen.\n\n### Meerdere stromen met Hyper-Connections\nOm deze flessenhals te doorbreken, introduceerden Zhu et al. (2025) Hyper-Connections (HC). In plaats van één vector onderhoudt het netwerk $n$ parallelle stromen $\\mathbf{x}_l \\in \\mathbb{R}^{n \\times d}$. De laagupdate verloopt via drie lineaire operatoren:\n\n$$\\mathbf{x}_{l+1} = \\mathbf{H}^{\\mathrm{res}}_l \\mathbf{x}_l + {\\mathbf{H}^{\\mathrm{post}}_l}^{\\top} f(\\mathbf{H}^{\\mathrm{pre}}_l \\mathbf{x}_l; \\mathbf{\\Theta}_l)$$\n\n- $\\mathbf{H}^{\\mathrm{pre}}_l \\in \\mathbb{R}^{1 \\times n}$: voegt de $n$ stromen samen tot één invoer voor de transformatorlaag $f$.\n- $\\mathbf{H}^{\\mathrm{post}}_l \\in \\mathbb{R}^{1 \\times n}$: verdeelt de uitvoer van de transformatorlaag opnieuw over de $n$ stromen.\n- $\\mathbf{H}^{\\mathrm{res}}_l \\in \\mathbb{R}^{n \\times n}$: mengt de parallelle reststromen onderling.\n\nWanneer $\\mathbf{H}^{\\mathrm{res}}_l$ echter vrij leerbaar is, ontstaan numerieke instabiliteiten. Zodra de eigenwaarden van $\\mathbf{H}^{\\mathrm{res}}_l$ groter worden dan 1, versterkt het signaal zich bij elke laag, met grote schommelingen in de gradiëntnormen tot gevolg.\n\n### Het stochastische keurslijf van de Birkhoff-polytoop\nOm de signaalvoortplanting te temmen, stelde Manifold-constrained Hyper-Connections (mHC) voor om $\\mathbf{H}^{\\mathrm{res}}_l$ te begrenzen tot de Birkhoff-polytoop $\\mathcal{B}_n$ ([Wikipedia: Doubly stochastic matrix](https://en.wikipedia.org/wiki/Doubly_stochastic_matrix)). Dit is de meetkundige verzameling van dubbelstochastische matrices: matrices met niet-negatieve elementen waarvan zowel elke rij als elke kolom exact optelt tot 1.\n\nOmdat de spectrale norm van een dubbelstochastische matrix begrensd is door $\\|\\mathbf{H}^{\\mathrm{res}}_l\\|_2 \\le 1$, fungeert de restverbinding als een niet-expansieve afbeelding. Waar het oorspronkelijke mHC het tijdrovende Sinkhorn-Knopp-algoritme gebruikte (10 tot 20 iteraties per stap), parameteriseert de variant mHC-lite de matrix als een directe convexe combinatie van de $n!$ permutatiematrices $\\mathbf{P}_m$:\n\n$$\\mathbf{H}^{\\mathrm{res}}_l = \\sum_{m=1}^{n!} \\alpha_{l,m} \\mathbf{P}_m, \\quad \\boldsymbol{\\alpha}_l = \\mathrm{softmax}\\left(a_l^{\\mathrm{res}} \\mathbf{x}'_l \\mathbf{W}^{\\mathrm{res}}_l + \\mathbf{b}^{\\mathrm{res}}_l\\right)$$\n\nVolgens de stelling van Birkhoff-von Neumann ([Wikipedia: Doubly stochastic matrix](https://en.wikipedia.org/wiki/Doubly_stochastic_matrix)) levert elke convexe combinatie van permutatiematrices een exacte dubbelstochastische matrix op."
+  },
+  {
+   "title": "Het mengdilemma tussen onder-menging en over-menging",
+   "md": "Je leert hier welke twee fouttoestanden optreden bij het mixen van reststromen en waarom zowel te weinig als te veel interactie de expressiviteit van het netwerk aantast.\n\n### Onder-menging en het hoekpunt-effect\nHoewel mHC-lite wiskundig stabiel is, ontdekten onderzoekers een hardnekkige fouttoestand: **onder-menging** (*under-mixing*). In standaardimplementaties wordt de biasvector $\\mathbf{b}^{\\mathrm{res}}_l$ zo geïnitialiseerd dat de diagonaal 0 is en de overige posities -8 bedragen. Hierdoor kent de softmax-functie direct een gewicht van nagenoeg 1 toe aan de eenheidsmatrix $\\mathbf{I}_n$.\n\nDe auteurs van cmHC tonen aan dat dit gedrag niet uniek is voor de eenheidsmatrix ([arXiv 2611.27193](https://arxiv.org/abs/2611.27193)). Zodra de initialisatie een willekeurige andere permutatiematrix bevoordeelt, blijft $\\mathbf{H}^{\\mathrm{res}}_l$ gedurende de hele training in de buurt van dat hoekpunt hangen:\n\n1. De permutatie die bij aanvang de grootste coëfficiënt heeft, ontvangt grotere gradiëntupdates.\n2. De optimizer duwt die specifieke $\\alpha_{l,m}$ nog dichter naar 1 en drukt de overige gewichten naar 0.\n3. Een permutatiematrix bevat in elke rij en kolom exact één 1 en voor de rest nullen. Vermenigvuldiging met een permutatiematrix verwisselt enkel posities, maar combineert geen numerieke waarden.\n\nDe $n$ stromen evolueren hierdoor als losse, niet-communicerende sporen. De potentiële expressiviteit van de parallelle architectuur blijft onbenut.\n\n### Het risico van over-menging\nBestaande oplossingen probeerden dit te verhelpen door alternatieve parametrisaties te kiezen die de binnenkant van de polytoop verkennen. De auteurs tonen echter aan dat agressieve menging een tweede gevaar oproept: **over-menging** (*over-mixing*).\n\nWanneer mengmatrices te dicht bij het uniforme zwaartepunt van de Birkhoff-polytoop komen:\n\n$$\\mathbf{J}_n = \\frac{1}{n} \\mathbf{1}_n \\mathbf{1}_n^{\\top}$$\n\nwordt elk element van $\\mathbf{H}^{\\mathrm{res}}_l$ gelijk aan $1/n$. Elke uitgangsstroom ontvangt dan precies hetzelfde ongewogen gemiddelde van alle ingangsstromen. De stromen verliezen hun onderscheidend vermogen: de cosinus-overeenkomst tussen verschillende stromen nadert 1, waardoor de representaties samenvallen tot redundante kopieën van elkaar."
+  },
+  {
+   "title": "Geometrische contractie naar het binnenste van de polytoop",
+   "md": "Je leert hier hoe cmHC permutatiematrices wiskundig naar binnen trekt en hoe dat een gegarandeerde ondergrens op menging afdwingt zonder nieuwe parameters.\n\n### Gladgemaakte basisvectoren\nOm onder-menging structureel te verhinderen, stelt cmHC (*Contraction for Manifold-Constrained Hyper-Connections*) voor om de permutatiematrices $\\mathbf{P}_m$ te vervangen door samengetrokken versies $\\mathbf{P}'_m$:\n\n$$\\mathbf{P}'_m = c(\\mathbf{P}_m; \\lambda) = \\lambda \\mathbf{P}_m + \\frac{1-\\lambda}{n-1}\\left(\\mathbf{1}_n \\mathbf{1}_n^{\\top} - \\mathbf{P}_m\\right)$$\n\nhierbij is $\\lambda \\in (1/n, 1)$ de contractiecoëfficiënt ([arXiv 2611.27193](https://arxiv.org/abs/2611.27193)). Als $\\lambda \\to 1$, verkrijgt men de oorspronkelijke permutaties van mHC-lite. Als $\\lambda \\to 1/n$, nadert men uniforme menging.\n\n> [!example] Rekenvoorbeeld: contractie bij 4 stromen\n> Neem een model met $n = 4$ stromen en kies $\\lambda = 0{,}97$. De correctieterm bedraagt dan:\n> $$\\frac{1 - \\lambda}{n - 1} = \\frac{1 - 0{,}97}{3} = \\frac{0{,}03}{3} = 0{,}01$$\n> Voor de identiteitsmatrix $\\mathbf{I}_4$ wordt de diagonaalwaarde:\n> $$0{,}97 \\cdot 1 + 0{,}01 \\cdot 0 = 0{,}97$$\n> Elk niet-diagonaalelement (waar $\\mathbf{P}_m$ een 0 had) wordt:\n> $$0{,}97 \\cdot 0 + 0{,}01 \\cdot 1 = 0{,}01$$\n> Elke rij telt op tot $0{,}97 + 3 \\times 0{,}01 = 1{,}00$. Elke andere stroom draagt nu gegarandeerd minimaal 0,01 bij aan de nieuwe toestand.\n\n### Bewezen eigenschappen van de contractie\nDe resulterende samengetrokken polytoop $\\mathcal{B}_n(\\lambda) = \\operatorname{conv}\\{\\mathbf{P}'_m\\}_{m=1}^{n!}$ bezit gunstige wiskundige eigenschappen:\n\n1. **Behoud van dubbele stochastiek (Theorema 2.1)**: Voor $\\lambda \\in (1/n, 1)$ geldt $\\mathcal{B}_n(\\lambda) \\subseteq \\mathcal{B}_n$. Elke samengestelde matrix blijft exact dubbelstochastisch met spectrale norm $\\|\\mathbf{H}^{\\mathrm{res}'}_l\\|_2 \\le 1$.\n2. **Strikte ondergrens op menging (Theorema 2.2)**: Elk afzonderlijk matrixelement voldoet aan:\n   $$h^{\\mathrm{res}'}_{l,ij} \\ge \\min\\left(\\lambda, \\frac{1-\\lambda}{n-1}\\right) > 0$$\n   Zelfs wanneer de softmax alle gewicht aan één component toekent, blijft de matrix op afstand van de zuivere permutatiehoeken.\n3. **Contractie-afbeelding**: Onder de Frobenius-norm geldt $\\|c(\\mathbf{H};\\lambda) - c(\\mathbf{G};\\lambda)\\|_F = \\lambda' \\|\\mathbf{H} - \\mathbf{G}\\|_F$, met $\\lambda' = (n\\lambda - 1)/(n - 1) \\in (0,1)$ ([Wikipedia: Contraction mapping](https://en.wikipedia.org/wiki/Contraction_mapping)). De afbeelding schaalt de afstand van elke matrix tot het zwaartepunt met een factor $\\lambda'$.\n\nOmdat de samengetrokken permutatiematrices $\\mathbf{P}'_m$ vooraf berekend en opgeslagen kunnen worden, introduceert deze wiskundige ingreep geen extra leerbare parameters en geen geheugenoverhead tijdens training."
+  },
+  {
+   "title": "Het vlindereffect en contractie in ondiepe lagen",
+   "md": "Je leert hier waarom herhaalde matrixvermenigvuldiging over tientallen lagen tot over-menging leidt en waarom contractie beperkt moet blijven tot de eerste netwerklagen.\n\n### Cumulatieve convergentie naar het zwaartepunt\nVolgens de dekpuntstelling van Banach ([Wikipedia: Contraction mapping](https://en.wikipedia.org/wiki/Contraction_mapping)) leidt het herhaald toepassen van een contractie-afbeelding op een volledige metrische ruimte onvermijdelijk tot één uniek dekpunt: het uniforme zwaartepunt $\\mathbf{J}_n$. Over opeenvolgende netwerklagen heen vermenigvuldigen de restmatrices zich:\n\n$$\\mathbf{M}_L = \\prod_{l=0}^{L-1} \\mathbf{H}^{\\mathrm{res}'}_{L-1-l}$$\n\nOm de convergentie te meten, gebruikt het paper Dobrushins ergodiciteitscoëfficiënt $\\tau \\in [0, 1]$. Een waarde van $\\tau = 0$ betekent dat alle rijen identiek zijn geworden (volledige over-menging). Theorema 3.1 bewijst de bovengrens:\n\n$$\\tau\\left(\\prod_{l=0}^{L-1} \\mathbf{H}^{\\mathrm{res}'}_{L-1-l}\\right) \\le \\prod_{l=0}^{L-1} \\lambda'_l$$\n\nWanneer men alle lagen samentrekt met $\\lambda'_l < 1$, daalt $\\tau$ exponentieel met de diepte $L$. Bij een netwerk van 48 lagen leidt een te sterke contractie op alle lagen (zoals $\\lambda = 0{,}70$) ertoe dat $\\tau$ naar 0 nadert en de cumulatieve restmatrix niet meer te onderscheiden is van $\\mathbf{J}_n$.\n\n### Het vlindereffect op gradiënten\nDe auteurs ontdekten dat zelfs een kleine contractie een kettingreactie ontketent via het zogenaamde vlindereffect. Splits de stroomtensor in het gemiddelde en het verschil:\n\n$$\\mathbf{x} = \\mathbf{J}_n \\mathbf{x} + \\tilde{\\mathbf{x}}, \\quad \\tilde{\\mathbf{x}} = (\\mathbf{I}_n - \\mathbf{J}_n)\\mathbf{x}$$\n\n1. **Theorema 3.2**: Contractie verkleint de norm van het stroomverschil $\\|\\tilde{\\mathbf{x}}\\|_F$ multiplicatief over opeenvolgende lagen.\n2. **Theorema 3.3**: Het gradiëntverschil van het verlies $\\mathcal{L}$ tussen twee willekeurige permutatiecoëfficiënten $\\alpha_{l,i}$ en $\\alpha_{l,j}$ is direct begrensd door dat stroomverschil:\n   $$|(\\nabla_{\\alpha_{l,i}} - \\nabla_{\\alpha_{l,j}})\\mathcal{L}| \\le 2\\lambda'_l \\|\\nabla_{\\tilde{\\mathbf{x}}_{l+1}}\\mathcal{L}\\|_F \\|\\tilde{\\mathbf{x}}_l\\|_F$$\n\nWanneer de stroomverschillen $\\|\\tilde{\\mathbf{x}}_l\\|_F$ krimpen, worden de gradiënten voor alle permutaties vrijwel identiek. De optimizer kent daardoor aan alle permutaties gelijke updates toe, waardoor de softmax-verdeling afvlakt. Deze vlakkere gewichtsverdeling versnelt de over-menging verder.\n\n### De oplossing: alleen de eerste K lagen samentrekken\nOm deze dynamiek te doorbreken, hanteert cmHC een selectieve strategie ([arXiv 2611.27193](https://arxiv.org/abs/2611.27193)):\n\n$$\\mathbf{P}'_{l,m} = \\begin{cases} c(\\mathbf{P}_m; \\lambda), & l \\le K-1 \\\\ \\mathbf{P}_m, & l > K-1 \\end{cases}$$\n\nContractie in de eerste $K$ lagen (bijvoorbeeld $K=2$) initieert vroege informatie-uitwisseling tussen de stromen. Doordat latere lagen ongecontracteerd blijven ($\\lambda = 1$), accumuleert het Dobrushin-product niet verder richting 0. Dit sluit aan bij de representatielogica van diepe netwerken: vroege lagen leren generieke kenmerken en benutten gedeelde context, terwijl diepe lagen taakspecifieke details verwerken en baat hebben bij bijna-identiteitsverbindingen."
+  },
+  {
+   "title": "Empirische validatie en versnelling op Ascend NPU's",
+   "md": "Je leert hier wat metingen op modellen van 45 miljoen tot 300 miljard parameters aantonen en hoe gefuseerde operatoren op Ascend NPU's de uitvoering versnellen.\n\n### Resultaten op GPT-2 schaal\nHet model is getest op nanoGPT-S (12 lagen, 45M parameters), nanoGPT-M (24 lagen, 0,12B parameters) en nanoGPT-L (48 lagen, 0,36B parameters) met $n=4$ stromen op OpenWebText en FineWeb-Edu:\n\n- **Laagste verlies**: De opzet met $\\lambda = 0{,}97$ en $K = 2$ behaalt op beide datasets de beste gemiddelde rangschikking (rang 1,3 op OpenWebText; rang 2,8 op FineWeb-Edu).\n- **Voorsprong op mHC-lite**: Op OpenWebText verlaagt deze configuratie het validatieverlies met 0,0073 (S), 0,0024 (M) en 0,0045 (L).\n- **Sterke versus matige contractie**: Bij contractie over alle lagen presteert $\\lambda = 0{,}97$ consequent beter dan $\\lambda = 0{,}70$. Bij 48 lagen loopt het verschil in validatieverlies op tot 0,0143 op OpenWebText en 0,0125 op FineWeb-Edu, wat het schadelijke effect van over-menging bevestigt.\n- **Ondiep versus diep**: Het samentrekken van de laatste $m$ lagen ($K = -m$) verhoogt de gradiëntnormen (bijvoorbeeld tot 1,3792 voor $K=-10$ op nanoGPT-S) en levert minder stabiele resultaten op dan samentrekking vooraan in het netwerk.\n\n### Schaalbaarheid op 6B en 300B Mixture-of-Experts\nDe methode is vervolgens geëvalueerd op DeepSeek-achtige Mixture-of-Experts (MoE) modellen met Multi-Head Latent Attention (MLA) op FineWeb-Edu ([arXiv 2611.27193](https://arxiv.org/abs/2611.27193)):\n\n- **6B-MoE ($\\lambda = 0{,}97$)**: cmHC voltooit de training met een verliesvoordeel van 0,002 ten opzichte van mHC en 0,005 ten opzichte van mHC-lite na 71,5k stappen.\n- **300B-MoE ($\\lambda = 0{,}96$)**: Op stap 2k noteert cmHC een verlies dat 0,0157 lager ligt dan mHC, met lagere en vlakkere gradiëntnormen waar mHC uitschieters vertoont.\n\n### Gefuseerde rekenkernen op Huawei Ascend 910C\nIn een rechttoe-rechtaan implementatie brengt het beheren van vier parallelle stromen aanzienlijke overhead met zich mee door het veelvuldig starten van kleine rekenkernen. De auteurs ontwikkelden daarom gefuseerde Pre- en Post-operatoren in Ascend C:\n\n- De **Pre-operator** bundelt coëfficiëntgeneratie, stroomaggregatie en projectie op de voorberekende matrices $\\mathbf{P}'_{l,m}$.\n- De **Post-operator** fuseert reststroommenging en de expansie naar $n$ stromen.\n- Rekenintensieve projecties draaien op de *cube cores*, terwijl normalisaties en kleine matrixbewerkingen worden afgehandeld door *vector cores*.\n\nBij metingen op een Huawei Ascend 910C-server ($B=1, S=4096, n=4$) daalt de totale voorwaartse en achterwaartse latentie van de operatoren in cmHC met 44,8% ten opzichte van mHC bij verborgen dimensie $D=2048$ (31,0% bij $D=3584$ en 24,1% bij $D=7168$), doordat cmHC de herhaalde Sinkhorn-Knopp-iteraties overbodig maakt."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "44.8%",
+   "label": "maximale afname in totale voorwaartse en achterwaartse latentie van hyper-connection operatoren door cmHC ten opzichte van mHC op Ascend 910C bij verborgen dimensie D=2048",
+   "quote": "As shown in Table 3, our implementation reduces total forward + backward latency by 44.8% , 31.0% , and 24.1% as D increases from 2,048 to 7,168 .",
+   "source": 1
+  },
+  {
+   "value": "24.1%",
+   "label": "afname in totale voorwaartse en achterwaartse latentie van hyper-connection operatoren op Ascend 910C bij verborgen dimensie D=7168",
+   "quote": "As shown in Table 3, our implementation reduces total forward + backward latency by 44.8% , 31.0% , and 24.1% as D increases from 2,048 to 7,168 .",
+   "source": 1
+  },
+  {
+   "value": "0.0073",
+   "label": "reductie van het validatieverlies door cmHC ten opzichte van mHC-lite op nanoGPT-S getraind op OpenWebText",
+   "quote": "On OpenWebText, this configuration outperforms both mHC and mHC-lite in training and validation loss at every scale, reducing validation loss over mHC-lite by $0.0073$ , $0.0024$ , and $0.0045$ , respectively.",
+   "source": 1
+  },
+  {
+   "value": "0.005",
+   "label": "voorsprong in trainingsverlies van cmHC ten opzichte van mHC-lite op stap 71,5k bij het 6B-MoE-model",
+   "quote": "At the 6B scale, after an early transient, ${c}$ mHC finishes training with loss advantages of $0.002$ over mHC and $0.005$ over mHC-lite at step $71.5$ k.",
+   "source": 1
+  },
+  {
+   "value": "0.0157",
+   "label": "voorsprong in trainingsverlies van cmHC ten opzichte van mHC op stap 2k bij het 300B-MoE-model",
+   "quote": "From our scalability test on 300B-MoE, ${c}$ mHC also attains a lower loss than mHC, with a gap of $0.0157$ at step $2$ k; ${c}$ mHC maintains smaller and smoother gradient norms, whereas mHC exhibits larger fluctuations.",
+   "source": 1
+  },
+  {
+   "value": "0.0143",
+   "label": "verschil in validatieverlies tussen matige contractie (lambda=0.97) en sterke contractie (lambda=0.70) op nanoGPT-L bij OpenWebText",
+   "quote": "The validation-loss advantage grows from $0.0043$ to $0.0143$ on OpenWebText and from $0.0005$ to $0.0125$ on FineWeb-Edu as depth increases from 12 to 48 layers.",
+   "source": 1
+  },
+  {
+   "value": "0.5",
+   "label": "daling van Dobrushins ergodiciteitscoëfficiënt tau wanneer contractieparameter lambda daalt van 1 naar 0,97",
+   "quote": "When $\\lambda$ decreases from $1$ to $0.97$ , $\\tau$ drops by about $0.5$ , indicating a much stronger cumulative mixing effect.",
+   "source": 1
+  }
+ ],
+ "caveats": "Bij het interpreteren van de prestaties van cmHC moeten verschillende kanttekeningen worden gemaakt:\n\n1. **Beperkt aantal stromen geëvalueerd**: Vrijwel alle experimenten zijn uitgevoerd met $n = 4$ stromen. Omdat het aantal permutaties gelijk is aan $n!$, vereist een uitbreiding naar bijvoorbeeld $n = 8$ al 40.320 permutatiematrices, wat de onderliggende mHC-lite parametrisatie zonder extra decomposities onpraktisch maakt.\n2. **Korte evaluatieduur op 300B**: De schaaltest op het 300B-MoE-model toont een voorsprong op stap 2.000, maar dit vertegenwoordigt een vroege trainingsfase. Het paper bevat geen gegevens over de stabiliteit aan het einde van een volledig pretrainingtraject van honderden miljarden tokens.\n3. **Hardware-specifieke versnelling**: De gerapporteerde latentiereducties tot 44,8% zijn behaald met aangepaste Ascend C-operatoren op Huawei Ascend 910C NPU's. Hoeveel winst dergelijke kernel-fusies opleveren op gangbare platforms zoals NVIDIA Hopper of Blackwell via CUDA of Triton, is niet onderzocht.\n4. **Lineariseringsaanname in het bewijs**: De theorema's over het vlindereffect (Theorema 3.2 en 3.3) steunen op een lokale lineaire benadering van het aandachtsmechanisme. Complexe niet-lineaire interacties tussen tokens vallen buiten dit theoretische kader.\n5. **Empirische bepaling van hyperparameters**: De optimale waarden voor $\\lambda$ (0,97 of 0,96) en het aantal samengetrokken lagen $K$ (vaak 2) zijn proefondervindelijk vastgesteld. Er bestaat nog geen sluitende theorie om deze parameters vooraf analytisch te bepalen voor afwijkende netwerkarchitecturen.",
+ "glossary": [
+  {
+   "term": "Birkhoff-polytoop",
+   "def": "De wiskundige verzameling van alle dubbelstochastische matrices, begrensd door permutatiematrices als uiterste hoekpunten."
+  },
+  {
+   "term": "Dubbelstochastische matrix",
+   "def": "Een vierkante matrix met niet-negatieve reële getallen waarvan zowel elke rij als elke kolom exact optelt tot 1."
+  },
+  {
+   "term": "Permutatiematrix",
+   "def": "Een binaire matrix met in elke rij en kolom precies één 1, die posities van vectoren verwisselt zonder hun waarden te wijzigen."
+  },
+  {
+   "term": "Hyper-connections",
+   "def": "Een netwerkarchitectuur die de klassieke residuele verbinding uitbreidt naar meerdere parallelle informatiestromen met leerbare interacties."
+  },
+  {
+   "term": "Onder-menging (*under-mixing*)",
+   "def": "De toestand waarin reststromen nauwelijks informatie uitwisselen doordat de mengmatrix blijft hangen bij een permutatie-hoekpunt."
+  },
+  {
+   "term": "Over-menging (*over-mixing*)",
+   "def": "De toestand waarin reststromen te intensief mengen en convergeren naar een uniform gemiddelde, waardoor onderlinge verschillen verdwijnen."
+  },
+  {
+   "term": "Contractie-afbeelding (*contraction mapping*)",
+   "def": "Een wiskundige functie op een metrische ruimte die de afstand tussen elk willekeurig puntenpaar verkleint met een vaste factor kleiner dan 1."
+  },
+  {
+   "term": "Dobrushin-ergodiciteitscoëfficiënt",
+   "def": "Een maatstaf tussen 0 en 1 die kwantificeert in welke mate de rijen van een matrix naar elkaar toe zijn gegroeid."
+  },
+  {
+   "term": "Gefuseerde operator (*fused operator*)",
+   "def": "Een geoptimaliseerde rekenkern die meerdere opeenvolgende rekenstappen in één chip-executie combineert om geheugentransport te vermijden."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom leidt het vastzitten van een mengmatrix op een permutatie-hoekpunt (onder-menging) tot kwaliteitsverlies in een multi-stream architectuur?",
+   "options": [
+    "Omdat een permutatiematrix stromen alleen van positie wisselt zonder numerieke informatie tussen de stromen uit te wisselen.",
+    "Omdat de spectrale norm van een permutatiematrix groter is dan 1, waardoor gradiënten exponentieel kunnen ontploffen.",
+    "Omdat de rijen en kolommen van een permutatiematrix niet optellen tot 1, waardoor het signaalvolume per laag afneemt.",
+    "Omdat een permutatiematrix alle parallelle stromen direct reduceert tot één enkel uniform gemiddelde."
+   ],
+   "answer": 0,
+   "explain": "Een permutatiematrix bevat in elke rij en kolom precies één 1 en voor de rest nullen. Vermenigvuldiging met zo'n matrix verwisselt enkel welke stroom op welke positie terechtkomt, maar combineert de inhoud van verschillende stromen niet. Hierdoor verwordt de architectuur tot losse, niet-communicerende sporen."
+  },
+  {
+   "id": "q2",
+   "type": "order",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Zet de stappen in de juiste volgorde die het 'vlindereffect' van geometrische contractie op de leerdynamiek verklaren:",
+   "tiles": [
+    "Geometrische contractie verkleint de onderlinge verschillen tussen de informatiestromen (kleinere norm van de stroomverschillen).",
+    "Een kleiner stroomverschil verlaagt de bovengrens op het gradiëntverschil tussen verschillende permutatiecoëfficiënten.",
+    "De gradiënten voor verschillende permutaties worden nagenoeg gelijk, waardoor de softmax-gewichten gelijkmatiger verdeeld raken.",
+    "De vlakkere gewichtsverdeling drijft de mengmatrix nog sterker naar het uniforme zwaartepunt (over-menging)."
+   ],
+   "explain": "Wanneer contractie de stroomverschillen verkleint, begrenst Theorema 3.3 het gradiëntverschil tussen permutatiecoëfficiënten. Gelijke gradiënten leiden via de optimizer tot een vlakkere softmax-verdeling, wat de menging verder homogeniseert en over-menging versterkt."
+  },
+  {
+   "id": "q3",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Waarom past cmHC de meetkundige contractie bij voorkeur toe op de eerste netwerklagen ($K$ ondiepe lagen) en niet op de diepere lagen?",
+   "options": [
+    "Vroege menging propageert cumulatief door het hele netwerk, terwijl diepe lagen gespecialiseerde representaties moeten behouden via bijna-identiteitsverbindingen.",
+    "Ondiepe lagen bevatten minder parameters, waardoor de berekening van de contractiematrices daar minder geheugenruimte vereist.",
+    "Diepe lagen hebben geen restverbindingen meer, waardoor meetkundige contractie daar wiskundig niet gedefinieerd is.",
+    "De Dobrushin-ergodiciteitscoëfficiënt kan in diepe lagen niet kleiner worden dan 1, waardoor contractie daar geen effect heeft."
+   ],
+   "answer": 0,
+   "explain": "Vroege lagen leren generieke kenmerken en profiteren van vroege informatie-uitwisseling, waarvan het effect via matrixvermenigvuldiging door alle latere lagen stroomt. Diepe lagen specialiseren zich daarentegen in specifieke tokenrelaties; overmatige contractie aldaar zou die gespecialiseerde stromen homogeniseren en de representatiekracht aantasten."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Verdiept hoe residuele informatiestromen en gradiëntdynamiek in diepe neurale netwerken wiskundig gestabiliseerd worden via stochastische matrices."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "cmHC: Balancing Stream Mixing in Hyper-Connections via Geometric Contraction",
+   "url": "https://arxiv.org/abs/2611.27193"
+  },
+  {
+   "n": 2,
+   "title": "Wikipedia — Residual neural network",
+   "url": "https://en.wikipedia.org/wiki/Residual_neural_network"
+  },
+  {
+   "n": 3,
+   "title": "Wikipedia — Doubly stochastic matrix",
+   "url": "https://en.wikipedia.org/wiki/Doubly_stochastic_matrix"
+  },
+  {
+   "n": 4,
+   "title": "Wikipedia — Contraction mapping",
+   "url": "https://en.wikipedia.org/wiki/Contraction_mapping"
+  }
+ ],
+ "id": "2026-11-23-hoe-geometrische-contractie-informatiestromen-in",
+ "kind": "paper",
+ "date": "2026-11-23",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-11-23",
+  "kind": "paper",
+  "verified": "2026-11-23",
+  "candidate": "arxiv:2611.27193",
+  "signal": "43 upvotes op Hugging Face Daily Papers",
+  "significance": 4
+ }
+}
