@@ -1,0 +1,191 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Waarom Ethereum Keccak-256 behoudt voor de post-quantum overstap",
+ "subtitle": "Nieuwe binaire bewijssystemen maken bitoperaties zo efficiënt dat Ethereum kan vasthouden aan Keccak-256 in plaats van algebraïsche alternatieven.",
+ "topic": "crypto",
+ "minutes": 11,
+ "tldr": [
+  "Kwantumveilige handtekeningen vereisen honderdduizenden hashes per seconde voor aggregatie, waardoor trage bitoperaties Ethereum leken te dwingen naar algebraïsche alternatieven.",
+  "Nieuwe bewijssystemen rekenen rechtstreeks met bits in plaats van grote priemgetallen, waardoor de hashfunctie Keccak-256 behouden kan blijven.",
+  "De bewijzer leanVM haalt ruim 500.000 Keccak-permutaties per seconde op EIP-7870 referentiehardware, genoeg om één validatorcommissie op de consensuslaag te verwerken.",
+  "Keccak-256 is geen officiële FIPS-standaard zoals SHA3-256, maar het protocol plant een aparte constructie om berekeningen voor FIPS-gebruikers goedkoop te verifiëren."
+ ],
+ "plain": "Stel dat een inspecteur moet controleren of duizenden mechanische schakelaars correct zijn omgezet, zonder elke schakelaar zelf aan te raken. Vroegere digitale controleurs konden alleen rekenen met grote getallen. Een simpele binaire schakelaar vertalen naar zo’n getallenpuzzel kostte honderd keer meer administratie dan de schakeling zelf. Cryptografen wilden het mechanische slot daarom inruilen voor een nieuw rekenslot. Dat nieuwe slot bleek kwetsbaar voor onverwachte wiskundige eigenschappen. Nieuwe methoden zorgen ervoor dat controleurs nu rechtstreeks binaire schakelaars verifiëren, met meer dan 500.000 controles per seconde. Daardoor kan het bestaande slot gewoon blijven zitten. Waar de vergelijking ophoudt: mechanische schakelaars slijten door wrijving en ouderdom, terwijl cryptografische bitoperaties wiskundige regels zijn die niet fysiek degraderen.",
+ "why": "Voor Ethereum-ontwikkelaars brengt dit duidelijkheid in de architectuur: slimme contracten in Solidity behouden de `keccak256`-opcode als centrale bouwsteen. Er hoeft geen nieuwe algebraïsche hashfunctie in de EVM of consensuslaag te worden geïntroduceerd. Zodra kwantumcomputers klassieke cryptografie bedreigen, stapt het netwerk over op hash-gebaseerde handtekeningen. Doordat zkVM-bewijzers zoals leanVM deze hashes direct verifiëren, blijft het aggregeren van validator-attestaties haalbaar op EIP-7870 hardware zonder een nieuwe primitieve in te voeren.",
+ "sections": [
+  {
+   "title": "Het conflict tussen bitoperaties en priemveld-SNARKs",
+   "md": "Je leert hier waarom kwantumcomputers hash-gebaseerde handtekeningen vereisen en waarom traditionele hashfuncties lange tijd onpraktisch waren binnen nulkennis-bewijzen.\n\n### Kwantumdreiging en hash-gebaseerde handtekeningen\nKlassieke asymmetrische cryptografie op Ethereum, zoals het ECDSA-handtekeningenschema op de secp256k1-kromme, steunt op het discrete-logarithmeprobleem ([Wikipedia: Post-quantum cryptography](https://en.wikipedia.org/wiki/Post-quantum_cryptography)). Een voldoende krachtige kwantumcomputer kan dit probleem breken via het algoritme van Shor. Om transacties en validator-attestaties op lange termijn te beveiligen, is een overstap naar post-quantum cryptografie noodzakelijk.\n\nBinnen de post-quantum cryptografie bieden hash-gebaseerde handtekeningen, zoals Merkle- en Lamport-schema's, een formele reductie: hun veiligheid reduceert zuiver tot de onderliggende hashfunctie ([Wikipedia: Post-quantum cryptography](https://en.wikipedia.org/wiki/Post-quantum_cryptography)). Als de hashfunctie niet kan worden omgekeerd, blijft de handtekening veilig. Tegen symmetrische functies biedt het kwantumalgoritme van Grover slechts een kwadratische versnelling. Met een 256-bits uitvoer blijft een post-quantum veiligheidsniveau van 128 bits behouden.\n\n### De rekenkundige flessenhals in zkVMs\nHet nadeel van hash-gebaseerde handtekeningen is hun omvang: ze bestaan uit vele hashes. Om ongeveer duizend attestaties per seconde te verwerken op de consensuslaag, moet Ethereum handtekeningen recursief samenvoegen (*aggregeren*) met nulkennis-bewijzen (zk-SNARKs) in een virtuele machine genaamd leanVM ([blog.ethereum.org](https://blog.ethereum.org/en/2026/11/24/pqai-1)).\n\nHier ontstond jarenlang een rekenkundig conflict:\n1. Klassieke SNARKs werkten over grote priemvelden $\\mathbb{F}_p$ (zoals het 254-bits priemveld van BN254 op Ethereum), waarbij rekenstappen modulo een groot priemgetal verlopen ([blog.ethereum.org](https://blog.ethereum.org/en/2026/11/24/pqai-1)).\n2. Traditionele hashfuncties steunen daarentegen op bitoperaties: Keccak-256 gebruikt 64-bits woorden met uitsluitend logische bitoperaties (zoals XOR, EN en bitrotaties; [Wikipedia: SHA-3](https://en.wikipedia.org/wiki/SHA-3)), terwijl SHA-256 met 32-bits woorden werkt en mede steunt op modulaire rekenkundige optelling (modulo $2^{32}$).\n\nOm een binaire XOR te verifiëren in een priemveld $\\mathbb{F}_p$, moet elk woord worden ontbonden in afzonderlijke binaire variabelen $b_i$. Voor elke bit moet het bewijssysteem afdwingen dat de waarde 0 of 1 is via de kwadratische vergelijking:\n\n$$b_i \\cdot (1 - b_i) = 0$$\n\nPas daarna kan de binaire XOR algebraïsch worden gecontroleerd. Deze ontbinding vereiste vele rekenbeperkingen per hash, waardoor bewijsgeneratie een flessenhals vormde.\n\n### De tussenstap van algebraïsche hashes\nOmdat traditionele hashes veel rekentijd vroegen binnen priemvelden, richtte het onderzoek zich op ZK-vriendelijke hashfuncties zoals Poseidon en Poseidon2 ([blog.ethereum.org](https://blog.ethereum.org/en/2026/11/24/pqai-1)). Die functies gebruiken eenvoudige algebraïsche machten (zoals $x^5$) over $\\mathbb{F}_p$, wat weinig SNARK-beperkingen kost.\n\nDe prijs was echter cryptanalytische onzekerheid. In 2022 toonden Bariant et al. aan dat algebraïsche aanvallen twee volledige rondes van Poseidon konden omzeilen. Nieuwe analyses binnen het Poseidon Cryptanalysis Initiative (Sanso en Vitto 2025; Bak et al. 2026) legden kwetsbaarheden bloot op gereduceerde rondes. Hoewel de volledige versies niet gebroken zijn, toont dit aan dat de veiligheidsmarge kleiner is dan bij traditionele functies."
+  },
+  {
+   "title": "Binaire velden maken bitbewerkingen natuurlijk",
+   "md": "Je leert hier hoe bewijssystemen zoals Binius en Flock rechtstreeks over binaire velden rekenen en de vertaalslag van bits naar priemgetallen wegnemen.\n\n### Rekenen over binaire torenvelden\nDe verandering kwam niet door een nieuwe hashfunctie te ontwerpen, maar door de algebra van SNARK-bewijzers aan te passen. Onderzoekers introduceerden binaire-veld-SNARKs, met systemen zoals Binius en Flock, aangevuld met provers op basis van het GKR-protocol ([blog.ethereum.org](https://blog.ethereum.org/en/2026/11/24/pqai-1)).\n\nIn plaats van een priemveld $\\mathbb{F}_p$ gebruiken deze bewijzers het binaire basisveld $\\mathbb{F}_2 = \\{0, 1\\}$ en torenextensies daarvan ($\\mathbb{F}_{2^k}$, zoals $\\mathbb{F}_{2^8}$ tot $\\mathbb{F}_{2^{128}}$). In $\\mathbb{F}_2$ vallen rekenkundige bewerkingen exact samen met hardwarebits:\n- Optelling is identiek aan een XOR-operatie ($0+1=1$, $1+1=0$).\n- Vermenigvuldiging is identiek aan een logische EN-operatie ($1 \\cdot 1 = 1$, $1 \\cdot 0 = 0$).\n\nHierdoor verdwijnt de noodzaak voor bit-ontbindingen en bereikcontroles. Een XOR van 64 bits is binnen een binaire toren een optelling van graad 1.\n\n> [!note] Geen rekenintensieve simulatie\n> In een priemveld $\\mathbb{F}_p$ moet een bitgewijze XOR rekenintensief worden gesimuleerd via bitontbinding ($b_i \\cdot (1 - b_i) = 0$), omdat de veldoptelling modulo $p$ niet overeenkomt met binaire logica. In een binair veld (zoals $\\mathbb{F}_{2^{64}}$) is optelling van nature identiek aan XOR, waardoor bitbewerkingen direct zonder extra rekenbeperkingen worden gecontroleerd.\n\n### Sumcheck en gelaagde circuits\nOm met deze binaire structuren compacte bewijzen te genereren, benutten moderne systemen multilineaire polynomen en het sumcheck-protocol ([blog.ethereum.org](https://blog.ethereum.org/en/2026/11/24/pqai-1)). Innovaties door onder meer Justin Thaler en Quang Dao zorgden voor bewijzers die lineair schalen met de circuitomvang.\n\nGKR-protocollen verifiëren de hashberekening vervolgens als een gelaagd circuit van logische poorten. Doordat elke hashronde bestaat uit parallelle bitverschuivingen, XOR-stappen en niet-lineaire EN-poorten (de chi-stap), controleert de bewijzer laag na laag met minimaal geheugengebruik.\n\n### De prestatie-eis gehaald\nDe Ethereum Foundation stelde dat leanVM minstens circa 500.000 hashes per seconde moet verwerken op EIP-7870 referentiehardware om ongeveer 1.000 consensus-attestaties per seconde te ondersteunen ([blog.ethereum.org](https://blog.ethereum.org/en/2026/11/24/pqai-1)). LeanVM haalt meer dan 500.000 Keccak-f permutaties per seconde. Daarmee verdween het prestatievoordeel van algebraïsche hashes ten opzichte van standaardhashes."
+  },
+  {
+   "title": "De selectie tussen vijf hashkandidaten",
+   "md": "Je leert hier hoe vijf kandidaat-hashfuncties werden vergeleken op veiligheidsmarge, cryptanalyse en inpasbaarheid in Ethereum.\n\n### De afvallers: Poseidon, BLAKE3 en BLAKE2\nDoordat bewijssnelheid geen onderscheidende factor meer is, werd historische cryptanalyse de bepalende factor ([blog.ethereum.org](https://blog.ethereum.org/en/2026/11/24/pqai-1)):\n\n1. **Poseidon en Poseidon2**: Hun voordeel in priemveld-SNARKs is door binaire bewijzers weggenomen. Door recente aanvallen op gereduceerde rondes en het ontbreken van decennialange cryptanalyse vielen ze af.\n2. **BLAKE3**: In de SNARK.fast Flock Challenge halen bewijzers circa 2,2 miljoen BLAKE3-compressies per seconde op 16 vCPU's. BLAKE3 verlaagde echter het aantal rondes van 10 naar 7 ten opzichte van BLAKE2. De cryptanalyse is schaars, het werkingsmechanisme mist een formeel veiligheidsbewijs en er bestaan *distinguishers* voor veel rondes op het interne blokcijfer.\n3. **BLAKE2**: Beter bestudeerd (minder dan tien gepubliceerde aanvallen, beste aanval tot 2,5 rondes) en al beschikbaar via de EIP-152 precompile. Toch heeft BLAKE2 aanzienlijk minder cryptanalytische toetsing ondergaan dan SHA2-256 en Keccak-256.\n\n### Het duel: SHA2-256 versus Keccak-256\nDit bracht de keuze terug naar de twee hashes die Ethereum al gebruikt.\n\nSHA2-256 draait snel op processors met SHA-NI instructies, maar vertoont twee structurele nadelen:\n- **Beperktere veiligheidsmarge**: Praktische botsingen bereiken 35 van de 64 rondes, en de beste theoretische botsingsaanval reikt tot 38 rondes (Li et al. 2026; Zhang et al. 2026; Goldreich 2026), meer dan de helft van het totaal.\n- **Merkle-Damgård en lengte-extensie**: Bij een Merkle-Damgård-constructie vormt de tussentijdse toestand direct de uitvoer. Daardoor is SHA2-256 kwetsbaar voor lengte-extensieaanvallen: wie een hash $\\mathcal{H}(m)$ kent, kan de hash van een verlengd bericht berekenen zonder $m$ te kennen. Voor Fiat-Shamir-transformaties en post-quantum handtekeningen is echter een *random oracle* vereist, waardoor SHA2-256 extra constructies zoals HMAC vereist.\n\n| Eigenschap | Poseidon / Poseidon2 | BLAKE3 | SHA2-256 | Keccak-256 |\n|---|---|---|---|---|\n| **Constructietype** | Algebraïsch over $\\mathbb{F}_p$ | Boombaseerd op BLAKE2 | Merkle-Damgård | Sponsconstructie |\n| **Beste botsingsaanval** | Aanvallen op gereduceerde rondes | Geen botsingsaanvallen gepubliceerd; wel distinguishers op blokcijfer | 38 van 64 rondes | 5 van 24 rondes (theorie: 6) |\n| **Random-oracle eigenschap** | Nee (algebraïsche structuur) | Geen formeel veiligheidsbewijs | Gevoelig voor lengte-extensie | Ononderscheidbaar (sponsmodel) |\n| **Bewijssnelheid in ZK-systemen** | Gelijkgetrokken door binaire SNARKs | ~2,2M compressies/s (Flock Challenge op 16 vCPU's) | Voldoende met binaire SNARKs | >500K permutaties/s (leanVM op EIP-7870 hardware) |\n| **Rol in Ethereum** | Geen | Geen | Consensuslaag (SSZ), 0x02 precompile | Executielaag (`KECCAK256`), contracten |"
+  },
+  {
+   "title": "Onder de motorkap van Keccak-256 en de sponsfamilie",
+   "md": "Je leert hoe de interne toestand van Keccak-f[1600] opereert, waarom de sponsconstructie lengte-extensie uitsluit en waarom Ethereum SHA3-256 afwijst.\n\n### De toestand van 1600 bits\nKeccak-256, ontworpen door Bertoni, Daemen, Peeters en Van Assche, draait om de permutatie $\\text{Keccak-f}[1600]$ ([Wikipedia: SHA-3](https://en.wikipedia.org/wiki/SHA-3)). De interne toestand $S$ vormt een $5 \\times 5 \\times 64$ bit-matrix:\n\n$$b = 5 \\times 5 \\times 64 = 1600 \\text{ bits}$$\n\nDe toestand is verdeeld in:\n1. De **snelheid** (*rate*, $r = 1088$ bits): het venster waarover gegevens worden ingelezen en uitgelezen.\n2. De **capaciteit** (*capacity*, $c = 512$ bits): het afgeschermde deel van de toestand dat nooit direct zichtbaar is ($b = r + c$).\n\nDe weerstand tegen botsingen bedraagt wiskundig $d/2 = 128$ bits (tegen pre-image-aanvallen biedt de capaciteit $c = 512$ bits een weerstand van $c/2 = 256$ bits).\n\n### Absorberen en uitknijpen\nDe sponsconstructie werkt in twee fasen:\n- **Absorberen (*absorbing*)**: Het bericht krijgt padding (een 1-bit, nullen en een afsluitende 1-bit) tot een veelvoud van $r$ bits. Elk blok wordt via XOR gecombineerd met de eerste $r$ bits van toestand $S$, waarna de permutatie $f$ over alle 1600 bits draait.\n- **Uitknijpen (*squeezing*)**: De eerste $r$ bits van de toestand worden uitgelezen. Voor een 256-bits uitvoer volstaan de eerste 256 bits direct, zonder extra permutaties.\n\nOmdat de capaciteit van 512 bits verborgen blijft, kan een waarnemer de interne toestand niet reconstrueren. Lengte-extensieaanvallen zijn daardoor uitgesloten. De sponsconstructie is tegen klassieke aanvallers bewezen ononderscheidbaar van een random oracle, en Tokat et al. (QCrypt 2026) bewezen dat dit met een theoretische grens ook standhoudt tegen kwantumaanvallers ([blog.ethereum.org](https://blog.ethereum.org/en/2026/11/24/pqai-1)).\n\n### De vijf stappen van Keccak-f\nElk van de 24 rondes voert vijf bewerkingen uit ([Wikipedia: SHA-3](https://en.wikipedia.org/wiki/SHA-3)):\n1. **$\\theta$ (theta)**: Kolompariteiten berekenen en mengen via XOR.\n2. **$\\rho$ (rho)**: De 64-bits woorden roteren over vaste driehoeksgetallen.\n3. **$\\pi$ (pi)**: De 25 woorden permuteren volgens $a[3i+2j][i] \\leftarrow a[i][j]$.\n4. **$\\chi$ (chi)**: De enige niet-lineaire stap, die bits combineert via:\n\n$$a[i][j][k] \\leftarrow a[i][j][k] \\oplus (\\neg a[i][j+1][k] \\land a[i][j+2][k])$$\n\n5. **$\\iota$ (iota)**: Een rondeconstante via XOR toevoegen om pseudosymmetrie te doorbreken.\n\nPraktische botsingsaanvallen bereiken 5 van de 24 rondes, en theoretische aanvallen 6 rondes (Guo et al. 2020; Zhang et al. 2024). Dit laat een marge van 18 ongeschonden rondes.\n\n### Waarom Keccak-256 en niet SHA3-256?\nKeccak-256 en de officiële FIPS-standaard SHA3-256 delen dezelfde permutatie $\\text{Keccak-f}[1600]$, rate en capaciteit ([blog.ethereum.org](https://blog.ethereum.org/en/2026/11/24/pqai-1)). Ze verschillen enkel in opvulbits (*padding*).\n\nDe Ethereum Foundation koos bewust voor Keccak-256:\n- De EVM bevat al de opcode `KECCAK256`.\n- Het invoeren van SHA3-256 naast Keccak-256 zou twee functies opleveren die één padding-byte verschillen, wat leidt tot integratiefouten.\n- FIPS-conformiteit voor SHA3-256 levert geen voordeel op, omdat het overkoepelende handtekeningschema zelf niet FIPS-gecertificeerd is.\n\n### Eén familie voor het protocol\nEthereum standaardiseert op de $\\text{Keccak-f}[1600]$-familie: Keccak-256 voor trie-hashing en handtekeningen, Keccak-duplex voor Fiat-Shamir in bewijzers, en SHAKE256 voor pseudo-willekeurige getallengeneratie. Uitvoeringsclients hergebruiken hun bestaande code, en op termijn kan ook de consensuslaag SSZ migreren van SHA2-256 naar Keccak-256."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "500K",
+   "label": "bewijscapaciteit van Keccak-f per seconde in leanVM op EIP-7870 hardware",
+   "quote": "Nonetheless, LeanVM proves above 500K keccak-f/s on EIP-7870 hardware, which is sufficient for the required aggregation throughput, but it is slower to prove than BLAKE3 and natively slower than SHA2-256.",
+   "source": 1
+  },
+  {
+   "value": "2.2 million",
+   "label": "aantal BLAKE3-compressies per seconde behaald door bewijzers op een 16-vCPU machine in de Flock Challenge",
+   "quote": "BLAKE3 (2020) is the fastest traditional hash we considered: provers already reach about 2.2 million BLAKE3 compressions per second on a 16-vCPU machine (SNARK.fast Flock Challenge).",
+   "source": 1
+  },
+  {
+   "value": "38",
+   "label": "maximaal aantal rondes van SHA-256 (van de 64) dat bereikt wordt door de beste botsingsaanval",
+   "quote": "But practical collisions reach 35 of its 64 rounds, and the best collision attack reaches 38, more than half of its total rounds (Li et al. 2026, Zhang et al. 2026, Goldreich 2026).",
+   "source": 1
+  },
+  {
+   "value": "5",
+   "label": "aantal rondes van Keccak-f (van de 24) waarop praktische botsingsaanvallen slagen",
+   "quote": "Practical collision attacks reach 5 of its 24 rounds, and theoretical ones reach 6 rounds when evaluated on the underlying permutation used by Keccak-256, SHAKE128, and SHAKE256 (Guo et al. 2020, Zhang, Hou and Liu 2024).",
+   "source": 1
+  },
+  {
+   "value": "24",
+   "label": "totaal aantal permutatierondes in Keccak-256",
+   "quote": "Practical collision attacks reach 5 of its 24 rounds, and theoretical ones reach 6 rounds when evaluated on the underlying permutation used by Keccak-256, SHAKE128, and SHAKE256 (Guo et al. 2020, Zhang, Hou and Liu 2024).",
+   "source": 1
+  },
+  {
+   "value": "2.5",
+   "label": "maximaal aantal rondes bereikt door de beste cryptanalytische aanvallen op BLAKE2",
+   "quote": "BLAKE2 (2012) is better studied, though it still has <10 cryptanalytic attacks published, and the best attacks on the hash reach 2.5 rounds (BLAKE2).",
+   "source": 1
+  }
+ ],
+ "caveats": "Bij de keuze voor Keccak-256 moeten enkele kanttekeningen worden geplaatst:\n\n1. **Relatieve prestaties op standaard processors**: Keccak-256 is op gangbare x86-processors met SHA-NI instructies trager dan SHA2-256. Ook in bewijzers is het trager dan BLAKE3. De Ethereum Foundation accepteert deze rekenkost vanwege de grotere veiligheidsmarge en historische analyse.\n2. **Overhead bij binaire bomen**: Bij binaire Merkle-bomen met veel kleine hashes van 64 bytes brengt de grote 1600-bits toestand relatief veel overhead met zich mee vergeleken met functies als BLAKE3 of KangarooTwelve.\n3. **Sponsmodus versus interne permutatie**: Hoewel de sponsconstructie volgens het veiligheidsmodel ononderscheidbaar is bij een ideale permutatie, kunnen aanvallen zich richten op de interne Keccak-f permutatie zelf; de auteurs melden dat theoretische botsingsaanvallen momenteel tot 6 rondes reiken.\n4. **Losse kwantumbovengrens**: De wiskundige grens voor de kwantumononderscheidbaarheid van de sponsconstructie (Tokat et al., QCrypt 2026) is theoretisch los en vereist verdere cryptografische verfijning.\n5. **Geen formele FIPS-naleving**: Keccak-256 is geen officiële FIPS-standaard (dat is SHA3-256 via FIPS 202). Voor gebruikers die formele FIPS-naleving vereisen, voorziet Ethereum in de toekomst een aparte protocolconstructie waarmee willekeurige berekeningen goedkoop kunnen worden geverifieerd.\n6. **Poseidon is niet gebroken op volledige rondes**: Hoewel varianten met minder rondes kwetsbaar bleken, zijn de volledige versies van Poseidon en Poseidon2 niet gekraakt; de keuze tegen Poseidon berust op risicomijdend beleid nu de bewijskosten zijn gelijkgetrokken.",
+ "glossary": [
+  {
+   "term": "Keccak-f[1600]",
+   "def": "De onderliggende cryptografische permutatie van 24 rondes die een toestand van 1600 bits transformeert via vaste bitoperaties."
+  },
+  {
+   "term": "Sponsconstructie",
+   "def": "Een hashingmethode waarbij invoerbits stapsgewijs in een interne toestand worden gemengd (absorberen) en uitvoerbits eruit worden gelezen (uitknijpen)."
+  },
+  {
+   "term": "Binaire-veld-SNARK",
+   "def": "Een bewijssysteem dat rekent over het binaire veld $\\mathbb{F}_2$ en torenextensies daarvan, waardoor XOR- en EN-operaties zonder rekenomwegen worden gecontroleerd."
+  },
+  {
+   "term": "zkVM",
+   "def": "Een virtuele machine die programmacode uitvoert en een cryptografisch nulkennis-bewijs genereert dat de berekening correct is verlopen."
+  },
+  {
+   "term": "Post-quantum cryptografie",
+   "def": "Cryptografische algoritmen die bestand zijn tegen aanvallen door zowel klassieke computers als krachtige kwantumcomputers."
+  },
+  {
+   "term": "Fiat-Shamir-transformatie",
+   "def": "Een methode die een interactief bewijsprotocol omzet in een niet-interactief bewijs door verifier-uitdagingen te vervangen door hash-uitkomsten."
+  },
+  {
+   "term": "Random oracle",
+   "def": "Een theoretisch wiskundig model van een ideale hashfunctie die voor elke unieke invoer een uniforme uitvoer teruggeeft."
+  },
+  {
+   "term": "EIP-7870",
+   "def": "Een hardware-referentiestandaard binnen Ethereum voor het bepalen van de minimale rekenkracht van validators en bewijzers."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom maken binaire-veld-SNARKs algebraïsche hashes zoals Poseidon overbodig voor Ethereum?",
+   "options": [
+    "Ze laten bewijzers rechtstreeks rekenen met bits, waardoor traditionele XOR-operaties geen rekenintensieve bit-ontbindingen in priemvelden meer vereisen.",
+    "Ze verhogen de veiligheidsmarge van Poseidon door wiskundige rondes automatisch over te slaan.",
+    "Ze vervangen de EVM-architectuur door gespecialiseerde kwantumcircuits die priemgetallen overbodig maken.",
+    "Ze comprimeren 256-bits hashes naar 64-bits waarden, waardoor de verwerkingscapaciteit van gewone processors verviervoudigt."
+   ],
+   "answer": 0,
+   "explain": "Klassieke SNARKs werkten over grote priemvelden $\\mathbb{F}_p$, waar een binaire XOR tientallen kwadratische vergelijkingen kostte om bits te ontbinden. Binaire SNARKs werken direct in $\\mathbb{F}_2$-extensies waar optelling identiek is aan XOR, waardoor Keccak-256 snel genoeg berekend kan worden en de risico's van algebraïsche hashes vermeden worden."
+  },
+  {
+   "id": "q2",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom verkiest de Ethereum Foundation de sponsconstructie van Keccak-256 boven de Merkle-Damgård-constructie van SHA2-256 voor post-quantum handtekeningen?",
+   "options": [
+    "SHA2-256 vereist dubbel zoveel rondes in de permutatie om kwantumcomputers te weerstaan.",
+    "De sponsconstructie is beschermd tegen lengte-extensieaanvallen en gedraagt zich in het model als een random oracle.",
+    "De Merkle-Damgård-constructie kan uitsluitend worden uitgevoerd op processors met gespecialiseerde hardware-extensies.",
+    "Keccak-256 produceert kortere publieke sleutels bij het genereren van kwantumveilige handtekeningen."
+   ],
+   "answer": 1,
+   "explain": "Bij hash-gebaseerde handtekeningen en Fiat-Shamir-transformaties moet de hashfunctie functioneren als een random oracle. SHA2-256 leidt door zijn Merkle-Damgård-opzet tot kwetsbaarheid voor lengte-extensie, waardoor extra omhulsels zoals HMAC nodig zijn. De sponsconstructie schermt de capaciteit $c$ af, waardoor lengte-extensie wordt uitgesloten."
+  },
+  {
+   "id": "q3",
+   "type": "order",
+   "skill": "begrip",
+   "level": 1,
+   "prompt": "Zet de stappen van de dataverwerking in de Keccak-sponsconstructie in de juiste chronologische volgorde:",
+   "tiles": [
+    "Het bericht wordt opgevuld met een 1, nullen en een afsluitende 1 (padding)",
+    "Voor elk blok van r bits: opnemen via XOR in de toestand, gevolgd door 24 rondes van de Keccak-f permutatie",
+    "De eerste d bits van de toestand worden uitgelezen als uiteindelijke hashwaarde (uitknijpen)"
+   ],
+   "explain": "De sponsconstructie start met padding volgens het 10*1-patroon. Vervolgens wordt voor elk blok van r bits de data via XOR opgenomen en direct getransformeerd met 24 rondes van de Keccak-f permutatie. Ten slotte worden de gewenste hashbits uitgelezen (uitknijpen)."
+  }
+ ],
+ "related": [
+  {
+   "track": "solidity",
+   "why": "In Solidity-contracten blijft de keccak256-opcode de centrale hashfunctie, waardoor bestaande contracten en bibliotheken compatibel blijven met de toekomstige post-quantum architectuur."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "PQAI #1: One hash to rule them all — Keccak-256 for Ethereum's post-quantum, post-AI era",
+   "url": "https://blog.ethereum.org/en/2026/11/24/pqai-1"
+  },
+  {
+   "n": 2,
+   "title": "Wikipedia — SHA-3",
+   "url": "https://en.wikipedia.org/wiki/SHA-3"
+  },
+  {
+   "n": 3,
+   "title": "Wikipedia — Zero-knowledge proof",
+   "url": "https://en.wikipedia.org/wiki/Zero-knowledge_proof"
+  },
+  {
+   "n": 4,
+   "title": "Wikipedia — Post-quantum cryptography",
+   "url": "https://en.wikipedia.org/wiki/Post-quantum_cryptography"
+  }
+ ],
+ "id": "2026-11-25-waarom-ethereum-keccak-256-behoudt-voor-de-post",
+ "kind": "news",
+ "date": "2026-11-25",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-11-25",
+  "kind": "news",
+  "verified": "2026-11-25",
+  "candidate": "url:https://blog.ethereum.org/en/2026/11/24/pqai-1",
+  "signal": "officieel bericht van Ethereum Foundation",
+  "significance": 4
+ }
+}
