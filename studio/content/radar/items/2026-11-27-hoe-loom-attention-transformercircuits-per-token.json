@@ -1,0 +1,187 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe loom attention transformercircuits per token herbedraadt",
+ "subtitle": "Door een dynamische matrixstroom over eerdere rekenkoppen te verweven met aandacht over tokens kunnen diepe lagen actief blijven zonder dat circuits interfereren.",
+ "topic": "ai",
+ "minutes": 11,
+ "tldr": [
+  "In standaard transformers liggen verbindingen tussen rekenkoppen over lagen heen vast, waardoor interne rekenpaden elkaar hinderen bij wisselende invoer.",
+  "Loom attention weeft een dynamisch matrixgeheugen tussen lagen, waardoor elke kop per woordteken zelf kiest welke eerdere koppen hij raadpleegt.",
+  "Met 2% extra rekenwerk evenaart LoomPythia-2.8B het viermaal grotere model Pythia-12B op taaltaken.",
+  "Door extra geheugenverkeer behoudt het model bij inferentie 84 tot 92 procent van de standaardsnelheid op grafische chips."
+ ],
+ "plain": "Stel je een open werkplaats voor waar dertig vakmensen opeenvolgende taken uitvoeren. In een klassiek model liggen er vaste transportbanden tussen de werkbanken. Werkbank 12 ontvangt altijd materiaal van werkbank 5, ongeacht wat er gemaakt wordt. Heeft werkbank 12 die tussenstap voor een specifieke opdracht niet nodig, dan moet de vakman het materiaal weggooien in een afvalbak. Willen twee werkbanken tegelijk iets doorsturen, dan raken de onderdelen vermengd. LoomFormer vervangt die starre banden door een digitaal sorteerrek per werkstuk. Een vakman plakt een dynamisch label op zijn resultaat en legt het in een gekozen vakje. Een latere collega leest per opdracht precies de labels uit die hij nodig heeft. Zo ontstaat voor elk afzonderlijk woord een werkroute op maat. De vergelijking loopt spaak bij het verbruik: in een echte werkplaats is een fysiek onderdeel na het oppakken verdwenen, terwijl in het netwerk tientallen rekenkoppen exact hetzelfde geheugenvak tegelijk kunnen kopiëren zonder het te wissen.",
+ "why": "Voor wie grote taalmodellen traint of lokaal draait, verschuift de focus van domweg meer parameters stapelen naar flexibele interconnectiviteit. Modellen winnen aan redeneervermogen en contextbegrip bij gelijkblijvende modelafmetingen. Zodra geoptimaliseerde GPU-kernels breder beschikbaar komen in open frameworks, kunnen compactere modellen taken overnemen waar voorheen veel zwaardere clusters voor nodig waren, wat geheugen en energie bespaart tijdens inferentie.",
+ "sections": [
+  {
+   "title": "Het probleem van starre circuits: waarom transformers knooppunt-gestuurd zijn",
+   "md": "Je leert hier hoe transformermodellen communiceren via virtuele gewichten en waarom het wiskundig onmogelijk is om bestaande verbindingen per token te herbedraden zonder interferentie.\n\n### Communicatie tussen koppen via de residuele stroom\nBinnen het wiskundige raamwerk voor transformercircuits (Elhage et al., 2020) communiceren aandachtskoppen (*attention heads*) uitsluitend via de centrale communicatielijn van het model: de residuele stroom (*residual stream*). Een model met $L$ lagen heeft per laag $n$ koppen van dimensie $d$, met een totale modeldimensie $D = nd$.\n\nDe uitvoer van een kop noemen we een schrijver (*writer*), en elk van zijn drie invoerkanalen—query ($Q$), key ($K$) en value ($V$)—een lezer (*reader*). Een kop bezit dus één schrijver en drie lezers:\n- Schrijver $\\mathsf{W}_i$ voegt zijn vector $o_i \\in \\mathbb{R}^d$ toe aan de residuele stroom via projectiematrix $W^O_i \\in \\mathbb{R}^{d \\times D}$.\n- Lezer $\\mathsf{R}_j$ van een latere kop leest uit de stroom via projectiematrix $W^s_j \\in \\mathbb{R}^{D \\times d}$ (waarbij $s \\in \\{Q, K, V\\}$).\n\nHet wiskundige product van deze twee projecties vormt een virtueel gewicht:\n\n$$\\bar{C}_{ij} = W^O_i W^s_j \\in \\mathbb{R}^{d \\times d}$$\n\nIn woorden: dit virtuele gewicht bepaalt hoeveel signaal van schrijver $i$ rechtstreeks doorstroomt naar lezer $j$. Dit gewicht ligt na de trainingsfase definitief vast in de gewichten van het netwerk.\n\n### Knooppunt-sturing en de rangbeperking\nTerwijl de horizontale informatiestroom over woordtekens (*tokens*) dynamisch is via zelfaandacht ([Wikipedia: Attention](https://en.wikipedia.org/wiki/Attention_%28machine_learning%29)), ligt de verticale stroom over lagen star verankerd. Een lezer ontvangt:\n\n$$u_j = \\sum_i o_i c_{ij} \\bar{C}_{ij}$$\n\nwaarbij $c_{ij}$ een per-token schalingsfactor is binnen de bedradingsmatrix $C$. Bij standaard pre-LayerNorm of pre-RMSNorm ([Wikipedia: Transformer](https://en.wikipedia.org/wiki/Transformer_%28deep_learning%29)) reschaalt normalisatie alle schrijvers van hetzelfde token met één gezamenlijke factor $\\lambda(x) > 0$. Hierdoor kan het model individuele verbindingen niet onafhankelijk aanpassen.\n\nDe auteurs van de paper ([Rewirable Circuits in Transformers with Loom Attention](https://arxiv.org/abs/2611.30634)) bewijzen dat standaard transformers knooppunt-gestuurd (*node-gated*) zijn: de bedradingsmatrix heeft altijd de vorm:\n\n$$C = g g'^\\top$$\n\nwaarbij de poortvectoren $g$ en $g'$ aangeven welke volledige schrijvers en lezers actief zijn. De matrix $C$ heeft hierdoor wiskundig een rang van ten hoogste 1. Het netwerk kan alleen volledige rijen of kolommen in- of uitschakelen.\n\n> [!note] Het dambordprobleem van interferentie\n> Omdat de rang maximaal 1 is, kan een standaard transformer alleen rechthoekige blokken activeren. Moet lezer $\\mathsf{R}_1$ verbonden worden met schrijver $\\mathsf{W}_1$, en lezer $\\mathsf{R}_3$ met $\\mathsf{W}_3$, dan ontstaan onvermijdelijk ook de kruisverbindingen $\\mathsf{W}_1 \\to \\mathsf{R}_3$ en $\\mathsf{W}_3 \\to \\mathsf{R}_1$. De circuits storen elkaar.\n\nVolgens Stelling 2.4 uit de paper vereist het foutloos isoleren van $w$ schrijvers over $r$ lezers in een knooppunt-gestuurde architectuur ten minste $N(w, r-1)$ koppen per lezer, wat bij realistische laagafmetingen asymptotisch oploopt tot $\\Theta(w)$ koppen. In de praktijk schakelen modellen overtollige koppen uit door hun aandacht naar aandachtsputten (*attention sinks*) te sturen: tokens die als afvalbak fungeren om ongewenste activaties te neutraliseren.\n\n:::sim attention {\"tokens\": [\"De\", \"kat\", \"zat\"], \"Q\": [[1, 0], [0, 1], [1, 1]], \"K\": [[1, 0], [0, 1], [1, 1]]}\n:::"
+  },
+  {
+   "title": "Van naïeve verticale aandacht naar een dubbele stroom: de architectuur van LoomFormer",
+   "md": "Je leert hier hoe LoomFormer het computationele knelpunt van naïeve verticale aandacht omzeilt door een tweedelig netwerk te bouwen met een vectorstroom voor controle en een matrixstroom voor inhoud.\n\n### Het knelpunt van naïeve verticale aandacht\nOm willekeurige verbindingen per token mogelijk te maken zonder overbodige koppen, zou elke lezer via zachte aandacht rechtstreeks kunnen zoeken over alle $nl$ voorgaande schrijvers in het token:\n\n$$u_j = \\sum_{i} \\alpha_{ij}(x) o_i, \\qquad \\alpha_{\\cdot j}(x) = \\operatorname{softmax}(x W^{\\alpha}_j)$$\n\nIn woorden: lezer $j$ berekent een softmax-aandachtsverdeling over alle voorgaande koppen op basis van invoervector $x$. Hoewel dit willekeurige bedrading mogelijk maakt, ontploft de berekening. Over alle lagen en lezers heen kost het genereren van deze projecties ongeveer $\\frac{3}{2} n^2 L^2 D$ parameters en berekeningen per token. Dit groeit kwadratisch met het totale aantal koppen $nL$ en verbruikt op gangbare schaal bijna evenveel rekenkracht als het hele basismodel.\n\n### De scheiding tussen controle en inhoud\nOm dit betaalbaar te maken introduceren de onderzoekers LoomFormer, geïnspireerd op het weefgetouw (*drawloom*) waarbij een patroonmechanisme selecteert welke draden worden opgetild.\n\nLoomFormer splitst de verwerking in twee parallelle communicatiestromen:\n1. **Vectorstroom ($x \\in \\mathbb{R}^D$)**: De klassieke residuele vector. Deze fungeert als het controlepad en bepaalt waar koppen naar kijken en hoe poorten worden ingesteld.\n2. **Matrixstroom ($M \\in \\mathbb{R}^{d_k \\times d}$)**: Een tweedimensionaal geheugen per token met $d_k$ geheugensleuven van breedte $d$ (standaard $d_k = 2n$, wat een matrixgrootte van $2D$ oplevert). Deze stroom draagt de daadwerkelijke inhoud en stapelt transformaties laag per laag op via lineaire aandacht over de diepteas.\n\n```\n   Vectorstroom (x):   [ Controle & Poortgeneratie ] ----> stuurt routering aan\n                                  |              |\n                                  v              v\n   Matrixstroom (M):   [ Geheugensleuf 1 .. 2n ] --------> draagt inhoud over lagen\n```\n\n### Duale poorten\nDe interactie met beide stromen verloopt via gespiegelde interfaces (*ports*):\n- Op de vectorstroom: lezer $u_j = x W^s_j$, schrijver $\\Delta x = o_i W^O_i$.\n- Op de matrixstroom: lezer $u_j = q^m_j M$, schrijver $\\Delta M = k^m_i \\otimes o_i = (k^m_i)^\\top o_i$.\n\nIn de matrixstroom krimpt een poort van een zware matrix van $D \\times d$ naar een lichte vector van lengte $d_k$. Daardoor kan het netwerk deze poorten dynamisch per token genereren vanuit de vectorstroom tegen minimale rekenkosten."
+  },
+  {
+   "title": "Onder de motorkap van LoomMHA: poorten, MShift en het buitenproduct",
+   "md": "Je leert hier stap voor stap hoe MRead, MWrite en MShift samenwerken binnen een LoomMHA-blok om aandacht over koppen en tokens te vervlechten.\n\n### Poortgeneratie via MRead en MWrite\nOm poorten goedkoop aan te sturen projecteert LoomFormer de vectorstroom eerst naar een gedeelde laagdimensionale tussenruimte $x^r = \\operatorname{GELU}(x W^R_1) \\in \\mathbb{R}^{D_r}$ en $x^w = \\operatorname{GELU}(x W^W_1) \\in \\mathbb{R}^{D_r}$, waarbij $D_r = n^2 = nd_k/2$ (een factor 2 compressie).\n\nDe leesmodule $\\operatorname{MRead}(M, x, x^r)$ construeert een leesvector $q^m \\in \\mathbb{R}^{d_k}$:\n\n$$q^m = \\operatorname{RMSNorm}(x^r W^R_2) \\odot \\sigma(x W^R_g) + \\bar{q} \\odot \\sigma(x W^R_{\\bar{g}})$$\n\n$$u = q^m M$$\n\nIn woorden: een dynamische component en een statische basisvector $\\bar{q}$ worden elk afzonderlijk geschaald door een logistische sigmoïdefunctie $\\sigma(\\cdot)$. De RMSNorm-laag legt de richting vast (welke geheugensleuf gekozen wordt), terwijl de sigmoïde de leessterkte regelt. De vector $u \\in \\mathbb{R}^d$ ontstaat door matrixvermenigvuldiging met $M$.\n\nDe schrijfmodule $\\operatorname{MWrite}(o, x, x^w)$ genereert analoog een sleutel $k^m \\in \\mathbb{R}^{d_k}$ en berekent de geheugenupdate als een buitenproduct (*outer product*):\n\n$$k^m = \\operatorname{RMSNorm}(x^w W^W_2) \\odot \\sigma(x W^W_g)$$\n\n$$\\Delta M = k^m \\otimes o$$\n\n### De interne cyclus van LoomMHA\nBinnen een aandachtslaag verlopen de berekeningen in een vaste volgorde:\n\n```\n+-----------------------------------------------------------------------------------+\n| 1. MShift: Meng M met vorige tijdstap via poort z, normaliseer naar M_tilde       |\n+-----------------------------------------------------------------------------------+\n| 2. MRead: Lees q_tilde, k_tilde, v en bypass o_m uit M_tilde                     |\n+-----------------------------------------------------------------------------------+\n| 3. Concateneer q_tilde en k_tilde met RoPE-projecties uit vectorstroom            |\n+-----------------------------------------------------------------------------------+\n| 4. Horizontale causale aandacht over tokens (exclusief huidig token) + o_m        |\n+-----------------------------------------------------------------------------------+\n| 5. MWrite: Schrijf o_i via buitenproduct naar Delta M; projecteer naar vectorstroom|\n+-----------------------------------------------------------------------------------+\n```\n\n1. **Temporele menging (MShift)**: Om zonder dure aandachtsoperaties toegang te krijgen tot het voorgaande token, mengt de laag geheugen $M_{[t]}$ met $M_{[t-1]}$ via poortvector $z_{[t]} = \\sigma(x_{[t]} W^S_g) \\in \\mathbb{R}^{d_k}$:\n   $$\\widetilde{M}_{[t]} = \\operatorname{MNorm}\\big(z_{[t]} \\odot M_{[t-1]} + (1 - z_{[t]}) \\odot M_{[t]}\\big)$$\n2. **Lezen**: Vier afzonderlijke MRead-eenheden trekken $\\tilde{q}, \\tilde{k}, v$ en een bypassvector $o^m$ uit $\\widetilde{M}$.\n3. **Samenvoeging**: Queries en keys worden samengesteld door een $d/4$-dimensionale vector met roterende positie-inbeddingen (RoPE) uit $x$ te plakken aan $\\tilde{q}$ en $\\tilde{k}$. De waardevector $v$ is afkomstig uit $M$.\n4. **Horizontale aandacht**: De aandachtsfunctie berekent causale aandacht over eerdere tokens. Het huidige token zelf wordt gemaskeerd; de informatie van het eigen token stroomt rechtstreeks via de bypassvector $o^m_i$ naar de uitvoer:\n   $$o_i = o^m_i + \\operatorname{Attention}(q_i, k_i, v_i)$$\n5. **Schrijven**: Elke kop schrijft zijn genormaliseerde uitvoer $\\operatorname{Norm}(o_i)$ via MWrite weg naar $\\Delta M$, terwijl de samengevoegde koppen via $W^O$ de vectorstroom bijwerken.\n\n> [!tip] Schrijven vanuit het feed-forward netwerk\n> Naast LoomMHA bevat het feed-forward netwerk (FFN) een tweede tak $\\operatorname{FFN}_M$. Dit is het enige kanaal waarlangs nieuwe inhoud uit de vectorstroom rechtstreeks in het matrixgeheugen wordt geschreven."
+  },
+  {
+   "title": "Wiskundige bedradingscapaciteit en de activatie van diepe koppen",
+   "md": "Je leert hier hoe dynamische poorten de wiskundige bedradingsrang verhogen en waarom dit voorkomt dat rekenkoppen in diepe lagen massaal stilvallen.\n\n### Vergelijking van de bedradingsrang\nZonder MShift ontvangt lezer $j$ uit het matrixgeheugen:\n\n$$u_j = q^m_j M = \\sum_i \\langle q^m_j, k^m_i \\rangle o_i$$\n\nDe effectieve bedradingsmatrix is hierdoor $C = K Q^\\top$, waarbij de rijen van $K$ en $Q$ bestaan uit de gegenereerde poortvectoren. De rang van deze matrix is begrensd door het aantal sleuven: $\\min(d_k, 3n) = 2n$.\n\n| Architectuur | Effectieve bedrading | Bedradingsrang | Geheugenomvang |\n|---|---|---|---|\n| Standaard Transformer | $\\bar{C}_{ij}$ | $1$ | $D$ (vector) |\n| DenseFormer | $\\langle q_{l_j}, k_{l_i} \\rangle \\bar{C}_{ij}$ | $1$ (per laag) | $lD$ (vector) |\n| Hyper-Connections (HC / mHC) | $\\langle q_{l_j}(M), k_{l_i}(M) \\rangle \\bar{C}_{ij}$ | $1$ (per laag) | $4D$ (matrix) |\n| MUDDFormer | $\\langle q^s_{l_j}(x), k_{l_i} \\rangle \\bar{C}_{ij}$ | $3$ ($Q, K, V$) | $lD$ (vector) |\n| **LoomFormer** | $\\langle q^s_j(x), k^m_i(x) \\rangle I$ | **$\\min(d_k, 3n) = 2n$** | **$2D$ ($+ D$)** |\n\nVolgens Propositie 3.1 uit de paper is LoomFormer bij statisch vastgezette poorten wiskundig equivalent aan een standaard transformer op een bredere toestand $(x, \\operatorname{vec}(M))$ met rang 1. Zodra de poorten per token dynamisch berekend worden, kan het netwerk willekeurige bedradingspatronen realiseren tot $d_k$ actieve schrijvers, met slechts één kop per lezer.\n\n### Metingen aan getrainde 2,8B-modellen\nDe auteurs analyseerden getrainde taalmodellen op de Pile-validatieset:\n- **Effectieve dynamische rang**: In LoomPythia-2.8B stijgt de effectieve rang van de dynamische bedrading over lagen naar 41,0 (met een gemiddelde van 26,4). In laag 32 valt 90,7% van de dynamische energie buiten rang 1.\n- **Kopbenutting in diepe lagen**: In diepe lagen (lagen 17 tot 32) schakelt bij standaard Pythia-2.8B en mHC-Pythia-2.8B het overgrote deel van de koppen zichzelf uit door hun aandacht naar aandachtsputten (*attention sinks*) te sturen. LoomPythia-2.8B houdt daarentegen ruim driemaal zoveel koppen actief.\n\n```\nActieve koppen in lagen 17–32:\nPythia-2.8B:      [####................] merendeel inactief (sink)\nmHC-Pythia-2.8B:  [###.................] merendeel inactief (sink)\nLoomPythia-2.8B:  [###############.....] ruim 3x meer actief\n```\n\nDoordat diepe koppen niet gedwongen worden zich uit te schakelen om eerdere circuits niet te verstoren, verdubbelt de aandachtsfocus op inhoudstokens. Dit verklaart de gemeten winst op in-context leertaken (5-shot) en redeneertests."
+  },
+  {
+   "title": "Hardware-efficiëntie: theoretische winst tegenover geheugenbandbreedte",
+   "md": "Je leert hier hoe de theoretische rekenlast zich verhoudt tot de reële doorvoersnelheid op processors en waar de hardwarematige grenzen liggen.\n\n### FLOP-overhead en schaalwetten\nOnder een gelijk parameterbudget voegt LoomFormer een kleine fractie extra voorwaartse drijvende-kommaberekeningen (*forward FLOPs*) toe door het bijwerken van $M$ en de bredere projecties:\n\n$$\\Delta \\text{FLOPs} \\approx \\frac{1}{d(1 + \\rho/12)} + \\frac{1}{8(1 + 12/\\rho)}$$\n\nwaarbij $\\rho = T/D$ de verhouding is tussen sequentielengte $T$ en modeldimensie $D$. Bij geteste configuraties ligt deze rekenkundige toeslag tussen 1,95% en 3,70%.\n\nBij evaluatie volgens rekenkracht-optimale schaalwetten (Hoffmann et al., 2022) bereikt LoomFormer dezelfde validatieverliezen als standaard transformers die getraind zijn met **meer dan 3× zoveel compute**. Vergeleken met recente methoden voor residuele stromen (mHC, AttnRes, MUDDFormer) evenaart het modellen die met aanzienlijk meer rekenbudget zijn getraind.\n\n### Doorvoer op TPU- en GPU-hardware\nDe auteurs toetsten de implementatie met gespecialiseerde kernels (Pallas in JAX voor TPU v5p; Triton en `torch.compile` in PyTorch voor Nvidia A800):\n- **Training (TPU v5p)**: LoomFormer behoudt 89% tot 92% van de doorvoersnelheid van een standaard transformer.\n- **Inferentie (Nvidia A800, BF16)**: De doorvoersnelheid ligt tussen 84% en 92% over prefill- en decodeerfasen bij verschillende batchgroottes.\n\n> [!warning] Waarom de hardwarekloof groter is dan de FLOP-toeslag\n> De gemeten inferentiedoorvoer van 84% tot 92% weerspiegelt een grotere vertraging dan de theoretische FLOP-toeslag van 2,0% tot 3,7%. Dit verschil ontstaat door:\n> 1. **Geheugentransfers (HBM I/O)**: Het per laag inladen en wegschrijven van de matrix $M$ belast de geheugenbandbreedte.\n> 2. **Lagere rekenintensiteit**: Contracties op vectoren en kleine matrices leveren minder operaties per getransporteerde byte dan grote matrixvermenigvuldigingen.\n> 3. **Opsplitsing van projecties**: Het aanroepen van kleinere, gesplitste lineaire lagen veroorzaakt lichte overhead in de planning van kernels."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "2%",
+   "label": "extra rekenwerk (FLOPs) van LoomPythia-2.8B ten opzichte van Pythia-2.8B bij training op 300 miljard tokens",
+   "quote": "For example, trained on the same 300B tokens with only 2% extra FLOPs, LoomPythia-2.8B achieves ~1.6x the average downstream gain of mHC-Pythia-2.8B over Pythia-2.8B, and matches (0-shot) or surpasses (5-shot) Pythia-12B.",
+   "source": 1
+  },
+  {
+   "value": "3x",
+   "label": "rekenkrachtbesparing ten opzichte van standaard transformers bij gelijke prestaties op taalmodellering",
+   "quote": "Across model sizes and training token budgets in language modeling and downstream tasks, LoomFormer matches Transformers trained with over 3x compute and recent residual-stream baselines (HC/mHC, MUDDFormer, AttnRes) trained with ~1.7-2.8x.",
+   "source": 1
+  },
+  {
+   "value": "2.0–3.7%",
+   "label": "extra forward FLOPs over verschillende modelgroottes door het lezen en schrijven van het matrixgeheugen",
+   "quote": "Extensive experiments on language modeling and downstream tasks across model sizes and training token budgets show that LoomFormer adds only 2.0–3.7% FLOPs while matching Transformers trained with over 3× compute",
+   "source": 1
+  },
+  {
+   "value": "61.6",
+   "label": "gemiddelde 5-shot testnauwkeurigheid van LoomPythia-2.8B over 10 standaard benchmarks",
+   "quote": "Its 0-shot average ( $59.9$ ) matches Pythia-12B ( $59.9$ ), its 5-shot average ( $61.6$ ) exceeds Pythia-12B ( $60.8$ ), and its 0/5-shot mean ( $60.75$ ) matches a log-linear extrapolation of Pythia at ~4.9× compute.",
+   "source": 1
+  },
+  {
+   "value": "6.94",
+   "label": "doelspanne-perplexiteit van LoomPythia-2.8B op de FLAN Collection",
+   "quote": "The advantage of LoomPythia on FLAN is even larger than on Pile: FLAN ppl $6.94$ is best in the table, beating both Pythia-12B ( $7.26$ ) and mHC-Pythia-2.8B ( $7.35$ ).",
+   "source": 1
+  },
+  {
+   "value": "84% – 92%",
+   "label": "relatieve inferentiedoorvoer van LoomFormer vergeleken met een standaard Transformer op een Nvidia A800 GPU",
+   "quote": "LoomFormer sustains 89% – 92% of Transformer training speed and 84% – 92% of inference speed across prefill and decode batch sizes; the gap beyond the 2.0% – 3.7% FLOPs reflects HBM I/O on M",
+   "source": 1
+  }
+ ],
+ "caveats": "Bij de interpretatie van de resultaten zijn verschillende technische kanttekeningen op hun plaats:\n\n1. **Hardwarekloof door geheugenbandbreedte**: Hoewel de theoretische toename in rekenoperaties beperkt blijft tot 2,0% à 3,7%, blijft de werkelijke inferentiedoorvoer steken op 84% tot 92% van een standaardmodel. Het frequent inladen en wegschrijven van de matrix $M$ op HBM-geheugen vormt een overlooppunt dat gespecialiseerde kerneloptimalisatie vereist.\n2. **Onderzochte schaalgrootte**: De experimenten met volledige pretraining op 300 miljard tokens zijn uitgevoerd op modellen tot 2,8 miljard parameters (LoomPythia-2.8B), aangevuld met schalingsexperimenten op kleinere en middelgrote formaten (Medium, Large en XL). Hoe de architectuur zich gedraagt op frontier-modellen van tientallen miljarden parameters of in combinatie met Mixture-of-Experts (MoE) vermelden de bronnen niet.\n3. **Initialisatie en trainingsstabiliteit**: Om de training stabiel te laten verlopen moeten de dynamische poortschalingen dicht bij nul worden geïnitialiseerd. Hierdoor start het model initieel vanuit een statische configuratie; zonder deze ingreep kunnen vroege gradiëntfluctuaties de optimalisatie verstoren.\n4. **Kwadratische sequentiecomplexiteit**: Loom attention optimaliseert uitsluitend de verticale verbindingen over lagen heen. De horizontale aandacht over tokens behoudt het standaard causale aandachtsmechanisme met kwadratische complexiteit ($O(T^2)$), tenzij dit in de toekomst gecombineerd wordt met lineaire sequentie-aandacht.\n5. **Geen evaluatie na instructie-afstemming**: De metingen beperken zich tot ruwe voorstudiestatistieken (Pile, FLAN) en meerkeuzetaken. Er zijn in de bronnen geen evaluaties gerapporteerd over de prestaties na menselijke feedback (RLHF) of interactieve dialoogtaken.",
+ "glossary": [
+  {
+   "term": "Loom attention",
+   "def": "Een mechanisme dat verticale lineaire aandacht over eerdere rekenkoppen verweeft met horizontale aandacht over woordtekens."
+  },
+  {
+   "term": "Residual stream",
+   "def": "De centrale communicatielijn binnen een transformer waaraan opeenvolgende lagen gegevens toevoegen en waaruit latere lagen lezen."
+  },
+  {
+   "term": "Node gating",
+   "def": "Een eigenschap waarbij een model verbindingen tussen rekenkoppen uitsluitend per gehele kop kan in- of uitschakelen (rang 1)."
+  },
+  {
+   "term": "Matrix stream",
+   "def": "Een tweede parallelle communicatielijn per woordteken waarin samengevatte kop-uitvoeren over de diepte worden opgeslagen."
+  },
+  {
+   "term": "Virtual weight",
+   "def": "Het statische matrixproduct van de uitvoerprojectie van een eerdere kop en de invoerprojectie van een latere kop."
+  },
+  {
+   "term": "MShift",
+   "def": "Een bewerking binnen LoomMHA die de geheugenmatrix van het huidige woordteken via een poortvector mengt met die van het vorige woordteken."
+  },
+  {
+   "term": "Attention sink",
+   "def": "Een neiging van modellen om overtollige aandachtsmassa naar specifieke woordtekens te sturen om ongebruikte rekenkoppen functioneel te neutraliseren."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom kan een standaard transformer met pre-LayerNorm zijn interne verbindingen tussen rekenkoppen niet willekeurig per woordteken herbedraden?",
+   "options": [
+    "Omdat projectiegewichten vastliggen en normalisatie alle koppen met één gedeelde factor schaalt, waardoor de bedradingsmatrix een rang van maximaal 1 heeft.",
+    "Omdat de residuele stroom uitsluitend tweedimensionale matrices kan bevatten en geen eendimensionale vectoren.",
+    "Omdat softmax-functies willekeurige permutaties van lagen over woordtekens wiskundig blokkeren.",
+    "Omdat LayerNorm de invoer van alle eerdere koppen op nul stelt zodra er meer dan twee koppen gelijktijdig actief zijn."
+   ],
+   "answer": 0,
+   "explain": "In een standaard transformer vormt de dynamische bedrading het product van twee vectoren ($C = g g'^\\top$), wat leidt tot een rang van maximaal 1. Het netwerk kan alleen volledige koppen aan- of uitzetten, maar niet selectief bepalen welke specifieke voorganger aan een lezer gekoppeld wordt."
+  },
+  {
+   "id": "q2",
+   "type": "order",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Plaats de bewerkingen binnen een LoomMHA-sublaag in de juiste chronologische volgorde voor een enkel woordteken.",
+   "tiles": [
+    "MShift mengt de geheugenmatrix van het huidige token met die van het voorgaande token via een poortvector.",
+    "Vier MRead-eenheden trekken query-, key-, value- en bypassvectoren uit de genormaliseerde geheugenmatrix.",
+    "De rekenkop voert horizontale causale aandacht uit over eerdere tokens en telt de bypassvector op bij het resultaat.",
+    "MWrite schrijft de genormaliseerde kopuitvoer via een buitenproduct terug naar de geheugenmatrix voor latere lagen."
+   ],
+   "explain": "LoomMHA start met temporele menging van het geheugen via MShift, leest vervolgens de benodigde vectoren via MRead, berekent daarna de horizontale aandacht over tokens, en schrijft ten slotte via MWrite een nieuw buitenproduct weg naar het matrixgeheugen."
+  },
+  {
+   "id": "q3",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Wat verklaart het fenomeen dat in diepe lagen van Pythia-2.8B het overgrote deel van de koppen zichzelf uitschakelt via attention sinks, terwijl LoomPythia-2.8B ruim driemaal zoveel koppen actief houdt?",
+   "options": [
+    "In Pythia moeten niet-benodigde koppen zichzelf uitschakelen via attention sinks om circuitinterferentie te vermijden, terwijl LoomFormer selectief invoerbronnen kiest.",
+    "Pythia gebruikt te weinig trainingsdata waardoor driekwart van de gewichten tijdens optimalisatie naar nul convergeert.",
+    "LoomFormer schakelt het causale aandachtsmasker uit in diepe lagen, waardoor koppen altijd naar alle tokens moeten kijken.",
+    "In standaard transformers zorgt LayerNorm ervoor dat gradiënten in diepe lagen numeriek instabiel worden."
+   ],
+   "answer": 0,
+   "explain": "Doordat standaard modellen knooppunt-gestuurd zijn, veroorzaakt het gelijktijdig actief houden van koppen kruislingse interferentie. Modellen lossen dit op door overbodige koppen te 'parkeren' op attention sinks. LoomFormer kan per token bepalen wie met wie communiceert, waardoor meer koppen nuttig ingezet blijven."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "LoomFormer introduceert een wiskundig mechanisme voor dynamische circuitbedrading en dubbele reststromen binnen transformermodellen."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "Rewirable Circuits in Transformers with Loom Attention",
+   "url": "https://arxiv.org/abs/2611.30634"
+  },
+  {
+   "n": 2,
+   "title": "Wikipedia — Transformer (deep learning)",
+   "url": "https://en.wikipedia.org/wiki/Transformer_%28deep_learning%29"
+  },
+  {
+   "n": 3,
+   "title": "Wikipedia — Attention (machine learning)",
+   "url": "https://en.wikipedia.org/wiki/Attention_%28machine_learning%29"
+  }
+ ],
+ "id": "2026-11-27-hoe-loom-attention-transformercircuits-per-token",
+ "kind": "paper",
+ "date": "2026-11-27",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-11-27",
+  "kind": "paper",
+  "verified": "2026-11-27",
+  "candidate": "arxiv:2611.30634",
+  "signal": "93 upvotes op Hugging Face Daily Papers",
+  "significance": 4
+ }
+}

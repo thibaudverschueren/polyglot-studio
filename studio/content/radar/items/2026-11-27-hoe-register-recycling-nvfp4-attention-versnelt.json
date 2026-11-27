@@ -1,0 +1,187 @@
+{
+ "schema": "polyglot.radar/v1",
+ "title": "Hoe register-recycling NVFP4-attention versnelt op Nvidia Blackwell",
+ "subtitle": "Door score-registers halverwege de berekening te hergebruiken kunnen Tensor Cores op de SM120-architectuur doorrekenen zonder dat het registergeheugen overloopt.",
+ "topic": "chips",
+ "minutes": 10,
+ "tldr": [
+  "Op Nvidia Blackwell RTX-chips staan rekeneenheden stil tijdens aandachtsfuncties omdat het registergeheugen te vol zit voor een extra databuffer.",
+  "Door een rekenblok in tweeën te splitsen, kunnen vrijgekomen registers direct de volgende matrixvermenigvuldiging opstarten.",
+  "Dit versnelt de rekenkern tot 1,64 keer bij synthetische taken doordat de Tensor Cores minder pauzeren.",
+  "De techniek is specifiek ontwikkeld voor chips met de SM120-architectuur en levert bij volledige modellen soms slechts 1,11 procent tijdwinst op."
+ ],
+ "plain": "Stel je een kok voor in een krappe keuken met maar twee borden op het werkblad. Als de kok eerst een volledige maaltijd moet snijden, kruiden en opdienen voordat het volgende ingrediënt op het bord mag, staat de pan minutenlang doelloos op het vuur. Meer borden neerzetten kan niet, want het aanrecht is vol. De oplossing is simpel: snijd de portie in twee helften van zestig gram. Zodra de eerste helft in de pan ligt, is dat bord meteen leeg en snijd je daarop alvast de volgende bestelling, terwijl de andere helft nog gekruid wordt. Zo blijft het fornuis continu bakken zonder dat je extra werkruimte nodig hebt. De vergelijking gaat mank omdat een processor geen maaltijden bereidt, maar getallen verwerkt via starre klokcycli waarin wiskundige bewerkingen synchroon moeten wachten op data.",
+ "why": "Voor wie grote videomodellen en wereldmodellen draait op Nvidia-systemen met SM120-architectuur maakt dit 4-bits inferentie direct bruikbaar. Wereldmodellen verwerken lange reeksen beelden waarin de aandachtsfunctie de grootste vertraging vormt. Doordat de optimalisatie is opgenomen in de hoofdbranch van FlashInfer en productiediensten zoals Reactor, daalt de wachttijd bij het genereren van videoframes zonder dat er duurdere datacenter-GPU's nodig zijn. Ontwikkelaars van AI-systemen kunnen hierdoor zwaardere modellen lokaal testen met lagere latentie.",
+ "sections": [
+  {
+   "title": "Het knelpunt op SM120: waarom snelle 4-bits Tensor Cores stilvallen",
+   "md": "Je leert hier waarom de streaming multiprocessor van de RTX Blackwell verschilt van datacenterchips en hoe registerverzadiging het klassieke dubbelbufferen blokkeert.\n\n### Aandachtsberekening en hardwareverschillen\nDe aandachtsfunctie (*attention*) binnen transformermodellen combineert invoervectoren via twee opeenvolgende matrixvermenigvuldigingen:\n\n$$\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d}}\\right)V$$\n\nIn woorden: eerst vermenigvuldigt de chip query-vectoren ($Q$) met sleutelvectoren ($K$) om een scorematrix te bepalen. Een softmax-functie zet die scores om in waarschijnlijkheden, waarna deze gewichten worden vermenigvuldigd met waarde-vectoren ($V$).\n\nOp datacenter-GPU's zoals de Nvidia B200 ([Wikipedia: Blackwell](https://en.wikipedia.org/wiki/Blackwell_%28microarchitecture%29)) is de rekenkracht voor matrixvermenigvuldiging zo hoog dat de tussentijdse softmax-stap de vertragende factor vormt (software zoals FlashAttention-4 lost dit op via wiskundige benaderingen van de exponentiële functie). Op werkstation- en serverkaarten met de SM120-architectuur, zoals de Nvidia RTX PRO 6000 Blackwell ([NVIDIA Technical Blog](https://developer.nvidia.com/blog/how-to-optimize-nvfp4-attention-on-nvidia-rtx-blackwell-through-register-recycling/)), ligt dat anders. Hier is de doorvoer van standaard 16-bits floating-point berekeningen (BF16) relatief lager. De uitvoering blijft daardoor begrensd door matrixvermenigvuldigingen (*MMA-bound*).\n\nOm dit op te lossen introduceerde Nvidia het NVFP4-formaat ([NVIDIA Technical Blog](https://developer.nvidia.com/blog/how-to-optimize-nvfp4-attention-on-nvidia-rtx-blackwell-through-register-recycling/)): hardware-versnelde 4-bits matrixberekeningen die op RTX Blackwell een hogere Tensor Core-doorvoer leveren dan BF16 om de rekenbegrenzing (*MMA-bound*) op te heffen.\n\n### Het probleem van synchrone uitvoering\nOm NVFP4 te benutten voor de volledige aandachtsfunctie ontwikkelden onderzoekers de SageAttention3-kernel ([NVIDIA Technical Blog](https://developer.nvidia.com/blog/how-to-optimize-nvfp4-attention-on-nvidia-rtx-blackwell-through-register-recycling/)). Omdat softmax-uitkomsten altijd tussen 0 en 1 liggen, benutten ze het dynamisch bereik van 4-bits getallen slecht. SageAttention3 loste dit op met tweetraps-schaling (*two-level scaling*): waarden worden genormaliseerd voordat ze worden omgezet naar een 4-bits datatensor en een 8-bits schaaltensor.\n\nDe oorspronkelijke opzet van de rekengroep (*Cooperative Thread Array* of CTA) liep echter tegen een micro-architecturale blokkade aan. Binnen één CTA werken 12 warps (groepen van 32 threads):\n- 4 producer-warps laden gegevens asynchroon in vanuit het globale geheugen via de Tensor Memory Accelerator (TMA).\n- 8 consumer-warps (256 threads) voeren de berekeningen uit op de Tensor Cores en CUDA-cores.\n\nDe verwerking per gegevensblok van 128 kolommen ($N128$) verliep strikt serieel:\n1. De consumenten voeren de $QK$-vermenigvuldiging uit op de Tensor Cores via synchrone instructies (`mma.sync`).\n2. De threads wachten tot de vermenigvuldiging klaar is.\n3. De CUDA-cores berekenen de online softmax, passen schaling toe en kwantiseren de tussenresultaten naar NVFP4.\n4. De consumenten voeren de $PV$-vermenigvuldiging uit op de Tensor Cores.\n\nTijdens stap 3 staan de Tensor Cores volledig stil. Omdat de wiskundige bewerkingen na elkaar plaatsvinden, ontstaan er gaten waarin de gespecialiseerde matrix-eenheden geen instructies ontvangen."
+  },
+  {
+   "title": "De registerlimiet: waarom dubbelbufferen niet past",
+   "md": "Je leert hier waarom het registerbestand tot 95,3 procent volloopt en waarom het verdubbelen van de buffer tot geheugenproblemen leidt.\n\n### De fysieke omvang van het registerbestand\nIn snelle GPU-kernels lost men dit probleem gewoonlijk op met dubbele buffering (*double buffering*): terwijl de rekeneenheden softmax berekenen over het huidige blok data, laadt en berekent een tweede buffer alvast de matrixvermenigvuldiging van het volgende blok. Op de SM120-architectuur bleek dit onmogelijk door de fysieke grenzen van het registerbestand ([Wikipedia: Register file](https://en.wikipedia.org/wiki/Register_file)).\n\nHet registerbestand is het snelste geheugen op de chip, direct gekoppeld aan de execution units. De bezetting in de oorspronkelijke SageAttention3-kernel was als volgt verdeeld ([NVIDIA Technical Blog](https://developer.nvidia.com/blog/how-to-optimize-nvfp4-attention-on-nvidia-rtx-blackwell-through-register-recycling/)):\n- De 4 producer-warps verbruiken 3.072 registers voor adresbeheer en asynchrone transfers.\n- De 8 consumer-warps verbruiken 59.392 registers voor tussenresultaten, accumulatoren en kwantisatietabellen.\n- In totaal zijn 62.464 registers in gebruik.\n\nDit bezet ongeveer 95,3% van de totale registercapaciteit van de streaming multiprocessor (SM). Zou de ontwikkelaar een tweede scorebuffer toewijzen om het volgende blok van 128 kolommen vast te houden, dan overschrijdt het programma de fysieke capaciteit. De GPU moet de overtollige variabelen dan wegschrijven naar het lokale geheugen (*register spilling*), wat leidt tot vertragende geheugencycli in de cache.\n\n> [!note] Vaste tegelgrootte voor maximale bandbreedte\n> De ontwikkelaar kan de blokgrootte niet simpelweg verkleinen om registers te besparen. In dit specifieke kernelontwerp is gekozen voor TMA-transfers met een vorm van 128×128 elementen om de beschikbare geheugenbandbreedte van de GPU maximaal te benutten. Het verkleinen van de tegelgrootte zou ertoe leiden dat de geheugenbandbreedte van de chip onderbenut blijft.\n\nDaarnaast vereist de instructiesetarchitectuur (PTX) voor Blackwell RTX dat een 4-bits matrixoperatie met contractie-as $k=128$ wordt opgesplitst in twee opeenvolgende instructies met $k=64$ (`mma.sync.aligned.kind::mxf4nvf4.block_scale.scale_vec::4X.m16n8k64`). Deze instructies zijn synchroon: de verbruikende threads moeten wachten tot het resultaat in de registers staat voordat de softmax kan beginnen."
+  },
+  {
+   "title": "Het mechanisme van register-recycling: ping-pong met N64-tegels",
+   "md": "Je leert hier hoe het opsplitsen van een scoretegel in twee registerslots ervoor zorgt dat de volgende matrixbewerking kan starten zodra de eerste helft gekwantiseerd is.\n\n### Splitsen in twee registerslots\nDe geoptimaliseerde kernel behoudt de 4 producer-warps, de 8 consumer-warps en de volledige gegevensinvoer van 128 kolommen via TMA. De verandering zit in de manier waarop de consumenten de scorematrix opslaan en verwerken. In plaats van één grote buffer van 128 kolommen, splitst de kernel de tegel in twee symmetrische registerslots van 64 kolommen ([NVIDIA Technical Blog](https://developer.nvidia.com/blog/how-to-optimize-nvfp4-attention-on-nvidia-rtx-blackwell-through-register-recycling/)):\n- `ScoreSlot0` bevat kolommen [0:64].\n- `ScoreSlot1` bevat kolommen [64:128].\n\nIn plaats van alle bewerkingen strikt achter elkaar uit te voeren, wisselen de twee slots elkaar af in een ping-pongschema.\n\n```\n+-----------------------------------------------------------------------------------+\n| 1. Bereken online-softmax maximum en som over ScoreSlot0 EN ScoreSlot1 (N128)     |\n+-----------------------------------------------------------------------------------+\n| 2. Exponentieer & kwantiseer ScoreSlot0 naar NVFP4-kansen (Probability0)          |\n|    --> Registers van ScoreSlot0 zijn nu vrij (dead)                               |\n+-----------------------------------------------------------------------------------+\n| 3. Voer QK-OMMA van VOLGENDE tegel uit in ScoreSlot0 op Tensor Cores,             |\n|    aansluitend gevolgd door PV-OMMA van HUIDIGE tegel (Probability0 met V)        |\n+-----------------------------------------------------------------------------------+\n| 4. Exponentieer & kwantiseer ScoreSlot1 naar NVFP4-kansen (Probability1)          |\n|    --> Registers van ScoreSlot1 zijn nu vrij (dead)                               |\n+-----------------------------------------------------------------------------------+\n| 5. Voer QK-OMMA van tweede helft VOLGENDE tegel uit in ScoreSlot1 op Tensor Cores,|\n|    aansluitend gevolgd door PV-OMMA van HUIDIGE tegel (Probability1 met V)        |\n+-----------------------------------------------------------------------------------+\n```\n\n### Het wiskundige anker: online softmax over de volle breedte\nEen belangrijk detail is dat de wiskunde van softmax niet willekeurig in tweeën geknipt kan worden. De deler van softmax is de som van alle exponenten over de volledige rij. Zou men helft 0 normaliseren zonder kennis van helft 1, dan klopt de kansverdeling niet.\n\nDaarom berekent de kernel de maximale score ($m$) en de tussentijdse som van de exponenten ($d$) eerst gezamenlijk over de volledige 128 kolommen van `ScoreSlot0` en `ScoreSlot1`:\n\n$$m_{\\text{nieuw}} = \\max(m_{\\text{oud}}, \\max(S_0, S_1))$$\n\nPas nadat de uitvoer-accumulator is bijgeschaald met deze nieuwe maximale waarde, begint de puntsgewijze verwerking van helft 0. Zodra `ScoreSlot0` is omgezet in ingepakte 4-bits kansen (`Probability0`), bevatten de oorspronkelijke registers geen noodzakelijke data meer en worden ze als 'dood' beschouwd. De kernel hergebruikt deze registers direct om op de Tensor Cores eerst de $QK$-vermenigvuldiging voor de volgende tegel uit te voeren (`Execute_QK_OMMA_N64`), direct gevolgd door de $PV$-vermenigvuldiging voor de huidige tegel (`Execute_PV_OMMA_N64`). Omdat $QK$ en $PV$ beide Tensor Core-operaties zijn, draaien ze niet gelijktijdig, maar strikt na elkaar. De daadwerkelijke overlapping en tijdswinst ontstaan doordat deze Tensor Core-bewerkingen worden afgewisseld met (*interleaved*) en overlappen met de resterende softmax- en kwantisatiewerkzaamheden van de overige tegelhelft op de CUDA-cores. Hierdoor vallen de Tensor Cores niet stil tussen opeenvolgende blokken."
+  },
+  {
+   "title": "Prestatiewinst in cijfers en impact op wereldmodellen",
+   "md": "Je leert hier welke winst deze optimalisatie oplevert in geïsoleerde tests en hoe die doorwerkt in volledige productiesystemen voor videomodellen.\n\n### Geïsoleerde kernellatentie\nInfrastructuurbouwer Reactor vergeleek de oorspronkelijke en geoptimaliseerde NVFP4-aandachtskernel op een Nvidia RTX PRO 6000 Blackwell Server Edition met 96 GB geheugen ([NVIDIA Technical Blog](https://developer.nvidia.com/blog/how-to-optimize-nvfp4-attention-on-nvidia-rtx-blackwell-through-register-recycling/)). De invoer gebruikte gelijke query- en key-lengtes, batchgrootte 1, 24 aandachtskoppen en een kopdimensie van 128.\n\n| Werklast / invoer | Maskertype | Oorspronkelijk (ms) | Geoptimaliseerd (ms) | Versnelling |\n|---|---|---|---|---|\n| LongLive (7.040 tokens) | Niet-causaal | 0,75052 | 0,63548 | 1,18× |\n| LongLive (7.040 tokens) | Causaal | 0,44992 | 0,37927 | 1,19× |\n| Synthetisch (4.096 tokens) | Niet-causaal | 0,28962 | 0,23190 | 1,25× |\n| Synthetisch (4.096 tokens) | Causaal | 0,21199 | 0,16087 | 1,32× |\n| Synthetisch (8.192 tokens) | Niet-causaal | 1,00177 | 0,85648 | 1,17× |\n| Synthetisch (8.192 tokens) | Causaal | 0,76466 | 0,46659 | 1,64× |\n| Synthetisch (16.384 tokens) | Niet-causaal | 3,80862 | 3,25377 | 1,17× |\n| Synthetisch (16.384 tokens) | Causaal | 2,20630 | 1,78152 | 1,24× |\n\nDe metingen tonen dat de versnelling op kernelniveau oploopt tot 1,64× bij een causale werklast van 8.192 tokens. Doordat de Tensor Cores niet meer hoeven te wachten op de afronding van de volledige tegel, wordt de hardwarematige rekenkracht aanzienlijk beter benut.\n\n### Impact op end-to-end inferentie bij Reactor\nInfrastructuurbouwer Reactor integreerde de geoptimaliseerde kernel in hun productieomgeving voor wereldmodellen en videoproductie ([NVIDIA Technical Blog](https://developer.nvidia.com/blog/how-to-optimize-nvfp4-attention-on-nvidia-rtx-blackwell-through-register-recycling/)). Een wereldmodel genereert toekomstige videoframes op basis van acties en camerabewegingen, wat vraagt om zware aandachtsoperaties over duizenden frames.\n\nDe gemeten latentiereducties ten opzichte van een BF16-basislijn met cuDNN liepen uiteen per model:\n- **OmniDreams**: Bij het genereren van 2.045 videoframes (256 chunks) daalde de totale inferentietijd van 155,92 seconden naar 132,00 seconden, een vermindering van 15,34%.\n- **LongLive**: Een generatie van 1.021 frames daalde van 162,52 naar 151,89 seconden (6,54% winst).\n- **Helios**: Haalde een bescheiden winst van 1,11% tot 1,78%.\n- **Cosmos 3 Nano (Policy Droid)**: Noteerde een latentiedaling van 1,70% op actievoorspellingen.\n\nHet verschil in winst verklaart zich door de architectuur van de modellen: bij OmniDreams en LongLive draaien zowel de self-attention als de historische cachelagen in NVFP4, terwijl bij Helios en Cosmos 3 Nano slechts een deel van de aandachtsoperaties naar 4-bits werd omgezet en de overige lagen in BF16 bleven werken. De kerneloptimalisatie is inmiddels samengevoegd in de hoofdbranch van de open-source bibliotheek FlashInfer."
+  }
+ ],
+ "numbers": [
+  {
+   "value": "95.3%",
+   "label": "percentage van de registercapaciteit van de SM bezet door producer- en consumer-warps in SageAttention3",
+   "quote": "Producer warps use 3,072 registers, and consumer warps use 59,392 registers. The total of 62,464 registers occupies approximately 95.3% of the SM’s register capacity.",
+   "source": 1
+  },
+  {
+   "value": "62,464",
+   "label": "totaal aantal gebruikte registers per SM in het oorspronkelijke SageAttention3-ontwerp",
+   "quote": "Producer warps use 3,072 registers, and consumer warps use 59,392 registers. The total of 62,464 registers occupies approximately 95.3% of the SM’s register capacity.",
+   "source": 1
+  },
+  {
+   "value": "1.64x",
+   "label": "maximale kernelversnelling op een RTX PRO 6000 Blackwell bij een synthetische causale invoer van 8.192 tokens",
+   "quote": "This register-recycling schedule reduces Tensor Core idle time without allocating a second full score buffer, improving NVFP4 attention kernel latency by up to 1.64x on NVIDIA RTX PRO 6000 Blackwell.",
+   "source": 1
+  },
+  {
+   "value": "15.34%",
+   "label": "maximale vermindering van end-to-end inferentielatentie bij productieworkloads op Reactor",
+   "quote": "achieving end-to-end inference latency reductions of up to 15.34% across LongLive, Helios, OmniDreams, and Cosmos 3 Nano workloads.",
+   "source": 1
+  },
+  {
+   "value": "128×128",
+   "label": "vaste tegelvorm voor asynchrone geheugentransfers via de Tensor Memory Accelerator (TMA)",
+   "quote": "First, TMA Loads are bound to Shapes of 128×128, not utilizing the entire shape would mean underutilizing our GPU bandwidth.",
+   "source": 1
+  },
+  {
+   "value": "96 GB",
+   "label": "geheugencapaciteit van de geteste NVIDIA RTX PRO 6000 Blackwell Server Edition GPU",
+   "quote": "Reactor evaluated the optimized kernel on an NVIDIA RTX PRO 6000 Blackwell Server Edition GPU with 96 GB of memory (SM120), measuring its impact across four world-model workloads.",
+   "source": 1
+  }
+ ],
+ "caveats": "Bij de interpretatie van deze resultaten zijn verschillende technische kanttekeningen op hun plaats:\n\n1. **Geldigheid beperkt tot SM120**: Deze techniek is specifiek ontworpen voor de RTX Blackwell SM120-microarchitectuur, waar aandachtsoperaties begrensd worden door de doorvoer van matrixvermenigvuldigingen (MMA-bound). Op datacenter-chips zoals de B200 en GB100 vormt softmax de vertraging en gelden andere optimalisaties, zoals die in FlashAttention-4.\n2. **Kloof tussen kernelwinst en systeemprestaties**: Hoewel de geïsoleerde rekenkern tot 1,64× sneller rekent, vertaalt zich dit in volledige modellen naar een totale latentiereductie van 1,11% tot 15,34%. Modellen zoals Helios en Cosmos 3 Nano behouden veel BF16-operaties, waardoor de algehele winst beperkt blijft.\n3. **Uitsluitingen bij metingen**: De gerapporteerde kerneltijden sluiten de initiële kwantisatie van Q, K en V en het herstel van uitvoer-strides uit. De end-to-end metingen van Reactor omvatten dit wel, maar laten netwerkverkeer, wachtrijen en modelinlaadtijden buiten beschouwing.\n4. **Geen gerapporteerde kwaliteitsmetrieken**: Hoewel SageAttention3 tweetraps-schaling gebruikt om precisieverlies tegen te gaan, rapporteren de bronnen geen numerieke kwaliteitsmetingen (zoals perplexity of beeldevaluatiescores) voor de videomodellen ten opzichte van de BF16-basislijn.\n5. **Hardwaredekking**: De benchmarks zijn uitsluitend uitgevoerd op één specifiek werkstationmodel (RTX PRO 6000 Blackwell Server Edition met 96 GB); resultaten op consumentenkaarten met afwijkende geheugenbussen worden niet vermeld.",
+ "glossary": [
+  {
+   "term": "SM120",
+   "def": "De specifieke streaming multiprocessor-architectuur van Nvidia Blackwell-chips voor werkstations en professionele grafische kaarten."
+  },
+  {
+   "term": "NVFP4",
+   "def": "Een 4-bits drijvende-kommaformaat met hardwarematige versnelling op Blackwell Tensor Cores voor snellere matrixberekeningen."
+  },
+  {
+   "term": "Register file",
+   "def": "De kleinste en snelste geheugenlaag op een processor die direct verbonden is met de rekeneenheden om actieve variabelen vast te houden."
+  },
+  {
+   "term": "Register spilling",
+   "def": "Het noodgedwongen wegschrijven van variabelen uit registers naar langzamere geheugenlagen wanneer de fysieke registercapaciteit overschreden wordt."
+  },
+  {
+   "term": "TMA (Tensor Memory Accelerator)",
+   "def": "Een hardware-eenheid in moderne Nvidia-chips die zelfstandig en asynchroon tweedimensionale datablokken tussen geheugenlagen transporteert."
+  },
+  {
+   "term": "CTA (Cooperative Thread Array)",
+   "def": "Een groep samenwerkende threads (thread block) op een Nvidia GPU die gezamenlijk op één streaming multiprocessor wordt ingepland."
+  },
+  {
+   "term": "Online softmax",
+   "def": "Een algoritme dat de softmax-functie stapsgewijs over datablokken berekent door het lopende maximum en de noemersom dynamisch bij te schalen."
+  },
+  {
+   "term": "Two-level scaling",
+   "def": "Een kwantisatietechniek die waarden eerst normaliseert om het smalle dynamische bereik van 4-bits formaten optimaal te benutten."
+  }
+ ],
+ "quiz": [
+  {
+   "id": "q1",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Waarom kan een GPU-kernel op de SM120-architectuur niet simpelweg een tweede volledige N128-scorebuffer toewijzen om wachttijden te vermijden via klassieke dubbele buffering?",
+   "options": [
+    "Het registerbestand is al voor circa 95,3% bezet, waardoor een tweede volledige buffer leidt tot registeroverloop (spilling) naar langzamer geheugen.",
+    "De Tensor Memory Accelerator kan hardwarematig slechts één geheugentegel tegelijk vasthouden in de L2-cache van de grafische kaart.",
+    "De Tensor Cores van de SM120 weigeren asynchrone matrixberekeningen zodra er meer dan 3.072 registers tegelijk actief zijn.",
+    "De wiskundige online softmax vereist dat alle registers van de streaming multiprocessor leeggemaakt worden voor de sommatie."
+   ],
+   "answer": 0,
+   "explain": "De 12 warps in de CTA verbruiken samen 62.464 registers, wat neerkomt op circa 95,3% van de capaciteit. Het toevoegen van een tweede complete scorebuffer van 128 kolommen past fysiek niet in de registers, waardoor data naar het lokale geheugen zou lekken (register spilling) en de prestaties zouden instorten."
+  },
+  {
+   "id": "q2",
+   "type": "order",
+   "skill": "begrip",
+   "level": 2,
+   "prompt": "Zet de bewerkingen van de geoptimaliseerde steady-state lus voor de eerste halve tegel (ScoreSlot0) in de juiste chronologische volgorde.",
+   "tiles": [
+    "Online-softmax toestand (maximum en som) bijwerken over de volledige N128-tegel en uitvoer herschalen",
+    "ScoreSlot0 exponentiëren en kwantiseren naar packed NVFP4-kansen (Probability0)",
+    "Vrijgekomen registers van ScoreSlot0 direct hergebruiken voor de QK-vermenigvuldiging van de volgende tegel",
+    "Probability0 vermenigvuldigen met waardematrix V via PV-OMMA en optellen bij de accumulator"
+   ],
+   "explain": "Eerst moet de softmax-toestand over de volledige 128 kolommen worden bepaald zodat de normalisatiefactor klopt. Vervolgens wordt ScoreSlot0 geëxponentieerd en gekwantiseerd. Zodra dat voltooid is, zijn die registers vrij en worden ze op de Tensor Cores direct hergebruikt voor de QK-stap van de volgende tegel, waarna aansluitend de PV-stap van de huidige tegel op de Tensor Cores wordt uitgevoerd."
+  },
+  {
+   "id": "q3",
+   "type": "mcq",
+   "skill": "begrip",
+   "level": 3,
+   "prompt": "Waarom verschilt het primaire prestatieknelpunt bij aandachtsoperaties op de RTX PRO 6000 (SM120) wezenlijk van dat op Blackwell-datacenterchips?",
+   "options": [
+    "Op SM120 is de BF16-doorvoer lager en vormt matrixvermenigvuldiging de flessenhals, terwijl datacenterchips begrensd worden door de softmax-berekening.",
+    "Op SM120 ontbreekt hardwarematige ondersteuning voor NVFP4, waardoor alle kwantisatie via software op de CPU moet verlopen.",
+    "Op datacenterchips draait de online softmax rechtstreeks op de Tensor Cores, terwijl SM120 daarvoor ray-tracing eenheden moet inzetten.",
+    "Op SM120 kunnen de producer-warps en consumer-warps geen data uitwisselen zonder synchronisatie via het externe DRAM-geheugen."
+   ],
+   "answer": 0,
+   "explain": "Datacenter-GPU's zoals de B200 bezitten een zeer grote matmul-rekencapaciteit, waardoor de niet-lineaire softmax de dominante flessenhals is. Op de SM120-werkstationarchitectuur is de BF16-rekenkracht relatief lager en blijft de uitvoering primair begrensd door matrixberekeningen (MMA-bound), wat overstappen naar NVFP4 bijzonder effectief maakt mits de Tensor Cores continu aan het werk blijven."
+  }
+ ],
+ "related": [
+  {
+   "track": "ai",
+   "why": "Sluit direct aan bij methoden om transformer-aandachtsmechanismen en grote videowereldmodellen te versnellen via aangepaste GPU-rekenkernen."
+  }
+ ],
+ "sources": [
+  {
+   "n": 1,
+   "title": "How to Optimize NVFP4 Attention on NVIDIA RTX Blackwell Through Register Recycling",
+   "url": "https://developer.nvidia.com/blog/how-to-optimize-nvfp4-attention-on-nvidia-rtx-blackwell-through-register-recycling/"
+  },
+  {
+   "n": 2,
+   "title": "Wikipedia — Blackwell (microarchitecture)",
+   "url": "https://en.wikipedia.org/wiki/Blackwell_%28microarchitecture%29"
+  },
+  {
+   "n": 3,
+   "title": "Wikipedia — Register file",
+   "url": "https://en.wikipedia.org/wiki/Register_file"
+  }
+ ],
+ "id": "2026-11-27-hoe-register-recycling-nvfp4-attention-versnelt",
+ "kind": "news",
+ "date": "2026-11-27",
+ "meta": {
+  "author": "antigravity",
+  "created": "2026-11-27",
+  "kind": "news",
+  "verified": "2026-11-27",
+  "candidate": "url:https://developer.nvidia.com/blog/how-to-optimize-nvfp4-attention-on-nvidia-rtx-blackwell-through-register-recycling/",
+  "signal": "officieel bericht van NVIDIA Technical Blog",
+  "significance": 4
+ }
+}
